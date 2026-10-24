@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/request-body.test.mjs",
     "src/workflow-processing.test.mjs",
     "src/operation-security.test.mjs",
     "src/vault-crypto.test.mjs",
@@ -68,6 +69,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/request-body.feature",
     "src/workflow-processing.feature",
     "src/operation-security.feature",
     "src/vault-crypto.feature",

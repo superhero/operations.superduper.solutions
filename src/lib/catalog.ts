@@ -6,6 +6,7 @@ import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 import { inspectResponseContent, type ResponseContent } from "./workflow-response-body.ts";
+import { supportsFormField } from "./form-input.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -312,8 +313,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
         else if (bodyMediaType !== "multipart/form-data" && containsBinaryInput(schema)) throw new Error(`${id}: binary fields require a raw file body or multipart/form-data.`);
         if (bodyMediaType === "text/plain" && schema.type !== "string") throw new Error(`${id}: text/plain requires a string schema.`);
         if (bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data")
-          if (schema.type !== "object" || schema.nullable || objectSchemas(schema).some(property => property.nullable || !["string", "number", "integer", "boolean"].includes(property.type)))
-            throw new Error(`${id}: form bodies require named primitive text fields or individual binary files; structured fields are unsupported.`);
+          if (schema.type !== "object" || schema.nullable || objectSchemas(schema).some(property => !supportsFormField(property, bodyMediaType === "multipart/form-data")))
+            throw new Error(`${id}: form bodies require named primitive fields, primitive arrays or individual binary files; other structured fields are unsupported.`);
         if (schema.type === "object" && !schema.nullable)
           for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
         else

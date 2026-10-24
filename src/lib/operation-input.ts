@@ -4,6 +4,7 @@
 
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
 import { validateWorkflowBinary, binaryRequestMediaType } from "./workflow-binary.ts";
+import { supportsFormField } from "./form-input.ts";
 
 export type InputValue = string | null | undefined;
 export type InputValues = Record<string, InputValue>;
@@ -203,8 +204,8 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     else
     {
       if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
-        && (value === null || typeof value === "object" && !(operation.bodyMediaType === "multipart/form-data" && input.format === "binary")))
-        fail(input, "form body properties must be primitive text values or declared binary files.");
+        && !supportsFormField(input.schema ?? input, operation.bodyMediaType === "multipart/form-data"))
+        fail(input, "form body properties must be primitive values, primitive arrays or declared binary files.");
       set(body, input.name, value);
     }
   }

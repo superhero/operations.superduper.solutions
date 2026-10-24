@@ -28,8 +28,8 @@ Then('pinned Twilio and Atlassian Basic operations dispatch selected username an
       unavailable: inspection.operations.filter(operation => operation.unavailableReason).map(operation => ({ id: operation.id, reason: operation.unavailableReason })) };
     if (id === 'twilio') {
       assert.equal(inspection.operations.length, 197);
-      assert.equal(available.length, 189);
-      assert.equal(census[id].unavailable.length, 8);
+      assert.equal(available.length, 194);
+      assert.equal(census[id].unavailable.length, 3);
       assert.ok(census[id].unavailable.every(operation => /form.*structured/.test(operation.reason)));
       assert.ok(available.every(operation => operation.security.some(option => option.some(scheme => scheme.kind === 'basic'))));
     }
@@ -62,6 +62,54 @@ Then('pinned Twilio and Atlassian Basic operations dispatch selected username an
   }
   const { writeFile } = await import('node:fs/promises');
   await writeFile('tmp/basic-provider-census.json', JSON.stringify(census, null, 2)+'\n');
+});
+
+Then('the five pinned Twilio array forms preserve repeated fields and separate residual limitations', async () => {
+  const { prepareRequest } = await import('./lib/operation-input.ts');
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const document = await readServiceSchema('twilio'), original = JSON.stringify(document);
+  const inspection = inspectServiceSchema(document, 'twilio');
+  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 194);
+  assert.deepEqual(inspection.operations.filter(op => op.unavailableReason).map(op => op.id).sort(),
+    ['twilio:CreatePayments', 'twilio:CreateSiprec', 'twilio:CreateStream']);
+  const identities = { AccountSid: 'AC'+'1'.repeat(32), CallSid: 'CA'+'1'.repeat(32), ConferenceSid: 'CF'+'1'.repeat(32),
+    Sid: 'CN'+'1'.repeat(32), To: '+15550000001', From: '+15550000002' };
+  for (const name of ['CreateCall', 'CreateCallRecording', 'UpdateConnectApp', 'CreateMessage', 'CreateParticipant']) {
+    const op = inspection.operations.find(op => op.id === `twilio:${name}`);
+    assert.equal(op.unavailableReason, undefined, name);
+    const values = Object.fromEntries(op.fields.filter(field => field.required).map(field => {
+      assert.ok(identities[field.name], field.name);
+      return [field.key, identities[field.name]];
+    }));
+    const arrays = op.fields.filter(field => field.type === 'array');
+    assert.ok(arrays.length, name);
+    for (const field of arrays) {
+      const choices = field.schema.items.enum ?? ['https://media.example.test/a,b', 'https://media.example.test/c'];
+      values[field.key] = JSON.stringify([choices[0], choices[1] ?? choices[0]]);
+    }
+    assert.deepEqual(prepareRequest(op, values).body,
+      Object.fromEntries(op.fields.filter(field => field.location === 'body' && values[field.key] !== undefined)
+        .map(field => [field.name, field.type === 'array' ? JSON.parse(values[field.key]) : values[field.key]])));
+    const descriptor = await approvedOperation(op, operationServerUrl(document, op));
+    const alternative = op.security.findIndex(option => option.length === 1 && option[0].kind === 'basic');
+    const scheme = op.security[alternative][0];
+    const credentials = [{ id: crypto.randomUUID(), label: 'Username', kind: 'secret', value: 'synthetic-array-account' },
+      { id: crypto.randomUUID(), label: 'Token', kind: 'secret', value: 'synthetic-array-token' }];
+    const binding = { fingerprint: descriptor.fingerprint, alternative, credentials: { [scheme.name]: { username: credentials[0].id, password: credentials[1].id } } };
+    let calls = 0;
+    const result = await executeCredentialed(descriptor, values, binding, credentials, { assertCurrent() {}, fetchRequest: async (_url, init) => {
+      calls++;
+      assert.equal(init.headers.get('Authorization'), 'Basic '+Buffer.from('synthetic-array-account:synthetic-array-token').toString('base64'));
+      assert.equal(init.headers.get('Content-Type'), 'application/x-www-form-urlencoded');
+      for (const field of arrays) assert.deepEqual(init.body.getAll(field.name), JSON.parse(values[field.key]));
+      return Response.json({ accepted: true });
+    } });
+    assert.equal(calls, 1);
+    assert.equal(result.response.body.accepted, true);
+    assert.ok(!JSON.stringify(result).includes('synthetic-array-token'));
+  }
+  assert.equal(JSON.stringify(document), original, 'The pinned native schema stays intact.');
 });
 
 Then('pinned Atlassian and X authentication alternatives retain independently usable choices and original identities', async () => {
@@ -273,7 +321,7 @@ Then('DigitalOcean published permissions become canonical metadata and dispatch 
   assert.equal(correctedModels.length, 855);
   assert.equal(authErrors(published), 831);
   assert.equal(authErrors(corrected), 0);
-  assert.equal(originalModels.filter(operation => /only empty scope arrays/.test(operation.unavailableReason ?? '')).length, 828);
+  assert.equal(originalModels.filter(operation => /only empty scope arrays/.test(operation.unavailableReason ?? '')).length, 830);
   assert.ok(correctedModels.every(operation => !/security|authentication|scope arrays/i.test(operation.unavailableReason ?? '')));
   let permissionOperations = 0, permissionAlternatives = 0;
   for (const [path, item] of Object.entries(published.paths)) for (const [method, operation] of Object.entries(item)) {
