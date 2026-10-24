@@ -18,6 +18,14 @@ fix(workflow): make restore button backgrounds circular
 
 ```
 
+<!-- changelog-commit:1d62bf727f49bbbe24908306a22a0f8b1c18f892 -->
+### Commit [`1d62bf7`](https://github.com/superhero/operations.superduper.solutions/commit/1d62bf727f49bbbe24908306a22a0f8b1c18f892)
+
+```text
+fix(workflow): add spacing around restore buttons
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
