@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/schema-merge.ts';
-import { applySchemaPatches, digitalOceanBearerPermissions, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
+import { applySchemaPatches, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 
@@ -85,6 +85,109 @@ const digitalOceanFixture = () => ({ openapi: '3.0.0', info: { title: 'DigitalOc
     get: { security: [{ bearer_auth: ['droplet:read'], Project: [] }, {}, { inference_bearer_auth: [] }, { bearer_auth: [] }] },
     post: {}, head: { security: [] }, options: { security: [{}] }, delete: { security: [{ Project: [] }] },
   } },
+});
+
+const geminiFixture = () => ({ openapi: '3.0.3', info: { title: 'Gemini API', version: 'v1beta' },
+  servers: [{ url: 'https://generativelanguage.googleapis.com' }], components: { securitySchemes: {
+    googleGenAIAuth: { type: 'http', scheme: 'custom', 'x-speakeasy-custom-security-scheme': { schema: {
+      type: 'object', properties: { apiKey: { type: 'string' }, accessToken: { type: 'string' },
+        defaultHeaders: { type: 'object', additionalProperties: { type: 'string' } } }, required: [],
+    } } }, Project: { type: 'apiKey', in: 'header', name: 'X-Project' },
+  } }, security: [{ googleGenAIAuth: [] }], paths: { '/v1beta/agents': {
+    get: { security: [{ googleGenAIAuth: [], Project: [] }, {}, { Project: [] }] },
+    post: {}, head: { security: [] }, options: { security: [{}] }, delete: { security: [{ Project: [] }] },
+  } },
+});
+
+Then('Gemini corrections preserve published SDK metadata AND credentials and anonymous overrides', () => {
+  const source = geminiFixture(), before = structuredClone(source);
+  const corrected = applySchemaPatches(source, [geminiAuthAlternatives]);
+  assert.deepEqual(source, before);
+  assert.equal(schemaPatchName(geminiAuthAlternatives), 'Gemini authentication alternatives');
+  assert.deepEqual(corrected.security, [{ GeminiApiKey: [] }, { GeminiAccessToken: [] }]);
+  assert.deepEqual(corrected['x-upstream-security'], before.security);
+  assert.deepEqual(corrected.components.securitySchemes.googleGenAIAuth, before.components.securitySchemes.googleGenAIAuth);
+  assert.deepEqual(corrected.components.securitySchemes.GeminiApiKey, { type: 'apiKey', in: 'header', name: 'x-goog-api-key' });
+  assert.deepEqual(corrected.components.securitySchemes.GeminiAccessToken, { type: 'http', scheme: 'bearer' });
+  assert.deepEqual(corrected.paths['/v1beta/agents'].get.security, [
+    { Project: [], GeminiApiKey: [] }, { Project: [], GeminiAccessToken: [] }, {}, { Project: [] },
+  ]);
+  assert.deepEqual(corrected.paths['/v1beta/agents'].get['x-upstream-security'], before.paths['/v1beta/agents'].get.security);
+  for (const method of ['post', 'head', 'options', 'delete'])
+    assert.deepEqual(corrected.paths['/v1beta/agents'][method], before.paths['/v1beta/agents'][method]);
+  assert.ok(inspectServiceSchema(corrected, 'gemini').operations.every(operation => !operation.unavailableReason));
+  assert.deepEqual(applySchemaPatches(corrected, [geminiAuthAlternatives]), corrected, 'Reapplying the recipe is byte-stable.');
+  const local = structuredClone(corrected); local.info.title = 'My Gemini';
+  const published = structuredClone(source); published.info.version = 'next'; published.paths['/v1beta/new'] = { get: {} };
+  const merged = mergeSchemaDocuments(corrected, local, applySchemaPatches(published, [geminiAuthAlternatives]));
+  assert.deepEqual(merged.conflicts, []);
+  assert.equal(merged.document.info.title, local.info.title);
+  assert.equal(merged.document.info.version, 'next');
+  for (const definition of [{ type: 'apiKey', in: 'header', name: 'x-goog-api-key' }, { type: 'http', scheme: 'bearer' }]) {
+    const fixed = structuredClone(source); fixed.components.securitySchemes.googleGenAIAuth = definition;
+    assert.deepEqual(applySchemaPatches(fixed, [geminiAuthAlternatives]), fixed, 'An upstream standard authentication fix is retained.');
+  }
+  assert.deepEqual(applySchemaPatches({ info: { title: 'Unrelated document' } }, [geminiAuthAlternatives]),
+    { info: { title: 'Unrelated document' } }, 'A document without a Gemini declaration is not changed.');
+  assert.deepEqual(applySchemaPatches({ paths: { '/missing': null, '/metadata': { summary: 'metadata', get: null } } }, [geminiAuthAlternatives]),
+    { paths: { '/missing': null, '/metadata': { summary: 'metadata', get: null } } });
+});
+
+Then('Gemini credential applicability {string} stays explicit without executing custom schemes', kind => {
+  const source = geminiFixture(); source.paths = { '/v1beta/agents': { get: {} } };
+  const properties = source.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].schema.properties;
+  if (kind === 'key only') delete properties.accessToken;
+  if (kind === 'bearer only') delete properties.apiKey;
+  if (kind === 'headers only') {
+    delete properties.apiKey; delete properties.accessToken;
+    assert.throws(() => applySchemaPatches(source, [geminiAuthAlternatives]), /documented API key or access token/);
+    return;
+  }
+  if (kind === 'unrelated custom scheme') {
+    source.components.securitySchemes.OtherSDK = source.components.securitySchemes.googleGenAIAuth;
+    delete source.components.securitySchemes.googleGenAIAuth;
+    source.security = [{ OtherSDK: [] }];
+    assert.deepEqual(applySchemaPatches(source, [geminiAuthAlternatives]), source);
+  }
+  const document = kind === 'unreviewed SDK extension' ? source : applySchemaPatches(source, [geminiAuthAlternatives]);
+  const operation = inspectServiceSchema(document, 'gemini').operations[0];
+  if (['unrelated custom scheme', 'unreviewed SDK extension'].includes(kind)) {
+    assert.match(operation.unavailableReason, /only HTTP bearer authentication is supported/);
+    return;
+  }
+  const names = operation.security.map(alternative => alternative.map(scheme => scheme.name));
+  assert.deepEqual(names, kind === 'key only' ? [['GeminiApiKey']] : [['GeminiAccessToken']]);
+  assert.equal(operation.unavailableReason, undefined);
+});
+
+Then('Gemini correction rejects the changed contract {string}', kind => {
+  const changes = {
+    'unknown server': doc => { doc.servers[0].url = 'https://example.test'; },
+    'extra server': doc => { doc.servers.push({ url: 'https://example.test' }); },
+    'missing server': doc => { delete doc.servers; },
+    'unsupported version': doc => { doc.openapi = '2.0'; },
+    'missing definition': doc => { delete doc.components.securitySchemes.googleGenAIAuth; },
+    'different custom scheme': doc => { doc.components.securitySchemes.googleGenAIAuth.scheme = 'basic'; },
+    'missing SDK contract': doc => { delete doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme']; },
+    'executable SDK extension': doc => { doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].code = 'throw new Error("must never execute")'; },
+    'wrong SDK shape': doc => { doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].schema.type = 'string'; },
+    'required credential': doc => { doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].schema.required = ['apiKey']; },
+    'composed credentials': doc => { doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].schema.oneOf = [{ required: ['apiKey'] }]; },
+    'unknown credential': doc => { doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].schema.properties.clientSecret = { type: 'string' }; },
+    'malformed API key': doc => { doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].schema.properties.apiKey = { type: 'number' }; },
+    'constrained token': doc => { doc.components.securitySchemes.googleGenAIAuth['x-speakeasy-custom-security-scheme'].schema.properties.accessToken.enum = ['only-token']; },
+    'nonempty requirement': doc => { doc.security[0].googleGenAIAuth = ['unknown-scope']; },
+    'invalid requirement': doc => { doc.security[0].googleGenAIAuth = null; },
+    'scheme collision': doc => { doc.components.securitySchemes.GeminiApiKey = { type: 'http', scheme: 'bearer' }; },
+    'credential collision': doc => { doc.security[0].GeminiApiKey = []; },
+    'provenance collision': doc => { doc['x-upstream-security'] = []; },
+    'permission collision': doc => { doc.paths['/v1beta/agents'].get['x-credential-permissions'] = []; },
+  };
+  assert.ok(changes[kind], `Unknown contract case: ${kind}`);
+  const document = geminiFixture(); changes[kind](document);
+  const before = structuredClone(document);
+  assert.throws(() => applySchemaPatches(document, [geminiAuthAlternatives]), /Gemini authentication adaptation/);
+  assert.deepEqual(document, before, 'A rejected correction cannot partially mutate the published source.');
 });
 
 Then('DigitalOcean corrections retain permissions provenance and authentication alternatives', () => {

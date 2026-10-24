@@ -9,6 +9,9 @@ Feature: Bundled service schema integrity
   Scenario: DigitalOcean bearer permissions no longer block private credential dispatch
     Then DigitalOcean published permissions become canonical metadata and dispatch private unchanged bearer tokens
 
+  Scenario: Gemini SDK authentication becomes private standard credential alternatives
+    Then Gemini published SDK authentication enables private API key and bearer requests without changing its source
+
   Scenario: Google OAuth grant aliases retain scopes provenance and other required credentials
     Then Google grant normalization preserves scope alternatives without weakening unrelated authentication
 

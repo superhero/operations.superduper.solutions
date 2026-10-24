@@ -14,6 +14,70 @@ import { createSchemaDiscovery, validateSchemaDiscovery } from './lib/schema-ind
 import { codexExecutionLimitation } from './lib/codex-schema.ts';
 import { extractOperationSecurity } from './lib/operation-security.ts';
 
+Then('Gemini published SDK authentication enables private API key and bearer requests without changing its source', async () => {
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const source = serviceSchemaDescriptors.find(source => source.id === 'gemini');
+  assert.deepEqual(source.patches, [{ id: 'gemini-auth-alternatives', version: 1 }]);
+  const published = await readServiceSchemaUpstream('gemini');
+  const corrected = await readServiceSchema('gemini');
+  assert.equal(source.sha256, 'c1187de634a269841d465bf550d90be48464ca5b206f7b0987375b208cb0c324');
+  assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
+  assert.equal(createHash('sha256').update(JSON.stringify(corrected)).digest('hex'), source.effectiveSha256);
+  assert.equal(Buffer.byteLength(JSON.stringify(corrected)), source.effectiveBytes);
+  assert.deepEqual(corrected.components.securitySchemes.googleGenAIAuth, published.components.securitySchemes.googleGenAIAuth);
+  assert.deepEqual(corrected['x-upstream-security'], published.security);
+  const before = inspectServiceSchema(published, 'gemini').operations;
+  const after = inspectServiceSchema(corrected, 'gemini').operations;
+  assert.equal(before.length, 37); assert.equal(after.length, 37);
+  let originalAuthFailures = 0;
+  for (const [path, item] of Object.entries(published.paths)) for (const [method, operation] of Object.entries(item)) {
+    if (!['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'].includes(method)) continue;
+    assert.throws(() => extractOperationSecurity(published, operation), /only HTTP bearer authentication is supported/);
+    originalAuthFailures++;
+    const alternatives = extractOperationSecurity(corrected, corrected.paths[path][method]);
+    assert.deepEqual(alternatives, [
+      [{ name: 'GeminiApiKey', kind: 'apiKey', header: 'x-goog-api-key' }],
+      [{ name: 'GeminiAccessToken', kind: 'bearer', header: 'Authorization' }],
+    ]);
+  }
+  assert.equal(originalAuthFailures, 37);
+  assert.ok(after.every(operation => !/security|authentication/i.test(operation.unavailableReason ?? '')));
+  const operation = after.find(operation => operation.id === 'gemini:ListAgents');
+  assert.equal(operation.unavailableReason, undefined);
+  const version = operation.fields.find(field => field.name === 'api_version');
+  assert.ok(version, 'The declared path version remains an ordinary workflow input.');
+  const descriptor = await approvedOperation(operation, 'https://generativelanguage.googleapis.com');
+  for (const [alternative, requirements] of operation.security.entries()) {
+    const scheme = requirements[0];
+    const secret = `gemini-${scheme.kind}-private-canary+/._-`;
+    const credential = { id: 'gemini-credential', label: 'Gemini credential', kind: 'secret', value: secret, grants: [] };
+    const binding = { fingerprint: descriptor.fingerprint, alternative, credentials: { [scheme.name]: credential.id } };
+    let calls = 0;
+    const result = await executeCredentialed(descriptor, { [version.key]: 'v1beta' }, binding, [credential], {
+      assertCurrent() {}, fetchRequest: async (url, init) => {
+        calls++;
+        assert.equal(String(url), 'https://generativelanguage.googleapis.com/v1beta/agents');
+        assert.equal(init.method, 'GET'); assert.equal(init.credentials, 'omit');
+        assert.equal(init.headers.get(scheme.header), scheme.kind === 'bearer' ? `Bearer ${secret}` : secret);
+        assert.equal(init.headers.has(scheme.kind === 'bearer' ? 'x-goog-api-key' : 'Authorization'), false,
+          'Only the selected credential alternative is sent.');
+        return new Response(JSON.stringify({ agents: [], reflected: secret }), { headers: { 'Content-Type': 'application/json' } });
+      },
+    });
+    assert.equal(calls, 1);
+    assert.ok(!JSON.stringify(result).includes(secret), 'Private results and previews scrub reflected credentials.');
+    assert.ok(!JSON.stringify(descriptor).includes(secret), 'The portable approval retains no secret.');
+    const changed = await approvedOperation({ ...operation, path: '/v1beta/other' }, descriptor.origin);
+    await assert.rejects(executeCredentialed(changed, {}, binding, [credential], { assertCurrent() {}, fetchRequest: async () => {
+      assert.fail('A stale destination binding must be rejected before fetch.');
+    } }), { code: 'PERMISSION' });
+  }
+  console.log(JSON.stringify({ provider: 'gemini', operations: after.length, independentAuthBefore: originalAuthFailures,
+    independentAuthAfter: 0, available: after.filter(operation => !operation.unavailableReason).length,
+    limitations: after.flatMap(operation => operation.unavailableReason ? [{ id: operation.id, reason: operation.unavailableReason }] : []) }));
+});
+
 Then('DigitalOcean published permissions become canonical metadata and dispatch private unchanged bearer tokens', async () => {
   const { executeCredentialed } = await import('./lib/secrets/execution.ts');
   const { approvedOperation } = await import('./lib/secrets/policy.ts');

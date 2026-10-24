@@ -35,6 +35,29 @@ Then('DigitalOcean revisions compare published security with retained token perm
   await card.screenshot({ path: `${this.artifactDirectory}/digitalocean-correction.png` });
 });
 
+Then('Gemini revisions compare SDK authentication with separate standard credential choices', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = await expandSchemaCard(page.locator('[data-schema-id="gemini"]'));
+  await card.getByRole('button', { name: 'Schema revisions', exact: true }).click();
+  const history = card.locator('.schema-history');
+  await expect(history.locator('[data-version-oid]')).toHaveCount(2);
+  await expect(history.getByText('Apply schema corrections: Gemini authentication alternatives', { exact: true })).toBeVisible();
+  const diff = history.locator('.revision-diff');
+  await expect(diff).toHaveAttribute('aria-busy', 'false');
+  const group = diff.locator('.change-group').filter({ has: page.locator(':scope > summary strong', { hasText: 'Authentication' }) });
+  await group.locator(':scope > summary').click();
+  const security = group.locator('.field-change').filter({ has: page.locator(':scope > summary code[title="/security"]') });
+  await security.locator(':scope > summary').click();
+  await expect(security.locator('.field-content')).toHaveAttribute('aria-busy', 'false');
+  await expect(security.locator('[data-side="before"]')).toContainText('googleGenAIAuth');
+  await expect(security.locator('[data-side="after"]')).toContainText('GeminiApiKey');
+  await expect(security.locator('[data-side="after"]')).toContainText('GeminiAccessToken');
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await card.screenshot({ path: `${this.artifactDirectory}/gemini-correction.png` });
+});
+
 Then('schema revisions open without flashing disabled comparison controls', async function () {
   const page = this.page;
   await setMode(page, 'settings');

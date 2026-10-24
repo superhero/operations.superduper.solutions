@@ -189,6 +189,7 @@ restores their recorded original requirements only when those exactly explain
 the earlier correction. Generic parsing retains strict auth AND semantics.
 For the DigitalOcean correction, select `--profile=digitalocean-permissions`
 instead; published packs remain unchanged in either case.
+For Gemini's reviewed SDK authentication, use `--profile=gemini-auth`.
 
 ### Available operations
 
@@ -293,6 +294,19 @@ changed permissions invalidate existing credential bindings. Tokens pass through
 unchanged; the provider enforces their permissions. This correction uses the same
 published/corrections/working Git history and upstream merge path as Google.
 Generic bearer and API-key parsing still rejects nonempty security arrays.
+Gemini's versioned `gemini-auth-alternatives` correction translates the reviewed
+`googleGenAIAuth` declaration into separate header API-key and bearer alternatives.
+Only declared plain-string `apiKey` and `accessToken` choices are used, on the
+reviewed Generative Language endpoint. SDK `defaultHeaders` is not authentication.
+The original custom definition and security requirements remain inspectable;
+other required credentials and explicit anonymous overrides retain their meaning.
+Ambiguous SDK contracts and provenance/scheme collisions reject the correction.
+An upstream standard API-key or bearer fix needs no further adaptation. Uploaded
+custom schemes remain unsupported unless an existing reviewed correction applies;
+no schema extension executes code. The [provider schema](https://ai.google.dev/static/api/interactions.openapi.json)
+and [authentication guide](https://ai.google.dev/gemini-api/docs/oauth) describe
+these credential transports. This adds no login or refresh flow, and does not
+qualify real accounts, quotas or browser CORS.
 AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
 and the API's own authorization rules still apply.
 
