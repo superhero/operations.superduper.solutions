@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
+import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
@@ -366,6 +367,10 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (privatePath) extracted.privatePath = privatePath;
       const security = inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
+      if (security?.flat().some(scheme => scheme.kind === "aws-sigv4")) {
+        configureAwsSigning(extracted);
+        if (!validAwsSigningModel(extracted)) throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
+      }
       if (operation["x-operations-credential-result"] === true) {
         extracted.credentialResult = true;
         extracted.unavailableReason = "This operation returns credentials. Private credential acquisition is not supported yet.";

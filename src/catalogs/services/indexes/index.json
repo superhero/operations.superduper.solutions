@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "4e08deb1ae4c527e489a7b8f8f35c20386fabba36c2eced22687141eea42fb3b",
+  "adapterRevision": "b40c98d21350b06c0fc7c72a64db09bbc931c2efc84189aa34d8021ef92945d1",
   "indexes": [
     {
       "id": "anthropic",
@@ -606,9 +606,9 @@
     {
       "id": "aws-apigatewayv2",
       "sourceRevision": "fec5b78bf48681187bd549d526da351d49a8e04d76e99a3248c37deb20c50f18",
-      "bytes": 26553,
-      "compressedBytes": 1940,
-      "sha256": "0b2e2b76d695e5fef25cd30dea1ccf99cdb84e88caa7a156df0507480a142b32",
+      "bytes": 30543,
+      "compressedBytes": 2031,
+      "sha256": "fccbdb93c5d5f6bb8ff5d5eba2802c7607a13c14e1053a238119fc91b823d6fb",
       "summary": {
         "name": "AmazonApiGatewayV2",
         "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
@@ -620,9 +620,9 @@
     {
       "id": "aws-apigateway",
       "sourceRevision": "356f372e1b3a48d7a22aed61c7c0797dc8af5c4ed550ac8e8babab68d83b8917",
-      "bytes": 45163,
-      "compressedBytes": 3050,
-      "sha256": "bcc7d11e5dae0201571db21704549c2c3f868a6bcef11250ac703d4f67c0167a",
+      "bytes": 51775,
+      "compressedBytes": 3181,
+      "sha256": "a1e33c3e35b858040a616ade4453f556bb36b27c06dc2d54bcc84e4242700fdc",
       "summary": {
         "name": "Amazon API Gateway",
         "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
@@ -662,9 +662,9 @@
     {
       "id": "aws-backup",
       "sourceRevision": "421781af6fbb43cf42a8d55dfbe68431a0df8c08d47afdd9c52404281a5e5990",
-      "bytes": 26972,
-      "compressedBytes": 2224,
-      "sha256": "d5e59c1ba46a871491d2e311299022820a343edeee95eba51f8ec9353fb34dc7",
+      "bytes": 31019,
+      "compressedBytes": 2340,
+      "sha256": "9495df0822d809c2804e6319a042789ac622811141fc419f6acb9286c5b6f80b",
       "summary": {
         "name": "AWS Backup",
         "serverUrl": "http://backup.us-east-1.amazonaws.com",
@@ -676,9 +676,9 @@
     {
       "id": "aws-batch",
       "sourceRevision": "d3b0ea44f93b92609c9766312593952f9fb10b8cbbd0c294445e8538c6ff86e2",
-      "bytes": 10871,
-      "compressedBytes": 1541,
-      "sha256": "b83a4a1fc051ff5472ab0a9596de921abdbfa52876bb9b08016639103ae8d278",
+      "bytes": 12182,
+      "compressedBytes": 1583,
+      "sha256": "a730d8d5d9f772d1c0aea93b83a9348748cadad942d89b3f7b86df23327f68fe",
       "summary": {
         "name": "AWS Batch",
         "serverUrl": "http://batch.us-east-1.amazonaws.com",
@@ -718,9 +718,9 @@
     {
       "id": "aws-cloudfront",
       "sourceRevision": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
-      "bytes": 44560,
-      "compressedBytes": 2999,
-      "sha256": "b8bd37dc6bef9bd0061fecf87b7f4b48d826f64dc1db5a7acb072a9d9a45a3ca",
+      "bytes": 48094,
+      "compressedBytes": 3082,
+      "sha256": "5db3911541c83f667657ba28886300bc9c3f3ef8ea3c54c59de8299428a5bbb0",
       "summary": {
         "name": "Amazon CloudFront",
         "serverUrl": "https://cloudfront.amazonaws.com",
@@ -914,9 +914,9 @@
     {
       "id": "aws-elasticfilesystem",
       "sourceRevision": "dade2231707fbb8542eaecdf0215aa791cb409dd608c7ee8336c4f1dee408bf2",
-      "bytes": 13779,
-      "compressedBytes": 1511,
-      "sha256": "1222263330f54c604da9ae3f3910783dbd0b20cb73f2ca9ab4f69c7adcf5d6f8",
+      "bytes": 15432,
+      "compressedBytes": 1579,
+      "sha256": "ff186bc9a4d8962ca7b4b9af363a5f7aa2a9d1c3b8637472164012fe68d42068",
       "summary": {
         "name": "Amazon Elastic File System",
         "serverUrl": "http://elasticfilesystem.us-east-1.amazonaws.com",
@@ -928,9 +928,9 @@
     {
       "id": "aws-eks",
       "sourceRevision": "476f3cff5ca1a16490dcf49ef5aee2c1041b9a1fa71289ae9ed5e5f7f643d302",
-      "bytes": 14466,
-      "compressedBytes": 1689,
-      "sha256": "b2dcd130906aec91207b1d9b8592893ee8dae01bce7ff6a90e147ece5543cc57",
+      "bytes": 16347,
+      "compressedBytes": 1754,
+      "sha256": "7b2151c5e8f4cc5085d5bc7d49e2cd8445ecdcfe9db3fbe8639e557d2d038e32",
       "summary": {
         "name": "Amazon Elastic Kubernetes Service",
         "serverUrl": "http://eks.us-east-1.amazonaws.com",
@@ -1054,23 +1054,23 @@
     {
       "id": "aws-lambda",
       "sourceRevision": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
-      "bytes": 32946,
-      "compressedBytes": 3501,
-      "sha256": "f56ae41dcf29b3ce4b79280d6c7931d3809287df4c6bd12907c9064190b862ce",
+      "bytes": 36199,
+      "compressedBytes": 3614,
+      "sha256": "c45747479e1274e1136989ac60dd247ef4c025c90ea47be00ac329b9bc4438c4",
       "summary": {
         "name": "AWS Lambda",
         "serverUrl": "http://lambda.us-east-1.amazonaws.com",
         "description": "<fullname>Lambda</fullname> <p> <b>Overview</b> </p> <p>Lambda is a compute service that lets you run code without provisioning or managing servers. Lambda runs your code on a high-availability compute infrastructure and performs all of the administration of the compute resources, including server and operating system maintenance, capacity provisioning and automatic scaling, code monitoring and logging. With Lambda, you can run code for virtually any type of application or backend service. For more information about the Lambda service, see <a href=\"https://docs.aws.amazon.com/lambda/latest/dg/welcome.html\">What is Lambda</a> in the <b>Lambda Developer Guide</b>.</p> <p>The <i>Lambda API Reference</i> provides information about each of the API methods, including details about the parameters in each API request and response. </p> <p/> <p>You can use Software Development Kits (SDKs), Integrated Development Environment (IDE) Toolkits, and command line tools to access the API. For installation instructions, see <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>. </p> <p>For a list of Region-specific endpoints that Lambda supports, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/lambda-service.html/\">Lambda endpoints and quotas </a> in the <i>Amazon Web Services General Reference.</i>. </p> <p>When making the API calls, you will need to authenticate your request by providing a signature. Lambda supports signature version 4. For more information, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html\">Signature Version 4 signing process</a> in the <i>Amazon Web Services General Reference.</i>. </p> <p> <b>CA certificates</b> </p> <p>Because Amazon Web Services SDKs use the CA certificates from your computer, changes to the certificates on the Amazon Web Services servers can cause connection failures when you attempt to use an SDK. You can prevent these failures by keeping your computer's CA certificates and operating system up-to-date. If you encounter this issue in a corporate environment and do not manage your own computer, you might need to ask an administrator to assist with the update process. The following list shows minimum operating system and Java versions:</p> <ul> <li> <p>Microsoft Windows versions that have updates from January 2005 or later installed contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Mac OS X 10.4 with Java for Mac OS X 10.4 Release 5 (February 2007), Mac OS X 10.5 (October 2007), and later versions contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Red Hat Enterprise Linux 5 (March 2007), 6, and 7 and CentOS 5, 6, and 7 all contain at least one of the required CAs in their default trusted CA list. </p> </li> <li> <p>Java 1.4.2_12 (May 2006), 5 Update 2 (March 2005), and all later versions, including Java 6 (December 2006), 7, and 8, contain at least one of the required CAs in their default trusted CA list. </p> </li> </ul> <p>When accessing the Lambda management console or Lambda API endpoints, whether through browsers or programmatically, you will need to ensure your client machines support any of the following CAs: </p> <ul> <li> <p>Amazon Root CA 1</p> </li> <li> <p>Starfield Services Root Certificate Authority - G2</p> </li> <li> <p>Starfield Class 2 Certification Authority</p> </li> </ul> <p>Root certificates from the first two authorities are available from <a href=\"https://www.amazontrust.com/repository/\">Amazon trust services</a>, but keeping your computer up-to-date is the more straightforward solution. To learn more about ACM-provided certificates, see <a href=\"http://aws.amazon.com/certificate-manager/faqs/#certificates\">Amazon Web Services Certificate Manager FAQs.</a> </p>",
         "operationCount": 66,
-        "unavailableCount": 66
+        "unavailableCount": 65
       }
     },
     {
       "id": "aws-opensearch",
       "sourceRevision": "01d0ee509fc29cefc2403b8dff507be3bba690f3583710fe9b95bedb5a519d9e",
-      "bytes": 22923,
-      "compressedBytes": 2106,
-      "sha256": "c9331e8cf364f8baa94585f1848089a5a91481a08075a39c92cae2c3b102e62d",
+      "bytes": 25944,
+      "compressedBytes": 2209,
+      "sha256": "ae31b2a58044b1ba6fc0d9d57552970da51c74e50c1e3f1806ef810288c0f4e9",
       "summary": {
         "name": "Amazon OpenSearch Service",
         "serverUrl": "http://es.us-east-1.amazonaws.com",
@@ -1096,9 +1096,9 @@
     {
       "id": "aws-polly",
       "sourceRevision": "62fa911eba1d9141664783718fa74d34c1ba257025cd72df5a057e54d796ff55",
-      "bytes": 4286,
-      "compressedBytes": 861,
-      "sha256": "76ce10d9010e0942a378283acbd406db8c7c44232159e08783435d7f4c04d954",
+      "bytes": 4799,
+      "compressedBytes": 892,
+      "sha256": "75d57570db55377e34505e60212c6ce8058a6230b7ed82384337a2148114f836",
       "summary": {
         "name": "Amazon Polly",
         "serverUrl": "http://polly.us-east-1.amazonaws.com",
@@ -1152,9 +1152,9 @@
     {
       "id": "aws-route53",
       "sourceRevision": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
-      "bytes": 27784,
-      "compressedBytes": 2484,
-      "sha256": "08a0258800659fc0be77da6c397777084a655e5a954df83caa8a84fcacd66057",
+      "bytes": 30349,
+      "compressedBytes": 2566,
+      "sha256": "13f61c0af4214f500ba0cd459e8958882248d893e7dfdf745f9eaccb2fa71357",
       "summary": {
         "name": "Amazon Route 53",
         "serverUrl": "https://route53.amazonaws.com",
@@ -1166,15 +1166,15 @@
     {
       "id": "aws-s3",
       "sourceRevision": "2c1283af457c374eea21b36eda33edbebd1d331b8954dff16c332d22881d212d",
-      "bytes": 31010,
-      "compressedBytes": 2374,
-      "sha256": "7a75c92976861ca37d668f5cb5bd5482c9107d98b0cd4d2bb9915ec41380335d",
+      "bytes": 32012,
+      "compressedBytes": 2440,
+      "sha256": "5ea5b0e08458b3ff7acf14e9345d2c4216146352d90b1fb22e4f6a602aaa5c74",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "http://s3.us-east-1.amazonaws.com",
         "description": "<p/>",
         "operationCount": 97,
-        "unavailableCount": 91
+        "unavailableCount": 97
       }
     },
     {
@@ -1208,9 +1208,9 @@
     {
       "id": "aws-runtime-sagemaker",
       "sourceRevision": "d8a12efce47afa804033ea5428ae5168ebb8e100397672464aecc0ca6a16b7bf",
-      "bytes": 1496,
-      "compressedBytes": 584,
-      "sha256": "4e58195f4a7134e7e951408ac45e6265d8f1cfa88b8748d0554ffbe27371ec46",
+      "bytes": 1553,
+      "compressedBytes": 606,
+      "sha256": "f26d63f056397cd24e9d77c23ebf00d7298e208649e3b0f6e360a17c856b97d0",
       "summary": {
         "name": "Amazon SageMaker Runtime",
         "serverUrl": "http://runtime.sagemaker.us-east-1.amazonaws.com",
@@ -1236,9 +1236,9 @@
     {
       "id": "aws-sesv2",
       "sourceRevision": "d8193d3b10ba22cf265b0fe76ff4474dbe8eb052a8b407c96eeda4d20b564aa5",
-      "bytes": 34737,
-      "compressedBytes": 2753,
-      "sha256": "3b1c50f007ace0cf9af0e70a8c46331397719c82c1e13b8bd3a97135245d220c",
+      "bytes": 39411,
+      "compressedBytes": 2895,
+      "sha256": "6ffec377f444436e2e29ac1d11ddf5476edc989c72140f9649d62dd3ea7fe27d",
       "summary": {
         "name": "Amazon Simple Email Service",
         "serverUrl": "http://email.us-east-1.amazonaws.com",

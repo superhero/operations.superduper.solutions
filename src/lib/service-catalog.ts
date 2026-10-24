@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
+import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
@@ -119,6 +120,11 @@ function security(document: Value, source: Value, operation: Operation): Operati
   }
   const schemes = value(value(document.components).securitySchemes);
   const normalizedSchemes = { ...schemes };
+  if (lambdaSigningCandidate(operation)) for (const [name, raw] of Object.entries(schemes)) {
+    const definition = resolve(raw, document);
+    if (definition["x-amazon-apigateway-authtype"] === "awsSigv4" && definition["x-operations-aws-sigv4"] === undefined)
+      normalizedSchemes[name] = { ...definition, "x-operations-aws-sigv4": awsRestProfile };
+  }
   let oauth = false;
   const requirements = declaration.map(raw => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Security requirements must be objects.");
@@ -128,7 +134,7 @@ function security(document: Value, source: Value, operation: Operation): Operati
       if (!Array.isArray(scopes) || scopes.some(scope => typeof scope !== "string")) throw new Error("OAuth scopes must be strings.");
       oauth = true;
       Object.defineProperty(normalizedSchemes, name, { value: { type: "http", scheme: "bearer",
-        ...(definition["x-amazon-apigateway-authtype"] === "awsSigv4" ? { "x-amazon-apigateway-authtype": "awsSigv4" } : {}) }, enumerable: true, configurable: true });
+        ...(awsSigningMarker(definition) ? { "x-amazon-apigateway-authtype": definition["x-amazon-apigateway-authtype"] } : {}) }, enumerable: true, configurable: true });
       return [name, []];
     }));
   });
@@ -248,6 +254,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         }
         const authorization = security(document, source, operation);
         if (authorization !== undefined) operation.security = authorization;
+        if (authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
         const responses = value(source.responses);
         const stream = responseStreamProfile(source["x-operations-response-stream"]);
         if (stream) operation.responseStream = stream;
@@ -259,6 +266,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         if (mediaType) operation.responseMediaType = mediaType;
         const media = value(content[mediaType!]);
         if (media.example !== undefined) operation.responseExample = media.example;
+        if (operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4") && !validAwsSigningModel(operation))
+          throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
         if (operation.credentialResult) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
       }
       catch (error) { operation.unavailableReason = error instanceof Error ? error.message : String(error); }

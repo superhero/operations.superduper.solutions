@@ -18,6 +18,9 @@ import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
 import { CloudflareUploadSessions, type CloudflareUploadLease } from "./cloudflare-upload.ts";
 import { cloudflareSessionField, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
+import { signAwsRequest, type AwsSigningValues } from "./aws-sigv4.ts";
+import { awsCredentialParts, isAwsCredentialReference } from "./bindings.ts";
+import { awsSigningHeaders, lambdaSigningRegion } from "../aws-signing.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
 export type CredentialExecutionResult = WorkflowExecutionResult & { response: CredentialResponse };
@@ -108,12 +111,13 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const injectedQueries = new Map<string, string>();
     let pathToken: string | undefined;
     let oauth1: OAuth1Values | undefined, uploadReference: string | undefined;
-    const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey" | "oauth1", connectedHeader = false): string => {
+    let aws: AwsSigningValues | undefined, awsSignedAt: number | undefined;
+    const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey" | "oauth1" | "aws-sigv4", connectedHeader = false): string => {
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
       const credential = matches[0]!;
       if (!["secret", "bearer", "apiKey"].includes(credential.kind)
-        || !connectedHeader && !["basic", "oauth1"].includes(kind) && credential.kind !== "secret" && credential.kind !== kind) throw new VaultError("PERMISSION");
+        || !connectedHeader && !["basic", "oauth1", "aws-sigv4"].includes(kind) && credential.kind !== "secret" && credential.kind !== kind) throw new VaultError("PERMISSION");
       if (typeof credential.value !== "string" || !credential.value.length || credential.value !== credential.value.trim()
         || /[^\u0020-\u007e]/.test(credential.value) || new TextEncoder().encode(credential.value).byteLength > vaultLimits.secretBytes)
         throw new VaultError("INVALID");
@@ -128,6 +132,9 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         const supplied = inputSnapshot[cloudflareSessionField];
         if (supplied !== undefined && supplied !== reference) throw new VaultError("PERMISSION");
         delete inputSnapshot[cloudflareSessionField];
+      } else if (scheme.kind === "aws-sigv4") {
+        if (!isAwsCredentialReference(reference) || alternative.length !== 1 || !lambdaSigningRegion(approved.origin)) throw new VaultError("PERMISSION");
+        aws = Object.fromEntries(awsCredentialParts.flatMap(part => reference[part] ? [[part, credentialValue(reference[part]!, "aws-sigv4")]] : [])) as AwsSigningValues;
       } else if (scheme.kind === "oauth1") {
         if (!isOAuth1CredentialReference(reference) || scheme.profile !== "x-hmac-sha1" || alternative.length !== 1
           || approved.origin !== "https://api.x.com" || !approved.operation.path.startsWith("/2/")) throw new VaultError("PERMISSION");
@@ -225,13 +232,21 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     {
       const normalized = name.toLowerCase();
       if (publicHeaders.has(normalized) || authHeaders.has(normalized) || normalized === "authorization"
-        || normalized === "proxy-authorization" || normalized === "cookie") throw new VaultError("PERMISSION");
+        || normalized === "proxy-authorization" || normalized === "cookie" || aws && awsSigningHeaders.has(normalized)) throw new VaultError("PERMISSION");
       publicHeaders.add(normalized);
       headers.set(name, value);
     }
     if (request.body !== undefined && request.contentType !== "multipart/form-data") headers.set("Content-Type", request.contentType ?? "application/json");
     for (const [name, value] of injected) headers.set(name, value);
-    const body = requestBody(request);
+    let body = requestBody(request);
+    if (aws) {
+      await options.assertCurrent(); if (signal.aborted) throw new VaultError("CANCELLED");
+      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, { service: "lambda", region: lambdaSigningRegion(approved.origin)! });
+      for (const [name, value] of signed.headers) headers.set(name, value);
+      body = signed.body ?? null; awsSignedAt = signed.signedAt;
+      secrets = [...new Set([...secrets, ...signed.secrets].flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
+        .sort((a, b) => b.length - a.length);
+    }
     if (oauth1) {
       await options.assertCurrent();
       if (signal.aborted) throw new VaultError("CANCELLED");
@@ -245,6 +260,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");
     if (privateUpload) options.uploadSessions!.assertCurrent(uploadLease);
+    if (awsSignedAt !== undefined && Math.abs(Date.now() - awsSignedAt) > 60000) throw new VaultError("PERMISSION");
     phase = "request";
     const response = await (options.fetchRequest ?? globalThis.fetch)(url.href, {
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,

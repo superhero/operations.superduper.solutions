@@ -387,8 +387,10 @@ A supported OR alternative can execute independently, while an operation with
 no supported choice remains unavailable. Missing definitions, malformed scope
 arrays and conflicting credential destinations still reject the operation.
 The strict security extraction API remains strict; service and authored-model
-inspection use capability-aware extraction. Existing SigV4 requirements stay
-unavailable, including when another authentication choice is supported.
+inspection use capability-aware extraction. AWS signing declarations retain
+their signing requirement. The reviewed [Lambda SigV4 profile](../aws-signing.md)
+can execute privately; other signing/wire profiles remain unavailable, including
+when another authentication choice is supported.
 
 The credential chooser disables unavailable alternatives and explains why.
 Saved selections keep their original alternative index and vault IDs across
@@ -396,7 +398,8 @@ reload. Complete canonical approvals retain unavailable metadata and reject
 selection of any unavailable AND member in private execution and credential
 grants. An explicit anonymous choice still requires an explicit selection when
 other alternatives exist. All-supported metadata and approval fingerprints are
-unchanged. OAuth1 execution and automatic authentication fallback remain unsupported.
+unchanged. The reviewed X OAuth1 profile also signs private requests. Automatic
+authentication fallback remains unsupported.
 
 HTTP Basic uses two existing vault entries: a username and a password or API
 token. A local binding stores an exact `{ username, password }` pair of opaque

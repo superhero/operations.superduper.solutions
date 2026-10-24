@@ -78,6 +78,12 @@ export async function seedOAuth1(origin: string, run: string) {
   }
 }
 
+export async function seedAWS(origin: string, run: string, values: Record<string, string>) {
+  await seed(origin, run);
+  for (const [part, value] of Object.entries(values))
+    await session.put(null, { label: "AWS " + part, kind: "secret", value });
+}
+
 export async function run(changed = false) {
   const destination = changed ? await approvedOperation({ ...descriptor.operation, path: "/unapproved" }, descriptor.origin) : descriptor;
   try { return { value: await session.execute(destination, {}, binding) }; }

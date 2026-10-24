@@ -10,6 +10,7 @@ import { exampleCatalogState } from './catalog-state.fixture.mjs';
 import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
 import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
+import { awsSyntheticValues, verifyAwsSignature } from '../aws-sigv4.fixture.mjs';
 
 const fixture = '/vault-storage-fixture.js';
 const canaries = ['browser-VAULT-password-9182', 'browser-BEARER-canary-9182', 'browser-APIKEY-canary-9182', 'browser-PRIVATE-label-9182'];
@@ -1107,6 +1108,66 @@ Then('the Anthropic {string} selection preserves private headers and saved refer
 });
 Then('the ElevenLabs private key connection survives reload without exposing credentials', { timeout: 90_000 }, async function () {
   await privateHeaderSelection.call(this, 'connected API key', 'ElevenLabs');
+});
+
+Then('an AWS connection at {int} pixels signs a regional Lambda request after encrypted reload', { timeout: 60_000 }, async function (width) {
+  const page = this.page, seen = [], endpoint = 'https://lambda.us-east-1.amazonaws.com';
+  await page.setViewportSize({ width, height: 900 }); await invoke(page, 'seedAWS', this.baseURL, randomUUID(), awsSyntheticValues);
+  await this.context.route(endpoint+'/**', async route => {
+    const request = route.request(), headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    assert.equal(request.method(), 'GET'); assert.equal(request.postData(), null);
+    const signed = verifyAwsSignature(request.url(), { method: request.method(), headers: request.headers() });
+    assert.equal(request.headers().cookie, undefined); assert.equal(request.headers().referer, undefined);
+    const url = new URL(request.url()); assert.equal(url.pathname, '/2015-03-31/functions/');
+    assert.equal(url.searchParams.get('Marker'), 'next +/?=%雪'); assert.equal(url.searchParams.get('MaxItems'), '2');
+    seen.push(signed);
+    return route.fulfill({ status: 200, headers: { ...headers, 'Content-Type': 'application/json' }, body: '{"Functions":[]}' });
+  });
+  const name = 'AWS Lambda signing fixture';
+  const document = { openapi: '3.0.3', info: { title: name, version: '1' }, servers: [{ url: endpoint }], security: [{ hmac: [] }],
+    components: { securitySchemes: { hmac: { type: 'apiKey', in: 'header', name: 'Authorization',
+      'x-amazon-apigateway-authtype': 'awsSigv4', 'x-operations-aws-sigv4': 'lambda-list-functions' } } },
+    paths: { '/2015-03-31/functions/': { get: { operationId: 'ListFunctions', summary: name,
+      parameters: [{ name: 'Marker', in: 'query', required: true, schema: { type: 'string' } }, { name: 'MaxItems', in: 'query', required: true, schema: { type: 'integer' } }],
+      responses: { 200: { description: 'Functions', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'aws-lambda.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable '+name, exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: 'hmac', exact: true }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  for (const [part, label] of [['accessKeyId', 'Access key ID'], ['secretAccessKey', 'Secret access key'], ['sessionToken', 'Session token']]) {
+    await page.getByRole('combobox', { name: label+' for hmac', exact: true }).click();
+    await page.getByRole('option', { name: 'AWS '+part, exact: true }).click();
+  }
+  await page.getByText('Save as connection', { exact: true }).click();
+  await page.getByLabel('Connection name', { exact: true }).fill('AWS connection');
+  await page.getByLabel('Account label', { exact: true }).fill('AWS sandbox');
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click();
+  const connection = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connection).toContainText('AWS connection · AWS sandbox');
+  const binding = async () => (await repository(page, 'list')).flatMap(document => document.nodes).find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await binding())?.connection?.revision).toBe(1); assert.deepEqual((await binding()).credentials, {}); assert.equal(seen.length, 0);
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connection).toContainText('AWS connection · AWS sandbox'); await expect(connection).toBeEnabled();
+  // Run-form values are transient; saved connection references survive reload.
+  await page.getByRole('textbox', { name: 'Marker', exact: true }).fill('next +/?=%雪');
+  const maxItems = page.getByRole('slider', { name: 'MaxItems', exact: true });
+  await maxItems.press('ArrowRight'); await expect(maxItems).toHaveAttribute('aria-valuenow', '1');
+  await maxItems.press('ArrowRight'); await expect(maxItems).toHaveAttribute('aria-valuenow', '2');
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible(); assert.equal(seen.length, 1);
+  const privateValues = [...Object.values(awsSyntheticValues), seen[0].authorization, seen[0].signature];
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), await storage(page, 'read')])
+    for (const secret of privateValues) assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...privateValues]), []);
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/aws-sigv4-${width}.png` });
 });
 
 Then('an X OAuth1 connection at {int} pixels signs privately after selecting four stored credentials', { timeout: 60_000 }, async function (width) {

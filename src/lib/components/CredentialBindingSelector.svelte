@@ -10,6 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HttpConnectionSelector from "./HttpConnectionSelector.svelte";
   import type { Operation } from "../catalog.ts";
   import { supportedSecurityAlternative } from "../operation-security.ts";
+  import { awsCredentialParts, isAwsCredentialReference } from "../secrets/bindings.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { approvedOperation } from "../secrets/policy.ts";
   import { uploadSessionSelection, cloudflareSessionField, credentialSelectionForVariables, isBasicCredentialReference, isOAuth1CredentialReference, oauth1CredentialParts, credentialReferenceIds, validateCredentialBinding } from "../secrets/bindings.ts";
@@ -44,11 +45,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const unavailable = $derived([...new Set(operation.security?.flatMap(option => option.flatMap(scheme => scheme.kind === "unsupported" ? [scheme.reason] : [])) ?? [])]);
   function permitted(item: VaultKey, scheme: string): boolean {
     const kind = selected?.find(item => item.name === scheme)?.kind;
-    return kind === "basic" || kind === "oauth1" || item.kind === "secret" || item.kind === kind
+    return kind === "basic" || kind === "oauth1" || kind === "aws-sigv4" || item.kind === "secret" || item.kind === kind
       || selected?.some(candidate => candidate.name === scheme
         && credentialSelectionForVariables([[candidate]], variables)?.credentials[scheme] === item.id) === true;
   }
-  function choice(name: string, part?: "username" | "password" | typeof oauth1CredentialParts[number]): string {
+  function choice(name: string, part?: "username" | "password" | typeof oauth1CredentialParts[number] | typeof awsCredentialParts[number]): string {
     const reference = choices[name];
     return part ? reference && typeof reference === "object" ? (reference as Record<string, string>)[part] ?? "" : "" : typeof reference === "string" ? reference : "";
   }
@@ -58,6 +59,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     changed();
   }
   const oauth1Labels = { consumerKey: "Consumer key", consumerSecret: "Consumer secret", accessToken: "Access token", tokenSecret: "Access token secret" };
+  const awsLabels = { accessKeyId: "Access key ID", secretAccessKey: "Secret access key", sessionToken: "Session token" };
+  function awsChoice(name: string, part: typeof awsCredentialParts[number], value: string) {
+    const sessionToken = part === "sessionToken" ? value : choice(name, "sessionToken");
+    choices = { ...choices, [name]: {
+      accessKeyId: part === "accessKeyId" ? value : choice(name, "accessKeyId"),
+      secretAccessKey: part === "secretAccessKey" ? value : choice(name, "secretAccessKey"),
+      ...(sessionToken ? { sessionToken } : {}),
+    } }; changed();
+  }
   function oauth1Choice(name: string, part: typeof oauth1CredentialParts[number], id: string) {
     const previous = choices[name];
     choices = { ...choices, [name]: { consumerKey: "", consumerSecret: "", accessToken: "", tokenSecret: "",
@@ -78,6 +88,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (scheme.kind === "basic") return !isBasicCredentialReference(reference)
         || [reference.username, reference.password].some(id => !credentials.some(item => item.id === id && permitted(item, name)));
       if (scheme.kind === "oauth1") return !isOAuth1CredentialReference(reference)
+        || credentialReferenceIds(reference).some(id => !credentials.some(item => item.id === id && permitted(item, name)));
+      if (scheme.kind === "aws-sigv4") return !isAwsCredentialReference(reference)
         || credentialReferenceIds(reference).some(id => !credentials.some(item => item.id === id && permitted(item, name)));
       return typeof reference !== "string" || !credentials.some(item => item.id === reference && permitted(item, name));
     })) { manualBinding = undefined; publish(); return; }
@@ -169,6 +181,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <div class="credential-choice">
             {#if scheme.kind === "cloudflare-upload"}
               <p class="hint">Connect the session reference from the preceding Cloudflare upload step to Private upload session. The token stays in the vault worker and expires when it is locked.</p>
+            {:else if scheme.kind === "aws-sigv4"}
+              <p class="credential-name">{scheme.name} · AWS Signature Version 4</p>
+              <p class="hint">Choose stored AWS credentials. The configured HTTPS Lambda endpoint determines the region; the signing service is lambda. Add the session token when using temporary credentials.</p>
+              {#each awsCredentialParts as part}
+                <label for={`${fieldId}-credential-${index}-${part}`}>{awsLabels[part]}{part === "sessionToken" ? " (optional)" : ""}</label>
+                <FieldSelect id={`${fieldId}-credential-${index}-${part}`} label={`${awsLabels[part]} for ${scheme.name}`} value={choice(scheme.name, part)}
+                  disabled={disabled || busy} {portalZIndex} includePlaceholder={part !== "sessionToken"}
+                  options={[...(part === "sessionToken" ? [{ value: "", label: "No session token" }] : []), ...credentials.map(item => ({ value: item.id, label: item.label }))]}
+                  onValueChange={value => awsChoice(scheme.name, part, value)} />
+              {/each}
             {:else if scheme.kind === "oauth1"}
               <p class="credential-name">{scheme.name} · OAuth 1.0a</p>
               <p class="hint">Choose your existing X application and user access credentials. Requests are signed privately with HMAC-SHA1.</p>

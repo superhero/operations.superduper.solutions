@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { telegramPrivateEndpoint, telegramPathSecurity } from "./server-url.ts";
+import { awsRestProfile, awsSigningMarker } from "./aws-signing.ts";
 
 export type OperationSecurityScheme =
+  | { name: string; kind: "aws-sigv4"; header: "Authorization"; profile: "lambda-list-functions"; query?: never; path?: never }
   | { name: string; kind: "cloudflare-upload"; header: "Authorization"; profile: "workers" | "pages"; query?: never; path?: never }
   | { name: string; kind: "oauth1"; header: "Authorization"; profile: "x-hmac-sha1"; query?: never; path?: never }
   | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never; path?: never }
@@ -15,7 +17,7 @@ export type OperationSecurityRequirement = OperationSecurityScheme | Unavailable
 /** Alternatives retain source positions. Every member is required (AND), including unavailable members. */
 export type OperationSecurity = OperationSecurityRequirement[][];
 export function supportedSecurityAlternative(value: unknown): value is OperationSecurityScheme[] {
-  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "basic", "apiKey", "oauth1", "cloudflare-upload"].includes(scheme.kind));
+  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "basic", "apiKey", "oauth1", "cloudflare-upload", "aws-sigv4"].includes(scheme.kind));
 }
 /** Permission metadata is aligned with the security alternatives, not OAuth flows. */
 export type CredentialPermissions = Record<string, string[]>[];
@@ -115,8 +117,12 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean):
     throw new Error(`${context}: description must be a string.`);
   if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))
     throw new Error(`${context}: unsupported security scheme fields.`);
-  if (definition["x-amazon-apigateway-authtype"] === "awsSigv4")
-    result = { ...result, kind: "unsupported", reason: "This API requires AWS Signature Version 4 request signing, which is not supported here." };
+  if (awsSigningMarker(definition))
+    result = definition["x-amazon-apigateway-authtype"] === "awsSigv4" && definition["x-operations-aws-sigv4"] === awsRestProfile
+      && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsRestProfile }
+      : { ...result, kind: "unsupported", reason: "This API requires AWS Signature Version 4 request signing with a supported wire profile. This operation's signing profile is not supported here." };
+  else if (definition["x-operations-aws-sigv4"] !== undefined) throw new Error(`${context}: an AWS signing profile requires an AWS signing declaration.`);
   if (result.kind === "unsupported" && !allowUnsupported) throw new Error(result.reason);
   return result;
 }

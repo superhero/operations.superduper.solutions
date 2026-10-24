@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { canonicalPolicyValue, validateApprovedOperation } from "./policy.ts";
-import { credentialObject, credentialReferenceIds, isBasicCredentialReference, isOAuth1CredentialReference, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
+import { credentialObject, credentialReferenceIds, isBasicCredentialReference, isOAuth1CredentialReference, isAwsCredentialReference, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
 import { VaultError, type ApprovedOperation, type CredentialBinding, type HttpConnection, type HttpConnectionInput,
   type HttpConnectionReference, type HttpTokenFormat, type VaultCredential } from "./types.ts";
@@ -47,8 +47,9 @@ export function validateHttpConnection(value: unknown): HttpConnection {
   const binding = validateCredentialBinding({ alternative: item.alternative, credentials: item.credentials, fingerprint: item.fingerprint });
   if (!supportedSecurityAlternative(item.security) || !item.security.length || item.security.length > 16) throw new VaultError("INVALID");
   const security = item.security.map(scheme => {
-    ownObject(scheme, ["name", "kind", scheme.path !== undefined ? "path" : scheme.query === undefined ? "header" : "query", ...(scheme.kind === "oauth1" ? ["profile"] : [])]);
+    ownObject(scheme, ["name", "kind", scheme.path !== undefined ? "path" : scheme.query === undefined ? "header" : "query", ...(["oauth1", "aws-sigv4"].includes(scheme.kind) ? ["profile"] : [])]);
     if (scheme.kind === "oauth1" && (scheme.profile !== "x-hmac-sha1" || scheme.header !== "Authorization")) throw new VaultError("INVALID");
+    if (scheme.kind === "aws-sigv4" && (scheme.profile !== "lambda-list-functions" || scheme.header !== "Authorization")) throw new VaultError("INVALID");
     if (typeof scheme.name !== "string" || typeof (scheme.header ?? scheme.query ?? scheme.path) !== "string"
       || !Object.hasOwn(binding.credentials, scheme.name)) throw new VaultError("INVALID");
     return { ...scheme };
@@ -82,9 +83,10 @@ function assertReferences(connection: HttpConnection, records: readonly VaultCre
     const reference = connection.credentials[scheme.name]!;
     const ids = credentialReferenceIds(reference);
     if ((scheme.kind === "basic" ? !isBasicCredentialReference(reference)
-      : scheme.kind === "oauth1" ? !isOAuth1CredentialReference(reference) : typeof reference !== "string") || ids.some(id => {
+      : scheme.kind === "oauth1" ? !isOAuth1CredentialReference(reference)
+      : scheme.kind === "aws-sigv4" ? !isAwsCredentialReference(reference) : typeof reference !== "string") || ids.some(id => {
       const matches = records.filter(record => record.id === id);
-      return matches.length !== 1 || !["basic", "oauth1"].includes(scheme.kind) && !["secret", scheme.kind].includes(matches[0]!.kind);
+      return matches.length !== 1 || !["basic", "oauth1", "aws-sigv4"].includes(scheme.kind) && !["secret", scheme.kind].includes(matches[0]!.kind);
     })) throw new VaultError("PERMISSION");
   }
 }
