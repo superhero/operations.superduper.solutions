@@ -87,6 +87,10 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
           || canonical.security[binding.alternative]?.length !== 0 || Object.keys(binding.credentials).length)
           throw new VaultError("PERMISSION");
       }
+      const credentialHeaders = new Set((canonical.security ?? []).flat().flatMap(scheme => scheme.header ? [scheme.header.toLowerCase()] : []));
+      const credentialQueries = new Set((canonical.security ?? []).flat().flatMap(scheme => scheme.query ? [scheme.query] : []));
+      if (Object.keys(request.headers ?? {}).some(name => credentialHeaders.has(name.toLowerCase()))
+        || Object.keys(request.query).some(name => credentialQueries.has(name))) throw new VaultError("PERMISSION");
       const url = workflowRequestUrl(request, origin);
       if (request.method === "TRACE") throw new Error("Browsers do not permit TRACE requests.");
       const timeout = AbortSignal.timeout(15_000);

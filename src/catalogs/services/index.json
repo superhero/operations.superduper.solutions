@@ -1968,6 +1968,7 @@
     "name": "ElevenLabs",
     "url": "https://api.elevenlabs.io/openapi.json",
     "origin": "https://api.elevenlabs.io",
+    "profile": "elevenlabs-auth",
     "version": "1.0",
     "openapi": "3.1.0",
     "operations": 418,
@@ -1975,7 +1976,15 @@
     "sha256": "8cee136ec627a5557c61fca7650f69feeeb63d45fc4b1aea097f6f76b69f5c9e",
     "sourceSha256": "6bdc01ad54ab75168b7d1854b657b7aede36be67a7f3e6734946f15706e3fef6",
     "bytes": 2309762,
-    "compressedBytes": 305695
+    "compressedBytes": 305695,
+    "patches": [
+      {
+        "id": "elevenlabs-authentication",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "27493b88c935cdb3d67c4e95c6df3e7f93a9b8afe876e8f3fe2f8ad5180833fa",
+    "effectiveBytes": 2784202
   },
   {
     "id": "alfred",

@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/schema-merge.ts';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 
@@ -444,4 +444,81 @@ Then('Anthropic correction rejects the unreviewed contract {string}', kind => {
   };
   assert.ok(cases[kind]); cases[kind]();
   assert.throws(() => applySchemaPatches(source, [anthropicAuthentication]), /Anthropic authentication adaptation/);
+});
+
+const elevenLabsFixture = () => ({ openapi: '3.1.0', info: { title: 'ElevenLabs API Documentation', version: '1.0' },
+  servers: [{ url: 'https://api.elevenlabs.io' }], components: { schemas: { Token: { type: 'object', properties: { token: { type: 'string' } } } } }, paths: {
+    '/v1/history': { get: { operationId: 'history', parameters: [{ name: 'xi-api-key', in: 'header', schema: { type: 'string' } }],
+      responses: { 200: { description: 'History', content: { 'application/json': { schema: { type: 'object', properties: { next_page_token: { type: 'string' } } } } } } } } },
+    '/v1/voices/settings/default': { get: { operationId: 'defaults', responses: { 200: { description: 'Public', content: { 'application/json': { schema: { type: 'object' } } } } } } },
+    '/v1/models': { get: { operationId: 'models', responses: { 200: { description: 'Public models', content: { 'application/json': { schema: { type: 'object' } } } } } } },
+    '/v1/single-use-token/{token_type}': { post: { operationId: 'token', parameters: [
+      { name: 'token_type', in: 'path', required: true, schema: { type: 'string' } }, { name: 'xi-api-key', in: 'header', schema: { type: 'string' } }],
+      responses: { 200: { description: 'Credential', content: { 'application/json': { schema: { $ref: '#/components/schemas/Token' } } } } } } },
+  } });
+Then('ElevenLabs corrections preserve public choices source headers and blocked credential results', async () => {
+  const source = elevenLabsFixture(), before = structuredClone(source), corrected = applySchemaPatches(source, [elevenLabsAuthentication]);
+  assert.deepEqual(source, before); assert.equal(schemaPatchName(elevenLabsAuthentication), 'ElevenLabs authentication and credential results');
+  assert.deepEqual(corrected.security, [{ ElevenLabsApiKey: [] }]); assert.equal(corrected['x-upstream-security'], null);
+  assert.deepEqual(corrected.paths['/v1/history'], source.paths['/v1/history']);
+  assert.deepEqual(corrected.paths['/v1/voices/settings/default'].get.security, []);
+  assert.deepEqual(corrected.paths['/v1/models'].get.security, [{}, { ElevenLabsApiKey: [] }]);
+  assert.equal(corrected.paths['/v1/single-use-token/{token_type}'].post['x-operations-credential-result'], true);
+  assert.equal(corrected.paths['/v1/history'].get['x-operations-credential-result'], undefined, 'Pagination tokens are ordinary data.');
+  assert.deepEqual(applySchemaPatches(corrected, [elevenLabsAuthentication]), corrected);
+  const nullable = elevenLabsFixture(); nullable.paths['/v1/history'].get.parameters[0].schema = { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Original key' };
+  const connected = applySchemaPatches(nullable, [elevenLabsAuthentication]);
+  assert.deepEqual(connected.paths['/v1/history'].get.parameters[0].schema, { type: 'string', nullable: true, description: 'Original key' });
+  assert.deepEqual(connected.paths['/v1/history'].get['x-upstream-parameters'], nullable.paths['/v1/history'].get.parameters);
+  assert.deepEqual(applySchemaPatches(connected, [elevenLabsAuthentication]), connected);
+
+  const fixed = structuredClone(source); fixed.security = [{ Fixed: [] }]; fixed.components.securitySchemes = { Fixed: { type: 'http', scheme: 'bearer' } };
+  fixed.paths['/v1/history'].get.security = [];
+  const retained = applySchemaPatches(fixed, [elevenLabsAuthentication]);
+  assert.deepEqual(retained.security, fixed.security); assert.deepEqual(retained.paths['/v1/history'].get.security, []);
+  assert.equal(retained.paths['/v1/single-use-token/{token_type}'].post['x-operations-credential-result'], true, 'Upstream auth fixes cannot enable credential results.');
+  const { extractOperations } = await import('./lib/catalog.ts');
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const { prepareRequest } = await import('./lib/operation-input.ts');
+  for (const models of [inspectServiceSchema(corrected, 'eleven-fixture').operations, extractOperations(corrected, 'eleven-fixture')]) {
+    const token = models.find(model => model.id.endsWith(':token'));
+    assert.equal(token.credentialResult, true); assert.match(token.unavailableReason, /returns credentials/);
+    await assert.rejects(approvedOperation({ ...token, unavailableReason: undefined }, 'https://api.elevenlabs.io'), { code: 'PERMISSION' });
+    assert.throws(() => prepareRequest({ ...token, unavailableReason: undefined }, {}), /returns credentials/);
+  }
+  for (const marker of [false, 'true', {}]) {
+    const invalid = structuredClone(corrected); invalid.paths['/v1/history'].get['x-operations-credential-result'] = marker;
+    assert.throws(() => extractOperations(invalid, 'invalid'), /metadata must be true/);
+    assert.match(inspectServiceSchema(invalid, 'invalid').operations[0].unavailableReason, /metadata must be true/);
+  }
+});
+Then('ElevenLabs correction rejects the unreviewed contract {string}', kind => {
+  const source = elevenLabsFixture(), op = source.paths['/v1/history'].get;
+  const cases = {
+    'provider': () => { source.info.title = 'Other'; },
+    'version': () => { source.info.version = '2.0'; },
+    'OpenAPI version': () => { source.openapi = '3.0.3'; },
+    'destination': () => { source.servers[0].url = 'https://other.test'; },
+    'extra destination': () => { source.servers.push({ url: 'https://other.test' }); },
+    'operation destination': () => { op.servers = [{ url: 'https://other.test' }]; },
+    'path destination': () => { source.paths['/v1/history'].servers = [{ url: 'https://other.test' }]; },
+    'missing components': () => { delete source.components; },
+    'missing paths': () => { delete source.paths; },
+    'malformed path': () => { source.paths['/v1/history'] = null; },
+    'unknown anonymous route': () => { source.paths['/v1/unreviewed'] = { get: { responses: {} } }; },
+    'missing key': () => { op.parameters = []; },
+    'duplicate key': () => { op.parameters.push(structuredClone(op.parameters[0])); },
+    'key type': () => { op.parameters[0].schema.type = 'number'; },
+    'scheme collision': () => { source.components.securitySchemes = { ElevenLabsApiKey: { type: 'http', scheme: 'basic' } }; },
+    'security provenance': () => { source['x-upstream-security'] = []; },
+    'route provenance': () => { op['x-upstream-security'] = []; },
+    'permissions': () => { source['x-credential-permissions'] = []; },
+    'credential metadata': () => { op['x-operations-credential-result'] = false; },
+    'parameter provenance': () => { op.parameters[0].schema = { anyOf: [{ type: 'string' }, { type: 'null' }] }; op['x-upstream-parameters'] = []; },
+    'changed nullable key': () => { op.parameters[0].schema = { anyOf: [{ type: 'string', minLength: 1 }, { type: 'null' }] }; },
+    'external result reference': () => { source.components.schemas.Token = { $ref: 'https://other.test/token.json' }; },
+    'cyclic result reference': () => { source.components.schemas.Token = { $ref: '#/components/schemas/Token' }; },
+    'missing result reference': () => { delete source.components.schemas.Token; },
+  };
+  assert.ok(cases[kind]); cases[kind](); assert.throws(() => applySchemaPatches(source, [elevenLabsAuthentication]), /ElevenLabs authentication adaptation/);
 });

@@ -56,6 +56,8 @@ export type Operation = {
   unavailableReason?: string;
   oauthScopes?: Record<string, string[]>[];
   credentialPermissions?: CredentialPermissions;
+  /** Credential acquisition needs a private result handler, not a JSON output. */
+  credentialResult?: true;
 };
 
 type RecordValue = Record<string, unknown>;
@@ -231,6 +233,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
     {
       if (!methods.has(method)) continue;
       const operation = object(value, `${method} ${path}`);
+      if (operation["x-operations-credential-result"] !== undefined && operation["x-operations-credential-result"] !== true)
+        throw new Error("Credential result metadata must be true when present.");
       const id = `${source}:${text(operation.operationId, `${method.toUpperCase()} ${path}`)}`;
       if (identities.has(id)) throw new Error(`${source}: duplicate operation identifier ${id}.`);
       identities.add(id);
@@ -333,6 +337,10 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (bodySchema) extracted.bodySchema = bodySchema;
       const security = inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
+      if (operation["x-operations-credential-result"] === true) {
+        extracted.credentialResult = true;
+        extracted.unavailableReason = "This operation returns credentials. Private credential acquisition is not supported yet.";
+      }
       result.push(extracted);
     }
   }

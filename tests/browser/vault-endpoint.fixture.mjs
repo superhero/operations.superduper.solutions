@@ -36,12 +36,12 @@ export function createVaultEndpoint() {
       response.writeHead(200, { 'Content-Type': 'text/plain' });
       response.write(expanded.subarray(0, 1024)); response.end(expanded.subarray(1024));
     } else if (action === 'failure' || action === 'huge-failure') {
-      response.writeHead(422, { 'Content-Type': 'application/json', 'X-Api-Key': request.headers['x-api-key'] ?? '' });
+      response.writeHead(422, { 'Content-Type': 'application/json', 'X-Api-Key': request.headers['x-api-key'] ?? request.headers['xi-api-key'] ?? '' });
       response.end(JSON.stringify({ error: 'Synthetic endpoint refusal', echo: request.headers.authorization ?? '',
-        apiKey: request.headers['x-api-key'] ?? '', detail: action === 'huge-failure' ? 'x'.repeat(32 * 1024) : 'safe diagnostic' }));
+        apiKey: request.headers['x-api-key'] ?? request.headers['xi-api-key'] ?? '', detail: action === 'huge-failure' ? 'x'.repeat(32 * 1024) : 'safe diagnostic' }));
     } else {
-      response.writeHead(200, { 'Content-Type': 'application/json', 'X-Api-Key': request.headers['x-api-key'] ?? '' });
-      response.end(JSON.stringify({ accepted: true, echo: request.headers.authorization ?? '', apiKey: request.headers['x-api-key'] ?? '' }));
+      response.writeHead(200, { 'Content-Type': 'application/json', 'X-Api-Key': request.headers['x-api-key'] ?? request.headers['xi-api-key'] ?? '' });
+      response.end(JSON.stringify({ accepted: true, echo: request.headers.authorization ?? '', apiKey: request.headers['x-api-key'] ?? request.headers['xi-api-key'] ?? '' }));
     }
     return true;
   };

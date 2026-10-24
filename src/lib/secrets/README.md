@@ -66,6 +66,13 @@ private values and public header overrides reject. This preserves existing vault
 entry kinds for that exact direct connection without relaxing ordinary selections,
 canonical current-schema approval or portable-export stripping.
 
+Operations marked `credentialResult` require private credential acquisition and
+cannot execute through ordinary JSON request/result paths. Both request preparation
+and canonical private approval reject them. Newly issued tokens, signed URLs,
+API keys and webhook secrets therefore remain outside workflow outputs until a
+private handler exists. An anonymous authentication choice also cannot send a
+declared credential header or query parameter through ordinary input fields.
+
 Replacing an existing vault requires its current authentication as well as the
 export's. If local data cannot authenticate, import the export in a fresh browser
 profile and verify access before removing any damaged copy.

@@ -164,6 +164,10 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
       try
       {
+        if (source["x-operations-credential-result"] !== undefined) {
+          if (source["x-operations-credential-result"] !== true) throw new Error("Credential result metadata must be true when present.");
+          operation.credentialResult = true;
+        }
         const url = operationServerUrl(document, operation);
         serverUrl ||= url;
         if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
@@ -240,6 +244,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         if (mediaType) operation.responseMediaType = mediaType;
         const media = value(content[mediaType!]);
         if (media.example !== undefined) operation.responseExample = media.example;
+        if (operation.credentialResult) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
       }
       catch (error) { operation.unavailableReason = error instanceof Error ? error.message : String(error); }
       operations.push(operation);

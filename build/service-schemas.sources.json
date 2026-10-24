@@ -60,7 +60,8 @@
     "id": "elevenlabs",
     "name": "ElevenLabs",
     "url": "https://api.elevenlabs.io/openapi.json",
-    "origin": "https://api.elevenlabs.io"
+    "origin": "https://api.elevenlabs.io",
+    "profile": "elevenlabs-auth"
   },
   {
     "id": "github",

@@ -120,3 +120,35 @@ Feature: Reviewable schema corrections and structured upstream merges
       | security provenance   |
       | parameter provenance  |
       | permissions           |
+
+  Scenario: ElevenLabs private public and credential-result contracts remain distinct
+    Then ElevenLabs corrections preserve public choices source headers and blocked credential results
+
+  Scenario Outline: ElevenLabs authentication rejects an unreviewed <kind>
+    Then ElevenLabs correction rejects the unreviewed contract "<kind>"
+    Examples:
+      | kind                      |
+      | provider                  |
+      | version                   |
+      | OpenAPI version           |
+      | destination               |
+      | extra destination         |
+      | operation destination     |
+      | path destination          |
+      | missing components        |
+      | missing paths             |
+      | malformed path            |
+      | unknown anonymous route   |
+      | missing key               |
+      | duplicate key             |
+      | key type                  |
+      | scheme collision          |
+      | security provenance       |
+      | route provenance          |
+      | permissions               |
+      | credential metadata       |
+      | parameter provenance      |
+      | changed nullable key      |
+      | external result reference |
+      | cyclic result reference   |
+      | missing result reference  |

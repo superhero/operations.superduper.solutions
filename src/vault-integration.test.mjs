@@ -615,3 +615,17 @@ Then('existing vault header edges select only an unambiguous API key and survive
   assert.equal(runner.next().kind, 'complete');
   assert.deepEqual(document.edges.at(-1), edge); assert.ok(!JSON.stringify([document, seen, visit]).includes(value));
 });
+
+Then('explicit anonymous choices cannot supply declared credential headers or query parameters', async () => {
+  const source = schema(); source.components.securitySchemes.Key = { type: 'apiKey', in: 'header', name: 'XI-API-KEY' };
+  source.components.securitySchemes.Query = { type: 'apiKey', in: 'query', name: 'api_key' };
+  source.paths['/public'].get.security = [{}, { Key: [], Query: [] }];
+  source.paths['/public'].get.parameters = [{ name: 'XI-API-KEY', in: 'header', schema: { type: 'string' } }, { name: 'api_key', in: 'query', schema: { type: 'string' } }];
+  register(source); const model = operation('public'), descriptor = await approvedOperation(model, origin);
+  const context = invocation({ alternative: 0, credentials: {}, fingerprint: descriptor.fingerprint });
+  let calls = 0;
+  const executor = createWorkflowRequestExecution(async (_url, options) => { calls++; assert.equal(new Headers(options.headers).has('xi-api-key'), false); return Response.json({ result: 'public' }); });
+  for (const values of [{ 'header:XI-API-KEY': 'public-secret' }, { 'query:api_key': 'public-secret' }])
+    await assert.rejects(executor.execute(model, values, undefined, context), code('PERMISSION'));
+  assert.equal(calls, 0); await executor.execute(model, {}, undefined, context); assert.equal(calls, 1);
+});

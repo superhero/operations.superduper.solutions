@@ -3,18 +3,20 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
 export const azureEventGridManagementAuth: SchemaPatch = { id: "azure-eventgrid-management-auth", version: 1 };
 export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authentication", version: 1 };
+export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
 export function schemaPatchName(patch: SchemaPatch): string {
   return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
     : patch.id === "gemini-auth-alternatives" ? "Gemini authentication alternatives"
     : patch.id === "azure-eventgrid-management-auth" ? "Azure Event Grid management authentication"
-    : patch.id === "anthropic-authentication" ? "Anthropic authentication and version headers" : "Unknown schema correction";
+    : patch.id === "anthropic-authentication" ? "Anthropic authentication and version headers"
+    : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -226,20 +228,106 @@ function anthropicAuth(document: Record<string, any>): void {
   document.security = [{ AnthropicApiKey: [] }, { AnthropicBearer: [] }];
 }
 
+function elevenLabsAuth(document: Record<string, any>): void {
+  const server = (servers: unknown) => Array.isArray(servers) && servers.length > 0
+    && servers.every(item => object(item) && item.url === "https://api.elevenlabs.io");
+  if (document.openapi !== "3.1.0" || document.info?.title !== "ElevenLabs API Documentation" || document.info.version !== "1.0"
+    || !server(document.servers) || !object(document.paths) || !object(document.components))
+    throw new Error("ElevenLabs authentication adaptation requires the reviewed direct API contract.");
+  const addSecurity = document.security === undefined, schemes = document.components.securitySchemes ?? {};
+  if (addSecurity && (!object(schemes) || Object.hasOwn(schemes, "ElevenLabsApiKey")
+    || Object.hasOwn(document, "x-upstream-security") || Object.hasOwn(document, "x-credential-permissions")))
+    throw new Error("ElevenLabs authentication adaptation cannot overwrite security definitions or provenance.");
+  const publicRoutes = new Set(["get /v1/voices/settings/default", "post /v1/convai/conversations/{conversation_id}/feedback",
+    "post /v1/convai/llm-usage/calculate", "get /docs"]);
+  const optionalRoutes = new Set(["get /v1/models", "get /v1/shared-voices", "get /v1/voices/{voice_id}",
+    "get /v1/voices/{voice_id}/settings", "get /v1/convai/agents/{agent_id}/widget",
+    "get /v1/productions/orders/{order_id}/media/{media_id}"]);
+  function resolve(shape: unknown): Record<string, any> {
+    let value = shape;
+    const seen = new Set<string>();
+    while (object(value) && typeof value.$ref === "string") {
+      const ref = value.$ref;
+      if (!ref.startsWith("#/") || seen.has(ref) || seen.size >= 16)
+        throw new Error("ElevenLabs authentication adaptation requires bounded local response references.");
+      seen.add(ref); value = document;
+      for (const encoded of ref.slice(2).split("/")) {
+        const key = encoded.replace(/~1/g, "/").replace(/~0/g, "~");
+        value = object(value) && Object.hasOwn(value, key) ? value[key] : undefined;
+      }
+      if (!object(value)) throw new Error("ElevenLabs authentication adaptation cannot resolve a credential result schema.");
+    }
+    return object(value) ? value : {};
+  }
+  for (const [path, item] of Object.entries(document.paths)) {
+    if (!object(item)) throw new Error("ElevenLabs authentication adaptation requires HTTP path items.");
+    for (const [method, operation] of Object.entries(item)) {
+      if (!methods.has(method) || !object(operation)) continue;
+      if (!server(operation.servers ?? item.servers ?? document.servers))
+        throw new Error("ElevenLabs authentication adaptation cannot authenticate another destination.");
+      if (addSecurity && operation.security === undefined) {
+        const route = `${method} ${path}`;
+        if (Object.hasOwn(operation, "x-upstream-security")) throw new Error("ElevenLabs authentication adaptation cannot overwrite route provenance.");
+        if (publicRoutes.has(route) || optionalRoutes.has(route)) {
+          operation["x-upstream-security"] = null;
+          operation.security = publicRoutes.has(route) ? [] : [{}, { ElevenLabsApiKey: [] }];
+        } else {
+          const keys = (Array.isArray(operation.parameters) ? operation.parameters : []).filter((parameter: any) => parameter?.in === "header" && parameter.name === "xi-api-key");
+          const shape = keys[0]?.schema;
+          if (!/^\/v[123]\//.test(path) || keys.length !== 1 || !object(shape)
+            || !(shape.type === "string" || Array.isArray(shape.anyOf) && shape.anyOf.length === 2
+              && shape.anyOf.some((item: any) => item?.type === "string") && shape.anyOf.some((item: any) => item?.type === "null")))
+            throw new Error("ElevenLabs authentication adaptation requires a reviewed private API-key header or explicit public route.");
+        }
+      }
+      if (operation["x-operations-credential-result"] !== undefined && operation["x-operations-credential-result"] !== true)
+        throw new Error("ElevenLabs authentication adaptation cannot overwrite credential-result metadata.");
+      const parameters = Array.isArray(operation.parameters) ? operation.parameters : [];
+      const nullableKeys = parameters.filter((parameter: any) => parameter?.in === "header" && parameter.name === "xi-api-key" && parameter.schema?.anyOf !== undefined);
+      if (nullableKeys.length) {
+        if (Object.hasOwn(operation, "x-upstream-parameters") || nullableKeys.some((parameter: any) => !Array.isArray(parameter.schema.anyOf)
+          || parameter.schema.anyOf.length !== 2 || parameter.schema.anyOf.some((branch: any) => !object(branch) || Object.keys(branch).length !== 1)
+          || !parameter.schema.anyOf.some((branch: any) => branch.type === "string") || !parameter.schema.anyOf.some((branch: any) => branch.type === "null")))
+          throw new Error("ElevenLabs authentication adaptation requires the reviewed nullable key and parameter provenance.");
+        operation["x-upstream-parameters"] = structuredClone(parameters);
+        operation.parameters = parameters.map((parameter: any) => {
+          if (!nullableKeys.includes(parameter)) return parameter;
+          const { anyOf: _union, ...shape } = parameter.schema;
+          return { ...parameter, schema: { ...shape, type: "string", nullable: true } };
+        });
+      }
+      for (const [status, response] of Object.entries(operation.responses ?? {})) {
+        if (!/^2\d\d$/.test(status)) continue;
+        for (const media of Object.values(resolve(response).content ?? {})) {
+          const fields = resolve(object(media) ? media.schema : undefined).properties ?? {};
+          if (["token", "signed_url", "xi-api-key", "webhook_secret"].some(key => Object.hasOwn(fields, key)))
+            operation["x-operations-credential-result"] = true;
+        }
+      }
+    }
+  }
+  if (addSecurity) {
+    document.components.securitySchemes = { ...schemes, ElevenLabsApiKey: { type: "apiKey", in: "header", name: "xi-api-key" } };
+    document["x-upstream-security"] = null;
+    document.security = [{ ElevenLabsApiKey: [] }];
+  }
+}
+
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
     else if (patch.id === "digitalocean-bearer-permissions") digitalOceanPermissions(document);
     else if (patch.id === "gemini-auth-alternatives") geminiAlternatives(document);
     else if (patch.id === "azure-eventgrid-management-auth") azureEventGridAuthentication(document);
-    else anthropicAuth(document);
+    else if (patch.id === "anthropic-authentication") anthropicAuth(document);
+    else elevenLabsAuth(document);
   }
   return document;
 }

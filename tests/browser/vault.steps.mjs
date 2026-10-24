@@ -877,15 +877,17 @@ Then('factory schema policy accepts only the matching packaged digest', async fu
   assert.equal(await policy(this.page, 'factoryPolicy'), 'PERMISSION');
 });
 
-Then('the Anthropic {string} selection preserves private headers and saved references across reload', { timeout: 90_000 }, async function (kind) {
-  const page = this.page;
+async function privateHeaderSelection(kind, provider) {
+  const page = this.page, isEleven = provider === 'ElevenLabs';
+  const header = isEleven ? 'xi-api-key' : 'x-api-key', keyScheme = `${provider}ApiKey`;
+  const edgeId = `legacy-${provider.toLowerCase()}-key-edge`;
   this.vaultRun = randomUUID();
-  const path = `/vault-api/${this.vaultRun}/ok`, name = 'Anthropic private request';
-  const document = { openapi: '3.1.0', info: { title: 'Anthropic auth fixture', version: '1' }, servers: [{ url: this.baseURL }],
-    components: { securitySchemes: { AnthropicApiKey: { type: 'apiKey', in: 'header', name: 'x-api-key' }, AnthropicBearer: { type: 'http', scheme: 'bearer' } } },
-    security: [{ AnthropicApiKey: [] }, { AnthropicBearer: [] }], paths: { [path]: { get: { operationId: 'anthropic-auth', summary: name,
-      parameters: [{ name: 'anthropic-version', in: 'header', required: true, schema: { type: 'string' } },
-        { name: 'x-api-key', in: 'header', required: false, schema: { type: 'string' } }],
+  const path = `/vault-api/${this.vaultRun}/ok`, name = `${provider} private request`;
+  const document = { openapi: '3.1.0', info: { title: `${provider} auth fixture`, version: '1' }, servers: [{ url: this.baseURL }],
+    components: { securitySchemes: { [keyScheme]: { type: 'apiKey', in: 'header', name: header }, AnthropicBearer: { type: 'http', scheme: 'bearer' } } },
+    security: isEleven ? [{ [keyScheme]: [] }] : [{ [keyScheme]: [] }, { AnthropicBearer: [] }], paths: { [path]: { get: { operationId: 'anthropic-auth', summary: name,
+      parameters: [...(isEleven ? [] : [{ name: 'anthropic-version', in: 'header', required: true, schema: { type: 'string' } }]),
+        { name: header, in: 'header', required: false, schema: { type: 'string', ...(isEleven ? { nullable: true } : {}) } }],
       responses: { 200: { description: 'Synthetic result', content: { 'application/json': { schema: { type: 'object' } } } } },
     } } } };
   const schemas = page.locator('summary[aria-label="Schemas"]');
@@ -893,9 +895,9 @@ Then('the Anthropic {string} selection preserves private headers and saved refer
   await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
     name: 'anthropic-auth.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
   });
-  await expect(page.getByRole('switch', { name: 'Enable Anthropic auth fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('switch', { name: `Enable ${provider} auth fixture`, exact: true })).toHaveAttribute('aria-checked', 'true');
   await setMode(page, 'workflow'); await chooseCatalogOperation(page, name);
-  const selection = kind === 'connected API key' ? 'AnthropicApiKey' : 'AnthropicBearer';
+  const selection = kind === 'connected API key' ? keyScheme : 'AnthropicBearer';
   let id;
   if (kind === 'connected API key') {
     await page.getByRole('dialog', { name: /^Run workflow:/ }).getByRole('button', { name: 'Quit', exact: true }).click();
@@ -904,10 +906,10 @@ Then('the Anthropic {string} selection preserves private headers and saved refer
     const state = await repository(page, 'load', current.id), updated = state.document;
     updated.version = 3; // Vault nodes use the existing version-3 workflow format.
     const panel = updated.nodes.find(node => node.type === 'data' && node.data.direction === 'inputs'
-      && node.data.fields.some(field => field.label === 'x-api-key'));
+      && node.data.fields.some(field => field.label.toLowerCase() === header));
     const variable = createUtilityNode('vault', { x: 0, y: 0 }, 'legacy-anthropic-vault'); variable.data.credentialId = id;
-    updated.nodes.push(variable); updated.edges.push({ id: 'legacy-anthropic-key-edge', kind: 'mapping', source: variable.id, sourceHandle: 'value',
-      target: panel.id, targetHandle: panel.data.fields.find(field => field.label === 'x-api-key').id });
+    updated.nodes.push(variable); updated.edges.push({ id: edgeId, kind: 'mapping', source: variable.id, sourceHandle: 'value',
+      target: panel.id, targetHandle: panel.data.fields.find(field => field.label.toLowerCase() === header).id });
     await repository(page, 'save', updated, state.revision, 'Connect existing private header');
     await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
     await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
@@ -931,20 +933,27 @@ Then('the Anthropic {string} selection preserves private headers and saved refer
   const saved = await savedBinding();
   assert.match(saved.credentials[selection], /^[a-f0-9-]{36}$/);
   if (id) assert.equal(saved.credentials[selection], id);
-  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/anthropic-selection.png` });
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/${provider.toLowerCase()}-selection.png` });
   await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
   await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
   await expect(credential).toContainText(canaries[3]); assert.deepEqual(await savedBinding(), saved);
-  if (id) assert.ok((await savedDocument()).edges.some(edge => edge.id === 'legacy-anthropic-key-edge'));
+  if (id) assert.ok((await savedDocument()).edges.some(edge => edge.id === edgeId));
   await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click(); await expect(unlock).toHaveCount(0);
-  await page.getByLabel('anthropic-version', { exact: true }).fill('2023-06-01');
+  if (!isEleven) await page.getByLabel('anthropic-version', { exact: true }).fill('2023-06-01');
   await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
   const seen = await observations(this); assert.equal(seen.length, 1);
-  assert.equal(seen[0].headers['anthropic-version'], '2023-06-01');
-  assert.equal(seen[0].headers[kind === 'connected API key' ? 'x-api-key' : 'authorization'], kind === 'connected API key' ? canaries[1] : `Bearer ${canaries[1]}`);
-  assert.equal(seen[0].headers[kind === 'connected API key' ? 'authorization' : 'x-api-key'], undefined);
+  if (!isEleven) assert.equal(seen[0].headers['anthropic-version'], '2023-06-01');
+  assert.equal(seen[0].headers[kind === 'connected API key' ? header : 'authorization'], kind === 'connected API key' ? canaries[1] : `Bearer ${canaries[1]}`);
+  assert.equal(seen[0].headers[kind === 'connected API key' ? 'authorization' : header], undefined);
   assert.equal(seen[0].headers.cookie, undefined); assert.equal(seen[0].headers.referer, undefined);
   noCanaries(await page.locator('body').innerText());
   assert.deepEqual(await invoke(page, 'persistedCanaries', privateCanaries), []);
+}
+
+Then('the Anthropic {string} selection preserves private headers and saved references across reload', { timeout: 90_000 }, async function (kind) {
+  await privateHeaderSelection.call(this, kind, 'Anthropic');
+});
+Then('the ElevenLabs private key connection survives reload without exposing credentials', { timeout: 90_000 }, async function () {
+  await privateHeaderSelection.call(this, 'connected API key', 'ElevenLabs');
 });

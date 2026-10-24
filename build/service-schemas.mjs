@@ -12,7 +12,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, googleOauthAlternatives } from '../src/lib/schema-patches.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
 import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
 
@@ -118,7 +118,8 @@ for (const source of sources) {
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
     : source.profile === 'azure-eventgrid-auth' ? [azureEventGridManagementAuth]
-    : source.profile === 'anthropic-auth' ? [anthropicAuthentication] : [];
+    : source.profile === 'anthropic-auth' ? [anthropicAuthentication]
+    : source.profile === 'elevenlabs-auth' ? [elevenLabsAuthentication] : [];
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

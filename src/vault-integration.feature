@@ -62,3 +62,6 @@ Feature: Credential references at workflow execution boundaries
 
   Scenario: Existing vault header connections migrate to explicit API key selection
     Then existing vault header edges select only an unambiguous API key and survive private execution
+
+  Scenario: Anonymous choices cannot bypass the private credential transports
+    Then explicit anonymous choices cannot supply declared credential headers or query parameters

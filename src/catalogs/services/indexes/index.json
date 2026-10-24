@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "7eaa1aefdaf5fc607f450ad07643f6e014014d005b6b8bd30756e370e64f72d1",
+  "adapterRevision": "fc0c0fcefb4df74c606ec8027ca4bdaba562eb2e5cd2c464347b10aa7333eef8",
   "indexes": [
     {
       "id": "anthropic",
@@ -1541,16 +1541,16 @@
     },
     {
       "id": "elevenlabs",
-      "sourceRevision": "8cee136ec627a5557c61fca7650f69feeeb63d45fc4b1aea097f6f76b69f5c9e",
-      "bytes": 119442,
-      "compressedBytes": 12732,
-      "sha256": "fc2723940f06682327facc15e14f19b42755d67e5a5e4aace794233bba07282f",
+      "sourceRevision": "27493b88c935cdb3d67c4e95c6df3e7f93a9b8afe876e8f3fe2f8ad5180833fa",
+      "bytes": 120441,
+      "compressedBytes": 12804,
+      "sha256": "221d3935722ead41aa1f2508af4037170fe98483609e5735ce2eda4f8f9d73b2",
       "summary": {
         "name": "ElevenLabs API Documentation",
         "serverUrl": "https://api.elevenlabs.io",
         "description": "This is the documentation for the ElevenLabs API. You can use this API to use our service programmatically, this is done by using your API key. You can find your API key in the dashboard at https://elevenlabs.io/app/settings/api-keys.",
         "operationCount": 418,
-        "unavailableCount": 22
+        "unavailableCount": 31
       }
     },
     {
