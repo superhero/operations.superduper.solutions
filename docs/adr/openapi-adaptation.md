@@ -340,7 +340,26 @@ reload. Complete canonical approvals retain unavailable metadata and reject
 selection of any unavailable AND member in private execution and credential
 grants. An explicit anonymous choice still requires an explicit selection when
 other alternatives exist. All-supported metadata and approval fingerprints are
-unchanged. This does not add Basic or OAuth1 execution or any automatic fallback.
+unchanged. OAuth1 execution and automatic authentication fallback remain unsupported.
+
+HTTP Basic uses two existing vault entries: a username and a password or API
+token. A local binding stores an exact `{ username, password }` pair of opaque
+vault IDs under the original scheme name; bearer and API-key references remain
+strings. Portable workflow exports/imports remove these bindings. Only private
+execution resolves values and constructs the `Authorization: Basic` header.
+The worker redacts the source values, joined pair, Base64 token and complete
+header, including their percent/form-encoded echoes, from previews and responses.
+
+Basic retains the vault's existing nonempty visible-ASCII value contract. It
+rejects username colons, unsupported characters, malformed/stale/missing/extra
+references and oversized encoded credentials before dispatch. Password colons
+are supported. The existing HTTPS, destination/currentness, AND/OR, public-header
+collision and redirect rules apply. A policy change still invalidates stale
+fingerprints; unchanged bearer/API-key policies keep their existing bindings.
+This adds no character-set negotiation, challenge retry or new vault entry type.
+See [RFC 7617](https://www.rfc-editor.org/rfc/rfc7617.html#section-2),
+[Twilio credential roles](https://www.twilio.com/docs/usage/requests-to-twilio#authentication)
+and [Atlassian email/API-token Basic](https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/).
 
 AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
 and the API's own authorization rules still apply.

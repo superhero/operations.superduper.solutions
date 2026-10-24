@@ -509,15 +509,27 @@ Then('vault session execution injects only an approved credential and returns sa
     const keys = await session.put(null, { label: 'Generic partial-auth key', kind: 'secret', value: 'SYNTHETIC-PRIVATE-TOKEN' });
     const generic = keys.find(key => key.label === 'Generic partial-auth key').id;
     const partial = await approvedOperation({ ...approval.operation, security: [
-      [{ name: 'Basic', kind: 'unsupported', header: 'Authorization', reason: 'Basic authentication is unavailable.' }], ...approval.operation.security,
+      [{ name: 'Digest', kind: 'unsupported', header: 'Authorization', reason: 'Digest authentication is unavailable.' }], ...approval.operation.security,
     ] }, approval.origin);
-    await assert.rejects(session.grant(null, generic, 'Basic', partial), code('PERMISSION'));
+    await assert.rejects(session.grant(null, generic, 'Digest', partial), code('PERMISSION'));
     await session.grant(null, generic, 'service', partial);
     const selected = { alternative: 1, fingerprint: partial.fingerprint, credentials: { service: generic } };
     await session.execute(partial, {}, selected);
     assert.equal(requests.length, 3);
-    await assert.rejects(session.execute(partial, {}, { ...selected, alternative: 0, credentials: { Basic: generic } }), code('PERMISSION'));
+    await assert.rejects(session.execute(partial, {}, { ...selected, alternative: 0, credentials: { Digest: generic } }), code('PERMISSION'));
     assert.equal(requests.length, 3);
+    const basic = await approvedOperation({ ...approval.operation, security: [[{ name: 'Login', kind: 'basic', header: 'Authorization' }]] }, approval.origin);
+    const entries = await session.put(null, { label: 'Basic username', kind: 'secret', value: 'session-user' });
+    const userId = entries.find(entry => entry.label === 'Basic username').id;
+    await session.grant(null, userId, 'Login', basic);
+    await session.grant(null, id, 'Login', basic);
+    const pair = { alternative: 0, fingerprint: basic.fingerprint, credentials: { Login: { username: userId, password: id } } };
+    const basicResult = await session.execute(basic, {}, pair);
+    assert.equal(requests.length, 4);
+    assert.equal(requests[3].options.headers.get('Authorization'), 'Basic '+Buffer.from('session-user:SYNTHETIC-PRIVATE-TOKEN').toString('base64'));
+    assert.ok(!JSON.stringify(basicResult).includes('SYNTHETIC-PRIVATE-TOKEN'));
+    await assert.rejects(session.execute(basic, {}, { ...pair, credentials: { Login: id } }), code('PERMISSION'));
+    assert.equal(requests.length, 4);
   } finally { globalThis.fetch = original; }
 });
 

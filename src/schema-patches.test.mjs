@@ -228,7 +228,7 @@ Then('Gemini credential applicability {string} stays explicit without executing 
   const document = kind === 'unreviewed SDK extension' ? source : applySchemaPatches(source, [geminiAuthAlternatives]);
   const operation = inspectServiceSchema(document, 'gemini').operations[0];
   if (['unrelated custom scheme', 'unreviewed SDK extension'].includes(kind)) {
-    assert.match(operation.unavailableReason, /only HTTP bearer authentication is supported/);
+    assert.match(operation.unavailableReason, /only HTTP bearer and Basic authentication are supported/);
     return;
   }
   const names = operation.security.map(alternative => alternative.map(scheme => scheme.name));

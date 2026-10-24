@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { requestBody } from "../request-body.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
+import { isBasicCredentialReference } from "./bindings.ts";
 import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
@@ -117,18 +118,34 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       throw new VaultError("PERMISSION");
     const injected = new Headers();
     const injectedQueries = new Map<string, string>();
-    for (const scheme of alternative)
-    {
-      const id = Object.hasOwn(bindingSnapshot.credentials, scheme.name) ? bindingSnapshot.credentials[scheme.name] : undefined;
+    const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey"): string => {
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
       const credential = matches[0]!;
-      if (credential.kind !== "secret" && credential.kind !== scheme.kind) throw new VaultError("PERMISSION");
+      if (!["secret", "bearer", "apiKey"].includes(credential.kind)
+        || kind !== "basic" && credential.kind !== "secret" && credential.kind !== kind) throw new VaultError("PERMISSION");
       if (typeof credential.value !== "string" || !credential.value.length || credential.value !== credential.value.trim()
         || /[^\u0020-\u007e]/.test(credential.value) || new TextEncoder().encode(credential.value).byteLength > vaultLimits.secretBytes)
         throw new VaultError("INVALID");
-      if (scheme.query !== undefined) injectedQueries.set(scheme.query, credential.value);
-      else injected.set(scheme.header, scheme.kind === "bearer" ? `Bearer ${credential.value}` : credential.value);
+      return credential.value;
+    };
+    for (const scheme of alternative)
+    {
+      const reference = Object.hasOwn(bindingSnapshot.credentials, scheme.name) ? bindingSnapshot.credentials[scheme.name] : undefined;
+      if (scheme.kind === "basic") {
+        if (!isBasicCredentialReference(reference)) throw new VaultError("PERMISSION");
+        const username = credentialValue(reference.username, "basic"), password = credentialValue(reference.password, "basic");
+        if (username.includes(":")) throw new VaultError("INVALID");
+        const joined = `${username}:${password}`, encoded = btoa(joined), authorization = `Basic ${encoded}`;
+        if (encoded.length > vaultLimits.secretBytes) throw new VaultError("LIMIT");
+        secrets.push(joined, encoded, authorization);
+        injected.set(scheme.header, authorization);
+      } else {
+        if (typeof reference !== "string") throw new VaultError("PERMISSION");
+        const value = credentialValue(reference, scheme.kind);
+        if (scheme.query !== undefined) injectedQueries.set(scheme.query, value);
+        else injected.set(scheme.header, scheme.kind === "bearer" ? `Bearer ${value}` : value);
+      }
     }
     // Replace only explicit, validated reference slots. Never interpolate secrets into
     // public strings, and never return these decrypted inputs to the page.

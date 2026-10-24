@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Bundled service schema integrity
+  Scenario: HTTP Basic enables supported Twilio and Atlassian operations without hiding form limitations
+    Then pinned Twilio and Atlassian Basic operations dispatch selected username and token references privately
+
   Scenario: Independently usable Atlassian and X authentication choices remain executable
     Then pinned Atlassian and X authentication alternatives retain independently usable choices and original identities
 

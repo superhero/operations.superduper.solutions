@@ -10,6 +10,22 @@ import { extractOperations } from "./lib/catalog.ts";
 import { bundledCatalogs } from "./lib/catalog-registry.ts";
 import { validateSchemaDocument } from "./lib/schema-documents.ts";
 
+Then('HTTP Basic preserves scheme identity destination AND requirements and strict approval', async () => {
+  const source = document(); source.components.securitySchemes.Login = { type: 'http', scheme: 'BaSiC' };
+  source.security = [{ Login: [], Key: [] }, { Bearer: [] }, {}];
+  const parsed = extractOperationSecurity(source, operation(source));
+  assert.deepEqual(parsed[0], [{ name: 'Login', kind: 'basic', header: 'Authorization' }, normalized.Key]);
+  assert.ok(supportedSecurityAlternative(parsed[0]));
+  const model = validateSchemaDocument(source, 'basic').operations[0];
+  assert.deepEqual(model.security, parsed);
+  assert.deepEqual((await approvedOperation(model, source.servers[0].url)).operation.security, parsed);
+  for (const wrong of [{ ...parsed[0][0], header: 'X-Login' }, { ...parsed[0][0], query: 'login' }]) {
+    await assert.rejects(approvedOperation({ ...model, security: [[wrong]] }, source.servers[0].url), { code: 'PERMISSION' });
+  }
+  source.security = [{ Login: [], Bearer: [] }];
+  assert.throws(() => extractOperationSecurity(source, operation(source)), /duplicate credential header/);
+});
+
 Then('credential permission metadata is validated at schema loading and private approval', async () => {
   const security = [[{ name: 'Token', kind: 'bearer', header: 'Authorization' }], [], [{ name: 'Key', kind: 'apiKey', query: 'key' }]];
   const permissions = [{ Token: ['droplet:read', 'droplet:create'] }, {}, {}];
@@ -44,13 +60,13 @@ Then('credential permission metadata is validated at schema loading and private 
 });
 
 Then('unavailable HTTP choices retain source indices AND members and explicit anonymous alternatives', async () => {
-  const source = document(); source.components.securitySchemes.Basic = { type: 'http', scheme: 'basic' };
-  source.security = [{ Basic: [], Key: [] }, { Bearer: [] }, {}];
+  const source = document(); source.components.securitySchemes.Digest = { type: 'http', scheme: 'digest' };
+  source.security = [{ Digest: [], Key: [] }, { Bearer: [] }, {}];
   const before = structuredClone(source), inspected = inspectOperationSecurity(source, operation(source));
   assert.deepEqual(source, before);
   assert.equal(inspected.length, 3);
   assert.equal(inspected[0][0].kind, 'unsupported');
-  assert.equal(inspected[0][0].name, 'Basic');
+  assert.equal(inspected[0][0].name, 'Digest');
   assert.equal(inspected[0][0].header, 'Authorization');
   assert.match(inspected[0][0].reason, /only HTTP bearer/);
   assert.deepEqual(inspected[0][1], normalized.Key);
@@ -109,18 +125,18 @@ Then('unsupported signing stays unavailable beside a supported credential altern
 });
 
 Then('a malformed mixed authentication choice {string} still rejects the complete operation', kind => {
-  const source = document(); source.components.securitySchemes.Basic = { type: 'http', scheme: 'basic' };
-  source.security = [{ Basic: [] }, { Bearer: [] }];
+  const source = document(); source.components.securitySchemes.Digest = { type: 'http', scheme: 'digest' };
+  source.security = [{ Digest: [] }, { Bearer: [] }];
   const corrupt = {
     'undeclared scheme': () => { source.security[0] = { Missing: [] }; },
-    'nonempty scopes': () => { source.security[0].Basic = ['scope']; },
+    'nonempty scopes': () => { source.security[0].Digest = ['scope']; },
     'invalid alternative': () => { source.security[0] = []; },
-    'missing scheme': () => { delete source.components.securitySchemes.Basic.scheme; },
-    'invalid HTTP token': () => { source.components.securitySchemes.Basic.scheme = 'invalid scheme'; },
-    'unknown scheme fields': () => { source.components.securitySchemes.Basic.flows = {}; },
-    'invalid description': () => { source.components.securitySchemes.Basic.description = []; },
-    'duplicate headers': () => { source.security[0] = { Basic: [], Bearer: [] }; },
-    'duplicate queries': () => { source.security[0] = { Basic: [], Query: [], QueryAlias: [] }; },
+    'missing scheme': () => { delete source.components.securitySchemes.Digest.scheme; },
+    'invalid HTTP token': () => { source.components.securitySchemes.Digest.scheme = 'invalid scheme'; },
+    'unknown scheme fields': () => { source.components.securitySchemes.Digest.flows = {}; },
+    'invalid description': () => { source.components.securitySchemes.Digest.description = []; },
+    'duplicate headers': () => { source.security[0] = { Digest: [], Bearer: [] }; },
+    'duplicate queries': () => { source.security[0] = { Digest: [], Query: [], QueryAlias: [] }; },
   };
   assert.ok(corrupt[kind]); corrupt[kind]();
   assert.throws(() => inspectOperationSecurity(source, operation(source)));

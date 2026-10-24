@@ -14,6 +14,56 @@ import { createSchemaDiscovery, validateSchemaDiscovery } from './lib/schema-ind
 import { codexExecutionLimitation } from './lib/codex-schema.ts';
 import { extractOperationSecurity, supportedSecurityAlternative, securityRequiresCredentials } from './lib/operation-security.ts';
 
+Then('pinned Twilio and Atlassian Basic operations dispatch selected username and token references privately', async () => {
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const census = {};
+  for (const [id, operationId, username, password] of [
+    ['twilio', 'twilio:CreateAccount', 'synthetic-twilio-account', 'twilio-private-auth-token'],
+    ['bitbucket', 'bitbucket:DELETE /addon', 'private-user@example.test', 'atlassian-private-api-token'],
+  ]) {
+    const document = await readServiceSchema(id), before = JSON.stringify(document), inspection = inspectServiceSchema(document, id);
+    const available = inspection.operations.filter(operation => !operation.unavailableReason);
+    census[id] = { total: inspection.operations.length, available: available.length,
+      unavailable: inspection.operations.filter(operation => operation.unavailableReason).map(operation => ({ id: operation.id, reason: operation.unavailableReason })) };
+    if (id === 'twilio') {
+      assert.equal(inspection.operations.length, 197);
+      assert.equal(available.length, 189);
+      assert.equal(census[id].unavailable.length, 8);
+      assert.ok(census[id].unavailable.every(operation => /form.*structured/.test(operation.reason)));
+      assert.ok(available.every(operation => operation.security.some(option => option.some(scheme => scheme.kind === 'basic'))));
+    }
+    const operation = available.find(operation => operation.id === operationId);
+    assert.ok(operation, operationId);
+    const alternative = operation.security.findIndex(option => option.length === 1 && option[0].kind === 'basic');
+    assert.ok(alternative >= 0);
+    const scheme = operation.security[alternative][0], descriptor = await approvedOperation(operation, operationServerUrl(document, operation));
+    const credentials = [{ id: crypto.randomUUID(), label: 'Username', kind: 'secret', value: username, grants: [] },
+      { id: crypto.randomUUID(), label: 'API token', kind: 'apiKey', value: password, grants: [] }];
+    const binding = { fingerprint: descriptor.fingerprint, alternative, credentials: { [scheme.name]: { username: credentials[0].id, password: credentials[1].id } } };
+    const header = 'Basic '+Buffer.from(`${username}:${password}`, 'ascii').toString('base64');
+    const friendlyName = operation.fields.find(field => field.name === 'FriendlyName');
+    if (id === 'twilio') assert.ok(friendlyName, 'Use a real supported scalar form field.');
+    const values = id === 'twilio' ? { [friendlyName.key]: 'Synthetic account' } : {};
+    let sent = 0;
+    const result = await executeCredentialed(descriptor, values, binding, credentials, { assertCurrent() {}, fetchRequest: async (url, options) => {
+      sent++; assert.equal(options.headers.get('Authorization'), header);
+      assert.equal(options.method, operation.method); assert.equal(options.credentials, 'omit');
+      assert.ok(String(url).startsWith(descriptor.origin+operation.path));
+      if (id === 'twilio') {
+        assert.equal(options.headers.get('Content-Type'), 'application/x-www-form-urlencoded');
+        assert.match(String(options.body), /FriendlyName=Synthetic\+account/);
+      }
+      return Response.json({ accepted: true, echoed: header });
+    } });
+    assert.equal(sent, 1); assert.equal(result.response.body.accepted, true); assert.equal(result.response.redacted, true);
+    for (const value of [username, password, header, header.slice(6)]) assert.ok(!JSON.stringify(result).includes(value));
+    assert.equal(JSON.stringify(document), before, 'Published provider contract remains untouched.');
+  }
+  const { writeFile } = await import('node:fs/promises');
+  await writeFile('tmp/basic-provider-census.json', JSON.stringify(census, null, 2)+'\n');
+});
+
 Then('pinned Atlassian and X authentication alternatives retain independently usable choices and original identities', async () => {
   const census = { atlassian: { mixed: 0, available: 0, otherLimitations: 0 }, x: { mixed: 0, available: 0, otherLimitations: 0 }, samples: [] };
   for (const source of serviceSchemaDescriptors.filter(source => source.provider === 'atlassian' || source.id.startsWith('bitbucket') || source.id === 'x')) {
@@ -28,8 +78,8 @@ Then('pinned Atlassian and X authentication alternatives retain independently us
           operationId: 'auth-probe', security: declaration, responses: { 200: { description: 'Auth probe' } },
         } } } };
         const checked = inspectServiceSchema(probe, source.id).operations[0];
-        cache.set(key, checked.security?.some(option => !supportedSecurityAlternative(option))
-          && checked.security.some(supportedSecurityAlternative));
+        cache.set(key, checked.security?.some(option => option.some(scheme => scheme.kind === 'basic' || scheme.kind === 'unsupported'))
+          && checked.security.some(option => supportedSecurityAlternative(option) && option.every(scheme => scheme.kind !== 'basic')));
       }
       if (!cache.get(key)) continue;
       family.mixed++;
@@ -158,7 +208,7 @@ Then('Gemini published SDK authentication enables private API key and bearer req
   let originalAuthFailures = 0;
   for (const [path, item] of Object.entries(published.paths)) for (const [method, operation] of Object.entries(item)) {
     if (!['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'].includes(method)) continue;
-    assert.throws(() => extractOperationSecurity(published, operation), /only HTTP bearer authentication is supported/);
+    assert.throws(() => extractOperationSecurity(published, operation), /only HTTP bearer and Basic authentication are supported/);
     originalAuthFailures++;
     const alternatives = extractOperationSecurity(corrected, corrected.paths[path][method]);
     assert.deepEqual(alternatives, [

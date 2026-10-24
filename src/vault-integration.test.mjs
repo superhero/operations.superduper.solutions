@@ -91,6 +91,44 @@ Then('credential bindings and invocation contexts reject inherited accessor and 
   }
 });
 
+Then('Basic references validate deeply survive local reload execute privately and stay out of portable exports', async () => {
+  const source = schema(); source.components.securitySchemes.Login = { type: 'http', scheme: 'basic' }; source.security = [{ Login: [] }];
+  register(source);
+  const model = operation('secured'), descriptor = await approvedOperation(model, origin);
+  const credentials = [{ id: crypto.randomUUID(), label: 'User', kind: 'secret', value: 'private-user@example.test', grants: [] },
+    { id: crypto.randomUUID(), label: 'Token', kind: 'apiKey', value: 'private-basic-token', grants: [] }];
+  const selected = { alternative: 0, fingerprint: descriptor.fingerprint,
+    credentials: { Login: { username: credentials[0].id, password: credentials[1].id } } };
+  const cloned = validateCredentialBinding(selected);
+  assert.deepEqual(cloned, selected); assert.notEqual(cloned.credentials.Login, selected.credentials.Login);
+  let getters = 0;
+  const getter = { password: credentials[1].id };
+  Object.defineProperty(getter, 'username', { enumerable: true, get() { getters++; return credentials[0].id; } });
+  const pair = selected.credentials.Login;
+  for (const wrong of [{ username: pair.username }, { ...pair, extra: pair.username }, { ...pair, password: 'literal password' },
+    Object.create(pair), [], null, getter, { ...pair, [Symbol('hidden')]: pair.password }])
+    assert.throws(() => validateCredentialBinding({ ...selected, credentials: { Login: wrong } }), code('INVALID'));
+  assert.equal(getters, 0);
+  const document = workflow([operationNode('basic', selected)]);
+  const reloaded = validateWorkflowDocument(JSON.parse(JSON.stringify(document)));
+  assert.deepEqual(reloaded.nodes[0].data.credentialBinding, selected);
+  const portable = portableWorkflowDocument(reloaded);
+  assert.equal(portable.nodes[0].data.credentialBinding, undefined);
+  for (const credential of credentials) { assert.ok(!JSON.stringify(portable).includes(credential.id)); assert.ok(!JSON.stringify(document).includes(credential.value)); }
+  let sent = 0;
+  const executor = createWorkflowExecution((approved, values, context) => executeCredentialed(approved, values, context.binding, credentials, {
+    assertCurrent() {}, fetchRequest: async (url, options) => {
+      sent++; assert.equal(options.headers.get('Authorization'), 'Basic '+Buffer.from(`${credentials[0].value}:${credentials[1].value}`).toString('base64'));
+      return Response.json({ result: 'safe' });
+    },
+  }));
+  await executor.execute(model, {}, undefined, invocation(reloaded.nodes[0].data.credentialBinding));
+  assert.equal(sent, 1);
+  await assert.rejects(executor.execute(model, {}, undefined, invocation({ ...selected, credentials: { Login: credentials[0].id } })), code('PERMISSION'));
+  await assert.rejects(executor.execute(model, {}, undefined, invocation({ ...selected, fingerprint: '0'.repeat(64) })), code('PERMISSION'));
+  assert.equal(sent, 1);
+});
+
 Then('shared workflow execution routes supported credentials and rejects missing malformed or stale selections', async () => {
   register();
   const secured = operation('secured'), approved = await approvedOperation(secured, origin), selection = binding(approved.fingerprint);
@@ -121,7 +159,7 @@ Then('shared workflow execution routes supported credentials and rejects missing
   }
   const next = schema(); next.servers = [{ url: 'https://changed.example/v2' }]; register(next);
   await assert.rejects(executor.execute(secured, {}, undefined, invocation(selection)), code('PERMISSION'));
-  const unsupported = schema(); unsupported.components.securitySchemes.bearer = { type: 'http', scheme: 'basic' };
+  const unsupported = schema(); unsupported.components.securitySchemes.bearer = { type: 'http', scheme: 'digest' };
   assert.throws(() => register(unsupported), /bearer/);
   assert.equal(calls.length, 1);
   const originalDigest = crypto.subtle.digest;
@@ -177,7 +215,7 @@ Then('anonymous execution rejects authenticated alternatives and only permits an
 
 Then('a reloaded credential binding executes its original supported alternative and cannot select an unsupported AND choice', async () => {
   const source = schema();
-  source.components.securitySchemes.basic = { type: 'http', scheme: 'basic' };
+  source.components.securitySchemes.basic = { type: 'http', scheme: 'digest' };
   source.components.securitySchemes.Key = { type: 'apiKey', in: 'header', name: 'X-Key' };
   source.security = [{ basic: [], Key: [] }, { bearer: [] }];
   register(source);
