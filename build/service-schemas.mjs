@@ -12,7 +12,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources } from '../src/lib/schema-patches.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
 import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
@@ -117,13 +117,16 @@ for (const source of sources) {
   const json = JSON.stringify(document);
   if (source.profile === 'github-auth' && sha(json) !== githubAuthenticationSourceSha256)
     throw new Error('GitHub authentication requires requalification before updating the pinned native source.');
+  if (source.profile === 'http-streaming' && sha(json) !== httpResponseStreamingSources[source.id])
+    throw new Error('HTTP streaming requires requalification before updating the pinned native source.');
   const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
     : source.profile === 'azure-eventgrid-auth' ? [azureEventGridManagementAuth]
     : source.profile === 'anthropic-auth' ? [anthropicAuthentication]
     : source.profile === 'elevenlabs-auth' ? [elevenLabsAuthentication]
-    : source.profile === 'github-auth' ? [githubAuthentication] : [];
+    : source.profile === 'github-auth' ? [githubAuthentication]
+    : source.profile === 'http-streaming' ? [httpResponseStreaming] : [];
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

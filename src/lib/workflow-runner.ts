@@ -19,6 +19,7 @@ import { containsPrivateValue, isPrivateProcessingReference, privateExpressionFo
 import type { ProcessingExecutor } from "./workflow-processing-client.ts";
 import { processingDefinition, processingPreview } from "./workflow-processing.ts";
 import { arrayFilterPlans, type ArrayFilterPlan } from "./workflow-array-filter.ts";
+import type { ResponseProgressCallback } from "./workflow-response-stream.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
@@ -681,7 +682,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       return advancing;
     },
     get processingResults() { return structuredClone(processingResults); },
-    async submit(values: InputValues, binding?: CredentialBinding | null): Promise<WorkflowExecution>
+    async submit(values: InputValues, binding?: CredentialBinding | null, onProgress?: ResponseProgressCallback): Promise<WorkflowExecution>
     {
       if (!current || stopped || terminalError) throw new Error("There is no operation ready to run.");
       if (pending) throw new Error("This operation already has a request in progress.");
@@ -700,7 +701,8 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         const executionBinding = selectedBinding ?? (selection
           ? { ...selection, fingerprint: (await approvedOperation(operationForId(completed.visit.operation.id)!, workflowExecutionForOperation(completed.visit.operation).origin)).fingerprint } : undefined);
         result = await execution.execute(completed.visit.operation, values, controller.signal,
-          executionBinding ? { binding: executionBinding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined);
+          executionBinding ? { binding: executionBinding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined,
+          progress => { if (!stopped && current === completed && !controller.signal.aborted) onProgress?.(progress); });
       }
       finally { pending = undefined; }
       if (stopped || current !== completed) throw new Error("This run has ended.");

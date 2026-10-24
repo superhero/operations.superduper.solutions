@@ -653,6 +653,25 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
 });
 
 const policy = (page, method, ...args) => page.evaluate(async ({ method, args }) => (await import('/vault-policy-fixture.js'))[method](...args), { method, args });
+Then('production vault stream progress contains counts only and its terminal result is scrubbed', async function () {
+  this.vaultRun = randomUUID();
+  const result = await policy(this.page, 'streamedClient', this.baseURL, this.vaultRun);
+  noCanaries(result);
+  assert.equal(result.value.response.status, 200);
+  assert.equal(result.value.response.mediaType, 'application/json');
+  assert.equal(result.value.response.transportMediaType, 'text/event-stream');
+  assert.equal(result.value.response.redacted, true);
+  assert.equal(result.value.response.body.id, 'resp_worker_fixture');
+  assert.match(result.value.response.body.output[0].content[0].text, /^safe .* tail$/);
+  assert.ok(result.progress.length >= 2);
+  for (const progress of result.progress) {
+    assert.deepEqual(Object.keys(progress).sort(), ['bytes', 'events']);
+    assert.ok(Number.isSafeInteger(progress.bytes) && Number.isSafeInteger(progress.events));
+  }
+  assert.equal(result.progress.at(-1).events, 2);
+  await expect.poll(async () => (await observations(this))[0].closed).toBe(true);
+  assert.equal((await observations(this)).length, 1, 'The production client must not reconnect the stream.');
+});
 Given('a browser vault worker has an approved credential request for a saved schema', async function () {
   this.vaultRun = randomUUID();
   await policy(this.page, 'setup', this.baseURL, this.vaultRun);

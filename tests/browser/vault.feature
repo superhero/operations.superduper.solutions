@@ -48,6 +48,10 @@ Feature: Browser vault persistence and controlled credential execution
       | password |
       | recovery |
 
+  @vault-browser-network @chromium-only
+  Scenario: Production vault streaming crosses the worker boundary as counts and one scrubbed result
+    Then production vault stream progress contains counts only and its terminal result is scrubbed
+
   @vault-browser-network
   Scenario: Approved credentials reach only the selected request and echoes are scrubbed
     Given an isolated browser vault with synthetic credentials

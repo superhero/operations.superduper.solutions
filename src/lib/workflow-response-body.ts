@@ -3,8 +3,11 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "./catalog.ts";
 import { encodeWorkflowBinary, maxWorkflowUploadBytes } from "./workflow-binary.ts";
+import { WorkflowBodyError } from "./workflow-body-error.ts";
+import { readResponseStream, responseStreamProfile, streamMediaType, type ResponseStreamProfile, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
+export { WorkflowBodyError } from "./workflow-body-error.ts";
 
-export type ResponseKind = "json" | "text" | "binary" | "unsupported";
+export type ResponseKind = "json" | "text" | "binary" | "stream" | "unsupported";
 export type ResponseContent = Record<string, Record<string, ResponseKind>>;
 export const maxWorkflowResponseBytes = 8 * 1024 * 1024;
 const object = (value: unknown): Record<string, any> => value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -22,8 +25,8 @@ export function responseKind(media: string, schema: Record<string, unknown> = {}
   return responseMediaType(media) && !["multipart/form-data", "application/x-www-form-urlencoded"].includes(media) ? "binary" : "unsupported";
 }
 
-/** Only file-capable operations acquire new approval metadata; old JSON/text fingerprints stay stable. */
-export function inspectResponseContent(responses: unknown, document: Record<string, unknown>): ResponseContent | undefined {
+/** File/stream operations acquire response approval metadata; ordinary JSON/text fingerprints stay stable. */
+export function inspectResponseContent(responses: unknown, document: Record<string, unknown>, stream?: ResponseStreamProfile): ResponseContent | undefined {
   function resolve(raw: unknown): Record<string, any> {
     let value = object(raw);
     const seen = new Set<string>();
@@ -48,23 +51,15 @@ export function inspectResponseContent(responses: unknown, document: Record<stri
     for (const [media, source] of Object.entries(object(resolve(raw).content))) {
       const normalized = responseMediaType(media);
       if (!normalized) continue;
-      const kind = responseKind(normalized, resolve(object(source).schema));
+      const kind = stream && normalized === streamMediaType(stream) ? "stream" : responseKind(normalized, resolve(object(source).schema));
       representations[normalized] = kind;
-      binary ||= kind === "binary";
+      binary ||= kind === "binary" || kind === "stream";
     }
     content[status.toUpperCase()] = representations;
   }
+  if (stream && !Object.values(content).some(media => media[streamMediaType(stream)] === "stream" && media["application/json"] === "json"))
+    throw new Error("A response stream requires its declared wire media and final JSON representation.");
   return binary ? content : undefined;
-}
-
-export class WorkflowBodyError extends Error {
-  readonly code: "LIMIT" | "CANCELLED" | "MEDIA";
-  constructor(code: WorkflowBodyError["code"]) {
-    super(code === "LIMIT" ? "The response exceeds the supported size limit. Check the completed request before retrying."
-      : code === "CANCELLED" ? "The request was cancelled."
-      : "The endpoint returned an unsupported or undeclared response type. Check the completed request before retrying.");
-    this.code = code;
-  }
 }
 
 async function readBytes(response: Response, signal: AbortSignal, limit: number): Promise<Uint8Array> {
@@ -114,7 +109,8 @@ export function responseFileName(disposition: string | null): string {
 }
 
 export async function readWorkflowResponseBody(response: Response, operation: Operation, method: string, signal: AbortSignal,
-  textLimit = maxWorkflowResponseBytes): Promise<{ body: unknown; bodyType?: "binary"; mediaType?: string; malformedJson?: boolean }> {
+  textLimit = maxWorkflowResponseBytes, streaming?: { onStart: () => void; onProgress?: ResponseProgressCallback }): Promise<{
+    body: unknown; bodyType?: "binary"; mediaType?: string; transportMediaType?: string; stream?: ResponseProgress; malformedJson?: boolean }> {
   if (method === "HEAD" || response.status === 204 || response.status === 205) {
     void response.body?.cancel().catch(() => {});
     return { body: null };
@@ -125,6 +121,13 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
   const declared = definitions?.[String(response.status)] ?? definitions?.[`${Math.floor(response.status / 100)}XX`] ?? definitions?.DEFAULT;
   const selected = mediaType && (declared?.[mediaType] ?? declared?.["application/octet-stream"]);
   const kind = mediaType ? selected ?? responseKind(mediaType) : "unsupported";
+  const profile = responseStreamProfile(operation.responseStream);
+  if (response.ok && profile && mediaType === streamMediaType(profile) && selected === "stream" && declared?.["application/json"] === "json") {
+    streaming?.onStart();
+    const final = await readResponseStream(response, profile, signal, streaming?.onProgress);
+    // The terminal value has the existing JSON schema; the transport remains explicit in metadata/headers.
+    return { ...final, mediaType: "application/json", transportMediaType: mediaType };
+  }
   // Actual events can never be forced through a declared JSON decoder. Files need an explicit declaration.
   if (!mediaType || responseKind(mediaType) === "unsupported" || kind === "unsupported" || kind === "binary" && selected !== "binary"
     || response.ok && definitions && selected === undefined) {

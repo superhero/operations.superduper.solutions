@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "705f0cd0137eb8aaf711599a6fc6a4405e8028f1a4d96118afae1af7decbad28",
+  "adapterRevision": "86d72faca7ed96795a5884d8415606e54f668898fb2fa746faa044f4abcd0692",
   "indexes": [
     {
       "id": "anthropic",
@@ -2937,10 +2937,10 @@
     },
     {
       "id": "ollama",
-      "sourceRevision": "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
+      "sourceRevision": "d07f805ca2a0ad05018669a0366b0763f5e693ac11c8c53b68025cb900dc8ab5",
       "bytes": 3817,
       "compressedBytes": 800,
-      "sha256": "4980372a2627b2bdb91c8d9eb86d18c1e7b2d89efc17d03fc6131eb94354e2d9",
+      "sha256": "dc1c150ed371d5069d4cafd10d45436285e84cfd6d8fad8a38def99c9829c11f",
       "summary": {
         "name": "Ollama API",
         "serverUrl": "http://localhost:11434",
@@ -2951,10 +2951,10 @@
     },
     {
       "id": "openai",
-      "sourceRevision": "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
+      "sourceRevision": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
       "bytes": 93006,
-      "compressedBytes": 9111,
-      "sha256": "b6baebfa21f1b1a70dca32fb252ecc623e6b77848f3fc480a5511d9430f916c3",
+      "compressedBytes": 9115,
+      "sha256": "db4390787c4185d5f55b1449ac6e3125b25e24993cd6f3302ac397a1c6cbf35e",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",

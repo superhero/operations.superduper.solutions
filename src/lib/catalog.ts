@@ -7,6 +7,7 @@ import { inspectOperationSecurity, type CredentialPermissions, type OperationSec
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 import { inspectResponseContent, type ResponseContent } from "./workflow-response-body.ts";
 import { supportsFormField } from "./form-input.ts";
+import { responseStreamProfile, type ResponseStreamProfile } from "./workflow-response-stream.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -54,8 +55,10 @@ export type Operation = {
   bodySchema?: InputSchema;
   responseExample?: unknown;
   responseMediaType?: string;
-  /** Per-status media contracts for operations with a binary representation. */
+  /** Per-status media contracts for operations with binary or reviewed streaming responses. */
   responseContent?: ResponseContent;
+  /** Reviewed wire framing and terminal JSON assembly, never arbitrary event code. */
+  responseStream?: ResponseStreamProfile;
   security?: OperationSecurity;
   unavailableReason?: string;
   oauthScopes?: Record<string, string[]>[];
@@ -339,7 +342,9 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (binaryMediaTypes) extracted.binaryMediaTypes = binaryMediaTypes;
       if (bodyValue) extracted.bodyValue = true;
       if (bodySchema) extracted.bodySchema = bodySchema;
-      const responseContent = inspectResponseContent(operation.responses, document);
+      const stream = responseStreamProfile(operation["x-operations-response-stream"]);
+      if (stream) extracted.responseStream = stream;
+      const responseContent = inspectResponseContent(operation.responses, document, stream);
       if (responseContent) extracted.responseContent = responseContent;
       const security = inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;

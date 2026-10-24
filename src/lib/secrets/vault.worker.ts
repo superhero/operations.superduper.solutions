@@ -69,7 +69,10 @@ self.onmessage = async ({ data }) => {
     assertActive();
     const method = data.method as VaultMethod;
     const args: unknown[] = data.args;
-    if (method === "execute") args[3] = controller.signal;
+    if (method === "execute") {
+      args[3] = controller.signal;
+      args[5] = (progress: import("../workflow-response-stream.ts").ResponseProgress) => { assertActive(); send({ event: "response-progress", id, progress }); };
+    }
     // Only named, reviewed management and execution methods are dispatchable.
     const call = session[method].bind(session) as (...args: unknown[]) => Promise<unknown>;
     const value = await call(...args);

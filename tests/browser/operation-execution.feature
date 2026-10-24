@@ -3,6 +3,14 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Workflow operation execution
+  @chromium-only
+  Scenario Outline: Streaming progress stays stable and cancellation never repeats a write at <width>px
+    Then streamed operation progress at <width> pixels stays stable until cancellation or an explicit terminal result
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario: Execute an operation with typed URL and header inputs
     Then workflow operation execution sends the encoded query and headers and displays the received response
 

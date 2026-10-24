@@ -22,7 +22,15 @@ export function createVaultEndpoint() {
     const record = { action, method: request.method, headers: request.headers, closed: false };
     seen.push(record); requests.set(id, seen);
     response.on('close', () => { record.closed = true; });
-    if (action === 'redirect') {
+    if (action === 'stream') {
+      response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      const secret = request.headers.authorization ?? '';
+      response.write('event: response.output_text.delta\ndata: '+JSON.stringify({ type: 'response.output_text.delta', delta: secret })+'\n\n');
+      const timer = setTimeout(() => response.end('event: response.completed\ndata: '+JSON.stringify({ type: 'response.completed',
+        response: { id: 'resp_worker_fixture', object: 'response', status: 'completed', error: null,
+          output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'safe '+secret+' tail' }] }] } })+'\n\n'), 700);
+      response.on('close', () => clearTimeout(timer));
+    } else if (action === 'redirect') {
       response.writeHead(307, { Location: `/vault-api/${id}/received` }); response.end();
     } else if (action === 'slow') {
       response.writeHead(200, { 'Content-Type': 'text/plain' });

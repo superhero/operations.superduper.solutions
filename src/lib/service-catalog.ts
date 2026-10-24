@@ -9,6 +9,7 @@ import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
 import { supportsFormField } from "./form-input.ts";
+import { responseStreamProfile } from "./workflow-response-stream.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -240,7 +241,9 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         const authorization = security(document, source, operation);
         if (authorization !== undefined) operation.security = authorization;
         const responses = value(source.responses);
-        const responseContent = inspectResponseContent(responses, document);
+        const stream = responseStreamProfile(source["x-operations-response-stream"]);
+        if (stream) operation.responseStream = stream;
+        const responseContent = inspectResponseContent(responses, document, stream);
         if (responseContent) operation.responseContent = responseContent;
         const response = resolve(responses[Object.keys(responses).find(status => /^2\d\d$/.test(status)) ?? "default"], document);
         const content = value(response.content);

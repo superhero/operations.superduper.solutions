@@ -14,15 +14,16 @@ import { approvedOperation } from "./secrets/policy.ts";
 import { isBasicCredentialReference, validateCredentialContext } from "./secrets/bindings.ts";
 import { executeVaultOperation } from "./secrets/vault-executor.ts";
 import { readWorkflowResponseBody, WorkflowBodyError } from "./workflow-response-body.ts";
+import { workflowResponseLifetime, responseAccept, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
 
 export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown;
-  bodyType?: "binary"; mediaType?: string; redacted?: boolean };
+  bodyType?: "binary"; mediaType?: string; transportMediaType?: string; stream?: ResponseProgress; redacted?: boolean };
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
 export type WorkflowExecutor = {
-  execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
+  execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext, onProgress?: ResponseProgressCallback): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
 };
 export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: InputValues,
-  context: CredentialExecutionContext, signal?: AbortSignal) => Promise<WorkflowExecutionResult>;
+  context: CredentialExecutionContext, signal?: AbortSignal, onProgress?: ResponseProgressCallback) => Promise<WorkflowExecutionResult>;
 
 export class WorkflowResponseError extends Error
 {
@@ -73,7 +74,7 @@ function requestFailure(signal: AbortSignal | undefined, timeout: AbortSignal, m
 export function createWorkflowRequestExecution(fetchRequest: typeof fetch = globalThis.fetch): WorkflowExecutor
 {
   return {
-    async execute(operation, values, signal, context)
+    async execute(operation, values, signal, context, onProgress)
     {
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
@@ -95,37 +96,43 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         || Object.keys(request.query).some(name => credentialQueries.has(name))) throw new VaultError("PERMISSION");
       const url = workflowRequestUrl(request, origin);
       if (request.method === "TRACE") throw new Error("Browsers do not permit TRACE requests.");
-      const timeout = AbortSignal.timeout(15_000);
-      const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
-      let response: Response;
-      const headers: Record<string, string> = { Accept: canonical.responseMediaType ?? "application/json", ...request.headers };
-      if (request.body !== undefined && request.contentType !== "multipart/form-data")
-        headers["Content-Type"] = request.contentType ?? "application/json";
-      try
-      {
-        response = await fetchRequest(url, {
-          method: request.method, redirect: "error", credentials: "omit", headers, body: requestBody(request),
-          signal: requestSignal
-        });
-      }
-      catch
-      {
-        throw requestFailure(signal, timeout, `The request could not reach ${origin}. Check connectivity and whether the endpoint allows browser requests, then retry.`);
-      }
-      const metadata = { status: response.status, statusText: response.statusText, headers: Object.fromEntries(response.headers) };
-      let parsed: Awaited<ReturnType<typeof readWorkflowResponseBody>>;
-      try { parsed = await readWorkflowResponseBody(response, canonical, request.method, requestSignal); }
-      catch (error) {
-        if (error instanceof WorkflowBodyError && error.code !== "CANCELLED")
-          throw new WorkflowResponseError(error.message, { ...metadata, body: null });
-        throw requestFailure(signal, timeout, "The response could not be read. Check the completed request before retrying.");
-      }
-      const { malformedJson, ...result } = parsed;
-      if (malformedJson) throw new WorkflowResponseError("The endpoint did not return valid JSON. Check its response before retrying.", { ...metadata, ...result });
-      if (!response.ok) throw new WorkflowResponseError(
-        `The endpoint returned ${response.status}${response.statusText ? ` ${response.statusText}` : ""}. Check the request and retry.`,
-        { ...metadata, ...result });
-      return { request, response: { ...metadata, ...result } };
+      const lifetime = workflowResponseLifetime(signal), timeout = lifetime.timeout;
+      try {
+        const requestSignal = lifetime.signal;
+        let response: Response;
+        const headers: Record<string, string> = { Accept: responseAccept(canonical.responseStream, canonical.responseMediaType, request.body), ...request.headers };
+        if (request.body !== undefined && request.contentType !== "multipart/form-data")
+          headers["Content-Type"] = request.contentType ?? "application/json";
+        try
+        {
+          response = await fetchRequest(url, {
+            method: request.method, redirect: "error", credentials: "omit", headers, body: requestBody(request),
+            signal: requestSignal
+          });
+        }
+        catch
+        {
+          throw requestFailure(signal, timeout, `The request could not reach ${origin}. Check connectivity and whether the endpoint allows browser requests, then retry.`);
+        }
+        const metadata = { status: response.status, statusText: response.statusText, headers: Object.fromEntries(response.headers) };
+        let parsed: Awaited<ReturnType<typeof readWorkflowResponseBody>>;
+        let streaming = false;
+        try { parsed = await readWorkflowResponseBody(response, canonical, request.method, requestSignal, undefined,
+          { onStart() { streaming = true; lifetime.beginStream(); }, ...(onProgress ? { onProgress } : {}) }); }
+        catch (error) {
+          if (streaming && timeout.aborted && !signal?.aborted)
+            throw new WorkflowResponseError("The streamed request timed out. Check the completed request before retrying.", { ...metadata, body: null });
+          if (error instanceof WorkflowBodyError && error.code !== "CANCELLED")
+            throw new WorkflowResponseError(error.message, { ...metadata, body: null });
+          throw requestFailure(signal, timeout, "The response could not be read. Check the completed request before retrying.");
+        }
+        const { malformedJson, ...result } = parsed;
+        if (malformedJson) throw new WorkflowResponseError("The endpoint did not return valid JSON. Check its response before retrying.", { ...metadata, ...result });
+        if (!response.ok) throw new WorkflowResponseError(
+          `The endpoint returned ${response.status}${response.statusText ? ` ${response.statusText}` : ""}. Check the request and retry.`,
+          { ...metadata, ...result });
+        return { request, response: { ...metadata, ...result } };
+      } finally { lifetime.dispose(); }
     }
   };
 }
@@ -135,13 +142,13 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
 {
   const anonymous = createWorkflowRequestExecution();
   return {
-    async execute(operation, values, signal, context) {
+    async execute(operation, values, signal, context, onProgress) {
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
       const invocation = context ? validateCredentialContext(context) : undefined;
       const hasVariables = invocation?.variables !== undefined;
-      if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal);
+      if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal, undefined, onProgress);
       if (!invocation) throw new VaultError("PERMISSION");
       const submitted = { ...values };
       const { origin } = workflowExecutionForOperation(canonical);
@@ -150,16 +157,16 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
         || invocation.binding.fingerprint !== descriptor.fingerprint) throw new VaultError("PERMISSION");
       if (!canonical.security?.length) {
         if (invocation.binding.alternative !== 0 || Object.keys(invocation.binding.credentials).length) throw new VaultError("PERMISSION");
-        return credentialExecution(descriptor, submitted, invocation, signal);
+        return credentialExecution(descriptor, submitted, invocation, signal, onProgress);
       }
       const alternative = canonical.security[invocation.binding.alternative];
       if (!supportedSecurityAlternative(alternative)) throw new VaultError("PERMISSION");
-      if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal) : anonymous.execute(operation, submitted, signal, invocation);
+      if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal, onProgress) : anonymous.execute(operation, submitted, signal, invocation, onProgress);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name)
           || (scheme.kind === "basic" ? !isBasicCredentialReference(invocation.binding.credentials[scheme.name])
             : typeof invocation.binding.credentials[scheme.name] !== "string"))) throw new VaultError("PERMISSION");
-      return credentialExecution(descriptor, submitted, invocation, signal);
+      return credentialExecution(descriptor, submitted, invocation, signal, onProgress);
     }
   };
 }

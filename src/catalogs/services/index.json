@@ -4504,6 +4504,7 @@
     "id": "ollama",
     "name": "Ollama",
     "url": "https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml",
+    "profile": "http-streaming",
     "version": "0.1.0",
     "openapi": "3.1.0",
     "operations": 17,
@@ -4514,12 +4515,21 @@
     "sha256": "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
     "sourceSha256": "e94c8f02969c6807f431b7d0643eb0f8368f1d1baa719a4edaf07989b758f257",
     "bytes": 69719,
-    "compressedBytes": 16616
+    "compressedBytes": 16616,
+    "patches": [
+      {
+        "id": "http-response-streaming",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d07f805ca2a0ad05018669a0366b0763f5e693ac11c8c53b68025cb900dc8ab5",
+    "effectiveBytes": 69813
   },
   {
     "id": "openai",
     "name": "OpenAI",
     "url": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml",
+    "profile": "http-streaming",
     "version": "2.3.0",
     "openapi": "3.1.0",
     "operations": 360,
@@ -4530,7 +4540,15 @@
     "sha256": "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
     "sourceSha256": "5ee00b466cb48a392c91773f62f1ca93392ec1bb26b52e0381af7fad0e4817a4",
     "bytes": 3150278,
-    "compressedBytes": 425945
+    "compressedBytes": 425945,
+    "patches": [
+      {
+        "id": "http-response-streaming",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
+    "effectiveBytes": 3150328
   },
   {
     "id": "codex",

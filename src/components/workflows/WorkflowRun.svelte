@@ -23,6 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
   import { WorkflowResponseError, workflowExecutionForOperation, type WorkflowResponse } from "$lib/workflow-execution.ts";
+  import type { ResponseProgress } from "$lib/workflow-response-stream.ts";
 
   let { document, onClose, startingNodeId, onBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
     startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void } = $props();
@@ -41,6 +42,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let executed = $state(false);
   let fatal = $state(false);
   let busy = $state(false);
+  let sending = $state(false);
+  let responseProgress = $state<ResponseProgress | null>(null);
   let retry = $state(false);
   let disposed = false;
   let history = $state<WorkflowExecution[]>([]);
@@ -64,6 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     operationDescription = false;
     executed = false;
     retry = false;
+    responseProgress = null;
     try
     {
       const next = await runner!.nextAsync();
@@ -99,11 +103,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     prepared = null;
     failedResponse = null;
     busy = true;
+    sending = true;
+    responseProgress = null;
     try
     {
       const submittedValues = { ...values };
       if (!view.vaultVariables?.length) prepared = prepareRequest(view.operation, submittedValues);
-      const result = await runner!.submit(submittedValues, credentialBinding ?? null);
+      const visitId = view.id;
+      const result = await runner!.submit(submittedValues, credentialBinding ?? null, progress => {
+        if (!disposed && view?.kind === "operation" && view.id === visitId && sending) responseProgress = progress;
+      });
       if (!disposed) { prepared = result.request; history = [...history, result]; executed = true; retry = false; }
     }
     catch (cause)
@@ -120,7 +129,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         globalThis.document.getElementById(`run-${cause.fieldKey}`)?.focus();
       }
     }
-    finally { busy = false; }
+    finally { busy = false; sending = false; responseProgress = null; }
   }
 
   function edit(field: InputField, value: string | null | undefined) {
@@ -183,6 +192,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       <Reveal open={operationDetails} id="run-operation-details">{#key view.id}<OperationReport operation={view.operation} />{/key}</Reveal>
       <p class="hint">{view.workflowName}</p>
+      {#if view.operation.responseStream}
+        <p class="run-stream-progress" role="status" aria-label="Response progress">{sending
+          ? responseProgress ? `Receiving response · ${responseProgress.events} updates` : "Waiting for response…" : ""}</p>
+      {/if}
       {#if view.vaultVariables?.length && (!view.operation.security?.length || credentialBinding && view.operation.security[credentialBinding.alternative]?.length === 0)}<VaultVariableAccess disabled={busy || executed} />{/if}
       <form id={operationFormId} onsubmit={execute} novalidate>
         {#if view.operation.security?.length}
@@ -259,6 +272,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .workflow-run { display: grid; gap: 20px; min-width: 0; }
+  .run-stream-progress { min-height: 18px; margin: 0; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .run-endpoint { margin: 0; padding: 12px; border-left: 3px solid var(--color-emphasis); background: var(--color-report-card); font-size: 12px; line-height: 1.6; }
   h3 { margin: 0 0 8px; font-size: 16px; }
   h3[tabindex="-1"] { outline: none; }

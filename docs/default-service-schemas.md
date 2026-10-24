@@ -467,7 +467,9 @@ separate OpenAI HTTP API schema remains unchanged.
 
 Typed controls cover supported constraints. Advanced JSON schemas use a JSON
 input with API-side validation. Unsupported authentication, serialization and
-streaming transports remain visible with an execution limitation. Raw binary
+streaming transports remain visible with an execution limitation, except the
+reviewed [OpenAI Responses and Ollama HTTP streaming](http-response-streaming.md)
+profiles, which assemble one bounded terminal JSON result. Raw binary
 bodies and individual multipart file fields are supported when declared with
 `type: string`, `format: binary`; see [workflow files](workflow-files.md). AWS signing is
 unsupported. OAuth access tokens use bearer transport; login, token refresh and
