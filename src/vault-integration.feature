@@ -59,3 +59,6 @@ Feature: Credential references at workflow execution boundaries
 
   Scenario: Vault variables support workflow-added text properties
     Then workflow-added text properties resolve vault references against the canonical schema approval
+
+  Scenario: Existing vault header connections migrate to explicit API key selection
+    Then existing vault header edges select only an unambiguous API key and survive private execution

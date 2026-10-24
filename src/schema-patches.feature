@@ -93,3 +93,30 @@ Feature: Reviewable schema corrections and structured upstream merges
 
   Scenario: Large field comparisons bound processing and display honestly
     Then schema line diffs fold context and expose bounded output without inventing source values
+
+  Scenario: Anthropic authentication and version headers preserve published and explicitly public contracts
+    Then Anthropic corrections retain source headers require version and preserve explicit security overrides
+
+  Scenario Outline: Anthropic authentication rejects an unreviewed <kind>
+    Then Anthropic correction rejects the unreviewed contract "<kind>"
+    Examples:
+      | kind                  |
+      | provider              |
+      | SDK revision          |
+      | OpenAPI version       |
+      | destination           |
+      | empty servers         |
+      | operation destination |
+      | path destination      |
+      | unreviewed route      |
+      | missing components    |
+      | missing paths         |
+      | malformed path        |
+      | missing version       |
+      | version type          |
+      | duplicate version     |
+      | workspace collision   |
+      | scheme collision      |
+      | security provenance   |
+      | parameter provenance  |
+      | permissions           |

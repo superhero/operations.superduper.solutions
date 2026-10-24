@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { requestBody } from "../request-body.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
-import { isBasicCredentialReference } from "./bindings.ts";
+import { credentialSelectionForVariables, isBasicCredentialReference } from "./bindings.ts";
 import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
@@ -118,12 +118,12 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       throw new VaultError("PERMISSION");
     const injected = new Headers();
     const injectedQueries = new Map<string, string>();
-    const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey"): string => {
+    const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey", connectedHeader = false): string => {
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
       const credential = matches[0]!;
       if (!["secret", "bearer", "apiKey"].includes(credential.kind)
-        || kind !== "basic" && credential.kind !== "secret" && credential.kind !== kind) throw new VaultError("PERMISSION");
+        || !connectedHeader && kind !== "basic" && credential.kind !== "secret" && credential.kind !== kind) throw new VaultError("PERMISSION");
       if (typeof credential.value !== "string" || !credential.value.length || credential.value !== credential.value.trim()
         || /[^\u0020-\u007e]/.test(credential.value) || new TextEncoder().encode(credential.value).byteLength > vaultLimits.secretBytes)
         throw new VaultError("INVALID");
@@ -142,7 +142,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         injected.set(scheme.header, authorization);
       } else {
         if (typeof reference !== "string") throw new VaultError("PERMISSION");
-        const value = credentialValue(reference, scheme.kind);
+        const connected = credentialSelectionForVariables([[scheme]], variables);
+        const value = credentialValue(reference, scheme.kind, connected?.credentials[scheme.name] === reference);
         if (scheme.query !== undefined) injectedQueries.set(scheme.query, value);
         else injected.set(scheme.header, scheme.kind === "bearer" ? `Bearer ${value}` : value);
       }
@@ -162,6 +163,13 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       if (!variable.path.length) {
         if (inputSnapshot[variable.key] !== vaultVariablePlaceholder) throw new VaultError("INVALID");
         if (variable.credentialId && field.type !== "string") throw new VaultError("INVALID");
+        // Keep existing private header edges after an auth metadata correction.
+        // A public value or a different private value still cannot override auth.
+        if (field.location === "header" && injected.has(field.name)) {
+          if (resolved !== injected.get(field.name)) throw new VaultError("PERMISSION");
+          delete inputSnapshot[variable.key];
+          continue;
+        }
         inputSnapshot[variable.key] = resolved === null ? null : typeof resolved === "object" ? JSON.stringify(resolved) : String(resolved);
       } else {
         if (!["object", "array"].includes(field.type)) throw new VaultError("INVALID");

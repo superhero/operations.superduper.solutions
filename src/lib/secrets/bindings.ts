@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { VaultError, type BasicCredentialReference, type CredentialBinding, type CredentialExecutionContext } from "./types.ts";
-import { validateVaultVariableInputs } from "./variables.ts";
+import { validateVaultVariableInputs, type VaultVariableInput } from "./variables.ts";
+import type { OperationSecurity } from "../operation-security.ts";
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
@@ -21,6 +22,24 @@ export function isBasicCredentialReference(value: unknown): value is BasicCreden
     return Object.keys(pair).length === 2 && Object.keys(pair).every(key => key === "username" || key === "password")
       && typeof pair.username === "string" && uuid.test(pair.username) && typeof pair.password === "string" && uuid.test(pair.password);
   } catch { return false; }
+}
+
+/** A direct vault-to-header connection already selects a key. Retain that choice
+ * when a reviewed schema starts declaring the matching API-key requirement. */
+export function credentialSelectionForVariables(security: OperationSecurity | undefined, variables: readonly VaultVariableInput[] = []):
+  Pick<CredentialBinding, "alternative" | "credentials"> | undefined {
+  const candidates = (security ?? []).flatMap((option, alternative) => {
+    if (!option.length || option.some(scheme => scheme.kind !== "apiKey" || !scheme.header)) return [];
+    const entries = option.map(scheme => {
+      const inputs = variables.filter(input => !input.path.length && input.key.toLowerCase() === `header:${scheme.header!.toLowerCase()}`);
+      const source = inputs.length === 1 ? inputs[0] : undefined;
+      const id = source?.credentialId ?? (source?.expression?.kind === "credential" ? source.expression.id : undefined);
+      return [scheme.name, id] as const;
+    });
+    return entries.every(([, id]) => typeof id === "string" && uuid.test(id))
+      ? [{ alternative, credentials: Object.fromEntries(entries) as Record<string, string> }] : [];
+  });
+  return candidates.length === 1 ? candidates[0] : undefined;
 }
 
 /** Opaque local references only. The encrypted vault owns all actual authorization. */

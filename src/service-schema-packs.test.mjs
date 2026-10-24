@@ -663,3 +663,96 @@ Then('external Swagger references remain valid after bundling and OpenAPI conver
   await assert.rejects(bundleSwaggerReferences({ definitions: { Invalid: { $ref: 'types.json#/definitions/Absent' } } },
     'https://schemas.test/root.json', download), /Missing Swagger reference/);
 });
+
+Then('pinned Anthropic API key and bearer choices dispatch nonstreaming requests with required headers privately', async () => {
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const { createWorkflowExecution, createWorkflowRequestExecution } = await import('./lib/workflow-execution.ts');
+  const { catalogs } = await import('./lib/catalog-registry.ts');
+  const { operations, publishPreparedCatalogs, operationSourceIdentity, installOperationModel } = await import('./lib/catalog.ts');
+  const { scopeOperationSchema } = await import('./lib/operation-report.ts');
+  const { vaultVariablePlaceholder } = await import('./lib/secrets/variables.ts');
+  const { credentialSelectionForVariables } = await import('./lib/secrets/bindings.ts');
+  const source = serviceSchemaDescriptors.find(item => item.id === 'anthropic');
+  assert.deepEqual(source.patches, [{ id: 'anthropic-authentication', version: 1 }]);
+  const published = await readServiceSchemaUpstream('anthropic'), document = await readServiceSchema('anthropic');
+  assert.equal(published.security, undefined); assert.equal(published.components.securitySchemes, undefined);
+  assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
+  assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
+  const before = inspectServiceSchema(published, 'anthropic'), after = inspectServiceSchema(document, 'anthropic');
+  assert.equal(after.operations.length, 144); assert.equal(after.operations.filter(operation => !operation.unavailableReason).length, 22);
+  assert.deepEqual(after.operations.filter(operation => operation.unavailableReason).map(operation => [operation.id, operation.unavailableReason]),
+    before.operations.filter(operation => operation.unavailableReason).map(operation => [operation.id, operation.unavailableReason]), 'Keep independent URI/media/form limitations.');
+  let checked = 0;
+  for (const item of Object.values(document.paths)) for (const [method, operation] of Object.entries(item)) {
+    if (!['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'].includes(method)) continue;
+    assert.ok(securityRequiresCredentials(extractOperationSecurity(document, operation))); checked++;
+  }
+  assert.equal(checked, 144, 'There are no anonymous routes or token-exchange routes in this pinned pack.');
+  const previous = catalogs.map(catalog => ({ catalog, sourceIdentity: operationSourceIdentity(`${catalog.id}:`),
+    operations: operations.filter(operation => operation.id.startsWith(`${catalog.id}:`)) }));
+  const discovery = createSchemaDiscovery(after, source.effectiveSha256);
+  const catalog = { id: source.id, file: 'anthropic.json', document: discovery.document, name: after.name, groups: discovery.groups,
+    execution: { kind: 'http', origin: after.serverUrl } };
+  const credential = { id: crypto.randomUUID(), label: 'Anthropic credential', kind: 'secret', value: 'synthetic-anthropic-private-9182', grants: [] };
+  const other = { ...credential, id: crypto.randomUUID(), value: 'synthetic-conflicting-private-9182' };
+  const calls = [];
+  try {
+    publishPreparedCatalogs([...previous.filter(entry => entry.catalog.id !== source.id), { catalog, operations: discovery.operations, sourceIdentity: source.effectiveSha256 }]);
+    const executor = createWorkflowExecution((approved, values, context) => executeCredentialed(approved, values, context.binding, [credential, other], {
+      variables: context.variables, assertCurrent() {}, fetchRequest: async (url, options) => {
+        calls.push({ url: String(url), options });
+        assert.equal(options.headers.get('anthropic-version'), '2023-06-01');
+        assert.equal(options.headers.get('anthropic-workspace-id'), 'synthetic-workspace');
+        assert.equal(options.credentials, 'omit'); assert.equal(options.redirect, 'error');
+        if (options.method === 'POST') {
+          assert.equal(options.headers.get('Content-Type'), 'application/json');
+          const body = JSON.parse(options.body); assert.equal(body.stream, false); assert.equal(body.max_tokens, 8);
+          assert.deepEqual(body.messages, [{ role: 'user', content: 'Synthetic request' }]);
+        }
+        return Response.json({ type: 'message', content: [{ type: 'text', text: 'Synthetic response' }],
+          reflected: options.headers.get('x-api-key') ?? options.headers.get('Authorization') });
+      },
+    }));
+    for (const id of ['anthropic:messages_post', 'anthropic:models_list']) {
+      const model = after.operations.find(operation => operation.id === id);
+      const scoped = scopeOperationSchema(document, model.path, model.method, true).schema;
+      const operation = installOperationModel({ operation: model, document: scoped, origin: catalog.execution.origin,
+        sourceIdentity: source.effectiveSha256, bytes: Buffer.byteLength(JSON.stringify(scoped)) });
+      assert.ok(operation && !operation.unavailableReason);
+      const descriptor = await approvedOperation(operation, operationServerUrl(document, operation));
+      const values = { 'header:anthropic-version': '2023-06-01', 'header:anthropic-workspace-id': 'synthetic-workspace',
+        ...(operation.method === 'POST' ? { 'body:model': 'synthetic-model', 'body:max_tokens': '8',
+          'body:messages': JSON.stringify([{ role: 'user', content: 'Synthetic request' }]), 'body:stream': 'false' } : {}) };
+      if (operation.fields.find(field => field.key === 'body:model')?.type === 'json') values['body:model'] = JSON.stringify('synthetic-model');
+      for (const [alternative, scheme] of operation.security.map((option, index) => [index, option[0]])) {
+        const binding = { alternative, credentials: { [scheme.name]: credential.id }, fingerprint: descriptor.fingerprint };
+        const context = { binding, runId: crypto.randomUUID(), nodeId: 'anthropic' }, count = calls.length;
+        await assert.rejects(executor.execute(operation, values), { code: 'PERMISSION' });
+        await assert.rejects(createWorkflowRequestExecution(() => assert.fail('Anonymous dispatch')).execute(operation, values), { code: 'PERMISSION' });
+        await assert.rejects(executor.execute(operation, { ...values, 'header:anthropic-version': undefined }, undefined, context));
+        await assert.rejects(executor.execute(operation, values, undefined, { ...context, binding: { ...binding, credentials: {} } }), { code: 'PERMISSION' });
+        const old = await approvedOperation(before.operations.find(operation => operation.id === id), descriptor.origin);
+        await assert.rejects(executor.execute(operation, values, undefined, { ...context, binding: { ...binding, fingerprint: old.fingerprint } }), { code: 'PERMISSION' });
+        assert.equal(calls.length, count);
+        const result = await executor.execute(operation, values, undefined, context);
+        const sent = calls.at(-1); assert.equal(sent.url, `https://api.anthropic.com${operation.path}`);
+        assert.equal(sent.options.headers.get(scheme.header), scheme.kind === 'bearer' ? `Bearer ${credential.value}` : credential.value);
+        assert.equal(sent.options.headers.get(scheme.kind === 'bearer' ? 'x-api-key' : 'Authorization'), null);
+        assert.equal(result.response.redacted, true); assert.ok(!JSON.stringify(result).includes(credential.value));
+        if (operation.method === 'GET' && scheme.kind === 'apiKey') {
+          const variables = [{ key: 'header:x-api-key', path: [], credentialId: credential.id }];
+          assert.deepEqual(credentialSelectionForVariables(operation.security, variables), { alternative, credentials: { [scheme.name]: credential.id } });
+          const legacy = { ...values, 'header:x-api-key': vaultVariablePlaceholder };
+          await executor.execute(operation, legacy, undefined, { ...context, variables });
+          assert.equal(legacy['header:x-api-key'], vaultVariablePlaceholder, 'Do not mutate the public visit.');
+          await assert.rejects(executor.execute(operation, legacy, undefined, { ...context, variables: [{ ...variables[0], credentialId: other.id }] }), { code: 'PERMISSION' });
+          await assert.rejects(executor.execute(operation, { ...values, 'header:x-api-key': credential.value }, undefined, context), { code: 'PERMISSION' });
+        }
+      }
+    }
+    const { writeFile } = await import('node:fs/promises');
+    await writeFile('tmp/anthropic-provider-census.json', JSON.stringify({ operations: checked, private: checked, available: 22,
+      independentLimitations: 122, syntheticRequests: calls.length, workloadIdentityIssuance: false, liveProviderVerified: false }, null, 2)+'\n');
+  } finally { publishPreparedCatalogs(previous); }
+});

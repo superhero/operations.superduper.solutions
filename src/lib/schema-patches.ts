@@ -3,16 +3,18 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
 export const azureEventGridManagementAuth: SchemaPatch = { id: "azure-eventgrid-management-auth", version: 1 };
+export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authentication", version: 1 };
 export function schemaPatchName(patch: SchemaPatch): string {
   return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
     : patch.id === "gemini-auth-alternatives" ? "Gemini authentication alternatives"
-    : patch.id === "azure-eventgrid-management-auth" ? "Azure Event Grid management authentication" : "Unknown schema correction";
+    : patch.id === "azure-eventgrid-management-auth" ? "Azure Event Grid management authentication"
+    : patch.id === "anthropic-authentication" ? "Anthropic authentication and version headers" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -185,19 +187,59 @@ function azureEventGridAuthentication(document: Record<string, any>): void {
   document.security = [{ azure_auth: ["user_impersonation"] }];
 }
 
+/** The pinned SDK pack omits its shared authentication and makes the version
+ * optional. Keep source parameters for inspection and existing vault edges. */
+function anthropicAuth(document: Record<string, any>): void {
+  if (document.security !== undefined) return;
+  const server = (servers: unknown) => Array.isArray(servers) && servers.length > 0
+    && servers.every(item => object(item) && item.url === "https://api.anthropic.com");
+  if (document.openapi !== "3.1.0" || document.info?.title !== "Anthropic API" || document.info.version !== "sdk-v0.120.0"
+    || !server(document.servers) || !object(document.paths) || !object(document.components))
+    throw new Error("Anthropic authentication adaptation requires the reviewed SDK revision and direct API endpoint.");
+  const schemes = document.components.securitySchemes ?? {};
+  if (!object(schemes) || Object.hasOwn(schemes, "AnthropicApiKey") || Object.hasOwn(schemes, "AnthropicBearer")
+    || Object.hasOwn(document, "x-upstream-security") || Object.hasOwn(document, "x-credential-permissions"))
+    throw new Error("Anthropic authentication adaptation cannot overwrite security definitions or provenance.");
+  const families = new Set(["messages", "complete", "models", "files", "skills", "environments", "memory_stores",
+    "user_profiles", "tunnels", "dreams", "sessions", "agents", "deployments", "deployment_runs", "vaults"]);
+  for (const [path, item] of Object.entries(document.paths)) {
+    if (!object(item)) throw new Error("Anthropic authentication adaptation requires reviewed HTTP path items.");
+    for (const [method, operation] of Object.entries(item)) {
+      if (!methods.has(method) || !object(operation) || operation.security !== undefined) continue;
+      if (!families.has(path.split("/")[2]?.split("?")[0] ?? "") || !path.startsWith("/v1/")
+        || !server(operation.servers ?? item.servers ?? document.servers)
+        || Object.hasOwn(operation, "x-upstream-parameters") || !Array.isArray(operation.parameters))
+        throw new Error("Anthropic authentication adaptation cannot authenticate an unreviewed inherited route.");
+      const versions = operation.parameters.filter((parameter: any) => parameter?.in === "header" && parameter.name?.toLowerCase() === "anthropic-version");
+      if (versions.length !== 1 || versions[0].schema?.type !== "string"
+        || operation.parameters.some((parameter: any) => parameter?.in === "header" && parameter.name?.toLowerCase() === "anthropic-workspace-id"))
+        throw new Error("Anthropic authentication adaptation requires the reviewed version and workspace header contract.");
+      operation["x-upstream-parameters"] = structuredClone(operation.parameters);
+      operation.parameters = operation.parameters.map((parameter: any) => parameter === versions[0] ? { ...parameter, required: true } : parameter);
+      operation.parameters.push({ name: "anthropic-workspace-id", in: "header", required: false, schema: { type: "string" },
+        description: "Required for an API key that is not scoped to a workspace. Omit for a workspace-scoped key; access tokens select their workspace at exchange." });
+    }
+  }
+  document.components.securitySchemes = { ...schemes, AnthropicApiKey: { type: "apiKey", in: "header", name: "x-api-key" },
+    AnthropicBearer: { type: "http", scheme: "bearer" } };
+  document["x-upstream-security"] = null;
+  document.security = [{ AnthropicApiKey: [] }, { AnthropicBearer: [] }];
+}
+
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
     else if (patch.id === "digitalocean-bearer-permissions") digitalOceanPermissions(document);
     else if (patch.id === "gemini-auth-alternatives") geminiAlternatives(document);
-    else azureEventGridAuthentication(document);
+    else if (patch.id === "azure-eventgrid-management-auth") azureEventGridAuthentication(document);
+    else anthropicAuth(document);
   }
   return document;
 }

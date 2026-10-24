@@ -174,7 +174,8 @@
     "name": "Anthropic / Claude",
     "url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/anthropic/anthropic-893a61e9c1cd6c69a70d1043c626ed02d12d6a492eb6ca6ef7a84c64cfb15393.yml",
     "provenance": "https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml",
-    "version": "sdk-v0.120.0"
+    "version": "sdk-v0.120.0",
+    "profile": "anthropic-auth"
   },
   {
     "id": "groq",
