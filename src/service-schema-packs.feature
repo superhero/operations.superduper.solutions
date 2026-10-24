@@ -12,6 +12,9 @@ Feature: Bundled service schema integrity
   Scenario: Gemini SDK authentication becomes private standard credential alternatives
     Then Gemini published SDK authentication enables private API key and bearer requests without changing its source
 
+  Scenario: Event Grid management cannot dispatch anonymously after its authentication correction
+    Then Event Grid management retains its published source and requires a private Azure bearer token
+
   Scenario: Google OAuth grant aliases retain scopes provenance and other required credentials
     Then Google grant normalization preserves scope alternatives without weakening unrelated authentication
 

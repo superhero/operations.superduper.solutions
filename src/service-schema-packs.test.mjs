@@ -12,7 +12,90 @@ import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { validateSchemaDocument, operationServerUrl } from './lib/schema-documents.ts';
 import { createSchemaDiscovery, validateSchemaDiscovery } from './lib/schema-index.ts';
 import { codexExecutionLimitation } from './lib/codex-schema.ts';
-import { extractOperationSecurity } from './lib/operation-security.ts';
+import { extractOperationSecurity, securityRequiresCredentials } from './lib/operation-security.ts';
+
+Then('Event Grid management retains its published source and requires a private Azure bearer token', async () => {
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const { createWorkflowExecution, createWorkflowRequestExecution } = await import('./lib/workflow-execution.ts');
+  const { operations, publishPreparedCatalogs, operationSourceIdentity, installOperationModel } = await import('./lib/catalog.ts');
+  const { scopeOperationSchema } = await import('./lib/operation-report.ts');
+  const { catalogs } = await import('./lib/catalog-registry.ts');
+  const source = serviceSchemaDescriptors.find(source => source.id === 'azure-eventgrid');
+  assert.deepEqual(source.patches, [{ id: 'azure-eventgrid-management-auth', version: 1 }]);
+  const published = await readServiceSchemaUpstream(source.id), corrected = await readServiceSchema(source.id);
+  assert.equal(source.sha256, '08622bcbdec69b39057e298e06bf8a51c7ca1e339c9becbae2cc129b1fb8aad1');
+  assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
+  assert.equal(createHash('sha256').update(JSON.stringify(corrected)).digest('hex'), source.effectiveSha256);
+  assert.equal(Buffer.byteLength(JSON.stringify(corrected)), source.effectiveBytes);
+  assert.equal(Object.hasOwn(published, 'security'), false);
+  assert.equal(corrected['x-upstream-security'], null);
+  assert.deepEqual(corrected.components, published.components);
+  assert.deepEqual(corrected.paths, published.paths, 'The complete route inventory and explicit exceptions are preserved.');
+  const before = inspectServiceSchema(published, source.id), after = inspectServiceSchema(corrected, source.id);
+  assert.equal(before.operations.length, 170); assert.equal(after.operations.length, 170);
+  assert.ok(before.operations.every(operation => !securityRequiresCredentials(operation.security)));
+  assert.ok(after.operations.every(operation => securityRequiresCredentials(operation.security)));
+  for (const operation of after.operations) {
+    assert.equal(operation.unavailableReason, undefined);
+    assert.deepEqual(operation.security, [[{ name: 'azure_auth', kind: 'bearer', header: 'Authorization' }]]);
+    assert.deepEqual(operation.oauthScopes, [{ azure_auth: ['user_impersonation'] }]);
+    assert.equal(operationServerUrl(corrected, operation), 'https://management.azure.com');
+  }
+  const previous = catalogs.map(catalog => ({ catalog, sourceIdentity: operationSourceIdentity(`${catalog.id}:`),
+    operations: operations.filter(operation => operation.id.startsWith(`${catalog.id}:`)) }));
+  const discovery = createSchemaDiscovery(after, source.effectiveSha256);
+  const catalog = { id: source.id, file: 'azure-eventgrid.json', name: after.name, document: discovery.document, groups: discovery.groups,
+    execution: { kind: 'http', origin: 'https://management.azure.com' } };
+  publishPreparedCatalogs([...previous.filter(entry => entry.catalog.id !== source.id), {
+    catalog, operations: discovery.operations, sourceIdentity: source.effectiveSha256,
+  }]);
+  try {
+    const model = after.operations.find(operation => operation.id === 'azure-eventgrid:Operations_List');
+    const document = scopeOperationSchema(corrected, model.path, model.method, true).schema;
+    const operation = installOperationModel({ operation: model, document, origin: catalog.execution.origin,
+      sourceIdentity: source.effectiveSha256, bytes: Buffer.byteLength(JSON.stringify(document)) });
+    assert.ok(operation && !operation.unavailableReason);
+    const values = { 'query:api-version': '2025-02-15' };
+    const descriptor = await approvedOperation(operation, 'https://management.azure.com');
+    assert.equal(descriptor.origin, 'https://management.azure.com', 'The approval binds the management resource, not the publishing audience.');
+    assert.deepEqual(descriptor.operation.oauthScopes, [{ azure_auth: ['user_impersonation'] }]);
+    const secret = 'azure-private-token-canary+/._-';
+    const credential = { id: crypto.randomUUID(), label: 'Azure management token', kind: 'secret', value: secret, grants: [] };
+    const binding = { fingerprint: descriptor.fingerprint, alternative: 0, credentials: { azure_auth: credential.id } };
+    const context = { binding, runId: crypto.randomUUID(), nodeId: 'azure-operation' };
+    let calls = 0;
+    const fetchRequest = async (url, init) => {
+      calls++;
+      assert.equal(String(url), 'https://management.azure.com/providers/Microsoft.EventGrid/operations?api-version=2025-02-15');
+      assert.equal(init.method, 'GET'); assert.equal(init.credentials, 'omit');
+      assert.equal(init.headers.get('Authorization'), `Bearer ${secret}`);
+      return new Response(JSON.stringify({ value: [], reflected: secret }), { headers: { 'Content-Type': 'application/json' } });
+    };
+    const executor = createWorkflowExecution((approved, input, selected) => executeCredentialed(approved, input, selected.binding,
+      [credential], { assertCurrent() {}, fetchRequest }));
+    await assert.rejects(executor.execute(operation, values), { code: 'PERMISSION' });
+    await assert.rejects(executor.execute(operation, values, undefined, { ...context, binding: { ...binding, credentials: {} } }), { code: 'PERMISSION' });
+    const anonymous = createWorkflowRequestExecution(() => assert.fail('The anonymous executor must not dispatch an Azure management request.'));
+    await assert.rejects(anonymous.execute(operation, values), { code: 'PERMISSION' });
+    await assert.rejects(anonymous.execute({ ...operation, security: [] }, values), { code: 'PERMISSION' });
+    await assert.rejects(executeCredentialed(descriptor, values, binding, [], { assertCurrent() {}, fetchRequest }), { code: 'PERMISSION' });
+    const old = await approvedOperation(before.operations.find(operation => operation.id === 'azure-eventgrid:Operations_List'), descriptor.origin);
+    assert.notEqual(old.fingerprint, descriptor.fingerprint);
+    await assert.rejects(executor.execute(operation, values, undefined, { ...context, binding: { ...binding, fingerprint: old.fingerprint } }), { code: 'PERMISSION' });
+    assert.equal(calls, 0, 'Missing credentials, anonymous bypasses and old anonymous approvals fail before network dispatch.');
+    const result = await executor.execute(operation, values, undefined, context);
+    assert.equal(calls, 1);
+    assert.ok(!JSON.stringify(result).includes(secret), 'Private results and previews scrub reflected credentials.');
+    assert.ok(!JSON.stringify(descriptor).includes(secret), 'Portable approval metadata contains no bearer value.');
+    const changed = await approvedOperation({ ...operation, oauthScopes: [{ azure_auth: ['changed-permission'] }] }, descriptor.origin);
+    assert.notEqual(changed.fingerprint, descriptor.fingerprint, 'Permission metadata participates in approval identity.');
+    await assert.rejects(executeCredentialed(changed, values, binding, [credential], { assertCurrent() {}, fetchRequest }), { code: 'PERMISSION' });
+    assert.equal(calls, 1);
+  } finally { publishPreparedCatalogs(previous); }
+  console.log(JSON.stringify({ provider: source.id, operations: 170, anonymousBefore: 170, credentialRequiredAfter: 170,
+    resource: 'https://management.azure.com/', permission: 'user_impersonation', privateDispatch: 'passed', missingToken: 'rejected' }));
+});
 
 Then('Gemini published SDK authentication enables private API key and bearer requests without changing its source', async () => {
   const { executeCredentialed } = await import('./lib/secrets/execution.ts');

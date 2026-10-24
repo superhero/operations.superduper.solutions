@@ -4295,6 +4295,7 @@
     "id": "azure-eventgrid",
     "provider": "azure",
     "name": "Microsoft / Azure / Event Grid",
+    "profile": "azure-eventgrid-auth",
     "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
     "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
     "conversion": "swagger2",
@@ -4305,7 +4306,15 @@
     "sha256": "08622bcbdec69b39057e298e06bf8a51c7ca1e339c9becbae2cc129b1fb8aad1",
     "sourceSha256": "c42d8387eca80fa2d79cb1438dcb5ed1f919cda8de091d1241402f74741446e6",
     "bytes": 551699,
-    "compressedBytes": 40245
+    "compressedBytes": 40245,
+    "patches": [
+      {
+        "id": "azure-eventgrid-management-auth",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "bc47a8220775ef84854ff991cf9e7bdf5926ab9583963ed75f0957c40c1f848b",
+    "effectiveBytes": 551777
   },
   {
     "id": "azure-keyvault",

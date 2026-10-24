@@ -3,14 +3,16 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
+export const azureEventGridManagementAuth: SchemaPatch = { id: "azure-eventgrid-management-auth", version: 1 };
 export function schemaPatchName(patch: SchemaPatch): string {
   return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
-    : patch.id === "gemini-auth-alternatives" ? "Gemini authentication alternatives" : "Unknown schema correction";
+    : patch.id === "gemini-auth-alternatives" ? "Gemini authentication alternatives"
+    : patch.id === "azure-eventgrid-management-auth" ? "Azure Event Grid management authentication" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -153,18 +155,49 @@ function geminiAlternatives(document: Record<string, any>): void {
   if (choices) Object.assign(schemes, Object.fromEntries(choices));
 }
 
+/** The Event Grid management source declares OAuth but omits its requirement.
+ * Link the reviewed declaration without inventing an authentication flow. */
+function azureEventGridAuthentication(document: Record<string, any>): void {
+  if (document.security !== undefined) return;
+  const auth = document.components?.securitySchemes?.azure_auth;
+  const implicit = auth?.flows?.implicit;
+  const managementServer = (servers: unknown) => Array.isArray(servers) && servers.length > 0
+    && servers.every(server => object(server) && server.url === "https://management.azure.com");
+  if (!/^3\.(0|1)\.\d+$/.test(document.openapi) || document.info?.title !== "EventGridManagementClient"
+    || !managementServer(document.servers) || !object(document.paths)
+    || auth?.type !== "oauth2" || !object(auth.flows) || Object.keys(auth.flows).length !== 1
+    || implicit?.authorizationUrl !== "https://login.microsoftonline.com/common/oauth2/authorize"
+    || !object(implicit.scopes) || Object.keys(implicit.scopes).length !== 1
+    || typeof implicit.scopes.user_impersonation !== "string" || !implicit.scopes.user_impersonation.trim())
+    throw new Error("Azure Event Grid authentication adaptation requires the reviewed management endpoint and Azure OAuth permission.");
+  for (const [path, item] of Object.entries(document.paths)) {
+    if (!object(item)) continue;
+    for (const [method, operation] of Object.entries(item)) {
+      if (!methods.has(method) || !object(operation) || operation.security !== undefined) continue;
+      if (!/\/providers\/Microsoft\.EventGrid(?:\/|$)/.test(path)
+        || !managementServer(operation.servers ?? item.servers ?? document.servers))
+        throw new Error("Azure Event Grid authentication adaptation cannot authenticate an unreviewed inherited route.");
+    }
+  }
+  if (Object.hasOwn(document, "x-upstream-security") || Object.hasOwn(document, "x-credential-permissions"))
+    throw new Error("Azure Event Grid authentication adaptation cannot overwrite security provenance or permission metadata.");
+  document["x-upstream-security"] = null; // Absence is distinct from an explicit anonymous security array.
+  document.security = [{ azure_auth: ["user_impersonation"] }];
+}
+
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
     else if (patch.id === "digitalocean-bearer-permissions") digitalOceanPermissions(document);
-    else geminiAlternatives(document);
+    else if (patch.id === "gemini-auth-alternatives") geminiAlternatives(document);
+    else azureEventGridAuthentication(document);
   }
   return document;
 }

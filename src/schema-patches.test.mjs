@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/schema-merge.ts';
-import { applySchemaPatches, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
+import { applySchemaPatches, azureEventGridManagementAuth, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 
@@ -97,6 +97,82 @@ const geminiFixture = () => ({ openapi: '3.0.3', info: { title: 'Gemini API', ve
     get: { security: [{ googleGenAIAuth: [], Project: [] }, {}, { Project: [] }] },
     post: {}, head: { security: [] }, options: { security: [{}] }, delete: { security: [{ Project: [] }] },
   } },
+});
+
+const eventGridFixture = () => ({ openapi: '3.0.0', info: { title: 'EventGridManagementClient', version: '2025-02-15' },
+  servers: [{ url: 'https://management.azure.com' }], components: { securitySchemes: {
+    azure_auth: { type: 'oauth2', flows: { implicit: { authorizationUrl: 'https://login.microsoftonline.com/common/oauth2/authorize',
+      scopes: { user_impersonation: 'impersonate your user account' } } } },
+    Project: { type: 'apiKey', in: 'header', name: 'X-Project' },
+  } }, paths: {
+    '/providers/Microsoft.EventGrid/operations': { summary: 'Management', get: {}, post: {
+      security: [{ azure_auth: ['user_impersonation'], Project: [] }],
+    } },
+    '/public': { get: { security: [], servers: [{ url: 'https://public.example.test' }] }, head: { security: [{}] } },
+  },
+});
+
+Then('Event Grid corrections attach existing Azure permissions while preserving public and protected overrides', () => {
+  const source = eventGridFixture(), before = structuredClone(source);
+  const corrected = applySchemaPatches(source, [azureEventGridManagementAuth]);
+  assert.deepEqual(source, before);
+  assert.equal(schemaPatchName(azureEventGridManagementAuth), 'Azure Event Grid management authentication');
+  assert.deepEqual(corrected.security, [{ azure_auth: ['user_impersonation'] }]);
+  assert.equal(corrected['x-upstream-security'], null, 'Missing upstream security is distinct from an anonymous requirement.');
+  assert.deepEqual(corrected.paths, before.paths, 'Public and AND-protected operation overrides stay unchanged.');
+  assert.deepEqual(corrected.components, before.components, 'The existing Azure flow and its permissions stay intact.');
+  assert.deepEqual(applySchemaPatches(corrected, [azureEventGridManagementAuth]), corrected);
+  const operations = inspectServiceSchema(corrected, 'azure-eventgrid').operations;
+  const inherited = operations.find(operation => operation.method === 'GET' && operation.path.endsWith('/operations'));
+  assert.deepEqual(inherited.security, [[{ name: 'azure_auth', kind: 'bearer', header: 'Authorization' }]]);
+  assert.deepEqual(inherited.oauthScopes, [{ azure_auth: ['user_impersonation'] }]);
+  const publicOperation = operations.find(operation => operation.path === '/public' && operation.method === 'GET');
+  assert.deepEqual(publicOperation.security, []);
+  assert.equal(publicOperation.oauthScopes, undefined);
+  assert.equal(operations.find(operation => operation.method === 'POST').security[0].length, 2);
+  for (const declaration of [[{ azure_auth: ['user_impersonation'] }], [], [{}], null]) {
+    const fixed = structuredClone(source); fixed.security = declaration;
+    assert.deepEqual(applySchemaPatches(fixed, [azureEventGridManagementAuth]), fixed,
+      'An explicit published requirement is not overwritten or repaired into different authority.');
+  }
+  const local = structuredClone(corrected); local.info.description = 'My Azure account';
+  const published = structuredClone(source); published.info.version = 'next';
+  const merged = mergeSchemaDocuments(corrected, local, applySchemaPatches(published, [azureEventGridManagementAuth]));
+  assert.deepEqual(merged.conflicts, []);
+  assert.equal(merged.document.info.description, local.info.description);
+  assert.equal(merged.document.info.version, 'next');
+  const overrides = eventGridFixture(); overrides.paths['/providers/Microsoft.EventGrid/operations'].servers = overrides.servers;
+  overrides.paths['/providers/Microsoft.EventGrid/operations'].get.servers = overrides.servers;
+  overrides.paths['/missing'] = null; overrides.paths['/metadata'] = { summary: 'metadata', get: null };
+  assert.deepEqual(applySchemaPatches(overrides, [azureEventGridManagementAuth]).security, corrected.security);
+});
+
+Then('Event Grid correction rejects the unreviewed contract {string}', kind => {
+  const changes = {
+    'wrong provider': doc => { doc.info.title = 'Another Azure service'; },
+    'wrong version': doc => { doc.openapi = '2.0'; },
+    'missing paths': doc => { delete doc.paths; },
+    'wrong audience': doc => { doc.servers = [{ url: 'https://eventgrid.azure.net' }]; },
+    'empty servers': doc => { doc.servers = []; },
+    'malformed server': doc => { doc.servers = [null]; },
+    'missing OAuth': doc => { delete doc.components.securitySchemes.azure_auth; },
+    'wrong OAuth type': doc => { doc.components.securitySchemes.azure_auth.type = 'http'; },
+    'additional flow': doc => { doc.components.securitySchemes.azure_auth.flows.clientCredentials = {}; },
+    'different flow': doc => { doc.components.securitySchemes.azure_auth.flows = { password: {} }; },
+    'wrong issuer': doc => { doc.components.securitySchemes.azure_auth.flows.implicit.authorizationUrl = 'https://example.test/authorize'; },
+    'missing permissions': doc => { delete doc.components.securitySchemes.azure_auth.flows.implicit.scopes; },
+    'different permission': doc => { doc.components.securitySchemes.azure_auth.flows.implicit.scopes = { read: 'Read' }; },
+    'blank permission': doc => { doc.components.securitySchemes.azure_auth.flows.implicit.scopes.user_impersonation = ''; },
+    'public inherited route': doc => { doc.paths['/health'] = { get: {} }; },
+    'operation destination': doc => { doc.paths['/providers/Microsoft.EventGrid/operations'].get.servers = [{ url: 'https://other.example.test' }]; },
+    'path destination': doc => { doc.paths['/providers/Microsoft.EventGrid/operations'].servers = [{ url: 'https://other.example.test' }]; },
+    'provenance collision': doc => { doc['x-upstream-security'] = []; },
+    'permission collision': doc => { doc['x-credential-permissions'] = []; },
+  };
+  assert.ok(changes[kind], `Unknown Event Grid contract: ${kind}`);
+  const source = eventGridFixture(); changes[kind](source); const before = structuredClone(source);
+  assert.throws(() => applySchemaPatches(source, [azureEventGridManagementAuth]), /Azure Event Grid authentication adaptation/);
+  assert.deepEqual(source, before, 'Rejected corrections cannot partially modify a published schema.');
 });
 
 Then('Gemini corrections preserve published SDK metadata AND credentials and anonymous overrides', () => {

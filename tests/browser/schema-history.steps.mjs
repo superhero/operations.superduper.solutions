@@ -58,6 +58,29 @@ Then('Gemini revisions compare SDK authentication with separate standard credent
   await card.screenshot({ path: `${this.artifactDirectory}/gemini-correction.png` });
 });
 
+Then('Event Grid revisions show its missing Azure authentication requirement without rewriting the source', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = await expandSchemaCard(page.locator('[data-schema-id="azure-eventgrid"]'));
+  await card.getByRole('button', { name: 'Schema revisions', exact: true }).click();
+  const history = card.locator('.schema-history');
+  await expect(history.locator('[data-version-oid]')).toHaveCount(2);
+  await expect(history.getByText('Apply schema corrections: Azure Event Grid management authentication', { exact: true })).toBeVisible();
+  const diff = history.locator('.revision-diff');
+  await expect(diff).toHaveAttribute('aria-busy', 'false');
+  const group = diff.locator('.change-group').filter({ has: page.locator(':scope > summary strong', { hasText: 'Authentication' }) });
+  await group.locator(':scope > summary').click();
+  const security = group.locator('.field-change').filter({ has: page.locator(':scope > summary code[title="/security"]') });
+  await security.locator(':scope > summary').click();
+  await expect(security.locator('.field-content')).toHaveAttribute('aria-busy', 'false');
+  await expect(security.locator('[data-side="before"]')).toHaveCount(0);
+  await expect(security.locator('[data-side="after"]')).toContainText('azure_auth');
+  await expect(security.locator('[data-side="after"]')).toContainText('user_impersonation');
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await card.screenshot({ path: `${this.artifactDirectory}/eventgrid-correction.png` });
+});
+
 Then('schema revisions open without flashing disabled comparison controls', async function () {
   const page = this.page;
   await setMode(page, 'settings');
