@@ -118,6 +118,22 @@ required. No token issuance or streaming support is added.
 
 ```
 
+<!-- changelog-commit:1c539ba10b0557cb9734f713fdecb3b3f4408f6d -->
+### Commit [`1c539ba`](https://github.com/superhero/operations.superduper.solutions/commit/1c539ba10b0557cb9734f713fdecb3b3f4408f6d)
+
+```text
+fix(schema): declare ElevenLabs credential boundaries
+
+Declare reviewed xi-api-key authentication while retaining public routes
+and existing vault-backed header connections. Preserve published schema
+bytes and the original security and nullable parameter provenance.
+
+Mark credential-returning operations unavailable until a private result
+handler exists. Reject declared credential inputs on anonymous choices so
+ordinary fields cannot bypass the selected private transport.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
