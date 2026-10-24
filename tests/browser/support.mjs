@@ -64,7 +64,7 @@ BeforeAll(async function () {
   const vaultEndpoint = createVaultEndpoint();
   server = createServer((request, response) => {
     if (vaultEndpoint(request, response)) return;
-    if (request.url === '/') {
+    if (new URL(request.url, 'http://localhost').pathname === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
         'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' });
       response.end(bundle);

@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/gitlab-oauth.test.mjs",
     "src/cloudflare-upload.test.mjs",
     "src/x-oauth1.test.mjs",
     "src/telegram-private-path.test.mjs",
@@ -75,6 +76,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/gitlab-oauth.feature",
     "src/cloudflare-upload.feature",
     "src/x-oauth1.feature",
     "src/telegram-private-path.feature",

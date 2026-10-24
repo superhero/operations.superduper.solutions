@@ -1,23 +1,25 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { GitlabOAuthBroker, managedGitlabSecrets, validateGitlabTokenState, type GitlabOAuthRuntime } from "./gitlab-oauth.ts";
+import { gitlabOAuthAlternative, type GitlabOAuthInput, type GitlabOAuthCallback } from "./gitlab-config.ts";
 import { CloudflareUploadSessions } from "./cloudflare-upload.ts";
 import type { InputValues } from "../operation-input.ts";
 import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passkeyKey, randomBase64,
   runtimeKey, unwrapVaultKey, wrapVaultKey, validId, canonicalJSON, ownObject } from "./crypto.ts";
 import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.ts";
-import { approvedOperation } from "./policy.ts";
+import { validateApprovedOperation, approvedOperation } from "./policy.ts";
 import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed } from "./execution.ts";
-import { connectionCredentialIds, createHttpConnection, httpConnectionReference, resolveHttpConnection,
+import { connectionCredentialIds, createHttpConnection, createGitlabHttpConnection, httpConnectionReference, resolveHttpConnection,
   storedHttpConnections, validateHttpConnection, invalidateHttpConnections } from "./http-connections.ts";
-import type { HttpConnectionInput, HttpConnectionReference } from "./types.ts";
-import { validateHttpConnectionReference } from "./bindings.ts";
+import type { HttpConnectionInput } from "./types.ts";
+import { validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
 import type { ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { checkPrivateAssertion } from "./processing.ts";
 import { VaultError, passwordProfile, vaultLimits, recoveryKeyBytes, recoveryKeyCharacters } from "./types.ts";
 import type { ApprovedOperation, CredentialBinding, CredentialSummary, CryptoContext, Enrollment,
-  KeyEnvelope, UnlockProof, VaultCredential, VaultSnapshot, VaultStatus, VaultKey } from "./types.ts";
+  KeyEnvelope, UnlockProof, VaultCredential, VaultSnapshot, VaultStatus, VaultKey, HttpConnectionReference } from "./types.ts";
 import type { VaultState, VaultStorage } from "./storage.ts";
 
 type Pending = { state: VaultState; snapshot: VaultSnapshot; key: CryptoKey; recovery: string };
@@ -25,7 +27,7 @@ const context = (snapshot: Pick<VaultSnapshot, "id" | "epoch">, item: { id: stri
   ({ vaultId: snapshot.id, epoch: snapshot.epoch, kind: item.kind, id: item.id, revision: item.revision });
 
 function credential(value: VaultCredential): VaultCredential {
-  ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections"]);
+  ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections", "oauthState"]);
   if (!validId(value.id) || typeof value.label !== "string" || !value.label.trim() || value.label.length > 120
     || !["bearer", "apiKey", "secret"].includes(value.kind) || typeof value.value !== "string" || !value.value
     || /[^\x21-\x7e]/.test(value.value) || value.value.length > vaultLimits.secretBytes
@@ -34,6 +36,11 @@ function credential(value: VaultCredential): VaultCredential {
   if (value.connections !== undefined) {
     if (!Array.isArray(value.connections) || value.connections.length > 32) throw new VaultError("LIMIT");
     value.connections.forEach(validateHttpConnection);
+  }
+  if (value.oauthState !== undefined) {
+    if (typeof value.oauthState !== "string" || new TextEncoder().encode(value.oauthState).byteLength > vaultLimits.secretBytes
+      || !value.connections?.some(connection => connection.format === "gitlab-oauth")) throw new VaultError("INVALID");
+    validateGitlabTokenState(value.oauthState);
   }
   const grantIds = new Set<string>();
   for (const grant of value.grants) {
@@ -66,13 +73,14 @@ export class VaultSession {
   private key: CryptoKey | undefined;
   private generation = 0;
   private readonly uploadSessions = new CloudflareUploadSessions();
+  private readonly gitlabOAuth: GitlabOAuthBroker;
   private pending: Pending | undefined;
 
-  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}) {
-    this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema;
+  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}) {
+    this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime);
   }
 
-  lock(): void { this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
+  lock(): void { this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -215,7 +223,7 @@ export class VaultSession {
   }
 
   async list(): Promise<CredentialSummary[]> {
-    return (await this.records()).map(({ value: _value, ...summary }) => summary);
+    return (await this.records()).map(({ value: _value, oauthState: _oauthState, ...summary }) => summary);
   }
 
   async connections() { return storedHttpConnections(await this.records()); }
@@ -228,7 +236,13 @@ export class VaultSession {
     const connection = storedHttpConnections(records).find(item => item.id === selected.id);
     if (!connection) throw new VaultError("PERMISSION");
     const binding = { alternative: connection.alternative, credentials: {}, fingerprint: approved.fingerprint, connection: selected };
-    await resolveHttpConnection(approved, binding, records);
+    const resolved = await resolveHttpConnection(approved, binding, records);
+    if (resolved.oauth) {
+      this.gitlabOAuth.assertMetadata(resolved.oauth);
+      const id = resolved.binding.credentials.oauth2;
+      const record = typeof id === "string" && records.find(item => item.id === id);
+      if (!record || validateGitlabTokenState(record.oauthState ?? "", resolved.oauth).refreshPending) throw new VaultError("AUTHORIZATION");
+    }
     await this.assertCurrent();
     return binding;
   }
@@ -248,10 +262,51 @@ export class VaultSession {
     return connection;
   }
 
+  async beginGitlabOAuth(input: GitlabOAuthInput, descriptor: ApprovedOperation, replace?: HttpConnectionReference) {
+    const generation = this.generation; await this.assertCurrent();
+    const approved = await validateApprovedOperation(descriptor);
+    if (gitlabOAuthAlternative(approved) === undefined) throw new VaultError("PERMISSION");
+    await this.assertSchema(approved);
+    if (replace) {
+      const records = await this.records(), selected = validateHttpConnectionReference(replace);
+      const connection = storedHttpConnections(records).find(item => item.id === selected.id);
+      if (!connection || connection.format !== "gitlab-oauth" || connection.oauth?.clientId !== input.clientId
+        || connection.oauth.redirectUri !== input.redirectUri) throw new VaultError("PERMISSION");
+      await resolveHttpConnection(approved, { alternative: connection.alternative, credentials: {}, fingerprint: approved.fingerprint, connection: selected }, records);
+      replace = selected;
+    }
+    const task = await this.gitlabOAuth.begin(input, approved, replace); this.guard(generation); return task;
+  }
+  async cancelGitlabOAuth(id: string) { await this.assertCurrent(); this.gitlabOAuth.cancel(id); }
+  async completeGitlabOAuth(id: string, callback: GitlabOAuthCallback, signal?: AbortSignal) {
+    const generation = this.generation; await this.assertCurrent();
+    const { pending, code } = this.gitlabOAuth.take(id, callback);
+    const guard = async () => { this.guard(generation); await this.assertSchema(pending.descriptor); await this.assertCurrent(); this.guard(generation); };
+    const state = await this.gitlabOAuth.exchange(pending, code, signal, guard);
+    await guard(); if (signal?.aborted) throw new VaultError("CANCELLED");
+    const records = await this.records();
+    const previous = pending.replace && storedHttpConnections(records).find(item => item.id === pending.replace!.id);
+    if (pending.replace && (!previous || previous.format !== "gitlab-oauth" || previous.revision !== pending.replace.revision
+      || previous.fingerprint !== pending.replace.fingerprint || previous.oauth?.accountId !== state.oauth.accountId
+      || canonicalJSON(previous.oauth) !== canonicalJSON(state.oauth))) throw new VaultError("AUTHORIZATION");
+    const credentialId = previous ? connectionCredentialIds(previous)[0]! : crypto.randomUUID();
+    if (storedHttpConnections(records).some(item => item.id !== previous?.id && item.label.trim().toLowerCase() === pending.input.label.toLowerCase()
+      && item.provider === pending.descriptor.operation.id.split(":")[0])) throw new VaultError("DUPLICATE_KEY");
+    let username = state.username;
+    if ([state.accessToken, state.refreshToken, pending.verifier, code].some(secret => username.includes(secret))) username = state.oauth.accountId;
+    const connection = await createGitlabHttpConnection(pending.descriptor, credentialId, pending.input.label, username, state.oauth, pending.replace);
+    if ([state.accessToken, state.refreshToken, pending.verifier, code].some(secret => JSON.stringify(connection).includes(secret))) throw new VaultError("AUTHORIZATION");
+    const record: VaultCredential = { id: credentialId, label: pending.input.label + " reference", kind: "secret", value: crypto.randomUUID(), oauthState: JSON.stringify(state), grants: [], connections: [connection] };
+    if (records.some(item => item.id !== credentialId && item.label.trim().normalize("NFC").toLowerCase() === record.label.trim().normalize("NFC").toLowerCase())) throw new VaultError("DUPLICATE_KEY");
+    await guard(); if (signal?.aborted) throw new VaultError("CANCELLED"); await this.save([...records.filter(item => item.id !== credentialId), record]);
+    this.guard(generation); return connection;
+  }
+
   async removeConnection(reference: HttpConnectionReference) {
     const selected = validateHttpConnectionReference(reference), records = await this.records();
     const connection = storedHttpConnections(records).find(item => item.id === selected.id);
     if (!connection || connection.revision !== selected.revision || connection.fingerprint !== selected.fingerprint) throw new VaultError("CONFLICT");
+    if (connection.format === "gitlab-oauth") { await this.remove(null, connectionCredentialIds(connection)[0]!); return; }
     for (const record of records) if (record.connections) {
       record.connections = record.connections.filter(item => item.id !== selected.id);
       if (!record.connections.length) delete record.connections;
@@ -284,7 +339,7 @@ export class VaultSession {
     await authenticateManifest(snapshot, key);
     this.guard(generation);
     const state = await this.storage.replace(expected, snapshot, values.map(({ id, label, kind }) => ({ id, label, kind })));
-    this.guard(generation); this.uploadSessions.clear(); this.state = state; this.key = key;
+    this.guard(generation); this.uploadSessions.clear(); this.gitlabOAuth.invalidateTokenCache(); this.state = state; this.key = key;
   }
 
   async put(proof: UnlockProof | null, input: { id?: string; label: string; kind: VaultCredential["kind"]; value: string }): Promise<CredentialSummary[]> {
@@ -292,6 +347,7 @@ export class VaultSession {
     const records = await this.records();
     const previous = input.id ? records.find(item => item.id === input.id) : undefined;
     if (input.id && !previous) throw new VaultError("INVALID");
+    if (previous?.oauthState !== undefined) throw new VaultError("PERMISSION");
     const value = credential({ id: previous?.id ?? crypto.randomUUID(), label: input.label, kind: input.kind,
       value: input.value, grants: previous?.kind === input.kind ? previous.grants : [],
       ...(previous?.connections ? { connections: previous.connections } : {}) });
@@ -352,8 +408,28 @@ export class VaultSession {
   async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal,
     variables?: import("./variables.ts").VaultVariableInput[], onProgress?: ResponseProgressCallback) {
     const generation = this.generation;
-    return executeCredentialed(descriptor, values, binding, await this.records(), {
-      uploadSessions: this.uploadSessions,
+    descriptor = await validateApprovedOperation(descriptor); binding = validateCredentialBinding(binding);
+    let records = await this.records(); const resolved = await resolveHttpConnection(descriptor, binding, records);
+    const previousSecrets: string[] = [];
+    if (resolved.format === "gitlab-oauth") {
+      if (gitlabOAuthAlternative(descriptor) === undefined || !resolved.oauth) throw new VaultError("PERMISSION");
+      await this.assertSchema(descriptor);
+      const reference = resolved.binding.credentials.oauth2;
+      if (typeof reference !== "string") throw new VaultError("PERMISSION");
+      const record = records.find(item => item.id === reference); if (!record) throw new VaultError("PERMISSION");
+      const original = record.oauthState ?? "", state = validateGitlabTokenState(original, resolved.oauth);
+      let expected = original;
+      previousSecrets.push(...managedGitlabSecrets(original));
+      const guard = async () => { this.guard(generation); await this.assertSchema(descriptor); await this.assertCurrent(); this.guard(generation); };
+      await this.gitlabOAuth.ensure(reference, state, signal, guard, async next => {
+        await guard(); const current = await this.records(), selected = current.find(item => item.id === reference);
+        if (!selected || selected.oauthState !== expected) throw new VaultError("AUTHORIZATION");
+        selected.oauthState = JSON.stringify(next); await this.save(current); expected = selected.oauthState; this.guard(generation);
+      });
+      records = await this.records();
+    }
+    return executeCredentialed(descriptor, values, binding, records, {
+      uploadSessions: this.uploadSessions, privateSecrets: previousSecrets,
       ...(onProgress ? { onProgress: progress => { this.guard(generation); onProgress(progress); } } : {}),
       ...(signal ? { signal } : {}), ...(variables ? { variables } : {}), assertCurrent: async () => {
         await this.assertSchema(descriptor);

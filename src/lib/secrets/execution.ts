@@ -15,6 +15,7 @@ import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding
 import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
+import { managedGitlabSecrets, validateGitlabTokenState } from "./gitlab-oauth.ts";
 import { CloudflareUploadSessions, type CloudflareUploadLease } from "./cloudflare-upload.ts";
 import { cloudflareSessionField, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
@@ -29,6 +30,7 @@ export type CredentialExecutionOptions = {
   onProgress?: ResponseProgressCallback;
   oauth1Clock?: OAuth1Clock;
   uploadSessions?: CloudflareUploadSessions;
+  privateSecrets?: readonly string[];
 };
 
 /** This safe envelope has no raw request, native cause or credential-bearing message. */
@@ -87,7 +89,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       || ![Object.prototype, null].includes(Object.getPrototypeOf(inputSnapshot))
       || Object.values(inputSnapshot).some(value => value !== null && value !== undefined && typeof value !== "string"))
       throw new VaultError("INVALID");
-    secrets = [...new Set(credentialSnapshot.map(credential => credential.value)
+    secrets = [...new Set([...credentialSnapshot.flatMap(credential => typeof credential.value === "string" ? [credential.value, ...managedGitlabSecrets(credential.oauthState ?? "")] : []), ...(options.privateSecrets ?? [])]
       .filter(value => typeof value === "string" && value.length > 0)
       .flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
@@ -108,6 +110,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const injectedQueries = new Map<string, string>();
     let pathToken: string | undefined;
     let oauth1: OAuth1Values | undefined, uploadReference: string | undefined;
+    let managed: { expiresAt: number; accountId: string } | undefined;
     const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey" | "oauth1", connectedHeader = false): string => {
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
@@ -143,7 +146,14 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       } else {
         if (typeof reference !== "string") throw new VaultError("PERMISSION");
         const connected = credentialSelectionForVariables([[scheme]], variables);
-        const value = credentialValue(reference, scheme.kind, connected?.credentials[scheme.name] === reference);
+        let value = credentialValue(reference, scheme.kind, connected?.credentials[scheme.name] === reference);
+        if (connection.format === "gitlab-oauth") {
+          if (scheme.kind !== "bearer" || !connection.oauth) throw new VaultError("PERMISSION");
+          const state = validateGitlabTokenState(credentialSnapshot.find(item => item.id === reference)?.oauthState ?? "", connection.oauth);
+          managed = { expiresAt: state.expiresAt, accountId: state.oauth.accountId };
+          if (state.refreshPending || managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");
+          value = state.accessToken;
+        }
         if (scheme.path !== undefined) {
           if (scheme.path !== approved.operation.privatePath || !savedConnection) throw new VaultError("PERMISSION");
           pathToken = value;
@@ -245,6 +255,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");
     if (privateUpload) options.uploadSessions!.assertCurrent(uploadLease);
+    if (managed && managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");
     phase = "request";
     const response = await (options.fetchRequest ?? globalThis.fetch)(url.href, {
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,
@@ -253,6 +264,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes,
       { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}) });
     const { malformedJson, ...result } = parsed;
+    if (managed && (managed.expiresAt <= Date.now() || response.ok && (!result.body || typeof result.body !== "object"
+      || Array.isArray(result.body) || String((result.body as Record<string, unknown>).id) !== managed.accountId))) throw new VaultError("AUTHORIZATION");
     if (privateUpload) {
       await options.assertCurrent();
       if (signal.aborted) throw new VaultError("CANCELLED");
@@ -292,6 +305,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     await options.assertCurrent();
     if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");
+    if (managed && managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");
     if (malformedJson) throw new CredentialResponseError("The endpoint did not return valid JSON. Check its response before retrying.", safe);
     if (!response.ok) throw new CredentialResponseError(`The endpoint returned HTTP ${response.status}. Check the request before retrying.`, safe);
     uploadSucceeded = true;
