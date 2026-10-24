@@ -322,6 +322,26 @@ with the corresponding Azure RBAC authorization. Tokens for Event Grid event
 publishing target a different resource. Azure enforces token validity and RBAC;
 the application does not inspect JWT claims or add consent, acquisition, implicit
 login or refresh flows by preserving the upstream OAuth metadata.
+
+Authentication alternatives retain their original array positions and scheme
+names. A valid unsupported HTTP scheme is retained as an explicit unavailable
+credential with its destination and explanation; it never becomes an empty
+anonymous requirement. Other members of that AND alternative remain required.
+A supported OR alternative can execute independently, while an operation with
+no supported choice remains unavailable. Missing definitions, malformed scope
+arrays and conflicting credential destinations still reject the operation.
+The strict security extraction API remains strict; service and authored-model
+inspection use capability-aware extraction. Existing SigV4 requirements stay
+unavailable, including when another authentication choice is supported.
+
+The credential chooser disables unavailable alternatives and explains why.
+Saved selections keep their original alternative index and vault IDs across
+reload. Complete canonical approvals retain unavailable metadata and reject
+selection of any unavailable AND member in private execution and credential
+grants. An explicit anonymous choice still requires an explicit selection when
+other alternatives exist. All-supported metadata and approval fingerprints are
+unchanged. This does not add Basic or OAuth1 execution or any automatic fallback.
+
 AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
 and the API's own authorization rules still apply.
 

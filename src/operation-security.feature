@@ -9,6 +9,26 @@ Feature: OpenAPI authentication requirements
   Scenario: Credential permission metadata cannot bypass canonical security validation
     Then credential permission metadata is validated at schema loading and private approval
 
+  Scenario: Unsupported choices keep original positions without disabling supported choices
+    Then unavailable HTTP choices retain source indices AND members and explicit anonymous alternatives
+
+  Scenario: An unavailable signer cannot become a plain API-key request
+    Then unsupported signing stays unavailable beside a supported credential alternative
+
+  Scenario Outline: A malformed mixed authentication declaration stays fail closed for <kind>
+    Then a malformed mixed authentication choice "<kind>" still rejects the complete operation
+    Examples:
+      | kind                  |
+      | undeclared scheme     |
+      | nonempty scopes       |
+      | invalid alternative   |
+      | missing scheme        |
+      | invalid HTTP token    |
+      | unknown scheme fields |
+      | invalid description   |
+      | duplicate headers     |
+      | duplicate queries     |
+
   Scenario Outline: Effective authentication preserves <case>
     Given root authentication <root> and operation authentication <operation>
     Then normalized authentication is <expected> and credentials are <required>

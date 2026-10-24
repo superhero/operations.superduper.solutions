@@ -263,7 +263,8 @@ export class VaultSession {
     await this.assertSchema(descriptor);
     const values = await this.records();
     const value = values.find(item => item.id === id);
-    if (!value || !descriptor.operation.security?.some(option => option.some(item => item.name === scheme && (value.kind === "secret" || item.kind === value.kind))))
+    if (!value || !descriptor.operation.security?.some(option => option.every(item => item.kind !== "unsupported")
+      && option.some(item => item.name === scheme && (value.kind === "secret" || item.kind === value.kind))))
       throw new VaultError("PERMISSION");
     value.grants = [...value.grants.filter(item => !(item.scheme === scheme && item.descriptor.operation.id === descriptor.operation.id)),
       { id: crypto.randomUUID(), scheme, descriptor }];

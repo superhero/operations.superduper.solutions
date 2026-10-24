@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { requestBody } from "../request-body.ts";
+import { supportedSecurityAlternative } from "../operation-security.ts";
 import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
@@ -112,7 +113,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const alternative = approved.operation.security?.length ? approved.operation.security[bindingSnapshot.alternative]
       : variables.length && bindingSnapshot.alternative === 0 ? [] : undefined;
     if (bindingSnapshot.fingerprint !== approved.fingerprint || !Number.isInteger(bindingSnapshot.alternative)
-      || !alternative || !alternative.length && !variables.length || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
+      || !supportedSecurityAlternative(alternative) || !alternative.length && !variables.length || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
       throw new VaultError("PERMISSION");
     const injected = new Headers();
     const injectedQueries = new Map<string, string>();

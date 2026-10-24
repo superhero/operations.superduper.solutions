@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
 import { Given, Then } from "@cucumber/cucumber";
-import { extractCredentialPermissions, extractOperationSecurity, securityRequiresCredentials } from "./lib/operation-security.ts";
+import { extractCredentialPermissions, extractOperationSecurity, inspectOperationSecurity, supportedSecurityAlternative, securityRequiresCredentials } from "./lib/operation-security.ts";
 import { inspectServiceSchema } from "./lib/service-catalog.ts";
 import { approvedOperation } from "./lib/secrets/policy.ts";
 import { extractOperations } from "./lib/catalog.ts";
@@ -41,6 +41,91 @@ Then('credential permission metadata is validated at schema loading and private 
   assert.equal(inspectServiceSchema(overridden, 'permissions').operations[0].credentialPermissions, undefined);
   overridden.paths['/items'].get['x-credential-permissions'] = null;
   assert.match(inspectServiceSchema(overridden, 'permissions').operations[0].unavailableReason, /Credential permissions/);
+});
+
+Then('unavailable HTTP choices retain source indices AND members and explicit anonymous alternatives', async () => {
+  const source = document(); source.components.securitySchemes.Basic = { type: 'http', scheme: 'basic' };
+  source.security = [{ Basic: [], Key: [] }, { Bearer: [] }, {}];
+  const before = structuredClone(source), inspected = inspectOperationSecurity(source, operation(source));
+  assert.deepEqual(source, before);
+  assert.equal(inspected.length, 3);
+  assert.equal(inspected[0][0].kind, 'unsupported');
+  assert.equal(inspected[0][0].name, 'Basic');
+  assert.equal(inspected[0][0].header, 'Authorization');
+  assert.match(inspected[0][0].reason, /only HTTP bearer/);
+  assert.deepEqual(inspected[0][1], normalized.Key);
+  assert.deepEqual(inspected[1], [normalized.Bearer]);
+  assert.deepEqual(inspected[2], []);
+  assert.equal(supportedSecurityAlternative(inspected[0]), false);
+  assert.equal(supportedSecurityAlternative(inspected[1]), true);
+  assert.equal(supportedSecurityAlternative(inspected[2]), true);
+  assert.equal(supportedSecurityAlternative(undefined), false);
+  assert.equal(supportedSecurityAlternative([null]), false);
+  assert.equal(securityRequiresCredentials(inspected), false);
+  assert.equal(securityRequiresCredentials(inspected.slice(0, 2)), true);
+  assert.throws(() => extractOperationSecurity(source, operation(source)), /only HTTP bearer/);
+  const model = validateSchemaDocument(source, 'auth-alternatives').operations[0];
+  assert.deepEqual(model.security, inspected);
+  assert.deepEqual(inspectServiceSchema(source, 'auth-alternatives').operations[0].security, inspected);
+  const approved = await approvedOperation(model, source.servers[0].url);
+  assert.deepEqual(approved.operation.security, inspected);
+  const supported = document(); supported.security = [{ Bearer: [] }, { Key: [] }, {}];
+  const legacy = validateSchemaDocument(supported, 'unchanged').operations[0];
+  const strict = { ...legacy, security: extractOperationSecurity(supported, operation(supported)) };
+  assert.deepEqual((await approvedOperation(legacy, supported.servers[0].url)), await approvedOperation(strict, supported.servers[0].url),
+    'Existing all-supported metadata and approval fingerprints stay identical.');
+  for (const patch of [scheme => { scheme.reason = ''; }, scheme => { scheme.reason = 'x'.repeat(4097); },
+    scheme => { scheme.extra = true; }, scheme => { scheme.header = 'Cookie'; }, scheme => { scheme.query = 'key'; }]) {
+    const invalid = structuredClone(model); patch(invalid.security[0][0]);
+    await assert.rejects(approvedOperation(invalid, source.servers[0].url), { code: 'PERMISSION' });
+  }
+  await assert.rejects(approvedOperation({ ...model, security: [inspected[0]] }, source.servers[0].url), { code: 'PERMISSION' });
+  await assert.rejects(approvedOperation({ ...model, security: [null, inspected[1]] }, source.servers[0].url), { code: 'PERMISSION' });
+});
+
+Then('unsupported signing stays unavailable beside a supported credential alternative', async () => {
+  const source = document();
+  source.components.securitySchemes.Signed = { type: 'apiKey', in: 'query', name: 'signed', 'x-amazon-apigateway-authtype': 'awsSigv4' };
+  source.security = [{ Signed: [] }, { Bearer: [] }];
+  const model = inspectServiceSchema(source, 'auth-signing').operations[0];
+  assert.equal(model.unavailableReason, undefined);
+  assert.equal(model.security[0][0].kind, 'unsupported');
+  assert.equal(model.security[0][0].query, 'signed');
+  assert.match(model.security[0][0].reason, /Signature Version 4/);
+  assert.deepEqual((await approvedOperation(model, source.servers[0].url)).operation.security, model.security);
+  source.security = [{ Signed: [] }];
+  assert.match(inspectServiceSchema(source, 'auth-signing').operations[0].unavailableReason, /Signature Version 4/);
+  source.components.securitySchemes.Signed = { type: 'oauth2', 'x-amazon-apigateway-authtype': 'awsSigv4',
+    flows: { clientCredentials: { tokenUrl: 'https://example.test/token', scopes: { read: 'Read' } } } };
+  source.security = [{ Signed: ['read'] }, { Bearer: [] }];
+  const adapted = inspectServiceSchema(source, 'auth-signing').operations[0];
+  assert.equal(adapted.unavailableReason, undefined);
+  assert.equal(adapted.security[0][0].kind, 'unsupported', 'OAuth adaptation cannot remove a signing requirement.');
+  assert.equal(adapted.security[0][0].header, 'Authorization');
+  assert.deepEqual(adapted.oauthScopes[0], { Signed: ['read'] });
+  assert.deepEqual((await approvedOperation(adapted, source.servers[0].url)).operation.security, adapted.security);
+  source.security = [{ Signed: ['read'] }];
+  assert.match(inspectServiceSchema(source, 'auth-signing').operations[0].unavailableReason, /Signature Version 4/);
+});
+
+Then('a malformed mixed authentication choice {string} still rejects the complete operation', kind => {
+  const source = document(); source.components.securitySchemes.Basic = { type: 'http', scheme: 'basic' };
+  source.security = [{ Basic: [] }, { Bearer: [] }];
+  const corrupt = {
+    'undeclared scheme': () => { source.security[0] = { Missing: [] }; },
+    'nonempty scopes': () => { source.security[0].Basic = ['scope']; },
+    'invalid alternative': () => { source.security[0] = []; },
+    'missing scheme': () => { delete source.components.securitySchemes.Basic.scheme; },
+    'invalid HTTP token': () => { source.components.securitySchemes.Basic.scheme = 'invalid scheme'; },
+    'unknown scheme fields': () => { source.components.securitySchemes.Basic.flows = {}; },
+    'invalid description': () => { source.components.securitySchemes.Basic.description = []; },
+    'duplicate headers': () => { source.security[0] = { Basic: [], Bearer: [] }; },
+    'duplicate queries': () => { source.security[0] = { Basic: [], Query: [], QueryAlias: [] }; },
+  };
+  assert.ok(corrupt[kind]); corrupt[kind]();
+  assert.throws(() => inspectOperationSecurity(source, operation(source)));
+  assert.ok(inspectServiceSchema(source, 'malformed-alternatives').operations[0].unavailableReason);
+  assert.throws(() => validateSchemaDocument(source, 'malformed-alternatives'));
 });
 
 const schemes = {

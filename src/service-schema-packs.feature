@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Bundled service schema integrity
+  Scenario: Independently usable Atlassian and X authentication choices remain executable
+    Then pinned Atlassian and X authentication alternatives retain independently usable choices and original identities
+
   Scenario: Permission metadata cannot silently authenticate an anonymous operation
     Then anonymous service operations reject permission metadata without a security declaration
 

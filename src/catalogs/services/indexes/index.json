@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "2ada7527f53913cb365fad8b61acbd8060ab69f23293afa1016d86f4fd78119e",
+  "adapterRevision": "c20059a986d3ab419728196bff28e4d5d616ae75367174a95763248b815c341b",
   "indexes": [
     {
       "id": "anthropic",
@@ -166,15 +166,15 @@
     {
       "id": "bitbucket",
       "sourceRevision": "701ee30fe04d2ac4708fbba10061836d663466e0d72ed9f5df78b4a239d12b2d",
-      "bytes": 133108,
-      "compressedBytes": 8583,
-      "sha256": "5a1cb051ae77b9bd19f94419927d49f9841681ebd14de8662e8ef0327a2d2654",
+      "bytes": 104701,
+      "compressedBytes": 8293,
+      "sha256": "929bfb4e4f527f7af01293e1378a307ab2505028828f6d17ca978a97ef16902e",
       "summary": {
         "name": "Bitbucket API",
         "serverUrl": "https://api.bitbucket.org/2.0",
         "description": "Code against the Bitbucket API to automate simple tasks, embed Bitbucket data into your own site, build mobile or desktop apps, or even add custom UI add-ons into Bitbucket itself using the Connect framework.",
         "operationCount": 299,
-        "unavailableCount": 299
+        "unavailableCount": 0
       }
     },
     {
@@ -194,15 +194,15 @@
     {
       "id": "atlassian-capacity-planning",
       "sourceRevision": "892c1816f193f0184726b8fe403ec0ed35bf025c3612cb7b5bd98b33193484af",
-      "bytes": 5950,
-      "compressedBytes": 881,
-      "sha256": "e638e76dfd8c54e2cef78dd15e061634bbcc5b65a579711e1fd06251c4432387",
+      "bytes": 4860,
+      "compressedBytes": 815,
+      "sha256": "8bc47fd028c107ea1f9a05af695c6abeaf8c9236691413f7232520219fe7a7b1",
       "summary": {
         "name": "Capacity Planning Public REST API",
         "serverUrl": "https://api.atlassian.com/ex/capacity-planning/cloudId/v1",
         "description": "Public REST endpoints for capacity-planning-service, served under https://api.atlassian.com/ex/capacity-planning/{cloudId}/v1.",
         "operationCount": 11,
-        "unavailableCount": 11
+        "unavailableCount": 0
       }
     },
     {
@@ -386,15 +386,15 @@
     {
       "id": "jira",
       "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
-      "bytes": 233889,
-      "compressedBytes": 18969,
-      "sha256": "ef6305e4d29fc8e27b5d8e2b255ee55d6bc3ac800effeb4bd28bbbe0ed5c7c68",
+      "bytes": 173795,
+      "compressedBytes": 18524,
+      "sha256": "7fc07e1c4aafef740d6167efc86b0c321e482eb64272348d4780c5bb2d5bc906",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
         "description": "Jira Cloud platform REST API documentation",
         "operationCount": 630,
-        "unavailableCount": 623
+        "unavailableCount": 16
       }
     },
     {
@@ -414,9 +414,9 @@
     {
       "id": "jira-service-management-dc",
       "sourceRevision": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
-      "bytes": 221590,
-      "compressedBytes": 16714,
-      "sha256": "c8dee96f8951851c7244a9b0e49d2225ab6d0a2bc232e2aca12d64a9853a80c4",
+      "bytes": 228370,
+      "compressedBytes": 16966,
+      "sha256": "e8bc7a49ae832c3f769edea7abdd7c9039402109c01bf802b0fca2dcebd96d47",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
@@ -442,23 +442,23 @@
     {
       "id": "jira-software",
       "sourceRevision": "c4f7d6166c144f7d2be29caa0cb22f554798c5c022f7cbd778d3553978e7e8e8",
-      "bytes": 44479,
-      "compressedBytes": 3225,
-      "sha256": "3da0f0bc05b858c0bee431f8de46715dbfdceeea3dfdfc38301b81a2626db6df",
+      "bytes": 36162,
+      "compressedBytes": 3088,
+      "sha256": "d2e0f6a7f57d9698dda740f9aa1f7a45df9417224d4e4be24ba4aa87d23b5d02",
       "summary": {
         "name": "Jira Software Cloud API",
         "serverUrl": "https://your-domain.atlassian.net",
         "description": "Jira Software Cloud REST API documentation",
         "operationCount": 105,
-        "unavailableCount": 84
+        "unavailableCount": 0
       }
     },
     {
       "id": "jira-dc",
       "sourceRevision": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
-      "bytes": 173689,
-      "compressedBytes": 13983,
-      "sha256": "66258f8f550b6e8437de55fa19709a96504b28d051b3a2a67c8bf831b3723ec0",
+      "bytes": 180469,
+      "compressedBytes": 14169,
+      "sha256": "a85b911880d72efe31bc6803415b9d6fa97deb2e591984823c6f23fdf1544974",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
@@ -537,15 +537,15 @@
     {
       "id": "atlassian-privacy-consent",
       "sourceRevision": "336dd349ab3630eeed6ff061d568260600a42a0a32da502d69946ca8aac64794",
-      "bytes": 1627,
-      "compressedBytes": 592,
-      "sha256": "ca0f21538eb4e35b62d31cbd325b73e231e9fc4ddfed800a1fd2444da6ac9241",
+      "bytes": 1431,
+      "compressedBytes": 534,
+      "sha256": "88cc9bc7d7dba50cc8185ca1c2169227621e1b5237c75dbae83a21092e0e1ea6",
       "summary": {
         "name": "ConsentHub API Documentation",
         "serverUrl": "https://api.atlassian.com/consent-hub",
         "description": "Welcome to the ConsentHub API documentation. This page documents the REST resources available.",
         "operationCount": 2,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
@@ -3093,15 +3093,15 @@
     {
       "id": "x",
       "sourceRevision": "e21fbef8a11e6c2a8dfcbbe2390fc10c73dc79671b3b5f51de787d4be106a9c6",
-      "bytes": 46388,
-      "compressedBytes": 4655,
-      "sha256": "3705130741e519ad1200dc36d0022a57e2cc75a9ef561ec50e63c6d57195c0b9",
+      "bytes": 41338,
+      "compressedBytes": 4525,
+      "sha256": "4800835dbfcf1e6591f740f3cc96eab2e1d1a4fdd50b4687e0a2f116c21f891f",
       "summary": {
         "name": "X API v2",
         "serverUrl": "https://api.x.com",
         "description": "X API v2 available endpoints",
         "operationCount": 156,
-        "unavailableCount": 129
+        "unavailableCount": 78
       }
     },
     {

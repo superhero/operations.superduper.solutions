@@ -8,6 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelect from "./FieldSelect.svelte";
   import VaultAuthentication from "./VaultAuthentication.svelte";
   import type { Operation } from "../catalog.ts";
+  import { supportedSecurityAlternative } from "../operation-security.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { approvedOperation } from "../secrets/policy.ts";
   import { lockVaultLocally, readVaultKeys, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
@@ -27,8 +28,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const fieldId = $props.id();
   let revision = 0;
   const options = $derived(operation.security?.map((option, index) => ({ value: String(index),
-    label: option.length ? option.map(item => item.name).join(" + ") : "Without credentials" })) ?? []);
-  const selected = $derived(alternative === "" ? undefined : operation.security?.[Number(alternative)]);
+    label: option.length ? option.map(item => item.name).join(" + ") : "Without credentials", disabled: !supportedSecurityAlternative(option) })) ?? []);
+  const selected = $derived.by(() => {
+    const option = alternative === "" ? undefined : operation.security?.[Number(alternative)];
+    return supportedSecurityAlternative(option) ? option : undefined;
+  });
+  const unavailable = $derived([...new Set(operation.security?.flatMap(option => option.flatMap(scheme => scheme.kind === "unsupported" ? [scheme.reason] : [])) ?? [])]);
   function permitted(item: VaultKey, scheme: string): boolean {
     const kind = selected?.find(item => item.name === scheme)?.kind;
     return item.kind === "secret" || item.kind === kind;
@@ -93,6 +98,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <FieldSelect id={`${fieldId}-alternative`} label="Authentication alternative" value={alternative} options={options}
     disabled={disabled || busy} {portalZIndex}
     onValueChange={value => { alternative = value; choices = {}; changed(); }} />
+  {#each unavailable as reason}<p class="hint">{reason}</p>{/each}
   {#if selected?.length}
     {#if descriptor}<p class="destination"><strong>{operation.method}</strong> {descriptor.origin}{operation.path}</p>{/if}
     {#if !status.exists}<p>Create a vault and add credentials in Settings → Secrets.</p>

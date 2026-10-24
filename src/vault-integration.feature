@@ -12,6 +12,9 @@ Feature: Credential references at workflow execution boundaries
   Scenario: Credential routing requires an explicit valid selection
     Then shared workflow execution routes supported credentials and rejects missing malformed or stale selections
 
+  Scenario: Saved supported choices preserve their original index after an unavailable choice
+    Then a reloaded credential binding executes its original supported alternative and cannot select an unsupported AND choice
+
   Scenario: The anonymous executor cannot bypass authentication
     Then anonymous execution rejects authenticated alternatives and only permits an explicitly selected anonymous alternative
 

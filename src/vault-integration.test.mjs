@@ -175,6 +175,39 @@ Then('anonymous execution rejects authenticated alternatives and only permits an
   assert.equal(requests.length, 2);
 });
 
+Then('a reloaded credential binding executes its original supported alternative and cannot select an unsupported AND choice', async () => {
+  const source = schema();
+  source.components.securitySchemes.basic = { type: 'http', scheme: 'basic' };
+  source.components.securitySchemes.Key = { type: 'apiKey', in: 'header', name: 'X-Key' };
+  source.security = [{ basic: [], Key: [] }, { bearer: [] }];
+  register(source);
+  const secured = operation('secured'), descriptor = await approvedOperation(secured, origin);
+  const secret = 'partial-auth-private-canary';
+  const credential = { id: crypto.randomUUID(), label: 'Saved token', kind: 'secret', value: secret, grants: [] };
+  const selection = { alternative: 1, credentials: { bearer: credential.id }, fingerprint: descriptor.fingerprint };
+  const saved = workflow([operationNode('selected', selection)]);
+  const reloaded = validateWorkflowDocument(JSON.parse(JSON.stringify(saved))).nodes[0].data.credentialBinding;
+  assert.deepEqual(reloaded, selection, 'Reload retains the original position and selected vault ID.');
+  let sent = 0;
+  const execute = createWorkflowExecution((approved, values, context) => executeCredentialed(approved, values, context.binding, [credential], {
+    assertCurrent() {}, fetchRequest: async (url, options) => {
+      sent++; assert.equal(url, `${origin}/secured`);
+      assert.equal(options.headers.get('Authorization'), `Bearer ${secret}`);
+      assert.equal(options.headers.has('X-Key'), false);
+      return Response.json({ reflected: secret });
+    },
+  }));
+  register(JSON.parse(JSON.stringify(source)));
+  const output = await execute.execute(operation('secured'), {}, undefined, invocation(reloaded));
+  assert.equal(sent, 1); assert.ok(!JSON.stringify(output).includes(secret));
+  const blocked = { ...reloaded, alternative: 0, credentials: { basic: credential.id, Key: credential.id } };
+  await assert.rejects(execute.execute(operation('secured'), {}, undefined, invocation(blocked)), code('PERMISSION'));
+  await assert.rejects(executeCredentialed(descriptor, {}, blocked, [credential], { assertCurrent() {}, fetchRequest: () => assert.fail('Unavailable AND choice dispatched') }), code('PERMISSION'));
+  await assert.rejects(createWorkflowRequestExecution(() => assert.fail('Unsupported choice became anonymous')).execute(operation('secured'), {}, undefined,
+    invocation({ ...blocked, credentials: {} })), code('PERMISSION'));
+  assert.equal(sent, 1);
+});
+
 Then('public workflow operations use the default anonymous executor without touching the vault', async () => {
   register(); let count = 0;
   globalThis.fetch = async () => { count++; return Response.json({ public: true }); };

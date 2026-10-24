@@ -506,6 +506,18 @@ Then('vault session execution injects only an approved credential and returns sa
     const controller = new AbortController(); controller.abort();
     await assert.rejects(session.execute(approval, {}, binding, controller.signal), code('CANCELLED'));
     assert.equal(requests.length, 2);
+    const keys = await session.put(null, { label: 'Generic partial-auth key', kind: 'secret', value: 'SYNTHETIC-PRIVATE-TOKEN' });
+    const generic = keys.find(key => key.label === 'Generic partial-auth key').id;
+    const partial = await approvedOperation({ ...approval.operation, security: [
+      [{ name: 'Basic', kind: 'unsupported', header: 'Authorization', reason: 'Basic authentication is unavailable.' }], ...approval.operation.security,
+    ] }, approval.origin);
+    await assert.rejects(session.grant(null, generic, 'Basic', partial), code('PERMISSION'));
+    await session.grant(null, generic, 'service', partial);
+    const selected = { alternative: 1, fingerprint: partial.fingerprint, credentials: { service: generic } };
+    await session.execute(partial, {}, selected);
+    assert.equal(requests.length, 3);
+    await assert.rejects(session.execute(partial, {}, { ...selected, alternative: 0, credentials: { Basic: generic } }), code('PERMISSION'));
+    assert.equal(requests.length, 3);
   } finally { globalThis.fetch = original; }
 });
 

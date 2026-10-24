@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { requestBody } from "./request-body.ts";
+import { supportedSecurityAlternative } from "./operation-security.ts";
 import { operationForId, operationOrigin, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
@@ -160,7 +161,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
         return credentialExecution(descriptor, submitted, invocation, signal);
       }
       const alternative = canonical.security[invocation.binding.alternative];
-      if (!alternative) throw new VaultError("PERMISSION");
+      if (!supportedSecurityAlternative(alternative)) throw new VaultError("PERMISSION");
       if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal) : anonymous.execute(operation, submitted, signal, invocation);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name))) throw new VaultError("PERMISSION");

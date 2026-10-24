@@ -5,8 +5,14 @@
 export type OperationSecurityScheme =
   | { name: string; kind: "bearer" | "apiKey"; header: string; query?: never }
   | { name: string; kind: "apiKey"; query: string; header?: never };
-/** Alternatives are OR; every scheme within an alternative is required (AND). */
-export type OperationSecurity = OperationSecurityScheme[][];
+export type UnavailableSecurityScheme = { name: string; kind: "unsupported"; reason: string } &
+  ({ header: string; query?: never } | { query: string; header?: never });
+export type OperationSecurityRequirement = OperationSecurityScheme | UnavailableSecurityScheme;
+/** Alternatives retain source positions. Every member is required (AND), including unavailable members. */
+export type OperationSecurity = OperationSecurityRequirement[][];
+export function supportedSecurityAlternative(value: unknown): value is OperationSecurityScheme[] {
+  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "apiKey"].includes(scheme.kind));
+}
 /** Permission metadata is aligned with the security alternatives, not OAuth flows. */
 export type CredentialPermissions = Record<string, string[]>[];
 
@@ -54,7 +60,7 @@ function resolve(value: unknown, document: ObjectValue, context: string): Object
   return result;
 }
 
-function scheme(document: ObjectValue, name: string): OperationSecurityScheme
+function scheme(document: ObjectValue, name: string, allowUnsupported: boolean): OperationSecurityRequirement
 {
   const context = `Security scheme ${JSON.stringify(name)}`;
   if (!name.trim()) throw new Error("Security requirement names must be nonempty strings.");
@@ -62,13 +68,14 @@ function scheme(document: ObjectValue, name: string): OperationSecurityScheme
   const schemes = components.securitySchemes === undefined ? {} : object(components.securitySchemes, "securitySchemes");
   if (!Object.hasOwn(schemes, name)) throw new Error(`${context}: unsupported security requirement without a declared scheme.`);
   const definition = resolve(schemes[name], document, context);
-  let result: OperationSecurityScheme;
+  let result: OperationSecurityRequirement;
   let keys: string[];
   if (definition.type === "http")
   {
-    if (typeof definition.scheme !== "string" || definition.scheme.toLowerCase() !== "bearer")
+    if (typeof definition.scheme !== "string" || !definition.scheme || invalidHeaderName.test(definition.scheme))
       throw new Error(`${context}: only HTTP bearer authentication is supported.`);
-    result = { name, kind: "bearer", header: "Authorization" };
+    result = definition.scheme.toLowerCase() === "bearer" ? { name, kind: "bearer", header: "Authorization" }
+      : { name, kind: "unsupported", header: "Authorization", reason: `${context}: only HTTP bearer authentication is supported.` };
     keys = ["type", "scheme", "description", "bearerFormat"];
     if (definition.bearerFormat !== undefined && typeof definition.bearerFormat !== "string")
       throw new Error(`${context}: bearerFormat must be a string.`);
@@ -99,11 +106,13 @@ function scheme(document: ObjectValue, name: string): OperationSecurityScheme
     throw new Error(`${context}: description must be a string.`);
   if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))
     throw new Error(`${context}: unsupported security scheme fields.`);
+  if (definition["x-amazon-apigateway-authtype"] === "awsSigv4")
+    result = { ...result, kind: "unsupported", reason: "This API requires AWS Signature Version 4 request signing, which is not supported here." };
+  if (result.kind === "unsupported" && !allowUnsupported) throw new Error(result.reason);
   return result;
 }
 
-/** Normalize the effective declaration without adding authentication to anonymous operations. */
-export function extractOperationSecurity(document: ObjectValue, operation: ObjectValue): OperationSecurity | undefined
+function operationSecurity(document: ObjectValue, operation: ObjectValue, allowUnsupported: boolean): OperationSecurity | undefined
 {
   const declaration = operation.security === undefined ? document.security : operation.security;
   if (declaration === undefined) return undefined;
@@ -117,7 +126,7 @@ export function extractOperationSecurity(document: ObjectValue, operation: Objec
     {
       if (!Array.isArray(scopes) || scopes.length)
         throw new Error(`Security scheme ${JSON.stringify(name)}: only empty scope arrays are supported for bearer and API key requirements.`);
-      const resolved = scheme(document, name);
+      const resolved = scheme(document, name, allowUnsupported);
       if (resolved.query !== undefined)
       {
         if (queries.has(resolved.query)) throw new Error(`Security alternative ${index + 1}: duplicate credential query parameter ${JSON.stringify(resolved.query)}.`);
@@ -132,6 +141,17 @@ export function extractOperationSecurity(document: ObjectValue, operation: Objec
       return resolved;
     });
   });
+}
+
+/** Strict import remains strict; capability inspection preserves unavailable HTTP choices in place. */
+export function extractOperationSecurity(document: ObjectValue, operation: ObjectValue): OperationSecurityScheme[][] | undefined {
+  return operationSecurity(document, operation, false) as OperationSecurityScheme[][] | undefined;
+}
+export function inspectOperationSecurity(document: ObjectValue, operation: ObjectValue): OperationSecurity | undefined {
+  const security = operationSecurity(document, operation, true);
+  if (security?.length && !security.some(supportedSecurityAlternative))
+    throw new Error(security.flat().find(scheme => scheme.kind === "unsupported")!.reason);
+  return security;
 }
 
 /** Retain reviewed permission metadata in canonical models and private approval.
