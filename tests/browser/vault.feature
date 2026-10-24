@@ -7,6 +7,14 @@ Feature: Browser vault persistence and controlled credential execution
   Test-only fixtures exercise storage failures without adding production hooks.
 
   @chromium-only
+  Scenario Outline: X OAuth1 connections survive reload at <width>px
+    Then an X OAuth1 connection at <width> pixels signs privately after selecting four stored credentials
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @chromium-only
   Scenario Outline: Telegram private paths survive reload at <width>px
     Then a Telegram connection at <width> pixels supplies its private token only to the worker request
     Examples:

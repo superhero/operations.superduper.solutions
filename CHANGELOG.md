@@ -253,6 +253,14 @@ uploads while retaining the independent setChatPhoto form limitation.
 
 ```
 
+<!-- changelog-commit:bd5048662d612d5ffc54e62a1c7e855c3ab40859 -->
+### Commit [`bd50486`](https://github.com/superhero/operations.superduper.solutions/commit/bd5048662d612d5ffc54e62a1c7e855c3ab40859)
+
+```text
+feat(x): sign OAuth1 requests with private vault credentials
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

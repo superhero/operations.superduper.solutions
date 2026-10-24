@@ -4695,6 +4695,7 @@
     "id": "x",
     "name": "X / Twitter",
     "url": "https://raw.githubusercontent.com/xdevplatform/xdk/main/latest-openapi.json",
+    "profile": "x-oauth1",
     "version": "2.159",
     "openapi": "3.0.0",
     "operations": 156,
@@ -4705,7 +4706,15 @@
     "sha256": "e21fbef8a11e6c2a8dfcbbe2390fc10c73dc79671b3b5f51de787d4be106a9c6",
     "sourceSha256": "71944b1b618fff12d8dc1554f6f3276d3725e256e3aff6a22678a9d1f7e60162",
     "bytes": 410463,
-    "compressedBytes": 44050
+    "compressedBytes": 44050,
+    "patches": [
+      {
+        "id": "x-oauth1-signing",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "10fb1c13f21c82f42839f63b8874205968a9650e18c9a332b78a339ab675dd13",
+    "effectiveBytes": 410499
   },
   {
     "id": "xai",

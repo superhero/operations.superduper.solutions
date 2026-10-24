@@ -71,6 +71,13 @@ export async function seedTelegram(origin: string, run: string) {
   return entries.find(item => item.label === "Telegram bot fixture")!.id;
 }
 
+export async function seedOAuth1(origin: string, run: string) {
+  await seed(origin, run);
+  for (const part of ["consumerKey", "consumerSecret", "accessToken", "tokenSecret"]) {
+    await session.put(null, { label: "X fixture " + part, kind: "secret", value: "browser_X_" + part + "_canary_5729" });
+  }
+}
+
 export async function run(changed = false) {
   const destination = changed ? await approvedOperation({ ...descriptor.operation, path: "/unapproved" }, descriptor.origin) : descriptor;
   try { return { value: await session.execute(destination, {}, binding) }; }

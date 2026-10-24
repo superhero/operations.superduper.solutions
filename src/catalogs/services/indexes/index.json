@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "7428a5d84810659801fc98172cb02c0b59db1efc3771a2473ccd6f0bbf8c5d5c",
+  "adapterRevision": "75bd151d2143cc86e01ddde34e471fc3fec6b623e38b3448764b5ce1a633ded1",
   "indexes": [
     {
       "id": "anthropic",
@@ -3092,10 +3092,10 @@
     },
     {
       "id": "x",
-      "sourceRevision": "e21fbef8a11e6c2a8dfcbbe2390fc10c73dc79671b3b5f51de787d4be106a9c6",
+      "sourceRevision": "10fb1c13f21c82f42839f63b8874205968a9650e18c9a332b78a339ab675dd13",
       "bytes": 41338,
-      "compressedBytes": 4525,
-      "sha256": "4800835dbfcf1e6591f740f3cc96eab2e1d1a4fdd50b4687e0a2f116c21f891f",
+      "compressedBytes": 4529,
+      "sha256": "374b7266d8df21030fc96a4db0f521b3c2a9d48b833f072f40fe8dd2ed49fea6",
       "summary": {
         "name": "X API v2",
         "serverUrl": "https://api.x.com",
