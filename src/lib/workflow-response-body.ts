@@ -15,7 +15,7 @@ export function responseMediaType(value: string): string | undefined {
 }
 
 export function responseKind(media: string, schema: Record<string, unknown> = {}): ResponseKind {
-  if (/^(?:text\/event-stream|application\/(?:x-ndjson|ndjson|jsonl|json-seq))$/.test(media)) return "unsupported";
+  if (/^(?:text\/event-stream|application\/(?:x-ndjson|ndjson|jsonl|json-seq|stream\+json))$/.test(media)) return "unsupported";
   if (media === "application/json" || media.endsWith("+json")) return "json";
   if (schema.type === "string" && schema.format === "binary") return "binary";
   if (media.startsWith("text/") || media === "application/xml" || media.endsWith("+xml")) return "text";

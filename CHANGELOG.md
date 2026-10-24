@@ -152,6 +152,21 @@ completed write. Preserve existing JSON/text-only approval metadata.
 
 ```
 
+<!-- changelog-commit:74ed0b1a1dc5fe7f20d1cb19e98fa58f26b836dc -->
+### Commit [`74ed0b1`](https://github.com/superhero/operations.superduper.solutions/commit/74ed0b1a1dc5fe7f20d1cb19e98fa58f26b836dc)
+
+```text
+fix(workflow): reject streamed JSON response media
+
+Reject application/stream+json before ordinary JSON suffix matching. A
+single event can otherwise parse as a completed JSON response despite
+streaming result handling being unavailable.
+
+Exercise SSE, NDJSON and streamed JSON against JSON-only operations in
+both executors so preferred JSON metadata cannot hide the actual stream.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
