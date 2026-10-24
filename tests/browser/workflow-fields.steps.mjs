@@ -328,7 +328,7 @@ When('I hide and restore the root query input', async function () {
     const port = element.closest('.operation-port').getBoundingClientRect();
     return { x: button.x + button.width / 2, y: button.y + button.height / 2, portX: port.x, portY: port.y + port.height / 2, scale: button.width / 24 };
   });
-  assert.ok(Math.abs(position.x - position.portX + 20 * position.scale) < 1 && Math.abs(position.y - position.portY) < 1, 'Restore sits beside the visible left input port.');
+  assert.ok(Math.abs(position.x - position.portX + 28 * position.scale) < 1 && Math.abs(position.y - position.portY) < 1, 'Restore sits beside the visible left input port.');
   await restore.click();
   await expect(query).toBeVisible();
   await expect(handle).toHaveAttribute('data-handleid', handleId);
