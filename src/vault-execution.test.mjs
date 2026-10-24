@@ -42,6 +42,62 @@ async function execute(state, { values = {}, fetchRequest = async () => response
   return executeCredentialed(state.descriptor, values, state.binding, state.credentials, { assertCurrent() {}, fetchRequest, ...options });
 }
 
+async function basicFixture() {
+  const descriptor = await approvedOperation({ ...baseOperation(), security: [[{ name: 'Login', kind: 'basic', header: 'Authorization' }, key]] }, 'https://api.example.test/v1');
+  const credentials = [
+    { id: crypto.randomUUID(), kind: 'secret', label: 'Username', value: 'basic-USER-9182', grants: [] },
+    { id: crypto.randomUUID(), kind: 'apiKey', label: 'Password token', value: 'basic-PASSWORD:9182', grants: [] },
+    { id: crypto.randomUUID(), kind: 'apiKey', label: 'Extra key', value: 'basic-KEY-9182', grants: [] },
+  ];
+  return { descriptor, credentials, binding: { alternative: 0, fingerprint: descriptor.fingerprint,
+    credentials: { Login: { username: credentials[0].id, password: credentials[1].id }, Key: credentials[2].id } } };
+}
+Then('Basic credentials are encoded privately and source joined token and header echoes stay redacted', async () => {
+  const state = await basicFixture(), joined = `${state.credentials[0].value}:${state.credentials[1].value}`;
+  const encoded = Buffer.from(joined, 'ascii').toString('base64'), header = `Basic ${encoded}`;
+  const echoes = { username: state.credentials[0].value, password: state.credentials[1].value, joined, encoded, header,
+    escaped: encodeURIComponent(encoded), form: new URLSearchParams({ v: encoded }).toString().slice(2) };
+  let calls = 0, current = 0;
+  for (const status of [200, 401]) {
+    const pending = execute(state, { assertCurrent() { current++; }, fetchRequest: async (url, options) => {
+      calls++; assert.equal(options.headers.get('Authorization'), header);
+      assert.equal(options.headers.get('X-Api-Key'), state.credentials[2].value);
+      assert.equal(options.credentials, 'omit'); assert.equal(options.redirect, 'error');
+      return Response.json(echoes, { status, headers: { 'X-Reflected': header } });
+    } });
+    const result = status === 200 ? await pending : await pending.catch(error => { assert.ok(error instanceof CredentialResponseError); return error; });
+    for (const secret of [...Object.values(echoes), state.credentials[2].value]) assert.ok(!JSON.stringify(result).includes(secret), 'No Basic source or derived value crosses private execution.');
+    assert.equal(result.response.redacted, true);
+  }
+  assert.equal(calls, 2); assert.equal(current, 4);
+});
+Then('Basic execution rejects {string} before dispatch', async kind => {
+  const state = await basicFixture(); let values = {};
+  const change = {
+    'missing username': () => { delete state.binding.credentials.Login.username; },
+    'extra role': () => { state.binding.credentials.Login.extra = crypto.randomUUID(); },
+    'single reference': () => { state.binding.credentials.Login = state.credentials[0].id; },
+    'missing record': () => { state.credentials.shift(); },
+    'duplicate record': () => { state.credentials.push({ ...state.credentials[0] }); },
+    'stale fingerprint': () => { state.binding.fingerprint = '0'.repeat(64); },
+    'username colon': () => { state.credentials[0].value = 'wrong:user'; },
+    'non ASCII': () => { state.credentials[0].value = 'usér'; },
+    'control character': () => { state.credentials[1].value = 'secret\nvalue'; },
+    'empty password': () => { state.credentials[1].value = ''; },
+    'oversized encoding': () => { state.credentials[1].value = 'x'.repeat(vaultLimits.secretBytes); },
+    'public auth header': async () => {
+      state.descriptor = await approvedOperation({ ...state.descriptor.operation, fields: [field('header', 'Authorization')] }, state.descriptor.origin);
+      state.binding.fingerprint = state.descriptor.fingerprint; values = { 'header:Authorization': 'override' };
+    },
+    'pair for bearer': async () => {
+      state.descriptor = await approvedOperation(baseOperation(), state.descriptor.origin);
+      state.binding = { alternative: 0, fingerprint: state.descriptor.fingerprint, credentials: { Bearer: state.binding.credentials.Login } };
+    },
+  };
+  assert.ok(change[kind]); await change[kind]();
+  await assert.rejects(execute(state, { values, fetchRequest: () => assert.fail('Invalid Basic credentials dispatched') }), error => error instanceof VaultError);
+});
+
 Then('private JSON expressions retain null and structured values in approved request bodies', async () => {
   const operation = { ...baseOperation(), method: 'POST', bodyRequired: true, bodyValue: true, bodyMediaType: 'application/json',
     fields: [field('body', '$', { type: 'json', required: true, schema: { type: 'json', nullable: true } })],

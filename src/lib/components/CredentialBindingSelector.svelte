@@ -11,8 +11,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { supportedSecurityAlternative } from "../operation-security.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { approvedOperation } from "../secrets/policy.ts";
+  import { isBasicCredentialReference, validateCredentialBinding } from "../secrets/bindings.ts";
   import { lockVaultLocally, readVaultKeys, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
-  import { VaultError, type ApprovedOperation, type CredentialBinding, type VaultKey, type VaultStatus } from "../secrets/types.ts";
+  import { VaultError, type ApprovedOperation, type CredentialBinding, type CredentialReference, type VaultKey, type VaultStatus } from "../secrets/types.ts";
 
   let { operation, initial, disabled = false, portalZIndex = 40, onChange }: { operation: Operation; initial?: CredentialBinding | undefined;
     disabled?: boolean; portalZIndex?: number; onChange: (binding: CredentialBinding | undefined) => void } = $props();
@@ -20,7 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let credentials = $state<VaultKey[]>([]);
   let descriptor = $state.raw<ApprovedOperation>();
   let alternative = $state("");
-  let choices = $state<Record<string, string>>({});
+  let choices = $state<Record<string, CredentialReference>>({});
   let error = $state("");
   let busy = $state(false);
   let authentication = $state.raw<VaultAuthentication>();
@@ -36,14 +37,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const unavailable = $derived([...new Set(operation.security?.flatMap(option => option.flatMap(scheme => scheme.kind === "unsupported" ? [scheme.reason] : [])) ?? [])]);
   function permitted(item: VaultKey, scheme: string): boolean {
     const kind = selected?.find(item => item.name === scheme)?.kind;
-    return item.kind === "secret" || item.kind === kind;
+    return kind === "basic" || item.kind === "secret" || item.kind === kind;
+  }
+  function choice(name: string, part?: "username" | "password"): string {
+    const reference = choices[name];
+    return part ? reference && typeof reference === "object" ? reference[part] : "" : typeof reference === "string" ? reference : "";
+  }
+  function basicChoice(name: string, part: "username" | "password", id: string) {
+    const previous = choices[name];
+    choices = { ...choices, [name]: { ...(previous && typeof previous === "object" ? previous : { username: "", password: "" }), [part]: id } };
+    changed();
   }
   function changed() {
     error = "";
-    if (!descriptor || !selected || selected.length && !status.unlocked) { onChange(undefined); return; }
-    const entries = selected.map(scheme => [scheme.name, choices[scheme.name] ?? ""] as const);
-    if (entries.some(([scheme, id]) => !credentials.some(item => item.id === id && permitted(item, scheme)))) { onChange(undefined); return; }
-    onChange({ alternative: Number(alternative), credentials: Object.fromEntries(entries), fingerprint: descriptor.fingerprint });
+    const selection = selected;
+    if (!descriptor || !selection || selection.length && !status.unlocked) { onChange(undefined); return; }
+    const entries = selection.map(scheme => [scheme.name, choices[scheme.name] ?? ""] as const);
+    if (entries.some(([name, reference]) => {
+      const scheme = selection.find(scheme => scheme.name === name)!;
+      if (scheme.kind === "basic") return !isBasicCredentialReference(reference)
+        || [reference.username, reference.password].some(id => !credentials.some(item => item.id === id && permitted(item, name)));
+      return typeof reference !== "string" || !credentials.some(item => item.id === reference && permitted(item, name));
+    })) { onChange(undefined); return; }
+    onChange(validateCredentialBinding({ alternative: Number(alternative), credentials: Object.fromEntries(entries), fingerprint: descriptor.fingerprint }));
   }
   async function refresh() {
     const request = ++revision;
@@ -103,14 +119,26 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if descriptor}<p class="destination"><strong>{operation.method}</strong> {descriptor.origin}{operation.path}</p>{/if}
     {#if !status.exists}<p>Create a vault and add credentials in Settings → Secrets.</p>
     {:else}
-        {#each selected as scheme (scheme.name)}
+        {#each selected as scheme, index (scheme.name)}
           <div class="credential-choice">
-            <label for={`${fieldId}-${scheme.name}`}>{scheme.name} · {scheme.header ?? scheme.query}</label>
-            <FieldSelect id={`${fieldId}-${scheme.name}`} label={`Credential for ${scheme.name}`} value={choices[scheme.name] ?? ""}
+            {#if scheme.kind === "basic"}
+              <p class="credential-name">{scheme.name} · {scheme.header}</p>
+              <p class="hint">Choose stored username and password or API token values. Usernames cannot contain a colon.</p>
+              <label for={`${fieldId}-credential-${index}-username`}>Username</label>
+              <FieldSelect id={`${fieldId}-credential-${index}-username`} label={`Username for ${scheme.name}`} value={choice(scheme.name, "username")}
+                disabled={disabled || busy} {portalZIndex} options={credentials.map(item => ({ value: item.id, label: item.label }))}
+                onValueChange={value => basicChoice(scheme.name, "username", value)} />
+              <label for={`${fieldId}-credential-${index}-password`}>Password or API token</label>
+              <FieldSelect id={`${fieldId}-credential-${index}-password`} label={`Password or token for ${scheme.name}`} value={choice(scheme.name, "password")}
+                disabled={disabled || busy} {portalZIndex} options={credentials.map(item => ({ value: item.id, label: item.label }))}
+                onValueChange={value => basicChoice(scheme.name, "password", value)} />
+            {:else}
+            <label for={`${fieldId}-credential-${index}-value`}>{scheme.name} · {scheme.header ?? scheme.query}</label>
+            <FieldSelect id={`${fieldId}-credential-${index}-value`} label={`Credential for ${scheme.name}`} value={choice(scheme.name)}
               disabled={disabled || busy} {portalZIndex}
               options={credentials.filter(item => (item.kind === "secret" || item.kind === scheme.kind)).map(item => ({ value: item.id, label: item.label }))}
               onValueChange={value => { choices = { ...choices, [scheme.name]: value }; changed(); }} />
-
+            {/if}
           </div>
         {/each}
       {#if !status.unlocked}<VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy} {portalZIndex}
@@ -128,7 +156,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   legend { font-weight: 700; padding: 0; }
   p { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .credential-choice { display: grid; gap: 8px; }
-  label { font-size: 12px; font-weight: 700; }
+  label, .credential-name { font-size: 12px; font-weight: 700; }
   button { justify-self: start; border: 0; border-radius: 4px; padding: 8px 12px; background: var(--color-background); color: var(--color-foreground); font-weight: 700; }
   [role="alert"] { color: var(--color-error-foreground); }
 </style>

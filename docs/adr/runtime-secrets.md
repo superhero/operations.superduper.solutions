@@ -56,7 +56,10 @@ only a local entry ID and supply Text inputs, including nested request fields.
 Portable workflows clear these selections. Values are resolved and validated in
 the worker immediately before dispatch; the runner and request previews contain
 placeholders. Vault variables cannot feed Switch or Cast nodes. The initial authentication scope supports
-Bearer tokens and header or query API keys; unsupported requirements fail closed.
+Bearer tokens, HTTP Basic pairs and header or query API keys; unsupported requirements fail closed.
+Basic selects separate username and password/API-token vault references and
+constructs its Base64 Authorization value only inside the private worker.
+Both source values and the derived token/header are included in redaction.
 Credential destinations require HTTPS. HTTP is permitted only for literal
 `localhost`, `127.0.0.1` or `[::1]` destinations when the application's own
 origin is also loopback, to support local development. A hosted application or

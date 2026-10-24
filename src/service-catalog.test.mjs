@@ -225,8 +225,8 @@ Then('the Atlassian collection includes its published product APIs without chang
     }
     if (source.id === 'atlassian-compass') {
       assert.equal(document.components.securitySchemes.basicAuth.scheme, 'basic');
-      assert.ok(catalog.operations.some(operation => /bearer authentication/.test(operation.unavailableReason)),
-        'Unsupported source authentication must remain visible rather than becoming anonymous.');
+      assert.ok(catalog.operations.some(operation => !operation.unavailableReason && operation.security?.flat().some(scheme => scheme.kind === 'basic')),
+        'Supported Basic authentication remains explicit rather than becoming anonymous.');
     }
     if (source.id === 'statuspage') {
       assert.equal(document.info.title, 'Statuspage API');
@@ -363,7 +363,7 @@ Then('service inputs preserve standard validation and explicitly use server vali
   assert.equal(JSON.stringify(document), before);
   const unsupported = structuredClone(document);
   unsupported.paths['/items/{id}'].post.security = [{ login: [] }];
-  unsupported.components = { securitySchemes: { login: { type: 'http', scheme: 'basic' } } };
+  unsupported.components = { securitySchemes: { login: { type: 'http', scheme: 'digest' } } };
   const unavailable = inspectServiceSchema(unsupported, 'service-test').operations[0];
   assert.match(unavailable.unavailableReason, /bearer/);
   assert.throws(() => prepareRequest(unavailable, values), /bearer/);

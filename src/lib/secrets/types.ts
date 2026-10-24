@@ -34,8 +34,10 @@ export type VaultCredential = {
 };
 export type VaultKey = Pick<VaultCredential, "id" | "label" | "kind">;
 export type CredentialSummary = Omit<VaultCredential, "value">;
+export type BasicCredentialReference = { username: string; password: string };
+export type CredentialReference = string | BasicCredentialReference;
 export type CredentialBinding = {
-  alternative: number; credentials: Record<string, string>; fingerprint: string;
+  alternative: number; credentials: Record<string, CredentialReference>; fingerprint: string;
 };
 export type CredentialExecutionContext = {
   binding: CredentialBinding; runId: string; nodeId: string;

@@ -6,6 +6,9 @@ Feature: Credential references at workflow execution boundaries
   Each invocation selects an approved local credential without exposing its value.
   Imported workflow references cannot authorize use of local secrets.
 
+  Scenario: Basic bindings keep two opaque references through local reload and private dispatch
+    Then Basic references validate deeply survive local reload execute privately and stay out of portable exports
+
   Scenario: References contain only strictly parsed opaque IDs
     Then credential bindings and invocation contexts reject inherited accessor and malformed fields without invoking getters
 

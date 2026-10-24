@@ -6,6 +6,27 @@
 Feature: Approved credential execution
   Credentials leave the worker only for an explicitly approved operation and selected authentication alternative.
 
+  Scenario: Basic uses two selected values and scrubs source and encoded credentials
+    Then Basic credentials are encoded privately and source joined token and header echoes stay redacted
+
+  Scenario Outline: Invalid Basic credentials never dispatch for <case>
+    Then Basic execution rejects "<case>" before dispatch
+    Examples:
+      | case                |
+      | missing username    |
+      | extra role          |
+      | single reference    |
+      | missing record      |
+      | duplicate record    |
+      | stale fingerprint   |
+      | username colon      |
+      | non ASCII           |
+      | control character   |
+      | empty password      |
+      | oversized encoding  |
+      | public auth header  |
+      | pair for bearer     |
+
   Scenario: Private JSON values retain their request body types
     Then private JSON expressions retain null and structured values in approved request bodies
 

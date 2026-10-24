@@ -11,7 +11,7 @@ import { operationServerUrl } from "./schema-documents.ts";
 import { serverUrlHasPlaceholder } from "./server-url.ts";
 import { VaultError, type ApprovedOperation, type CredentialExecutionContext } from "./secrets/types.ts";
 import { approvedOperation } from "./secrets/policy.ts";
-import { validateCredentialContext } from "./secrets/bindings.ts";
+import { isBasicCredentialReference, validateCredentialContext } from "./secrets/bindings.ts";
 import { executeVaultOperation } from "./secrets/vault-executor.ts";
 
 export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown; redacted?: boolean };
@@ -164,7 +164,9 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       if (!supportedSecurityAlternative(alternative)) throw new VaultError("PERMISSION");
       if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal) : anonymous.execute(operation, submitted, signal, invocation);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
-        || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name))) throw new VaultError("PERMISSION");
+        || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name)
+          || (scheme.kind === "basic" ? !isBasicCredentialReference(invocation.binding.credentials[scheme.name])
+            : typeof invocation.binding.credentials[scheme.name] !== "string"))) throw new VaultError("PERMISSION");
       return credentialExecution(descriptor, submitted, invocation, signal);
     }
   };

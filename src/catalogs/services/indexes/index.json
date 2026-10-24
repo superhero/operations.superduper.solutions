@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "c20059a986d3ab419728196bff28e4d5d616ae75367174a95763248b815c341b",
+  "adapterRevision": "59ce3d0a30a05b8d27952d0e91a122747fd05b59b1c4feb767f95ed01018b9eb",
   "indexes": [
     {
       "id": "anthropic",
@@ -235,14 +235,14 @@
     {
       "id": "atlassian-compass",
       "sourceRevision": "8f958b9531ae81c59ba759c978788ed469dae80829eaadf533c9cab4dd7d96bf",
-      "bytes": 6231,
-      "compressedBytes": 962,
-      "sha256": "f13287f403963f4ffc56bfb04348355ffb6e01935d08738289c6ffb2aae27289",
+      "bytes": 5141,
+      "compressedBytes": 896,
+      "sha256": "d2ceac0c3f66a6196e9efe0684bc7e57b2fc12706358c6e4edf66e0982bafead",
       "summary": {
         "name": "Compass REST API",
         "serverUrl": "https://your-domain.atlassian.net/gateway/api",
         "operationCount": 11,
-        "unavailableCount": 11
+        "unavailableCount": 0
       }
     },
     {
@@ -386,15 +386,15 @@
     {
       "id": "jira",
       "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
-      "bytes": 173795,
-      "compressedBytes": 18524,
-      "sha256": "7fc07e1c4aafef740d6167efc86b0c321e482eb64272348d4780c5bb2d5bc906",
+      "bytes": 173101,
+      "compressedBytes": 18452,
+      "sha256": "b4e885ce385b304ee48db545f872910eed05fabd6ecbd3fc45a49dbecbd89244",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
         "description": "Jira Cloud platform REST API documentation",
         "operationCount": 630,
-        "unavailableCount": 16
+        "unavailableCount": 9
       }
     },
     {
@@ -414,29 +414,29 @@
     {
       "id": "jira-service-management-dc",
       "sourceRevision": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
-      "bytes": 228370,
-      "compressedBytes": 16966,
-      "sha256": "e8bc7a49ae832c3f769edea7abdd7c9039402109c01bf802b0fca2dcebd96d47",
+      "bytes": 214975,
+      "compressedBytes": 16744,
+      "sha256": "e9537255f5b8fcf78725ecd07a193c1515763f17739b94df7666029623dd57a6",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Service Management Data Center. The REST APIs are for developers who want to integrate Jira Service Management Data Center with other applications, and for administrators who want to script configuration interactions with Jira Service Management Data Center.## Using the REST API\nNot familiar with the Jira Service Management REST APIs? Start with our [Guide to exploring the Jira Service Management domain model via the REST APIs](https://developer.atlassian.com/display/JIRADEV/Guide+-+Exploring+the+JIRA+Service+Desk+domain+model+via+the+REST+APIs), which will help you get a conceptual understanding of the Jira Service Management Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the information on the following topics:\n* [Structure of the REST URIs](/server/jira-servicedesk/info/url-structure)\n* [Authentication](/server/jira-servicedesk/info/authentication)\n* [Expansion](/server/jira-servicedesk/info/expansion)\n* [Special headers](/server/jira-servicedesk/info/special-headers)\n* [Field input formats](/server/jira-servicedesk/info/field-input-formats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 514,
-        "unavailableCount": 387
+        "unavailableCount": 246
       }
     },
     {
       "id": "jira-service-management-ops",
       "sourceRevision": "c0fb62c243a89256567fdfb82d3667cd779f9a99dff9a9efe5b3a99b375b0d1d",
-      "bytes": 113310,
-      "compressedBytes": 6777,
-      "sha256": "81100d3de5155b21850f4a07ab99887d8c8674ca2b404529eeeb6cea48a2dfb6",
+      "bytes": 112914,
+      "compressedBytes": 6722,
+      "sha256": "b5a7922b7f6f49891409768439694c653f742b2e51bd7d78e403d210dc7b8d92",
       "summary": {
         "name": "JSM Operations API",
         "serverUrl": "https://api.atlassian.com/jsm/ops",
         "description": "Operations APIs for Jira Service Management",
         "operationCount": 240,
-        "unavailableCount": 240
+        "unavailableCount": 236
       }
     },
     {
@@ -456,28 +456,28 @@
     {
       "id": "jira-dc",
       "sourceRevision": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
-      "bytes": 180469,
-      "compressedBytes": 14169,
-      "sha256": "a85b911880d72efe31bc6803415b9d6fa97deb2e591984823c6f23fdf1544974",
+      "bytes": 165364,
+      "compressedBytes": 14013,
+      "sha256": "8f72cf7770edc769aa7864f5b448962c0415b8962ad6c52a8789b1a17acfc454",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Software Data Center. The REST APIs are for developers who want to integrate Jira Data Center with other applications, and for administrators who want to script configuration interactions with Jira Data Center.\n\nJira Data Center is built upon the Jira platform.  As such there is a natural overlap in functionality between what is provided by Jira Data Center and what is provided by the Jira platform.  If you are after an introductory, high-level view of the Jira REST APIs, then the best place to start is the [Jira REST API home](https://developer.atlassian.com/server/jira/platform/rest-apis/).\n## Using the REST API\nNot familiar with the Jira Data Center REST APIs? Start with our [Guide to exploring the Jira Data Center domain model via the REST APIs](https://developer.atlassian.com/server/jira/platform/tutorials_and_guides/), which will help you get a conceptual understanding of the Jira Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the [Appendix](#appendix) at the end of this page (after the resources), where you'll find information on the following topics:\n* [Structure of the REST URIs](#structure)\n* [Authentication](#authentication)\n* [Pagination](#pagination)\n* [Expansion](#expansion)\n* [Special headers](#special-headers)\n* [Field input formats](#fieldformats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 437,
-        "unavailableCount": 402
+        "unavailableCount": 243
       }
     },
     {
       "id": "atlassian-marketplace",
       "sourceRevision": "7489e7bda44df7b659db8a8b448f1e918afab0ec8164370bac021ae5aed30f0a",
-      "bytes": 60498,
-      "compressedBytes": 4202,
-      "sha256": "8b4f902de4a140d5e59282cead5135af124a765812993210e5b7cd15acf26a4a",
+      "bytes": 52417,
+      "compressedBytes": 4031,
+      "sha256": "835f2f764bd4387576c4d27203beb13402b4eaceebfab2e6bedcbe70a93a8c1b",
       "summary": {
         "name": "Atlassian Marketplace API",
         "serverUrl": "https://marketplace.atlassian.com/rest/2",
         "operationCount": 143,
-        "unavailableCount": 109
+        "unavailableCount": 29
       }
     },
     {
@@ -3065,15 +3065,15 @@
     {
       "id": "twilio",
       "sourceRevision": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
-      "bytes": 93319,
-      "compressedBytes": 6729,
-      "sha256": "f9ad540c3558d077eed0fd58d44607b4d68119261a0b3d82a6fb10e15e82229f",
+      "bytes": 72527,
+      "compressedBytes": 6554,
+      "sha256": "cae44b6b45a1352e892ec2f873d7445496aaf7229b32341db22c260ec763f460",
       "summary": {
         "name": "Twilio - Api",
         "serverUrl": "https://api.twilio.com",
         "description": "This is the public Twilio REST API.",
         "operationCount": 197,
-        "unavailableCount": 197
+        "unavailableCount": 8
       }
     },
     {

@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 export type OperationSecurityScheme =
-  | { name: string; kind: "bearer" | "apiKey"; header: string; query?: never }
+  | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never }
   | { name: string; kind: "apiKey"; query: string; header?: never };
 export type UnavailableSecurityScheme = { name: string; kind: "unsupported"; reason: string } &
   ({ header: string; query?: never } | { query: string; header?: never });
@@ -11,7 +11,7 @@ export type OperationSecurityRequirement = OperationSecurityScheme | Unavailable
 /** Alternatives retain source positions. Every member is required (AND), including unavailable members. */
 export type OperationSecurity = OperationSecurityRequirement[][];
 export function supportedSecurityAlternative(value: unknown): value is OperationSecurityScheme[] {
-  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "apiKey"].includes(scheme.kind));
+  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "basic", "apiKey"].includes(scheme.kind));
 }
 /** Permission metadata is aligned with the security alternatives, not OAuth flows. */
 export type CredentialPermissions = Record<string, string[]>[];
@@ -73,9 +73,10 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean):
   if (definition.type === "http")
   {
     if (typeof definition.scheme !== "string" || !definition.scheme || invalidHeaderName.test(definition.scheme))
-      throw new Error(`${context}: only HTTP bearer authentication is supported.`);
-    result = definition.scheme.toLowerCase() === "bearer" ? { name, kind: "bearer", header: "Authorization" }
-      : { name, kind: "unsupported", header: "Authorization", reason: `${context}: only HTTP bearer authentication is supported.` };
+      throw new Error(`${context}: only HTTP bearer and Basic authentication are supported.`);
+    const kind = definition.scheme.toLowerCase();
+    result = kind === "bearer" || kind === "basic" ? { name, kind, header: "Authorization" }
+      : { name, kind: "unsupported", header: "Authorization", reason: `${context}: only HTTP bearer and Basic authentication are supported.` };
     keys = ["type", "scheme", "description", "bearerFormat"];
     if (definition.bearerFormat !== undefined && typeof definition.bearerFormat !== "string")
       throw new Error(`${context}: bearerFormat must be a string.`);
@@ -101,7 +102,7 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean):
     }
     keys = ["type", "in", "name", "description"];
   }
-  else throw new Error(`${context}: only HTTP bearer and header or query API key security schemes are supported.`);
+  else throw new Error(`${context}: only HTTP bearer, Basic and header or query API key security schemes are supported.`);
   if (definition.description !== undefined && typeof definition.description !== "string")
     throw new Error(`${context}: description must be a string.`);
   if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))

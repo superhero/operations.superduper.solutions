@@ -52,6 +52,11 @@ existing format.
 Workflow document versions 1–3 accept optional opaque credential bindings. Local
 history retains them; portable exports and imports remove them, and older readers
 may discard them. Bindings never contain credentials or authorize a destination.
+Bearer/API-key references remain single vault IDs. Basic uses an exact two-ID
+`{ username, password }` value under its scheme name, with the same local-only
+history/export boundary. Existing key/value vault entries supply both roles;
+the private executor validates visible ASCII and username delimiters, constructs
+the Basic header, and registers its source and derived forms for redaction.
 
 Replacing an existing vault requires its current authentication as well as the
 export's. If local data cannot authenticate, import the export in a fresh browser

@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { VaultError, type CredentialBinding, type CredentialExecutionContext } from "./types.ts";
+import { VaultError, type BasicCredentialReference, type CredentialBinding, type CredentialExecutionContext } from "./types.ts";
 import { validateVaultVariableInputs } from "./variables.ts";
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -15,6 +15,14 @@ function object(value: unknown): Record<string, unknown> {
   return Object.fromEntries(Object.entries(descriptors).map(([name, item]) => [name, item.value]));
 }
 
+export function isBasicCredentialReference(value: unknown): value is BasicCredentialReference {
+  try {
+    const pair = object(value);
+    return Object.keys(pair).length === 2 && Object.keys(pair).every(key => key === "username" || key === "password")
+      && typeof pair.username === "string" && uuid.test(pair.username) && typeof pair.password === "string" && uuid.test(pair.password);
+  } catch { return false; }
+}
+
 /** Opaque local references only. The encrypted vault owns all actual authorization. */
 export function validateCredentialBinding(value: unknown): CredentialBinding {
   const item = object(value);
@@ -23,9 +31,10 @@ export function validateCredentialBinding(value: unknown): CredentialBinding {
     || typeof item.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(item.fingerprint)) throw new VaultError("INVALID");
   const entries = Object.entries(object(item.credentials));
   if (entries.length > 16 || entries.some(([scheme, id]) => !scheme.trim() || scheme.length > 128
-    || typeof id !== "string" || !uuid.test(id))) throw new VaultError("INVALID");
+    || !(typeof id === "string" ? uuid.test(id) : isBasicCredentialReference(id)))) throw new VaultError("INVALID");
   return { alternative: item.alternative as number, fingerprint: item.fingerprint,
-    credentials: Object.fromEntries(entries) as Record<string, string> };
+    credentials: Object.fromEntries(entries.map(([name, reference]) => [name, typeof reference === "string" ? reference
+      : { username: (reference as BasicCredentialReference).username, password: (reference as BasicCredentialReference).password }])) };
 }
 
 /** Run/node IDs correlate UI invocations; authorization comes from the descriptor and binding. */

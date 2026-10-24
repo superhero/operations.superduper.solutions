@@ -6,6 +6,9 @@
 Feature: OpenAPI authentication requirements
   Imported operations describe supported credentials without granting permission to use them.
 
+  Scenario: HTTP Basic is a canonical private authentication choice
+    Then HTTP Basic preserves scheme identity destination AND requirements and strict approval
+
   Scenario: Credential permission metadata cannot bypass canonical security validation
     Then credential permission metadata is validated at schema loading and private approval
 
@@ -85,12 +88,12 @@ Feature: OpenAPI authentication requirements
       | null definition      | null                                                 | expected an object                 |
       | array definition     | []                                                   | expected an object                 |
       | string definition    | "Bearer"                                             | expected an object                 |
-      | absent type          | {}                                                   | only HTTP bearer and header        |
-      | OAuth2               | {"type":"oauth2","flows":{}}                          | only HTTP bearer and header        |
-      | OpenID Connect       | {"type":"openIdConnect","openIdConnectUrl":"https://api.example.test"} | only HTTP bearer and header |
-      | mutual TLS           | {"type":"mutualTLS"}                                 | only HTTP bearer and header        |
-      | HTTP basic           | {"type":"http","scheme":"basic"}                     | only HTTP bearer authentication    |
-      | missing HTTP scheme  | {"type":"http"}                                      | only HTTP bearer authentication    |
+      | absent type          | {}                                                   | only HTTP bearer        |
+      | OAuth2               | {"type":"oauth2","flows":{}}                          | only HTTP bearer        |
+      | OpenID Connect       | {"type":"openIdConnect","openIdConnectUrl":"https://api.example.test"} | only HTTP bearer |
+      | mutual TLS           | {"type":"mutualTLS"}                                 | only HTTP bearer        |
+      | HTTP Digest           | {"type":"http","scheme":"digest"}                     | only HTTP bearer    |
+      | missing HTTP scheme  | {"type":"http"}                                      | only HTTP bearer    |
       | invalid bearer hint  | {"type":"http","scheme":"bearer","bearerFormat":4}  | bearerFormat must be a string      |
       | invalid description  | {"type":"http","scheme":"bearer","description":[]}  | description must be a string       |
       | unknown fields       | {"type":"http","scheme":"bearer","flows":{}}        | unsupported security scheme fields |

@@ -407,9 +407,9 @@ Then('an unsupported first authentication choice stays disabled while a later sa
   const path = `/vault-api/${this.vaultRun}/ok`;
   const document = { openapi: '3.1.0', info: { title: 'Partial authentication fixture', version: '1' },
     servers: [{ url: this.baseURL }], components: { securitySchemes: {
-      Basic: { type: 'http', scheme: 'basic' }, Bearer: { type: 'http', scheme: 'bearer' },
+      Digest: { type: 'http', scheme: 'digest' }, Bearer: { type: 'http', scheme: 'bearer' },
     } }, paths: { [path]: { get: { operationId: 'partial-auth', summary: 'Partial auth request',
-      security: [{ Basic: [] }, { Bearer: [] }], responses: { 200: { description: 'Synthetic result',
+      security: [{ Digest: [] }, { Bearer: [] }], responses: { 200: { description: 'Synthetic result',
         content: { 'application/json': { schema: { type: 'object' } } } } },
     } } } };
   const schemas = page.locator('summary[aria-label="Schemas"]');
@@ -422,7 +422,7 @@ Then('an unsupported first authentication choice stays disabled while a later sa
   await chooseCatalogOperation(page, 'Partial auth request');
   const alternatives = page.getByRole('combobox', { name: 'Authentication alternative', exact: true });
   await alternatives.click();
-  await expect(page.getByRole('option', { name: 'Basic', exact: true })).toBeDisabled();
+  await expect(page.getByRole('option', { name: 'Digest', exact: true })).toBeDisabled();
   await expect(page.getByRole('option', { name: 'Bearer', exact: true })).toBeEnabled();
   await mkdir(this.artifactDirectory, { recursive: true });
   await page.screenshot({ path: `${this.artifactDirectory}/auth-alternatives.png` });
@@ -459,6 +459,64 @@ Then('an unsupported first authentication choice stays disabled while a later sa
   await expect(page.getByRole('region', { name: 'Step 1 response', exact: true })).toContainText('HTTP 200');
   noCanaries(await page.locator('body').innerText());
   assert.deepEqual(await invoke(page, 'persistedCanaries', privateCanaries), []);
+});
+
+Then('a Basic username and token selection survives reload and only its private request receives the encoded credentials', { timeout: 90_000 }, async function () {
+  const page = this.page, username = 'basic-PRIVATE-user-9182@example.test', userLabel = 'Basic username';
+  await settings(page).getByLabel('Credential label', { exact: true }).fill(userLabel);
+  await settings(page).getByLabel('Credential value', { exact: true }).fill(username);
+  await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toHaveValue('');
+  this.vaultRun = randomUUID();
+  const path = `/vault-api/${this.vaultRun}/ok`, encoded = Buffer.from(`${username}:${canaries[1]}`, 'ascii').toString('base64');
+  const privateValues = [...privateCanaries, username, `${username}:${canaries[1]}`, encoded, `Basic ${encoded}`];
+  const document = { openapi: '3.1.0', info: { title: 'Basic auth fixture', version: '1' }, servers: [{ url: this.baseURL }],
+    components: { securitySchemes: { Login: { type: 'http', scheme: 'basic' } } }, paths: { [path]: { get: {
+      operationId: 'basic-auth', summary: 'Private Basic request', security: [{ Login: [] }],
+      responses: { 200: { description: 'Synthetic result', content: { 'application/json': { schema: { type: 'object' } } } } },
+    } } } };
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'basic-auth.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
+  });
+  await expect(page.getByRole('switch', { name: 'Enable Basic auth fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await setMode(page, 'workflow'); await chooseCatalogOperation(page, 'Private Basic request');
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: 'Login', exact: true }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  if (await unlock.isVisible()) {
+    await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await expect(unlock).toHaveCount(0);
+  }
+  const user = page.getByRole('combobox', { name: 'Username for Login', exact: true });
+  const token = page.getByRole('combobox', { name: 'Password or token for Login', exact: true });
+  await user.click(); await page.getByRole('option', { name: userLabel, exact: true }).click();
+  await token.click(); await page.getByRole('option', { name: canaries[3], exact: true }).click();
+  const savedBinding = async () => (await repository(page, 'list')).flatMap(document => document.nodes)
+    .find(node => node.data?.name === 'Private Basic request')?.data.credentialBinding;
+  await expect.poll(async () => Object.keys((await savedBinding())?.credentials.Login ?? {}).sort().join(',')).toBe('password,username');
+  const saved = await savedBinding();
+  assert.equal(saved.alternative, 0);
+  for (const id of Object.values(saved.credentials.Login)) assert.match(id, /^[a-f0-9-]{36}$/);
+  for (const value of privateValues) assert.ok(!JSON.stringify(saved).includes(value));
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await page.screenshot({ path: `${this.artifactDirectory}/basic-selection.png` });
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(user).toContainText(userLabel); await expect(token).toContainText(canaries[3]);
+  assert.deepEqual(await savedBinding(), saved);
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(unlock).toHaveCount(0); await expect(token).toBeEnabled();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  const seen = await observations(this);
+  assert.equal(seen.length, 1); assert.equal(seen[0].headers.authorization, `Basic ${encoded}`);
+  assert.equal(seen[0].headers.cookie, undefined); assert.equal(seen[0].headers.referer, undefined);
+  await expect(page.getByRole('region', { name: 'Step 1 response', exact: true })).toContainText('HTTP 200');
+  const visible = await page.locator('body').innerText();
+  for (const value of privateValues) assert.ok(!visible.includes(value), 'A Basic value escaped onto the page.');
+  assert.deepEqual(await invoke(page, 'persistedCanaries', privateValues), []);
 });
 
 Then('manually locking the vault clears inputs and password unlocking restores the credential list', async function () {

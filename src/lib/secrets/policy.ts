@@ -99,9 +99,9 @@ function validateOperation(operation: Operation): void
       return Object.fromEntries(alternative.map(scheme =>
       {
         if (!scheme || typeof scheme.name !== "string" || names.has(scheme.name)
-          || !["bearer", "apiKey"].includes(scheme.kind)) throw new VaultError("PERMISSION");
+          || !["bearer", "basic", "apiKey"].includes(scheme.kind)) throw new VaultError("PERMISSION");
         names.add(scheme.name);
-        const definition = scheme.kind === "bearer" ? { type: "http", scheme: "bearer" }
+        const definition = scheme.kind === "bearer" || scheme.kind === "basic" ? { type: "http", scheme: scheme.kind }
           : scheme.query !== undefined ? { type: "apiKey", in: "query", name: scheme.query }
           : { type: "apiKey", in: "header", name: scheme.header };
         if (Object.hasOwn(definitions, scheme.name) && canonicalPolicyValue(definitions[scheme.name]) !== canonicalPolicyValue(definition))
