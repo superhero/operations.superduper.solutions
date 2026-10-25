@@ -24,7 +24,8 @@
     "icons:generate": "node build/favicons.mjs",
     "icons:check": "node build/favicons.mjs --check",
     "test:runner": "node tests/gherkin/run.mjs runner",
-    "test:components": "node tests/gherkin/run.mjs components"
+    "test:components": "node tests/gherkin/run.mjs components",
+    "companion:jira": "node companions/jira/server.mjs"
   },
   "devDependencies": {
     "@actions/artifact": "6.3.1",

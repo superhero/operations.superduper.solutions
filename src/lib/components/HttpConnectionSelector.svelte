@@ -5,6 +5,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import JiraOAuthConnect from "./JiraOAuthConnect.svelte";
+  import { jiraOAuthAlternative } from "../secrets/jira-config.ts";
+  import GitlabOAuthConnect from "./GitlabOAuthConnect.svelte";
+  import { gitlabOAuthAlternative } from "../secrets/gitlab-config.ts";
   import FieldSelect from "./FieldSelect.svelte";
   import { vaultCall } from "../secrets/client.ts";
   import { validateHttpConnectionReference } from "../secrets/bindings.ts";
@@ -13,8 +17,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { VaultError, type ApprovedOperation, type CredentialBinding, type HttpConnection,
     type HttpConnectionReference, type HttpTokenFormat, type VaultStatus } from "../secrets/types.ts";
 
-  let { descriptor, status, manual, initial, disabled = false, portalZIndex = 40, onSelect }: {
-    descriptor: ApprovedOperation; status: VaultStatus; manual?: CredentialBinding | undefined;
+  let { descriptor, status, credentials = [], manual, initial, disabled = false, portalZIndex = 40, onSelect }: {
+    descriptor: ApprovedOperation; status: VaultStatus; credentials?: readonly import("../secrets/types.ts").VaultKey[]; manual?: CredentialBinding | undefined;
     initial?: HttpConnectionReference | undefined; disabled?: boolean; portalZIndex?: number;
     onSelect: (binding: CredentialBinding | undefined, selected: boolean) => void;
   } = $props();
@@ -22,7 +26,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let entries = $state.raw<HttpConnection[]>([]), selectedId = $state("manual");
   let reference = $state.raw<HttpConnectionReference>();
   let label = $state(""), account = $state(""), formatOverride = $state<HttpTokenFormat>();
-  let busy = $state(false), error = $state("");
+  let busy = $state(false), error = $state(""), notice = $state("");
   let authorizationState = $state<ConnectionAuthorizationState>({ kind: "needs-action" });
   let mounted = false, revision = 0, loaded = "";
   const selected = $derived(entries.find(item => item.id === selectedId));
@@ -83,9 +87,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!reference) return;
     busy = true; error = "";
     try {
-      await vaultCall("removeConnection", [reference]);
+      const outcome = await vaultCall("removeConnection", [reference]);
       if (!mounted) return;
       entries = entries.filter(item => item.id !== selectedId); await choose("manual");
+      if (outcome && !outcome.remoteRemoved) notice = "Removed locally. Companion cleanup could not be confirmed.";
     } catch (cause) { if (mounted) error = cause instanceof VaultError ? cause.message : "The connection could not be removed."; }
     finally { if (mounted) busy = false; }
   }
@@ -107,6 +112,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <div class="http-connections">
+  {#if jiraOAuthAlternative(descriptor) !== undefined}
+    <JiraOAuthConnect {descriptor} {status} {credentials} {portalZIndex} current={selected} disabled={disabled || busy}
+      onConnected={async connection => { entries = [...entries.filter(item => item.id !== connection.id), connection]; await choose(connection.id); }} />
+  {/if}
+  {#if gitlabOAuthAlternative(descriptor) !== undefined}
+    <GitlabOAuthConnect {descriptor} {status} current={selected} disabled={disabled || busy}
+      onConnected={async connection => { entries = [...entries.filter(item => item.id !== connection.id), connection]; await choose(connection.id); }} />
+  {/if}
   <FieldSelect id={`${id}-connection`} label="Saved HTTP connection" value={selectedId} {options} includePlaceholder={false}
     disabled={disabled || busy || !status.unlocked} {portalZIndex} onValueChange={value => { void choose(value); }} />
   {#if !status.unlocked}<p>Unlock the vault to use saved connections.</p>{/if}
@@ -117,7 +130,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else if authorizationState.kind === "failed" || status.unlocked && !selected}<p role="status">Connection changed or is unavailable. Select it again to continue.</p>{/if}
     <button type="button" disabled={disabled || busy || !selected || !status.unlocked} onclick={() => void choose(selectedId)}>Use connection</button>
   {/if}
-  {#if status.unlocked && (manual || selected)}
+  {#if status.unlocked && (selected?.format === "gitlab-oauth" || selected?.format === "jira-companion")}
+    {#if selected?.format === "jira-companion" && selected.oauth?.profile === "atlassian-jira-3lo-v1"}<p>Jira tokens and refresh are managed by {selected.oauth.host}. Reconnect to renew access.</p>
+    {:else}<p>GitLab OAuth manages this connection's tokens and refresh. Reconnect to renew access.</p>{/if}
+    <button type="button" disabled={disabled || busy} onclick={() => void remove()}>Remove connection</button>
+  {:else if status.unlocked && (manual || selected)}
     <details>
       <summary>{selectedId === "manual" ? "Save as connection" : "Edit connection"}</summary>
       <div class="connection-editor">
@@ -138,6 +155,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
     </details>
   {/if}
+  {#if notice}<p role="status">{notice}</p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
 </div>
 

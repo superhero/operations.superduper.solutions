@@ -66,6 +66,13 @@ private values and public header overrides reject. This preserves existing vault
 entry kinds for that exact direct connection without relaxing ordinary selections,
 canonical current-schema approval or portable-export stripping.
 
+The initial managed OAuth profile is [GitLab public PKCE](../../../docs/gitlab-oauth.md).
+Its access/refresh state is encrypted in `oauthState`, omitted from summaries and
+ordinary key/value copies. The record's `value` is an opaque placeholder.
+Connection metadata binds the client, callback, scope and account; worker-owned
+renewal preserves the connection reference and records a durable pending marker
+before exchanging a rotating refresh token.
+
 Operations marked `credentialResult` require private credential acquisition and
 cannot execute through ordinary JSON request/result paths. Both request preparation
 and canonical private approval reject them. Newly issued tokens, signed URLs,

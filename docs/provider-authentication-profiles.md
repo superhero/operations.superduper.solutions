@@ -127,3 +127,7 @@ Recheck the relevant primary contract before implementing another provider or
 issuer, changing a client type/redirect/host, refreshing native source pins, or
 qualifying a real account. Additional issuer tasks must keep their own registration,
 key custody, audience, expiry and account/resource evidence.
+
+## Implementation follow-up: 2026-10-25
+
+The configurable [GitLab public consumer](gitlab-oauth.md) and [Jira confidential consumer](jira-oauth.md) now have implementation artifacts and synthetic verification. The optional [Jira companion](../companions/jira/README.md) owns confidential exchange/storage and only the reviewed site/account/resource route. The live registration/host/site inputs above remain separate; no deployment or real provider qualification is implied.

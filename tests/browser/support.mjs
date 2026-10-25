@@ -11,6 +11,7 @@ import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
+import { createJiraBrowserEndpoint } from './jira-companion.fixture.mjs';
 import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
 import { enterBrowserFeature, releaseDevelopmentResources } from './development-resources.fixture.mjs';
 import { exampleCatalogState } from "./catalog-state.fixture.mjs";
@@ -22,6 +23,7 @@ setDefaultTimeout(30_000);
 let browser;
 let server;
 let baseURL;
+let jiraEndpoint;
 
 // These scenarios exercise standalone fixtures, not application startup.
 // Keep UI and startup scenarios on the built application by default.
@@ -62,9 +64,11 @@ BeforeAll(async function () {
   const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture } =
     JSON.parse(await readFile(this.parameters.fixtureBundlesFile, 'utf8'));
   const vaultEndpoint = createVaultEndpoint();
+  jiraEndpoint = createJiraBrowserEndpoint();
   server = createServer((request, response) => {
+    if (jiraEndpoint.handle(request, response)) return;
     if (vaultEndpoint(request, response)) return;
-    if (request.url === '/') {
+    if (new URL(request.url, 'http://localhost').pathname === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
         'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' });
       response.end(bundle);
@@ -257,6 +261,7 @@ AfterAll(async function () {
     try { await releaseDevelopmentResources(); }
     finally { await browser?.close(); }
   } finally {
+    await jiraEndpoint?.close();
     if (server?.listening) await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
   }
 });

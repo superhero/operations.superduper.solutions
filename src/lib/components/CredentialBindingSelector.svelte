@@ -147,14 +147,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <legend>Credentials</legend>
   {#if operation.privatePath}<p>Save or select a connection to supply the bot token in Telegram's private URL path.</p>{/if}
   {#if descriptor && !uploadSessionConsumer(operation.cloudflareUpload)}
-    <HttpConnectionSelector {descriptor} {status} manual={manualBinding}
+    <HttpConnectionSelector {descriptor} {status} {credentials} manual={manualBinding}
       initial={initial?.fingerprint === descriptor.fingerprint ? initial.connection : undefined} disabled={disabled || busy} {portalZIndex}
       onSelect={(binding, selected) => { connectionSelected = selected; connectionBinding = binding;
         if (binding) alternative = String(binding.alternative);
         else if (!selected) { alternative = manualBinding ? String(manualBinding.alternative) : ""; choices = { ...manualBinding?.credentials }; }
         publish(); }} />
   {/if}
-  {#if operation.oauthScopes && !selected?.some(scheme => scheme.kind === "oauth1")}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
+  {#if !connectionSelected && operation.oauthScopes && !selected?.some(scheme => scheme.kind === "oauth1")}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
   {#if !connectionSelected}
   <FieldSelect id={`${fieldId}-alternative`} label="Authentication alternative" value={alternative} options={options}
     disabled={disabled || busy} {portalZIndex}
