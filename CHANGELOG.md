@@ -2,6 +2,82 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.64
+
+<!-- changelog-commit:52cd20d50c01a8f488757e702accc40e47a23da9 -->
+### Commit [`52cd20d`](https://github.com/superhero/operations.superduper.solutions/commit/52cd20d50c01a8f488757e702accc40e47a23da9)
+
+```text
+fix(gcp): enable JSON BigQuery job metadata
+
+```
+
+<!-- changelog-commit:3d20faf2830260a28a2e94fc5805816f61da063a -->
+### Commit [`3d20faf`](https://github.com/superhero/operations.superduper.solutions/commit/3d20faf2830260a28a2e94fc5805816f61da063a)
+
+```text
+chore(gcp): align BigQuery with released develop
+
+```
+
+<!-- changelog-commit:6218c0b775a90cab0d79c63b0cc24c3710ace4f4 -->
+### Commit [`6218c0b`](https://github.com/superhero/operations.superduper.solutions/commit/6218c0b775a90cab0d79c63b0cc24c3710ace4f4)
+
+```text
+feat(gcp): qualify Storage media uploads
+
+```
+
+<!-- changelog-commit:57dfdeae4edb21534e6a42ca23a65e3bfbbd8aa5 -->
+### Commit [`57dfdea`](https://github.com/superhero/operations.superduper.solutions/commit/57dfdeae4edb21534e6a42ca23a65e3bfbbd8aa5)
+
+```text
+chore(gcp): carry metadata and media contracts onto released develop
+
+```
+
+<!-- changelog-commit:003286a6cc39330dd496279292e4954fbfc11270 -->
+### Commit [`003286a`](https://github.com/superhero/operations.superduper.solutions/commit/003286a6cc39330dd496279292e4954fbfc11270)
+
+```text
+chore(ci): reconcile BigQuery squash integration
+
+```
+
+<!-- changelog-commit:e3325d6b7d3df527112ae734dc40aae423f3511a -->
+### Commit [`e3325d6`](https://github.com/superhero/operations.superduper.solutions/commit/e3325d6b7d3df527112ae734dc40aae423f3511a)
+
+```text
+feat(github): qualify Notifications classic PAT access
+
+```
+
+<!-- changelog-commit:fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2 -->
+### Commit [`fe0f6a2`](https://github.com/superhero/operations.superduper.solutions/commit/fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2)
+
+```text
+chore(github): align notification access with completed service contracts
+
+```
+
+<!-- changelog-commit:9a9bc112324e4ae99786258b66be77444d65d9a8 -->
+### Commit [`9a9bc11`](https://github.com/superhero/operations.superduper.solutions/commit/9a9bc112324e4ae99786258b66be77444d65d9a8)
+
+```text
+chore(ci): retain current develop ancestry for notification access
+
+```
+
+<!-- changelog-commit:32e55db37a84b3104c773ec12d6e7c29903d5c99 -->
+### Commit [`32e55db`](https://github.com/superhero/operations.superduper.solutions/commit/32e55db37a84b3104c773ec12d6e7c29903d5c99)
+
+```text
+chore(ci): reconcile Storage squash integration for Notifications
+
+```
+
 <!-- changelog-commit:19897224abbdefe64d3c7f1ddeb37b3c6664ee96 -->
 ### Commit [`1989722`](https://github.com/superhero/operations.superduper.solutions/commit/19897224abbdefe64d3c7f1ddeb37b3c6664ee96)
 
@@ -341,82 +417,6 @@ feat(ui): compact the assistant prompt and controls
 
 ```text
 fix(ui): align assistant composer with pane controls
-
-```
-
-<!-- changelog-latest-end -->
-
-## 0.0.64
-
-<!-- changelog-commit:52cd20d50c01a8f488757e702accc40e47a23da9 -->
-### Commit [`52cd20d`](https://github.com/superhero/operations.superduper.solutions/commit/52cd20d50c01a8f488757e702accc40e47a23da9)
-
-```text
-fix(gcp): enable JSON BigQuery job metadata
-
-```
-
-<!-- changelog-commit:3d20faf2830260a28a2e94fc5805816f61da063a -->
-### Commit [`3d20faf`](https://github.com/superhero/operations.superduper.solutions/commit/3d20faf2830260a28a2e94fc5805816f61da063a)
-
-```text
-chore(gcp): align BigQuery with released develop
-
-```
-
-<!-- changelog-commit:6218c0b775a90cab0d79c63b0cc24c3710ace4f4 -->
-### Commit [`6218c0b`](https://github.com/superhero/operations.superduper.solutions/commit/6218c0b775a90cab0d79c63b0cc24c3710ace4f4)
-
-```text
-feat(gcp): qualify Storage media uploads
-
-```
-
-<!-- changelog-commit:57dfdeae4edb21534e6a42ca23a65e3bfbbd8aa5 -->
-### Commit [`57dfdea`](https://github.com/superhero/operations.superduper.solutions/commit/57dfdeae4edb21534e6a42ca23a65e3bfbbd8aa5)
-
-```text
-chore(gcp): carry metadata and media contracts onto released develop
-
-```
-
-<!-- changelog-commit:003286a6cc39330dd496279292e4954fbfc11270 -->
-### Commit [`003286a`](https://github.com/superhero/operations.superduper.solutions/commit/003286a6cc39330dd496279292e4954fbfc11270)
-
-```text
-chore(ci): reconcile BigQuery squash integration
-
-```
-
-<!-- changelog-commit:e3325d6b7d3df527112ae734dc40aae423f3511a -->
-### Commit [`e3325d6`](https://github.com/superhero/operations.superduper.solutions/commit/e3325d6b7d3df527112ae734dc40aae423f3511a)
-
-```text
-feat(github): qualify Notifications classic PAT access
-
-```
-
-<!-- changelog-commit:fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2 -->
-### Commit [`fe0f6a2`](https://github.com/superhero/operations.superduper.solutions/commit/fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2)
-
-```text
-chore(github): align notification access with completed service contracts
-
-```
-
-<!-- changelog-commit:9a9bc112324e4ae99786258b66be77444d65d9a8 -->
-### Commit [`9a9bc11`](https://github.com/superhero/operations.superduper.solutions/commit/9a9bc112324e4ae99786258b66be77444d65d9a8)
-
-```text
-chore(ci): retain current develop ancestry for notification access
-
-```
-
-<!-- changelog-commit:32e55db37a84b3104c773ec12d6e7c29903d5c99 -->
-### Commit [`32e55db`](https://github.com/superhero/operations.superduper.solutions/commit/32e55db37a84b3104c773ec12d6e7c29903d5c99)
-
-```text
-chore(ci): reconcile Storage squash integration for Notifications
 
 ```
 
