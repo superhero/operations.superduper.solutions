@@ -320,6 +320,21 @@ fix(ui): reduce vertical padding on catalog operation buttons
 
 ```
 
+<!-- changelog-commit:970287e43ab665b47ba2eae3157d4462e4ba4c9a -->
+### Commit [`970287e`](https://github.com/superhero/operations.superduper.solutions/commit/970287e43ab665b47ba2eae3157d4462e4ba4c9a)
+
+```text
+fix(ui): make toolbar settings heading visible
+
+```
+
+<!-- changelog-commit:1febef710199a96334f958f6d3c767b325e3b493 -->
+### Commit [`1febef7`](https://github.com/superhero/operations.superduper.solutions/commit/1febef710199a96334f958f6d3c767b325e3b493)
+
+```text
+Merge branch 'develop' into bugfix/toolbar-settings-heading
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
