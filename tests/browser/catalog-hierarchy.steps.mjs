@@ -225,6 +225,15 @@ Then('nested catalog entries add operations to the workflow with useful focus', 
   await expand(page, 'tasks');
   await catalogResourcePath(page, 'tasks', ['projects', 'tasks']);
   await expect(operation(page, 'demo:createTask')).toHaveAccessibleName('Add to workflow: Example POST body');
+  const indentation = await operation(page, 'demo:createTask').locator('.catalog-name').evaluate(label => {
+    const branch = label.closest('.catalog-branch');
+    const parent = branch.parentElement.closest('.catalog-branch');
+    const heading = branch.querySelector(':scope > .catalog-group > summary > .catalog-name');
+    const parentHeading = parent.querySelector(':scope > .catalog-group > summary > .catalog-name');
+    return { operation: label.getBoundingClientRect().x - heading.getBoundingClientRect().x,
+      category: heading.getBoundingClientRect().x - parentHeading.getBoundingClientRect().x };
+  });
+  expect(indentation.operation).toBeCloseTo(indentation.category, 0);
   await page.screenshot({ path: `${this.artifactDirectory}/catalog-operation-guide-${page.viewportSize().width}.png` });
   await operation(page, 'demo:createTask').press('Enter');
   const nodes = page.locator('.svelte-flow__node-operation');
