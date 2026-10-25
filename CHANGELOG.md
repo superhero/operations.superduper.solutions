@@ -181,6 +181,21 @@ fix(ui): keep branch action backgrounds transparent in every state
 Merge branch 'develop' into bugfix/branch-action-state-backgrounds
 ```
 
+<!-- changelog-commit:c76cbba8470e752f8257893dfecc7c1fed835c8b -->
+### Commit [`c76cbba`](https://github.com/superhero/operations.superduper.solutions/commit/c76cbba8470e752f8257893dfecc7c1fed835c8b)
+
+```text
+fix(ui): shorten catalog guide below the final operation
+
+```
+
+<!-- changelog-commit:aa790c065e94a7c5b0c93074b1fdc569a310c3aa -->
+### Commit [`aa790c0`](https://github.com/superhero/operations.superduper.solutions/commit/aa790c065e94a7c5b0c93074b1fdc569a310c3aa)
+
+```text
+Merge branch 'develop' into bugfix/catalog-guide-bottom
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
