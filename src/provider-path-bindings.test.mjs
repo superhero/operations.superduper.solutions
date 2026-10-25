@@ -119,11 +119,12 @@ Then('provider path recipes reject changed identities ambiguous inputs and desti
   }
   assert.throws(() => applySchemaPatches({},[providerPathBindings]), /reviewed source contract/);
 });
-Then('unresolved JSM parameters and server overrides retain their independent limitations', async () => {
+Then('unresolved JSM parameters stay guarded while the reviewed server override resolves', async () => {
   const source = await readServiceSchema(jsm);
   const missing = inspect(source,jsm,`${jsm}:GET /api/{cloudId}/v1/integrations/{integrationId}/actions`);
   assert.ok(missing.unavailableReason); assert.ok(missing.fields.some(value => value.name === 'cloudId')); assert.ok(!missing.fields.some(value => value.name === 'integrationId'));
-  const server = inspect(source,jsm,`${jsm}:POST /stakeholder-comms/cloudId/{cloudId}/api/subscribers/delete`); assert.ok(server.unavailableReason);
+  const server = inspect(source,jsm,`${jsm}:POST /stakeholder-comms/cloudId/{cloudId}/api/subscribers/delete`); assert.equal(server.unavailableReason, undefined);
+  assert.equal(operationServerUrl(source, server), 'https://api.atlassian.com/jsm/ops');
   const document = { openapi:'3.1.0',info:{title:'Unrelated',version:'1'},servers:[{url:'https://other.example.test'}],paths:{'/items/{id}':{get:{operationId:'unbound',responses:{200:{description:'OK'}}}}} };
   assert.ok(inspectServiceSchema(document,'unrelated').operations[0].unavailableReason);
 });

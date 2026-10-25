@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "78e3f53f7dee2c9d02e405af8003ce5dbdc6deb660915057798925e0788945df",
+  "adapterRevision": "2c223039c827789edd22dfd486d21e6205b9f71f971510328f2a720a8449db50",
   "indexes": [
     {
       "id": "anthropic",
@@ -111,10 +111,10 @@
     },
     {
       "id": "atlassian-assets",
-      "sourceRevision": "b262df791938ce2e4b67e6239b871fc4d9e045e2107b42b0ce00bc131534dcd1",
-      "bytes": 35868,
-      "compressedBytes": 2077,
-      "sha256": "d6873380ea74844fb44c9bf5bd7c75e5bda4abb6a81a7efc78da53c78337b1d0",
+      "sourceRevision": "1770d858b48117ef5501810378ae01c41cfa182a405694934923ee4c6af8054e",
+      "bytes": 37468,
+      "compressedBytes": 2104,
+      "sha256": "e15b79b5aff844c516fdd32ac7224f16366612c7dc4ff2cc4428db7409eedf40",
       "summary": {
         "name": "REST",
         "serverUrl": "",
@@ -427,16 +427,16 @@
     },
     {
       "id": "jira-service-management-ops",
-      "sourceRevision": "4880376e16d4f795bb1f759e50d4c383829d5c4a6a1065f027f480c5ca693d7d",
-      "bytes": 156356,
-      "compressedBytes": 7299,
-      "sha256": "1a6487deccfa6beb26553280b3dedec3e47949b184c1847fa9467151d26815bf",
+      "sourceRevision": "ef77a1a70332a053b8fb636f4cbe911acb58cdff5fc04f3b8cda596730e9e797",
+      "bytes": 156157,
+      "compressedBytes": 7206,
+      "sha256": "9b2dbf65149c75d61a16e1502ab50912fe1ba65d9af829e6fd4e8524a78960bd",
       "summary": {
         "name": "JSM Operations API",
         "serverUrl": "https://api.atlassian.com/jsm/ops",
         "description": "Operations APIs for Jira Service Management",
         "operationCount": 240,
-        "unavailableCount": 10
+        "unavailableCount": 9
       }
     },
     {

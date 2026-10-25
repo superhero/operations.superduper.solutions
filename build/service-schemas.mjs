@@ -12,7 +12,8 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings } from '../src/lib/schema-patches.ts';
+import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
 import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
@@ -129,6 +130,8 @@ for (const source of sources) {
     throw new Error('Cloudflare uploads require requalification before updating the pinned native source.');
   if (source.profile === 'provider-paths' && sha(json) !== providerPathBindingSources[source.id])
     throw new Error('Provider path bindings require requalification before updating the pinned native source.');
+  if (source.profile === 'atlassian-servers' && sha(json) !== atlassianServerBindingSources[source.id])
+    throw new Error('Atlassian server bindings require requalification before updating the pinned native source.');
   const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
@@ -140,7 +143,8 @@ for (const source of sources) {
     : source.profile === 'telegram-private-path' ? [telegramPrivatePath]
     : source.profile === 'x-oauth1' ? [xOauth1Signing]
     : source.profile === 'cloudflare-upload' ? [cloudflarePrivateUpload]
-    : source.profile === 'provider-paths' ? [providerPathBindings] : [];
+    : source.profile === 'provider-paths' ? [providerPathBindings]
+    : source.profile === 'atlassian-servers' ? source.id === 'jira-service-management-ops' ? [providerPathBindings, atlassianServerBindings] : [atlassianServerBindings] : [];
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

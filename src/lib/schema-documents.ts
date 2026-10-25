@@ -7,6 +7,7 @@ import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin } from "./server-url.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
+import { validateAtlassianServerBinding } from "./atlassian-server-bindings.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
 export type SchemaDocumentRecord = {
@@ -140,6 +141,7 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   }
   const selected = object(servers[0], `${context}: first server`);
   if (typeof selected.url !== "string" || !selected.url.trim()) invalid(`${context}: server url must be a nonempty string.`);
+  validateAtlassianServerBinding(selected);
   const variables = selected.variables === undefined ? {} : object(selected.variables, `${context}: server variables`);
   const expanded = selected.url.replace(/\{([^{}]+)\}/g, (_match, name: string) => {
     const variable = object(variables[name], `${context}: server variable ${name}`);
