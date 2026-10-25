@@ -66,7 +66,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <section class="error-history" aria-label="Errors" aria-busy={history.phase === "loading"}>
   <div class="heading">
     <h3>Errors</h3>
-    {#if history.phase === "unavailable"}<HintButton label="Retry error history" class="retry" onclick={retryErrorHistory}><span class="material-symbols-outlined" aria-hidden="true">refresh</span></HintButton>{/if}
+    {#if history.phase === "unavailable"}<HintButton label="Retry error history" class="retry" onclick={retryErrorHistory}><MaterialIcon name="refresh" size={18} /></HintButton>{/if}
   </div>
   <dl class="metrics"><div><dt>Unique errors</dt><dd>{number(history.total)}</dd></div></dl>
   {#if history.error}<p class="failure" role="status">{history.error}</p>{/if}
@@ -98,9 +98,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
     {#if history.total > errorHistoryPageSize}
       <nav aria-label="Error history pages">
-        <HintButton label="Newer errors" class="page-button" disabled={history.offset === 0} onclick={() => showErrorHistoryPage(history.offset - errorHistoryPageSize)}><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></HintButton>
+        <HintButton label="Newer errors" class="page-button" disabled={history.offset === 0} onclick={() => showErrorHistoryPage(history.offset - errorHistoryPageSize)}><MaterialIcon name="keyboard_arrow_left" size={18} /></HintButton>
         <span>{number(history.offset + 1)}–{number(history.offset + history.entries.length)} of {number(history.total)}</span>
-        <HintButton label="Older errors" class="page-button" disabled={history.offset + errorHistoryPageSize >= history.total} onclick={() => showErrorHistoryPage(history.offset + errorHistoryPageSize)}><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></HintButton>
+        <HintButton label="Older errors" class="page-button" disabled={history.offset + errorHistoryPageSize >= history.total} onclick={() => showErrorHistoryPage(history.offset + errorHistoryPageSize)}><MaterialIcon name="keyboard_arrow_right" size={18} /></HintButton>
       </nav>
     {/if}
   {:else if history.phase === "ready"}<p class="muted">No errors recorded.</p>
@@ -144,8 +144,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .cause { margin-top: 12px; padding-left: 12px; border-left: 2px solid var(--color-surface); }
   h5 { margin: 0; font-size: 12px; }
   .failure { padding: 10px 12px; border-left: 2px solid currentColor; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); overflow-wrap: anywhere; }
-  nav { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; color: var(--color-muted-foreground); font-size: 11px; }
-  :global(.error-history .retry), :global(.error-history .page-button) { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
+  nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; color: var(--color-muted-foreground); font-size: 11px; }
+  :global(.error-history .retry), :global(.error-history .page-button) { display: inline-flex; flex: 0 0 32px; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   @media (max-width: 600px) { .error-history { padding: 12px; } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .entries :global(.entry > summary) { gap: 8px; } .occurrences { max-width: 80px; text-align: right; } }
   @media (prefers-reduced-motion: reduce) { .entry-toggle { transition: none; } }
 </style>

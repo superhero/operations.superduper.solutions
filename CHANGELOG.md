@@ -281,6 +281,21 @@ fix(ui): merge toolbar preferences into application settings
 Merge branch 'develop' into bugfix/application-toolbar-settings
 ```
 
+<!-- changelog-commit:e436e16a65953026f431ed62a72de891eb11e0e3 -->
+### Commit [`e436e16`](https://github.com/superhero/operations.superduper.solutions/commit/e436e16a65953026f431ed62a72de891eb11e0e3)
+
+```text
+fix(ui): render logs pagination icons without overflow
+
+```
+
+<!-- changelog-commit:4b5b7650fd2c36e1d32315fae6cbba7c15946598 -->
+### Commit [`4b5b765`](https://github.com/superhero/operations.superduper.solutions/commit/4b5b7650fd2c36e1d32315fae6cbba7c15946598)
+
+```text
+Merge branch 'develop' into bugfix/logs-pagination-icons
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

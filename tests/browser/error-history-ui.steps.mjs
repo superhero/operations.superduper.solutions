@@ -135,7 +135,22 @@ Then('saved stack formats retain their messages and missing-trace notices', asyn
     await expectDiagnosticOnce(entry.locator('.entry-content > .diagnostic'), detail);
   }
 });
-When('I open the older recorded errors', async function () { await history(this.page).getByRole('button', { name: 'Older errors', exact: true }).click(); });
+When('I open the older recorded errors', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 520, height: 844 });
+  const pagination = history(page).getByRole('navigation', { name: 'Error history pages', exact: true });
+  await pagination.scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.fonts.ready);
+  const icons = pagination.locator('.material-symbols-rounded');
+  await expect(icons).toHaveCount(2);
+  for (const icon of await icons.all())
+    expect((await icon.boundingBox()).width).toBeLessThanOrEqual(20);
+  const dimensions = await history(page).evaluate(element => ({ width: element.clientWidth, content: element.scrollWidth }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.width);
+  await expect(pagination.getByRole('button', { name: 'Newer errors', exact: true })).toBeDisabled();
+  await page.screenshot({ path: `${this.artifactDirectory}/logs-pagination-narrow.png` });
+  await pagination.getByRole('button', { name: 'Older errors', exact: true }).click();
+});
 Then('the error history shows the oldest saved error', async function () {
   await expect(history(this.page).locator('details.entry')).toHaveCount(1);
   await history(this.page).locator('summary').click();
