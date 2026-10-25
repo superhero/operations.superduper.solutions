@@ -252,6 +252,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
   <div class="settings-sections">
+    <div class="theme-mode">
+      <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark} onclick={onTheme}>
+        <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
+      </HintButton>
+    </div>
     <Disclosure lazy class="catalog-group settings-section" label="Application" tooltipEnabled={false} open={active && openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Application</h2><span class="section-subtitle">Configure UI defaults</span></div>
@@ -477,11 +482,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <fieldset aria-label="Color palette">
-        <div class="theme-mode">
-          <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark} onclick={onTheme}>
-            <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
-          </HintButton>
-        </div>
         <div class="palette-options">
           {#each palettes as option (option.id)}
             <label class="palette-choice">
@@ -556,7 +556,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .settings-retry { padding: 16px 16px 0; }
-  .theme-mode { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .theme-mode { display: flex; justify-content: flex-end; }
   .theme-mode :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }

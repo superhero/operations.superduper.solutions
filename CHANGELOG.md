@@ -251,6 +251,21 @@ fix(ui): scale branch icons on hover without recoloring
 
 ```
 
+<!-- changelog-commit:4caa7b7430f7e3c5414b8ddbe397c984e120de57 -->
+### Commit [`4caa7b7`](https://github.com/superhero/operations.superduper.solutions/commit/4caa7b7430f7e3c5414b8ddbe397c984e120de57)
+
+```text
+fix(ui): place theme switch above application settings
+
+```
+
+<!-- changelog-commit:cfb4484be66d415c193b048b0bdbb0322bd03f44 -->
+### Commit [`cfb4484`](https://github.com/superhero/operations.superduper.solutions/commit/cfb4484be66d415c193b048b0bdbb0322bd03f44)
+
+```text
+Merge branch 'develop' into bugfix/settings-theme-switch-position
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

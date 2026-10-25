@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails, openThemeSettings } from './workspace.fixture.mjs';
+import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails, setMode } from './workspace.fixture.mjs';
 import { holdHeightAnimations, resumeHeightAnimations, seekHeightAnimation } from './height-animation.fixture.mjs';
 
 Then('navigation focus follows normal-motion opening and breakpoint changes', async function () {
@@ -85,19 +85,22 @@ Then('expanding a nested catalog item does not clip its parent', async function 
 
 Then('hovering another control replaces keyboard help', async function () {
   const page = this.page;
-  await openThemeSettings(page);
-  const palette = page.getByRole('group', { name: 'Color palette', exact: true });
-  const toggle = palette.getByRole('switch', { name: 'Dark theme', exact: true });
-  // Keep both keyboard stops visible so automatic scrolling does not exercise
-  // the separate behavior that intentionally dismisses help on scroll.
-  await palette.locator('.palette-choice').first().scrollIntoViewIfNeeded();
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await setMode(page, 'settings');
+  const toggle = page.getByRole('switch', { name: 'Dark theme', exact: true });
+  const application = page.locator('summary[aria-label="Application"]');
+  await expect(page.locator('summary[aria-label="Theme"]')).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toBeVisible();
+  await toggle.scrollIntoViewIfNeeded();
+  const bounds = await toggle.boundingBox();
+  const applicationBounds = await application.boundingBox();
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(applicationBounds.y);
   await toggle.focus();
   await page.keyboard.press('Tab');
-  await expect(palette.getByRole('radio', { name: 'Default', exact: true })).toBeFocused();
+  await expect(application).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(toggle).toBeFocused();
   await expect(page.getByRole('tooltip')).toHaveText('Switch to dark theme');
+  await page.screenshot({ path: `${this.artifactDirectory}/settings-theme-switch-top.png` });
   await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).hover();
   await expect(page.getByRole('tooltip')).toHaveText('Settings');
   await expect(page.getByRole('tooltip')).toHaveCount(1);
