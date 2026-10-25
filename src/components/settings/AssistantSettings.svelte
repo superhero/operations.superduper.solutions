@@ -354,7 +354,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .assistant-settings :global(.composer-action) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 30px; min-height: 32px; padding: 4px 6px; border: 0; border-radius: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; font-weight: 600; cursor: pointer; }
   .assistant-settings :global(.composer-action:disabled) { color: var(--color-muted-foreground); cursor: default; }
   .assistant-settings :global(.recording) { background: var(--color-error-background); color: var(--color-error-foreground); }
-  .composer :global(:focus-visible) { outline-offset: -2px; }
+  .composer :global(:focus-visible:not(textarea)) { outline-offset: -2px; }
   .image-preparing { padding: 0 10px; }
   label, summary { font-weight: 700; }
   summary { display: flex; align-items: center; gap: 8px; min-height: 24px; cursor: pointer; list-style: none; }
