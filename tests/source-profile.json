@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/query-array.test.mjs",
     "src/capability-diagnostics.test.mjs",
     "src/docker-native.test.mjs",
     "src/native-agent.test.mjs",
@@ -82,6 +83,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/query-array.feature",
     "src/capability-diagnostics.feature",
     "src/docker-native.feature",
     "src/native-agent.feature",

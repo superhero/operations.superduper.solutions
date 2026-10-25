@@ -18,6 +18,7 @@ import { workflowResponseLifetime, responseAccept, type ResponseProgress, type R
 import type { NativeExecutionResult, NativeProgressCallback } from "./native-agent-contract.ts";
 import type { NativeWorkflowBinding } from "./secrets/native-runtime-config.ts";
 import type { DockerBinding } from "./secrets/docker-config.ts";
+import { appendRequestQuery } from "./query-serialization.ts";
 
 export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown;
   bodyType?: "binary"; mediaType?: string; transportMediaType?: string; stream?: ResponseProgress; redacted?: boolean };
@@ -67,9 +68,7 @@ export function workflowRequestUrl(request: PreparedRequest, origin: string): st
     || request.path.split("/").some(segment => /^(?:\.|%2e){1,2}$/i.test(segment)))
     throw new Error("The operation path must be an absolute path without an authority, backslashes, query, fragment or traversal segments.");
   url.pathname = `${url.pathname.replace(/\/+$/, "")}${request.path}`;
-  for (const [key, value] of Object.entries(request.query))
-    for (const item of Array.isArray(value) ? value : [value])
-      if (item !== undefined) url.searchParams.append(key, String(item));
+  appendRequestQuery(url, request);
   return url.href;
 }
 

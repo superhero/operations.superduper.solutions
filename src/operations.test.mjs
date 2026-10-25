@@ -385,7 +385,8 @@ Then("unsupported structures and serializations fail during catalog loading", fu
   const recursive = withBody({ type: "object", properties: { child: { $ref: "#/node" } } });
   recursive.node = recursive.paths["/items"].get.requestBody.content["application/json"].schema;
   assert.throws(() => extractOperations(recursive, "fixture"), /nesting exceeds/);
-  for (const extra of [{ style: "spaceDelimited" }, { explode: false }, { explode: "true" }])
+  assert.equal(inputOperation({ type: "array", items: { type: "string" } }, { explode: false }).fields[0].querySerialization, "form-csv");
+  for (const extra of [{ style: "spaceDelimited" }, { explode: "true" }])
     assert.throws(() => inputOperation({ type: "array", items: { type: "string" } }, extra), /serialization/);
   for (const [schema, extra] of [
     [{ type: "array", items: { type: "object", properties: {} } }, {}],
@@ -398,8 +399,8 @@ Then("unsupported structures and serializations fail during catalog loading", fu
   assert.throws(() => inputOperation({ type: "object", properties: {} }), /serialization/);
   assert.throws(() => bodyOperation({ type: "number" }, "text/plain"), /string schema/);
   for (const type of ["application/x-www-form-urlencoded", "multipart/form-data"])
-    for (const schema of [{ type: "array", items: { type: "string" } }, { type: "object", properties: { file: { type: "array", items: { type: "string" } } } }])
-      assert.throws(() => bodyOperation(schema, type), /primitive text fields/);
+    for (const schema of [{ type: "array", items: { type: "string" } }, { type: "object", properties: { file: { type: "array", items: { type: "object" } } } }])
+      assert.throws(() => bodyOperation(schema, type), /form bodies require named primitive fields/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "application/json": {}, "text/plain": {} } }), "fixture"), /choose one supported/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "multipart/form-data": { schema: { type: "object", properties: {} }, encoding: {} } } }), "fixture"), /unsupported schema fields/);
 });
@@ -503,7 +504,7 @@ Then("nullable query collections serialize safely and form bodies reject null sc
     { "filter[value]": null, tags: [null, "null"] });
   for (const media of ["application/x-www-form-urlencoded", "multipart/form-data"])
     for (const schema of [{ type: "object", nullable: true }, { type: "object", properties: { value: { type: ["string", "null"] } } }])
-      assert.throws(() => bodyOperation(schema, media), /primitive text fields/);
+      assert.throws(() => bodyOperation(schema, media), /form bodies require named primitive fields/);
 });
 
 Then("nested values enforce declared types, required fields and bounds", function ()
@@ -617,7 +618,8 @@ Then("dynamic body fields respect canonical policies and transport restrictions"
     const form = bodyOperation({ type: "object", additionalProperties: true }, media);
     assert.deepEqual(prepareRequest(form, { "body:extra": "value" }, [candidate]).body, { extra: "value" });
     for (const [type, raw] of [["object", "{}"], ["array", "[]"], ["null", "null"]])
-      assert.throws(() => prepareRequest(form, { "body:extra": raw }, [additionalBodyField(form, "extra", type)]), /primitive text values/);
-    assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /primitive text fields/);
+      assert.throws(() => prepareRequest(form, { "body:extra": raw }, [additionalBodyField(form, "extra", type)]),
+        error => error.fieldKey === "body:extra" && /form body properties must be primitive values/.test(error.message));
+    assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /form bodies require named primitive fields/);
   }
 });

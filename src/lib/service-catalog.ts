@@ -14,6 +14,7 @@ import { responseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
 import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } from "./operation-capabilities.ts";
+import { configureQueryArray } from "./query-serialization.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -214,10 +215,12 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                 const parameter = resolve(raw, document);
                 const location = text(parameter.in);
                 if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string") throw new Error("Cookie or content-encoded parameters are not supported.");
-                const input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description);
+                const input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description,
+                  location === "query" && parameter.explode === false);
                 const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
+                const csv = configureQueryArray(input, parameter);
                 if (parameter.content || parameter.style !== undefined && parameter.style !== style
-                  || parameter.explode !== undefined && parameter.explode !== (location === "query")
+                  || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv
                   || location !== "query" && ["object", "array"].includes(input.type)) throw new Error("This parameter serialization is not supported.");
                 fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
               }

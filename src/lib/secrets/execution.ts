@@ -16,6 +16,7 @@ import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
 import { managedGitlabSecrets, validateGitlabTokenState } from "./gitlab-oauth.ts";
+import { appendRequestQuery, encodeQueryComponent } from "../query-serialization.ts";
 import { CloudflareUploadSessions, type CloudflareUploadLease } from "./cloudflare-upload.ts";
 import { cloudflareSessionField, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
@@ -91,7 +92,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       throw new VaultError("INVALID");
     secrets = [...new Set([...credentialSnapshot.flatMap(credential => typeof credential.value === "string" ? [credential.value, ...managedGitlabSecrets(credential.oauthState ?? "")] : []), ...(options.privateSecrets ?? [])]
       .filter(value => typeof value === "string" && value.length > 0)
-      .flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
+      .flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
     privateUpload = !!approved.operation.cloudflareUpload;
@@ -207,7 +208,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         Object.defineProperty(parent, last, { value: resolved, enumerable: true, writable: true, configurable: true });
       }
     }
-    secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
+    secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
     const publicRequest = prepareRequest(approved.operation, inputSnapshot, fields);
     let request = publicRequest;
@@ -216,18 +217,14 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       request = prepared.request; uploadLease = prepared.lease;
       if (prepared.authorization) injected.set("Authorization", prepared.authorization);
       secrets.push(...prepared.secrets);
-      secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
+      secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     }
     validateCredentialPath(request.path);
     const url = approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken ?? "") : new URL(`${approved.origin}${request.path}`);
     if (approved.operation.privatePath) secrets.push(...privateUrlRedactions(url.href));
     const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));
-    for (const [key, value] of Object.entries(request.query))
-    {
-      if (authQueries.has(key)) throw new VaultError("PERMISSION");
-      for (const entry of Array.isArray(value) ? value : [value]) url.searchParams.append(key, String(entry));
-    }
-    for (const [name, value] of injectedQueries) url.searchParams.set(name, value);
+    if (Object.keys(request.query).some(key => authQueries.has(key))) throw new VaultError("PERMISSION");
+    appendRequestQuery(url, request, injectedQueries);
     const headers = new Headers({ Accept: responseAccept(approved.operation.responseStream, approved.operation.responseMediaType, request.body) });
     const publicHeaders = new Set<string>();
     const authHeaders = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.header === undefined ? [] : [scheme.header.toLowerCase()]));
@@ -247,7 +244,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       if (signal.aborted) throw new VaultError("CANCELLED");
       const signed = await signOAuth1(request.method, url.href, headers.get("Content-Type"), body, oauth1, options.oauth1Clock);
       headers.set("Authorization", signed.authorization);
-      secrets = [...new Set([...secrets, ...signed.secrets].flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
+      secrets = [...new Set([...secrets, ...signed.secrets].flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
         .sort((a, b) => b.length - a.length);
     }
     const preview = redactor(secrets).value(publicRequest) as PreparedRequest;
@@ -273,7 +270,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       if (malformedJson) throw new VaultError("NETWORK");
       const completed = options.uploadSessions!.finish(approved, publicRequest, bindingSnapshot, response.status, result.body, uploadLease);
       result.body = completed.body;
-      secrets = [...new Set([...secrets, ...completed.secrets].flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
+      secrets = [...new Set([...secrets, ...completed.secrets].flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
         .sort((a, b) => b.length - a.length);
     }
     const scrub = redactor(secrets);
