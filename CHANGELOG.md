@@ -504,6 +504,14 @@ fix(ui): remove assistant send button
 
 ```
 
+<!-- changelog-commit:d74f196f66040117784d198bc00a8afd6571beff -->
+### Commit [`d74f196`](https://github.com/superhero/operations.superduper.solutions/commit/d74f196f66040117784d198bc00a8afd6571beff)
+
+```text
+fix(ui): match assistant input focus to hover
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
