@@ -7,6 +7,7 @@ import type { PreparedRequest } from "./operation-input.ts";
 import { validateWorkflowBinary, workflowBinaryBlob } from "./workflow-binary.ts";
 
 function formText(value: JsonValue): string {
+  if (value === null) throw new Error("Explicit null has no qualified form encoding.");
   if (typeof value === "string" || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value)) return String(value);
   throw new Error("Form text values must be strings, finite numbers or booleans.");
 }
@@ -18,6 +19,7 @@ export function requestBody(request: PreparedRequest): BodyInit | null {
   if (request.bodyFormat === "binary") return workflowBinaryBlob(request.body, request.contentType);
   if (request.contentType === "text/plain") return String(request.body);
   if (request.contentType === "application/x-www-form-urlencoded" || request.contentType === "multipart/form-data") {
+    if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) throw new Error("Form bodies require named fields, with no explicit null encoding.");
     const form = request.contentType === "multipart/form-data" ? new FormData() : new URLSearchParams();
     for (const [name, value] of Object.entries(request.body as Record<string, JsonValue>)) {
       if (Array.isArray(value)) {

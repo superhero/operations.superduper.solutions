@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "6e95f5407c5f10e2ed9d7c91f3307e7c62cc4873897fe4277916ad6f1b04bb20",
+  "adapterRevision": "ff79cd0a86275b7d78025a01cf875c287e0ee97fe7189d0597d5f464661fdabe",
   "indexes": [
     {
       "id": "anthropic",
@@ -1542,15 +1542,15 @@
     {
       "id": "elevenlabs",
       "sourceRevision": "27493b88c935cdb3d67c4e95c6df3e7f93a9b8afe876e8f3fe2f8ad5180833fa",
-      "bytes": 155806,
-      "compressedBytes": 13295,
-      "sha256": "c9a93a846d984b6ae52ab3a6008e1b015aa73f4ed2f8051f2f45e1dde95b4b1f",
+      "bytes": 154155,
+      "compressedBytes": 13230,
+      "sha256": "a1181cae1aab0915f53bf117c8edc1252d890375c01746e68388b4e16ac7b1c7",
       "summary": {
         "name": "ElevenLabs API Documentation",
         "serverUrl": "https://api.elevenlabs.io",
         "description": "This is the documentation for the ElevenLabs API. You can use this API to use our service programmatically, this is done by using your API key. You can find your API key in the dashboard at https://elevenlabs.io/app/settings/api-keys.",
         "operationCount": 418,
-        "unavailableCount": 31
+        "unavailableCount": 18
       }
     },
     {
@@ -1612,15 +1612,15 @@
     {
       "id": "gitlab",
       "sourceRevision": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
-      "bytes": 818031,
-      "compressedBytes": 55683,
-      "sha256": "883cbe4fd15961ef7cf1e0edfd96c6e1b05ba0406dca41b5a4a8c4af9db95b58",
+      "bytes": 812472,
+      "compressedBytes": 55189,
+      "sha256": "91329c611eb222423fdfc8d38ca1b93a8115ebb584f483338422b9c2f4848f95",
       "summary": {
         "name": "GitLab REST API",
         "serverUrl": "https://gitlab.com",
         "description": "GitLab REST API used to interact with a GitLab installation.",
         "operationCount": 1869,
-        "unavailableCount": 56
+        "unavailableCount": 11
       }
     },
     {
@@ -3107,15 +3107,15 @@
     {
       "id": "xai",
       "sourceRevision": "1361ade8ea7ae8c3931e28410f996fae95eea3cfcaf8e6cd54850c31174be1b0",
-      "bytes": 19255,
-      "compressedBytes": 3159,
-      "sha256": "3f8370d9f6ccaac9a09ae90c2cdc6a852259ad2824bdd26966c0a5ede2ce3195",
+      "bytes": 19128,
+      "compressedBytes": 3154,
+      "sha256": "90604ce594db724b69ff32a73ab04e7440f7fff81cd285ed7ec965225b3c6013",
       "summary": {
         "name": "xAI's REST API",
         "serverUrl": "https://api.x.ai/v1",
         "description": "REST API for xAI compatible with other providers.",
         "operationCount": 44,
-        "unavailableCount": 2
+        "unavailableCount": 1
       }
     }
   ]

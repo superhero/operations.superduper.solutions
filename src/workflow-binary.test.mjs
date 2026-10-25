@@ -109,7 +109,9 @@ Then('raw and multipart file schemas accept files without enabling unsupported t
   const op = extractOperations(document(content()), 'binary')[0];
   const file = encodeWorkflowBinary('sample.pdf', bytes);
   assert.throws(() => prepareRequest(op, { 'body:$': 'plain text' }), /valid JSON/);
-  for (const bad of ['{}', 'null', JSON.stringify({ ...file, size: 0 })]) assert.throws(() => prepareRequest(op, { 'body:$': bad }), /uploaded binary file/);
+  for (const bad of ['{}', JSON.stringify({ ...file, size: 0 })]) assert.throws(() => prepareRequest(op, { 'body:$': bad }), /uploaded binary file/);
+  for (const value of ['null', null]) assert.throws(() => prepareRequest(op, { 'body:$': value }),
+    error => error.fieldKey === 'body:$' && /explicit null has no qualified file encoding/.test(error.message));
   assert.throws(() => prepareRequest(op, {}), /required/);
   assert.equal(prepareRequest(extractOperations(document(content(), { required: false }), 'binary')[0], {}).body, undefined);
   const pdf = extractOperations(document(content(binarySchema, 'application/pdf')), 'binary')[0];

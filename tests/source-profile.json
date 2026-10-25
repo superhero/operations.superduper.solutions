@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/nullable-form.test.mjs",
     "src/query-array.test.mjs",
     "src/capability-diagnostics.test.mjs",
     "src/docker-native.test.mjs",
@@ -83,6 +84,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/nullable-form.feature",
     "src/query-array.feature",
     "src/capability-diagnostics.feature",
     "src/docker-native.feature",
