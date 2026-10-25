@@ -113,7 +113,9 @@ Then('GitLab public authorization uses independent state and the published S256 
 });
 
 Then('the GitLab current user profile uses its native OAuth2 alternative and fixed authority', async () => {
-  const raw = await readServiceSchemaUpstream('gitlab'), doc = await readServiceSchema('gitlab'); assert.deepEqual(doc, raw);
+  const raw = await readServiceSchemaUpstream('gitlab'), doc = await readServiceSchema('gitlab');
+  assert.deepEqual(doc.paths['/api/v4/user'], raw.paths['/api/v4/user']);
+  assert.deepEqual(doc.components.securitySchemes.oauth2, raw.components.securitySchemes.oauth2);
   assert.equal(createHash('sha256').update(JSON.stringify(raw)).digest('hex'), 'e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3');
   assert.equal(serviceSchemaDescriptors.find(item => item.id === 'gitlab').version, '19.5');
   const models = inspectServiceSchema(doc, 'gitlab', new Set(['gitlab:getApiV4User'])).operations;

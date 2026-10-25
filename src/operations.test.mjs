@@ -623,7 +623,8 @@ Then("dynamic body fields respect canonical policies and transport restrictions"
     assert.deepEqual(prepareRequest(form, { "body:extra": "value" }, [candidate]).body, { extra: "value" });
     for (const [type, raw] of [["object", "{}"], ["array", "[]"], ["null", "null"]])
       assert.throws(() => prepareRequest(form, { "body:extra": raw }, [additionalBodyField(form, "extra", type)]),
-        error => error.fieldKey === "body:extra" && /form body properties must be primitive values/.test(error.message));
+        error => error instanceof InputValidationError && error.fieldKey === "body:extra"
+          && (type === "null" ? /explicit null has no qualified form encoding/ : /form body properties must be primitive values/).test(error.message));
     assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /form bodies require named primitive fields/);
   }
 });

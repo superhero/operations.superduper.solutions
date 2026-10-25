@@ -12,6 +12,7 @@ import { createWorkflowRunner as createRequestRunner } from "./lib/workflow-runn
 import { createWorkflowDemo } from "./lib/workflow-demo.ts";
 import { createWorkflowRequestExecution, WorkflowResponseError, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
 import { responseHeaderReader } from "./lib/workflow-response.ts";
+import { assertRequestDeadline } from "../tests/workflow-deadline.fixture.mjs";
 
 const createWorkflowRunner = (value, startingNodeId) => createRequestRunner(value, startingNodeId, createWorkflowDemo());
 
@@ -83,10 +84,8 @@ Then("workflow request failures explain network server and response problems and
   const failed = createWorkflowRequestExecution(async () => { throw new TypeError("Failed to fetch"); });
   await assert.rejects(() => failed.execute(operation("getProject"), project), /could not reach https:\/\/example.com/);
   await assert.rejects(() => failed.execute(operation("getProject"), project, AbortSignal.abort()), /cancelled/);
-  const timeout = AbortSignal.timeout;
-  AbortSignal.timeout = () => AbortSignal.abort();
-  try { await assert.rejects(() => failed.execute(operation("getProject"), project), /timed out/); }
-  finally { AbortSignal.timeout = timeout; }
+  await assertRequestDeadline(fetchRequest => createWorkflowRequestExecution(fetchRequest)
+    .execute(operation("getProject"), project), /timed out/);
   const withoutContentType = new Response("no media type", { status: 500 });
   withoutContentType.headers.delete("Content-Type");
   for (const [response, expected, body] of [
@@ -114,9 +113,8 @@ Then("workflow request failures explain network server and response problems and
   });
   await assert.rejects(() => streamingFailure.execute(operation("getProject"), project), /response could not be read/);
   await assert.rejects(() => streamingFailure.execute(operation("getProject"), project, AbortSignal.abort()), /cancelled/);
-  AbortSignal.timeout = () => AbortSignal.abort();
-  try { await assert.rejects(() => streamingFailure.execute(operation("getProject"), project), /timed out/); }
-  finally { AbortSignal.timeout = timeout; }
+  await assertRequestDeadline(fetchRequest => createWorkflowRequestExecution(fetchRequest)
+    .execute(operation("getProject"), project), /timed out/, { body: true });
   let calls = 0;
   const execution = createWorkflowRequestExecution(async () => {
     calls++;

@@ -10,6 +10,7 @@ import { InputValidationError } from "./lib/operation-input.ts";
 import { extractOperations } from "./lib/catalog.ts";
 import { VaultError, vaultLimits } from "./lib/secrets/types.ts";
 import { vaultVariablePlaceholder } from "./lib/secrets/variables.ts";
+import { assertRequestDeadline } from "../tests/workflow-deadline.fixture.mjs";
 
 const canary = "credential-CANARY-17";
 const bearer = { name: "Bearer", kind: "bearer", header: "Authorization" };
@@ -417,34 +418,36 @@ Then("credentialed response case {string} preserves safe HTTP semantics", async 
 
 Then("credential execution stops {string} without accepting stale results", async name => {
   const state = await fixture();
-  const controller = new AbortController();
-  let fetchCalls = 0, currentCalls = 0;
-  const timeoutOriginal = AbortSignal.timeout;
-  let timeoutMilliseconds;
-  if (name === "before dispatch") controller.abort();
-  if (name === "timed out") AbortSignal.timeout = milliseconds => { timeoutMilliseconds = milliseconds; return AbortSignal.abort(); };
-  try {
-    await assert.rejects(() => execute(state, { signal: controller.signal,
-      assertCurrent() { currentCalls++; if (name === "policy before send" || name === "policy before accept" && currentCalls === 2) throw new VaultError("PERMISSION"); },
-      fetchRequest: async () => {
-        fetchCalls++;
-        if (name === "while fetching") { controller.abort(); return response(); }
-        if (name === "transport failure") throw new Error(canary);
-        if (name === "redirected response") { const value = response(); Object.defineProperty(value, "redirected", { value: true }); return value; }
-        if (name === "response read failure") return new Response(new ReadableStream({ start(stream) { stream.error(new Error(canary)); } }));
-        if (name === "while streaming") return new Response(new ReadableStream({ pull() { controller.abort(); } }));
-        return response();
-      },
-    }), error => {
-      assert.ok(error instanceof VaultError);
-      assert.equal(error.code, name.startsWith("policy") ? "PERMISSION" : ["before dispatch", "while fetching", "while streaming"].includes(name) ? "CANCELLED" : "NETWORK");
-      assert.doesNotMatch(error.message, new RegExp(canary));
-      assert.equal(error.cause, undefined);
+  if (name === "timed out") {
+    await assertRequestDeadline(fetchRequest => execute(state, { assertCurrent() {}, fetchRequest }), error => {
+      assert.ok(error instanceof VaultError); assert.equal(error.code, "NETWORK");
+      assert.doesNotMatch(error.message, new RegExp(canary)); assert.equal(error.cause, undefined);
       return true;
     });
-    assert.equal(fetchCalls, ["before dispatch", "policy before send", "timed out"].includes(name) ? 0 : 1);
-    if (name === "timed out") assert.equal(timeoutMilliseconds, 15_000);
-  } finally { AbortSignal.timeout = timeoutOriginal; }
+    return;
+  }
+  const controller = new AbortController();
+  let fetchCalls = 0, currentCalls = 0;
+  if (name === "before dispatch") controller.abort();
+  await assert.rejects(() => execute(state, { signal: controller.signal,
+    assertCurrent() { currentCalls++; if (name === "policy before send" || name === "policy before accept" && currentCalls === 2) throw new VaultError("PERMISSION"); },
+    fetchRequest: async () => {
+      fetchCalls++;
+      if (name === "while fetching") { controller.abort(); return response(); }
+      if (name === "transport failure") throw new Error(canary);
+      if (name === "redirected response") { const value = response(); Object.defineProperty(value, "redirected", { value: true }); return value; }
+      if (name === "response read failure") return new Response(new ReadableStream({ start(stream) { stream.error(new Error(canary)); } }));
+      if (name === "while streaming") return new Response(new ReadableStream({ pull() { controller.abort(); } }));
+      return response();
+    },
+  }), error => {
+    assert.ok(error instanceof VaultError);
+    assert.equal(error.code, name.startsWith("policy") ? "PERMISSION" : ["before dispatch", "while fetching", "while streaming"].includes(name) ? "CANCELLED" : "NETWORK");
+    assert.doesNotMatch(error.message, new RegExp(canary));
+    assert.equal(error.cause, undefined);
+    return true;
+  });
+  assert.equal(fetchCalls, ["before dispatch", "policy before send"].includes(name) ? 0 : 1);
 });
 
 Then("credential response limit handles {string} before fully buffering", async name => {
