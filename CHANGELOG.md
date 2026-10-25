@@ -392,6 +392,14 @@ feat(ui): open AI and settings from separate header buttons
 Merge branch 'develop' into feature/header-assistant-button
 ```
 
+<!-- changelog-commit:9fb2aa2c2b341ec2d72e5d00e36ec39057d71fb4 -->
+### Commit [`9fb2aa2`](https://github.com/superhero/operations.superduper.solutions/commit/9fb2aa2c2b341ec2d72e5d00e36ec39057d71fb4)
+
+```text
+fix(ui): join assistant and settings header buttons
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
