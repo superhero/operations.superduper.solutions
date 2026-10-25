@@ -128,6 +128,21 @@ fix(ui): use primary color for catalog add icons
 Merge branch 'develop' into bugfix/catalog-add-icon-color
 ```
 
+<!-- changelog-commit:d556ce0242ac036a59d1c0e92da6bd24afdd9d66 -->
+### Commit [`d556ce0`](https://github.com/superhero/operations.superduper.solutions/commit/d556ce0242ac036a59d1c0e92da6bd24afdd9d66)
+
+```text
+fix(ui): replace branch action circles with crisp icon shadows
+
+```
+
+<!-- changelog-commit:49f239942aef38bbe86732838a32cf4963362d19 -->
+### Commit [`49f2399`](https://github.com/superhero/operations.superduper.solutions/commit/49f239942aef38bbe86732838a32cf4963362d19)
+
+```text
+Merge branch 'develop' into bugfix/branch-action-icon-shadow
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
