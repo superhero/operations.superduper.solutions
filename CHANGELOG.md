@@ -90,6 +90,21 @@ fix(settings): adapt and balance application preference cards
 
 ```
 
+<!-- changelog-commit:d9561fcaf4633b90c2bb281682fc16ee97114f92 -->
+### Commit [`d9561fc`](https://github.com/superhero/operations.superduper.solutions/commit/d9561fcaf4633b90c2bb281682fc16ee97114f92)
+
+```text
+fix(ui): join catalog guides and align child operation labels
+
+```
+
+<!-- changelog-commit:dfc81fa5a0004b3df49a5e9f03ee76777fcad7be -->
+### Commit [`dfc81fa`](https://github.com/superhero/operations.superduper.solutions/commit/dfc81fa5a0004b3df49a5e9f03ee76777fcad7be)
+
+```text
+Merge branch 'develop' into bugfix/catalog-tree-continuity
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
