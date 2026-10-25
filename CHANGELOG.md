@@ -488,6 +488,14 @@ fix(ui): align composer model and attachment icons
 
 ```
 
+<!-- changelog-commit:b4332d11a62013be09e74c0346c4b9af9d278d76 -->
+### Commit [`b4332d1`](https://github.com/superhero/operations.superduper.solutions/commit/b4332d11a62013be09e74c0346c4b9af9d278d76)
+
+```text
+fix(ai): keep Vite client out of compatibility workers
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
