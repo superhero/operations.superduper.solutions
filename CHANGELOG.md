@@ -496,6 +496,14 @@ fix(ai): keep Vite client out of compatibility workers
 
 ```
 
+<!-- changelog-commit:f9f3957eab196f56ccaaf73e20ac9dc9a544103d -->
+### Commit [`f9f3957`](https://github.com/superhero/operations.superduper.solutions/commit/f9f3957eab196f56ccaaf73e20ac9dc9a544103d)
+
+```text
+fix(ui): remove assistant send button
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
