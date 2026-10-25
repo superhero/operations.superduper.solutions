@@ -106,9 +106,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let assistantBuilt = $state(false);
   const assistantMode = $derived(Boolean(assistantHost) && openSection === "assistant");
   let previousSettingsSection = $state<SettingsSection>(null);
+  export function showView(view: "assistant" | "settings"): void {
+    if (view === "settings" && openSection === "assistant") openSection = previousSettingsSection;
+    else if (view === "assistant" && openSection !== "assistant") {
+      previousSettingsSection = openSection;
+      openSection = "assistant";
+    }
+  }
   function togglePaneView(): void {
-    if (openSection === "assistant") openSection = previousSettingsSection;
-    else { previousSettingsSection = openSection; openSection = "assistant"; }
+    showView(assistantMode ? "settings" : "assistant");
   }
   $effect(() => { if (active && openSection === "assistant") assistantBuilt = true; });
   $effect(() => {
@@ -259,7 +265,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
   <div class="pane-controls">
     {#if assistantHost}
-      <HintButton class="icon-switch" type="button" role="switch" label={assistantMode ? "Switch to settings" : "Switch to AI assistant"}
+      <HintButton class="icon-switch assistant-switch" type="button" role="switch" label={assistantMode ? "Switch to settings" : "Switch to AI assistant"}
         aria-label="AI assistant" aria-checked={assistantMode} onclick={togglePaneView}>
         <span class="switch-thumb"></span><span><MaterialIcon name="tune" /></span><span><MaterialIcon name="robot" /></span>
       </HintButton>
@@ -568,6 +574,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .settings-retry { padding: 16px 16px 0; }
   .pane-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
   .theme-mode { display: flex; justify-content: flex-end; margin-left: auto; }
+  .pane-controls :global(.assistant-switch) { flex-direction: row-reverse; }
+  .pane-controls :global(.assistant-switch .switch-thumb) { left: auto; right: 0; border-radius: 0 4px 4px 0; }
+  .pane-controls :global(.assistant-switch[aria-checked="true"] .switch-thumb) { transform: translateX(calc(-1 * var(--navigation-control-size))); border-radius: 4px 0 0 4px; }
   .pane-controls :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }

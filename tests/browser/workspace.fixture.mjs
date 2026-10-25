@@ -145,11 +145,14 @@ async function setMode(page, mode) {
     }
     return;
   }
-  const button = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
-  if (await button.getAttribute('aria-pressed') !== String(mode === 'settings')) {
+  const header = page.getByRole('banner');
+  const button = header.getByRole('button', { name: 'Settings', exact: true });
+  const active = header.locator('button[aria-controls="settings-panel"][aria-pressed="true"]');
+  if (mode === 'workflow') {
+    if (await active.count()) await active.click();
+  } else if (await button.getAttribute('aria-pressed') !== 'true') {
     await button.click();
-    if (mode === 'settings')
-      await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeFocused();
+    await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeFocused();
   }
   const target = mode === "workflow" ? workflow(page) : mode === "settings" ? page.getByRole("region", { name: "Settings workspace", exact: true }) : workflow(page);
   await expect(target).toBeVisible();
