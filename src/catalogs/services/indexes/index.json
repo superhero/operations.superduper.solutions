@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "ff79cd0a86275b7d78025a01cf875c287e0ee97fe7189d0597d5f464661fdabe",
+  "adapterRevision": "620256959bfa4570f4fdb589a91c0fa1b6780e582a0bddf65f502a49bb37e75b",
   "indexes": [
     {
       "id": "anthropic",
@@ -3065,15 +3065,15 @@
     {
       "id": "twilio",
       "sourceRevision": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
-      "bytes": 89303,
-      "compressedBytes": 6723,
-      "sha256": "2ffb7328da20066455e1e80245e8399a223329fec09c695c972c11dce3142a01",
+      "bytes": 89049,
+      "compressedBytes": 6714,
+      "sha256": "1e587bd628e027e4c0b422e236e8699493f511e08bfdf40512c2c33165f086b4",
       "summary": {
         "name": "Twilio - Api",
         "serverUrl": "https://api.twilio.com",
         "description": "This is the public Twilio REST API.",
         "operationCount": 197,
-        "unavailableCount": 3
+        "unavailableCount": 1
       }
     },
     {
