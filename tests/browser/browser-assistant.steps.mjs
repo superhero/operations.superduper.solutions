@@ -13,6 +13,12 @@ async function openAssistant(page) {
   if (await mode.getAttribute('aria-checked') !== 'true') await mode.click();
   return page.getByRole('region', { name: 'Browser assistant', exact: true });
 }
+async function openConfiguration(panel) {
+  const toggle = panel.getByRole('button', { name: 'Assistant configuration', exact: true });
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  const summary = panel.locator('summary').filter({ hasText: /^Configuration/ });
+  if (await summary.locator('..').getAttribute('open') !== '') await summary.click();
+}
 async function graph(page) {
   await loadGraphFixture(page, { version: 3, id: 'assistant-test', name: 'Assistant test', nodes: [
     { id: 'assistant-cast', type: 'cast', position: { x: 100, y: 100 }, data: { targetType: 'Text' } },
@@ -99,10 +105,25 @@ Then('the assistant settings expose only three Bonsai models and remember config
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
   let panel = await openAssistant(page);
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
+  const composer = panel.locator('form.composer');
+  await expect(panel.getByRole('textbox', { name: 'Message', exact: true })).toHaveAttribute('placeholder', 'Prompt');
+  await expect(panel.locator('.assistant-configuration')).toBeHidden();
+  expect((await panel.locator('.conversation').boundingBox()).height).toBe(0);
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const [box, modelRow, prompt, toolbar] = await Promise.all([composer.boundingBox(), composer.locator('.composer-header').boundingBox(), composer.getByRole('textbox').boundingBox(), composer.locator('.composer-toolbar').boundingBox()]);
+    expect(box.height).toBeLessThanOrEqual(190);
+    expect(modelRow.y + modelRow.height).toBeLessThanOrEqual(prompt.y + 1);
+    expect(prompt.y + prompt.height).toBeLessThanOrEqual(toolbar.y + 1);
+    expect(await composer.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    expect(await panel.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.screenshot({ path: `${this.artifactDirectory}/compact-assistant-${width}.png` });
+  }
+  await page.setViewportSize({ width: 1280, height: 844 });
   await panel.getByRole('combobox', { name: 'Local model', exact: true }).click();
   await expect(page.getByRole('option')).toHaveCount(3);
   await page.getByRole('option', { name: 'Bonsai 2 · 4B', exact: true }).click();
-  await panel.locator('summary').filter({ hasText: /^Configuration/ }).click();
+  await openConfiguration(panel);
   await panel.getByLabel('Workspace editing', { exact: true }).focus();
   await page.keyboard.press('Space');
   await expect(panel.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
@@ -111,7 +132,7 @@ Then('the assistant settings expose only three Bonsai models and remember config
   expect(await page.evaluate(() => window.assistantFixture.terminated)).toBe(1);
   await page.reload(); panel = await openAssistant(page);
   await expect(panel.getByRole('combobox', { name: 'Local model', exact: true }).locator('.field-select-value')).toHaveText('Bonsai 2 · 4B');
-  await panel.locator('summary').filter({ hasText: /^Configuration/ }).click();
+  await openConfiguration(panel);
   await expect(panel.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
   await panel.getByRole('button', { name: 'Load model', exact: true }).click();
   await expect(panel.getByRole('button', { name: 'Unload model', exact: true })).toBeVisible();
@@ -153,7 +174,7 @@ Then('the assistant can inspect add move and connect through the workspace UI bo
 Then('assistant read only mode and unload prevent further workspace edits', async function() {
   const page = this.page; await installAssistantFixture(page); await graph(page);
   const panel = await openAssistant(page);
-  await panel.locator('summary').filter({ hasText: /^Configuration/ }).click();
+  await openConfiguration(panel);
   await panel.getByLabel('Workspace editing', { exact: true }).uncheck();
   await panel.getByRole('button', { name: 'Load model', exact: true }).click();
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Inspect but do not edit');

@@ -4,14 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import { SpeechController, type SpeechState, type Dictation, type Recording } from "$lib/speech/controller.js";
   import { speechProfiles } from "$lib/speech/config.js";
   import { compare } from "$lib/speech/diagnostics.js";
   import { clearSpeechCache, deleteRecordings, saveRecording } from "$lib/speech/storage.js";
-  let { visible = true, onDictation, onActivity }: { visible?: boolean; onDictation: (text: Dictation) => void; onActivity: (state: { ready: boolean; busy: boolean }) => void } = $props();
+  let { visible = true, onDictation, onActivity }: { visible?: boolean; onDictation: (text: Dictation) => void; onActivity: (state: { ready: boolean; busy: boolean; recording: boolean }) => void } = $props();
   let speechState = $state<SpeechState>({ phase: "unloaded", status: "", error: "", provisional: "", storageError: "", seconds: 0 });
   let records = $state.raw<Recording[]>([]);
   let selectedId = $state("");
@@ -20,6 +20,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let storageBusy = $state(false);
   let audioInput: HTMLInputElement;
   let opened = $state(false);
+  let panel: HTMLDetailsElement;
+  export async function toggleDictation() {
+    opened = true;
+    if (speechState.phase === "recording" || speechState.phase === "requesting") await controller.stopRecording();
+    else if (speechState.phase === "ready" && !storageBusy) await controller.startRecording();
+    else {
+      await tick();
+      panel.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+    }
+  }
   const controller = new SpeechController({ state: value => { speechState = value; }, text: value => onDictation(value),
     recordings: value => { records = value; if (!selectedId && value[0]) selectedId = value[0].id; } });
   let preferences = $state({ ...controller.preferences });
@@ -29,7 +39,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const selected = $derived(records.find(record => record.id === selectedId));
   const transcript = $derived(selected?.final?.text || selected?.partials.at(-1)?.text || "");
   const comparison = $derived(selected?.expected && selected.final ? compare(selected.expected, selected.final.text) : null);
-  $effect(() => { onActivity({ ready: speechState.phase === "ready" || busy, busy }); });
+  $effect(() => { onActivity({ ready: speechState.phase === "ready" || busy, busy, recording: speechState.phase === "recording" || speechState.phase === "requesting" }); });
   $effect(() => { if (!visible) controller.hidden(); });
   $effect(() => { if (!opened) controller.hidden(); });
   let restored = false;
@@ -80,7 +90,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-<details class="speech-settings" bind:open={opened}>
+<details class="speech-settings" bind:this={panel} bind:open={opened}>
   <summary>Speech input<MaterialIcon name="chevron_forward" size={16} /></summary>
   <div class="speech-card">
     <label for="speech-profile">Parakeet TDT 0.6B v3</label>
