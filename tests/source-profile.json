@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/google-storage-upload.test.mjs",
     "src/atlassian-server-bindings.test.mjs",
     "src/provider-path-bindings.test.mjs",
     "src/flat-form.test.mjs",
@@ -91,6 +92,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/google-storage-upload.feature",
     "src/atlassian-server-bindings.feature",
     "src/provider-path-bindings.feature",
     "src/flat-form.feature",

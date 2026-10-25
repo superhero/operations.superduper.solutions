@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "23fa850aac1d878e5031627dcc75896913de53c2b2d7bf2b33785056bab99f8b",
+  "adapterRevision": "d7415345dbf346ec69792b34a2db61648ff61c5a7363669266b178a427417c3f",
   "indexes": [
     {
       "id": "anthropic",
@@ -2224,16 +2224,16 @@
     },
     {
       "id": "gcp-storage",
-      "sourceRevision": "a9a4230a7c6b7bb9c6f8c65a1afac43ce3ea58bb8de9b851e25971e5389fbe7f",
-      "bytes": 36541,
-      "compressedBytes": 2366,
-      "sha256": "74dec1e4f1cabcab12cf80f5d3ef95356106ca78db7b4416e0a4f8e16e309938",
+      "sourceRevision": "17f613d1c470c8a7fc64f3121208af3f6962b237e2b6c0dcbf5732d17aa9aa7d",
+      "bytes": 36416,
+      "compressedBytes": 2282,
+      "sha256": "2ff2fe6e3ac9e9d469c41945dff21f69474d5eba271fbec627b9d2ca415cc891",
       "summary": {
         "name": "Cloud Storage JSON API",
         "serverUrl": "https://storage.googleapis.com/storage/v1",
         "description": "Stores and retrieves potentially large, immutable data objects.",
         "operationCount": 76,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
