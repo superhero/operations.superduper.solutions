@@ -1,16 +1,24 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { awsWireContracts } from "./aws-wire.ts";
+import { awsSigningRegions } from "./aws-signing.ts";
+export { awsWireSources } from "./aws-wire.ts";
 import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
 import { bindProviderPaths } from "./provider-path-bindings.ts";
 import { bindAtlassianServers } from "./atlassian-server-bindings.ts";
+import { configureS3Files, s3SigningProfile } from "./s3-files.ts";
+import type { Operation } from "./catalog.ts";
+export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols"; version: 1 };
 export const atlassianServerBindings: SchemaPatch = { id: "atlassian-server-bindings", version: 1 };
 export const providerPathBindings: SchemaPatch = { id: "provider-path-bindings", version: 1 };
+export const awsWireProtocols: SchemaPatch = { id: "aws-wire-protocols", version: 1 };
+export const awsS3Files: SchemaPatch = { id: "aws-s3-files", version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
@@ -38,7 +46,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
     : patch.id === "github-authentication" ? "GitHub operation authentication"
     : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming"
-    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : patch.id === "cloudflare-private-upload" ? "Cloudflare private upload sessions" : patch.id === "provider-path-bindings" ? "Qualified provider path bindings" : patch.id === "atlassian-server-bindings" ? "Atlassian server identities" : "Unknown schema correction";
+    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : patch.id === "cloudflare-private-upload" ? "Cloudflare private upload sessions" : patch.id === "provider-path-bindings" ? "Qualified provider path bindings" : patch.id === "atlassian-server-bindings" ? "Atlassian server identities" : patch.id === "aws-s3-files" ? "S3 signed object files" : patch.id === "aws-wire-protocols" ? "AWS target JSON and Action/Version wire protocols" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -418,12 +426,96 @@ function cloudflareUploads(document: Record<string, any>): void {
   }
 }
 
+function s3Files(document: Record<string, any>): void {
+  const definition = document.components?.securitySchemes?.hmac;
+  if (document.openapi !== "3.0.0" || document.info?.version !== "2006-03-01" || definition?.type !== "apiKey"
+    || definition.in !== "header" || definition.name !== "Authorization" || definition["x-amazon-apigateway-authtype"] !== "awsS3"
+    || JSON.stringify(document.security) !== '[{"hmac":[]}]' || !Array.isArray(document.servers) || !document.servers.length
+    || document.servers.some(server => typeof server?.url !== "string" || !/^https?:\/\/s3(?:\{dash-or-dot\}\{region\}|\.\{region\})?\.amazonaws\.com(?:\.cn)?$/.test(server.url)))
+    throw new Error("S3 files require the reviewed native version, signing declaration and regional server templates.");
+  const item = document.paths?.["/{Bucket}/{Key}"];
+  if (!object(item) || item.servers !== undefined) throw new Error("S3 files require the reviewed object path.");
+  for (const [method, profile, identity] of [["get", "get-object", "GetObject"], ["put", "put-object", "PutObject"]] as const) {
+    const source = item[method];
+    if (!object(source) || source.operationId !== identity || source.servers !== undefined || source.security !== undefined
+      || source["x-operations-s3-files"] !== undefined || source["x-upstream-s3-object-contract"] !== undefined
+      || !source.responses?.["200"]?.content?.["text/xml"]
+      || method === "put" && !source.requestBody?.content?.["text/xml"]?.schema?.properties?.Body)
+      throw new Error("S3 files cannot replace an unreviewed object contract or destination.");
+    source["x-upstream-s3-object-contract"] = { parameters: source.parameters ?? [], requestBody: source.requestBody ?? null, responses: source.responses };
+    source["x-operations-s3-files"] = profile; source["x-operations-aws-signing"] = s3SigningProfile;
+    const model: Operation = { id: identity, name: identity, description: "", group: "S3", method: method.toUpperCase(), path: "/{Bucket}/{Key}", fields: [], bodyRequired: false };
+    configureS3Files(model, profile);
+    source.parameters = model.fields.filter(field => field.location !== "body").map(field => ({ name: field.name, in: field.location,
+      required: field.required, schema: field.schema, ...(field.name === "x-amz-meta-" ? { "x-operations-header-prefix": "x-amz-meta-" } : {}),
+      ...(field.name === "Key" ? { "x-operations-s3-key": true } : {}) }));
+    if (method === "put") source.requestBody = { required: true, content: { "application/octet-stream": { schema: { type: "string", format: "binary", maxLength: 500000 } } } };
+    else delete source.requestBody;
+    source.responses = { ...source.responses, "200": { description: method === "get" ? "Exact object bytes" : "Object stored; empty response body",
+      headers: Object.fromEntries(["ETag", "x-amz-checksum-sha256", "x-amz-checksum-type", "x-amz-version-id"].map(name => [name, { schema: { type: "string" } }])),
+      content: method === "get" ? { "application/octet-stream": { schema: { type: "string", format: "binary" } } } : { "text/plain": { schema: { type: "string" }, example: "" } } },
+      default: { description: "S3 XML error", content: { "application/xml": { schema: { type: "string" } } } } };
+  }
+}
+
+function awsWireProtocolsPatch(document: Record<string, any>): void {
+  const definition = document.components?.securitySchemes?.hmac;
+  const service = document.info?.version === "2012-08-10" ? "dynamodb" : document.info?.version === "2011-06-15" ? "sts" : undefined;
+  if (!service || document.openapi !== "3.0.0" || definition?.type !== "apiKey" || definition.in !== "header"
+    || definition.name !== "Authorization" || definition["x-amazon-apigateway-authtype"] !== "awsSigv4"
+    || JSON.stringify(document.security) !== '[{"hmac":[]}]' || !Array.isArray(document.servers) || !document.servers.length
+    || document.servers.some(server => typeof server?.url !== "string" || !server.url.startsWith("http")
+      || !new RegExp("^https?://" + service + "(?:\\.\\{region\\})?\\.amazonaws\\.com(?:\\.cn)?$").test(server.url)))
+    throw new Error("AWS wire protocols require the reviewed native service version, regional authority and signing declaration.");
+  for (const [profile, contract] of Object.entries(awsWireContracts)) {
+    if (contract.service !== service) continue;
+    const item = document.paths?.[contract.path];
+    if (!object(item) || item.servers !== undefined) throw new Error("AWS wire protocols require their original action paths.");
+    for (const method of service === "sts" ? ["get", "post"] : ["post"]) {
+      const source = item[method], identity = service === "sts" ? method.toUpperCase() + "_" + contract.action : contract.action;
+      if (!object(source) || source.operationId !== identity || source.servers !== undefined || source.security !== undefined
+        || source["x-operations-aws-wire"] !== undefined || source["x-operations-aws-signing"] !== undefined
+        || source["x-upstream-aws-wire-contract"] !== undefined || !source.responses?.["200"]?.content
+        || service === "dynamodb" && source.requestBody?.content?.["application/json"]?.schema?.$ref !== "#/components/schemas/" + contract.action + "Input"
+        || service === "sts" && method === "post" && source.requestBody?.content?.["text/xml"]?.schema?.$ref !== "#/components/schemas/GetCallerIdentityRequest"
+        || service === "sts" && method === "get" && source.requestBody !== undefined)
+        throw new Error("AWS wire protocols cannot replace an unreviewed operation contract.");
+      source["x-upstream-aws-wire-contract"] = { path: contract.path, parameters: source.parameters ?? [],
+        pathParameters: item.parameters ?? [], requestBody: source.requestBody ?? null, responses: source.responses, servers: source.servers ?? null };
+      source["x-operations-aws-wire"] = profile; source["x-operations-aws-signing"] = contract.profile;
+      source.servers = [{ url: "https://" + service + ".{region}.amazonaws.com", variables: {
+        region: { default: "us-east-1", enum: awsSigningRegions, description: "Explicit signing and service region" } } }];
+      source.parameters = [];
+      const success = source.responses["200"];
+      if (service === "dynamodb") {
+        const request = source.requestBody.content["application/json"], response = success.content["application/json"];
+        if (!response?.schema) throw new Error("AWS target JSON requires the reviewed JSON result.");
+        source.requestBody = { required: true, content: { "application/x-amz-json-1.0": request } };
+        const error = { description: "AWS JSON protocol error", content: { "application/x-amz-json-1.0": { schema: { type: "object", additionalProperties: true } } } };
+        source.responses = { "200": { ...success, content: { "application/x-amz-json-1.0": response } }, "400": error, "500": error, default: error };
+      } else {
+        if (!success.content["text/xml"]?.schema) throw new Error("STS requires the reviewed XML result.");
+        if (method === "post") source.requestBody = { required: true, content: { "application/x-www-form-urlencoded": { schema: {
+          type: "object", required: ["Action", "Version"], additionalProperties: false, properties: {
+            Action: { type: "string", enum: ["GetCallerIdentity"] }, Version: { type: "string", enum: ["2011-06-15"] } } } } } };
+        else source.parameters = ["Action", "Version"].map(name => ({ name, in: "query", required: true,
+          schema: { type: "string", enum: [name === "Action" ? "GetCallerIdentity" : "2011-06-15"] } }));
+        source.responses = { "200": { description: "Decoded STS identity; XML wire envelope verified", content: {
+          "text/xml": { schema: { type: "string" } }, "application/json": { schema: { ...document.components.schemas.GetCallerIdentityResponse,
+            properties: { ...document.components.schemas.GetCallerIdentityResponse.properties,
+              ResponseMetadata: { type: "object", properties: { RequestId: { type: "string" } }, required: ["RequestId"] } } } } } },
+          default: { description: "Decoded STS XML error", content: { "text/xml": { schema: { type: "string" } } } } };
+      }
+    }
+  }
+}
+
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -438,7 +530,9 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "x-oauth1-signing") xOauth1(document);
     else if (patch.id === "atlassian-server-bindings") bindAtlassianServers(document);
     else if (patch.id === "provider-path-bindings") bindProviderPaths(document);
-    else cloudflareUploads(document);
+    else if (patch.id === "cloudflare-private-upload") cloudflareUploads(document);
+    else if (patch.id === "aws-s3-files") s3Files(document);
+    else awsWireProtocolsPatch(document);
   }
   return document;
 }

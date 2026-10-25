@@ -73,6 +73,13 @@ Connection metadata binds the client, callback, scope and account; worker-owned
 renewal preserves the connection reference and records a durable pending marker
 before exchanging a rotating refresh token.
 
+
+[AWS SigV4](../../../docs/aws-signing.md) references an access key ID, secret
+access key and optional session token separately. The worker signs final bytes
+with the pinned Smithy signer and clears derived-key caches after each attempt.
+Its initial Lambda REST profile binds the configured HTTPS region and service;
+signing-protocol fields are not public operation inputs.
+
 Operations marked `credentialResult` require private credential acquisition and
 cannot execute through ordinary JSON request/result paths. Both request preparation
 and canonical private approval reject them. Newly issued tokens, signed URLs,

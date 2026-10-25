@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { createS3CorsEndpoint } from './s3-cors-endpoint.fixture.mjs';
 import { After, AfterAll, Before, BeforeAll, Status, World, setDefaultTimeout, setWorldConstructor } from '@cucumber/cucumber';
 import { chromium, firefox, webkit } from '@playwright/test';
 import { createServer } from 'node:http';
@@ -73,6 +74,7 @@ BeforeAll(async function () {
   jiraEndpoint = createJiraBrowserEndpoint();
   nativeEndpoint = createNativeBrowserEndpoint();
   dockerEndpoint = createDockerBrowserEndpoint();
+  const s3Endpoint = createS3CorsEndpoint(() => baseURL);
   server = createServer((request, response) => {
     if (jiraEndpoint.handle(request, response)) return;
     if (nativeEndpoint.handle(request, response)) return;
@@ -80,6 +82,7 @@ BeforeAll(async function () {
     if (queryArrayEndpoint(request, response)) return;
     if (nullableFormEndpoint(request, response)) return;
     if (vaultEndpoint(request, response)) return;
+    if (s3Endpoint(request, response)) return;
     if (new URL(request.url, 'http://localhost').pathname === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
         'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' });

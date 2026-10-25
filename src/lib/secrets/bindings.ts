@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { VaultError, type BasicCredentialReference, type OAuth1CredentialReference, type CredentialReference, type CredentialBinding, type CredentialExecutionContext, type HttpConnectionReference } from "./types.ts";
+import { VaultError, type BasicCredentialReference, type OAuth1CredentialReference, type AwsCredentialReference, type CredentialReference, type CredentialBinding, type CredentialExecutionContext, type HttpConnectionReference } from "./types.ts";
 import { validateVaultVariableInputs, type VaultVariableInput } from "./variables.ts";
 import { cloudflareSessionField } from "../cloudflare-upload.ts";
 import type { OperationSecurity } from "../operation-security.ts";
@@ -35,7 +35,19 @@ export function isOAuth1CredentialReference(value: unknown): value is OAuth1Cred
 }
 export function credentialReferenceIds(reference: CredentialReference): string[] {
   return typeof reference === "string" ? [reference] : isBasicCredentialReference(reference)
-    ? [reference.username, reference.password] : oauth1CredentialParts.map(part => (reference as OAuth1CredentialReference)[part]);
+    ? [reference.username, reference.password] : isAwsCredentialReference(reference)
+    ? [reference.accessKeyId, reference.secretAccessKey, ...(reference.sessionToken ? [reference.sessionToken] : [])]
+    : oauth1CredentialParts.map(part => (reference as OAuth1CredentialReference)[part]);
+}
+export const awsCredentialParts = ["accessKeyId", "secretAccessKey", "sessionToken"] as const;
+export function isAwsCredentialReference(value: unknown): value is AwsCredentialReference {
+  try {
+    const item = object(value);
+    return Object.keys(item).length === (item.sessionToken === undefined ? 2 : 3)
+      && Object.keys(item).every(key => awsCredentialParts.includes(key as typeof awsCredentialParts[number]))
+      && [item.accessKeyId, item.secretAccessKey, ...(item.sessionToken === undefined ? [] : [item.sessionToken])]
+        .every(id => typeof id === "string" && uuid.test(id));
+  } catch { return false; }
 }
 
 /** An opaque worker-owned reference may be wired to the upload Authorization input. */
@@ -81,10 +93,10 @@ export function validateCredentialBinding(value: unknown): CredentialBinding {
     || typeof item.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(item.fingerprint)) throw new VaultError("INVALID");
   const entries = Object.entries(object(item.credentials));
   if (item.connection !== undefined && entries.length || entries.length > 16 || entries.some(([scheme, id]) => !scheme.trim() || scheme.length > 128
-    || !(typeof id === "string" ? uuid.test(id) : isBasicCredentialReference(id) || isOAuth1CredentialReference(id)))) throw new VaultError("INVALID");
+    || !(typeof id === "string" ? uuid.test(id) : isBasicCredentialReference(id) || isOAuth1CredentialReference(id) || isAwsCredentialReference(id)))) throw new VaultError("INVALID");
   return { alternative: item.alternative as number, fingerprint: item.fingerprint,
     credentials: Object.fromEntries(entries.map(([name, reference]) => [name, typeof reference === "string" ? reference
-      : object(reference) as BasicCredentialReference | OAuth1CredentialReference])),
+      : object(reference) as BasicCredentialReference | OAuth1CredentialReference | AwsCredentialReference])),
     ...(item.connection === undefined ? {} : { connection: validateHttpConnectionReference(item.connection) }) };
 }
 

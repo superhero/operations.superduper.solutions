@@ -387,8 +387,13 @@ A supported OR alternative can execute independently, while an operation with
 no supported choice remains unavailable. Missing definitions, malformed scope
 arrays and conflicting credential destinations still reject the operation.
 The strict security extraction API remains strict; service and authored-model
-inspection use capability-aware extraction. Existing SigV4 requirements stay
-unavailable, including when another authentication choice is supported.
+inspection use capability-aware extraction. AWS signing declarations retain
+their signing requirement. Reviewed [Lambda SigV4](../aws-signing.md),
+[S3 object files](../s3-files.md) and [DynamoDB/STS wire profiles](../aws-wire-protocols.md)
+execute privately. Unimplemented signing/wire profiles remain unavailable,
+including when another authentication choice is supported. AWS fragment paths
+retain their source identity; reviewed profiles prepare actual HTTP paths,
+protocol fields and bytes before signing.
 
 The credential chooser disables unavailable alternatives and explains why.
 Saved selections keep their original alternative index and vault IDs across
@@ -396,7 +401,8 @@ reload. Complete canonical approvals retain unavailable metadata and reject
 selection of any unavailable AND member in private execution and credential
 grants. An explicit anonymous choice still requires an explicit selection when
 other alternatives exist. All-supported metadata and approval fingerprints are
-unchanged. OAuth1 execution and automatic authentication fallback remain unsupported.
+unchanged. The reviewed X OAuth1 profile also signs private requests. Automatic
+authentication fallback remains unsupported.
 
 HTTP Basic uses two existing vault entries: a username and a password or API
 token. A local binding stores an exact `{ username, password }` pair of opaque
@@ -417,8 +423,8 @@ See [RFC 7617](https://www.rfc-editor.org/rfc/rfc7617.html#section-2),
 [Twilio credential roles](https://www.twilio.com/docs/usage/requests-to-twilio#authentication)
 and [Atlassian email/API-token Basic](https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/).
 
-AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
-and the API's own authorization rules still apply.
+AWS Signature Version 4 is available only for the reviewed service/wire profiles.
+Browser CORS, local-network access and the API's own authorization rules still apply.
 
 ### Failure handling
 

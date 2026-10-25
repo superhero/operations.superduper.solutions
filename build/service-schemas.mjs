@@ -12,7 +12,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources } from '../src/lib/schema-patches.ts';
 import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
 import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
@@ -132,6 +132,10 @@ for (const source of sources) {
     throw new Error('Provider path bindings require requalification before updating the pinned native source.');
   if (source.profile === 'atlassian-servers' && sha(json) !== atlassianServerBindingSources[source.id])
     throw new Error('Atlassian server bindings require requalification before updating the pinned native source.');
+  if (source.profile === 'aws-s3-files' && (source.id !== 'aws-s3' || sha(json) !== s3SourceSha256))
+    throw new Error('S3 files require requalification before updating the pinned native source.');
+  if (source.profile === 'aws-wire-protocols' && sha(json) !== awsWireSources[source.id])
+    throw new Error('AWS wire protocols require requalification before updating the pinned native source.');
   const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
@@ -144,7 +148,10 @@ for (const source of sources) {
     : source.profile === 'x-oauth1' ? [xOauth1Signing]
     : source.profile === 'cloudflare-upload' ? [cloudflarePrivateUpload]
     : source.profile === 'provider-paths' ? [providerPathBindings]
-    : source.profile === 'atlassian-servers' ? source.id === 'jira-service-management-ops' ? [providerPathBindings, atlassianServerBindings] : [atlassianServerBindings] : [];
+    : source.profile === 'atlassian-servers' ? source.id === 'jira-service-management-ops' ? [providerPathBindings, atlassianServerBindings] : [atlassianServerBindings]
+    : source.profile === 'aws-s3-files' ? [awsS3Files]
+    : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
+
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

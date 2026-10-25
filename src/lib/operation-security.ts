@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { telegramPrivateEndpoint, telegramPathSecurity } from "./server-url.ts";
+import { awsRestProfile, awsSigningMarker } from "./aws-signing.ts";
+import { awsWireSigningProfiles, type AwsWireSigningProfile } from "./aws-wire.ts";
+import { s3SigningProfile } from "./s3-files.ts";
 
 export type OperationSecurityScheme =
+  | { name: string; kind: "aws-sigv4"; header: "Authorization"; profile: "lambda-list-functions" | "s3-object" | AwsWireSigningProfile; query?: never; path?: never }
   | { name: string; kind: "cloudflare-upload"; header: "Authorization"; profile: "workers" | "pages"; query?: never; path?: never }
   | { name: string; kind: "oauth1"; header: "Authorization"; profile: "x-hmac-sha1"; query?: never; path?: never }
   | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never; path?: never }
@@ -15,7 +19,7 @@ export type OperationSecurityRequirement = OperationSecurityScheme | Unavailable
 /** Alternatives retain source positions. Every member is required (AND), including unavailable members. */
 export type OperationSecurity = OperationSecurityRequirement[][];
 export function supportedSecurityAlternative(value: unknown): value is OperationSecurityScheme[] {
-  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "basic", "apiKey", "oauth1", "cloudflare-upload"].includes(scheme.kind));
+  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "basic", "apiKey", "oauth1", "cloudflare-upload", "aws-sigv4"].includes(scheme.kind));
 }
 /** Permission metadata is aligned with the security alternatives, not OAuth flows. */
 export type CredentialPermissions = Record<string, string[]>[];
@@ -64,7 +68,7 @@ function resolve(value: unknown, document: ObjectValue, context: string): Object
   return result;
 }
 
-function scheme(document: ObjectValue, name: string, allowUnsupported: boolean): OperationSecurityRequirement
+function scheme(document: ObjectValue, name: string, allowUnsupported: boolean, requestedSigning?: unknown): OperationSecurityRequirement
 {
   const context = `Security scheme ${JSON.stringify(name)}`;
   if (!name.trim()) throw new Error("Security requirement names must be nonempty strings.");
@@ -115,8 +119,20 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean):
     throw new Error(`${context}: description must be a string.`);
   if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))
     throw new Error(`${context}: unsupported security scheme fields.`);
-  if (definition["x-amazon-apigateway-authtype"] === "awsSigv4")
-    result = { ...result, kind: "unsupported", reason: "This API requires AWS Signature Version 4 request signing, which is not supported here." };
+  const signing = definition["x-operations-aws-sigv4"] ?? requestedSigning;
+  if (requestedSigning !== undefined && requestedSigning !== s3SigningProfile && !awsWireSigningProfiles.includes(requestedSigning as AwsWireSigningProfile)
+    || requestedSigning !== undefined && definition["x-operations-aws-sigv4"] !== undefined && definition["x-operations-aws-sigv4"] !== requestedSigning)
+    throw new Error(`${context}: unsupported or conflicting AWS signing profile.`);
+  if (awsSigningMarker(definition))
+    result = definition["x-amazon-apigateway-authtype"] === "awsSigv4" && signing === awsRestProfile
+      && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsRestProfile }
+      : definition["x-amazon-apigateway-authtype"] === "awsSigv4" && awsWireSigningProfiles.includes(signing as AwsWireSigningProfile) && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: signing as AwsWireSigningProfile }
+      : definition["x-amazon-apigateway-authtype"] === "awsS3" && signing === s3SigningProfile && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: s3SigningProfile }
+      : { ...result, kind: "unsupported", reason: "This API requires AWS Signature Version 4 request signing with a supported wire profile. This operation's signing profile is not supported here." };
+  else if (definition["x-operations-aws-sigv4"] !== undefined || requestedSigning !== undefined) throw new Error(`${context}: an AWS signing profile requires an AWS signing declaration.`);
   if (result.kind === "unsupported" && !allowUnsupported) throw new Error(result.reason);
   return result;
 }
@@ -136,7 +152,7 @@ function operationSecurity(document: ObjectValue, operation: ObjectValue, allowU
     {
       if (!Array.isArray(scopes) || scopes.length)
         throw new Error(`Security scheme ${JSON.stringify(name)}: only empty scope arrays are supported for bearer and API key requirements.`);
-      const resolved = scheme(document, name, allowUnsupported);
+      const resolved = scheme(document, name, allowUnsupported, operation["x-operations-aws-signing"]);
       if (resolved.query !== undefined)
       {
         if (queries.has(resolved.query)) throw new Error(`Security alternative ${index + 1}: duplicate credential query parameter ${JSON.stringify(resolved.query)}.`);
