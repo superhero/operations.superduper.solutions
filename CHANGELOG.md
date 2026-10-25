@@ -74,6 +74,14 @@ chore(ci): reconcile Storage squash integration for Notifications
 
 ```
 
+<!-- changelog-commit:19897224abbdefe64d3c7f1ddeb37b3c6664ee96 -->
+### Commit [`1989722`](https://github.com/superhero/operations.superduper.solutions/commit/19897224abbdefe64d3c7f1ddeb37b3c6664ee96)
+
+```text
+fix(ui): show parent guides beside catalog operations
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

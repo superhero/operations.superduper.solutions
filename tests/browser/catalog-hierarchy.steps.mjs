@@ -225,6 +225,7 @@ Then('nested catalog entries add operations to the workflow with useful focus', 
   await expand(page, 'tasks');
   await catalogResourcePath(page, 'tasks', ['projects', 'tasks']);
   await expect(operation(page, 'demo:createTask')).toHaveAccessibleName('Add to workflow: Example POST body');
+  await page.screenshot({ path: `${this.artifactDirectory}/catalog-operation-guide-${page.viewportSize().width}.png` });
   await operation(page, 'demo:createTask').press('Enter');
   const nodes = page.locator('.svelte-flow__node-operation');
   await expect(nodes).toHaveCount(1);
