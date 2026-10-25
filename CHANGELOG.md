@@ -369,6 +369,14 @@ feat(ui): switch the settings pane between settings and assistant
 
 ```
 
+<!-- changelog-commit:5c12f367e09d431fda3a78278c0e82f37281140a -->
+### Commit [`5c12f36`](https://github.com/superhero/operations.superduper.solutions/commit/5c12f367e09d431fda3a78278c0e82f37281140a)
+
+```text
+fix(ui): use Robot icon for the assistant switch
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
