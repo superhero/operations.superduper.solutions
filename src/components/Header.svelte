@@ -41,11 +41,12 @@
   .header-content { gap: 8px; }
   .header-content :global(.menu-button) { flex-shrink: 0; }
   .brand-controls { min-width: 0; }
-  .pane-buttons { display: flex; flex-shrink: 0; --hover-scale: 1; }
-  .pane-buttons :global(.menu-button) { border-radius: 0; }
-  .pane-buttons :global(.menu-button:first-child) { border-radius: 4px 0 0 4px; }
-  .pane-buttons :global(.menu-button:last-child) { border-radius: 0 4px 4px 0; border-left: 1px solid var(--color-primary-foreground); }
-  .pane-buttons :global(.menu-button:focus-visible) { position: relative; z-index: 1; }
+  .pane-buttons { display: flex; flex-shrink: 0; isolation: isolate; }
+  .pane-buttons :global(.menu-button) { position: relative; z-index: 0; border-radius: 0; }
+  .pane-buttons :global(.menu-button:first-child) { border-radius: 4px 0 0 4px; transform-origin: right center; }
+  .pane-buttons :global(.menu-button:last-child) { border-radius: 0 4px 4px 0; border-left: 1px solid var(--color-primary-foreground); transform-origin: left center; }
+  .pane-buttons :global(.menu-button:is(:hover, :focus)) { z-index: 1; }
+  .pane-buttons :global(.menu-button:focus-visible) { z-index: 2; }
   .brand-copy { min-width: 0; overflow: hidden; }
   .brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @container header-layout (max-width: 350px) {
