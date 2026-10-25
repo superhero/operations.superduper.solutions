@@ -838,7 +838,7 @@ export class VaultSession {
       const state = validateAtprotoState(record.oauthState ?? "", validateAtprotoMetadata(resolved.oauth));
       const guard = async () => { this.guard(generation); await this.assertSchema(descriptor); await this.assertCurrent(); this.guard(generation);
         if (signal?.aborted) throw new VaultError("CANCELLED"); };
-      const oldSecrets = managedAtprotoSecrets(record.oauthState ?? ""); let expectedState = record.oauthState;
+      const oldSecrets = managedAtprotoSecrets(record.oauthState!); let expectedState = record.oauthState;
       const result = await this.atprotoOAuth.execute(state, descriptor, guard, async next => {
         await guard(); const latest = await this.records(), owner = latest.find(item => item.id === id);
         if (!owner || owner.oauthState !== expectedState) throw new VaultError("AUTHORIZATION"); owner.oauthState = JSON.stringify(next); await this.save(latest); expectedState = owner.oauthState;

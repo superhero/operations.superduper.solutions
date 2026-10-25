@@ -136,8 +136,13 @@ Then('early native login completion is matched and a foreign completion is rejec
 Then('native workflow management keeps credentials private and rejects stale runtime selections', async function () {
   const v = await setup(this), vault = await nativeVaultFixture(v.f); this.nativeAgentVaults.push(vault);
   const selections = await vault.workflowSelections(), paired = await vault.session.pairNativeRuntime(vault.input, vault.selection);
+  await vault.session.disconnectNativeRuntime(nativeReference(paired)); await wait(() => v.f.stops === v.f.starts);
+  const sibling = await vault.session.pairNativeRuntime({ ...vault.input, label: 'Sibling native profile' }, vault.selection);
+  await vault.session.disconnectNativeRuntime(nativeReference(sibling)); await wait(() => v.f.stops === v.f.starts);
+  const siblingBefore = (await vault.session.nativeConnections()).find(connection => connection.id === sibling.id);
   const enabled = await vault.session.enableNativeWorkflow(nativeReference(paired), selections);
   assert.equal(enabled.revision, 2); assert.match(enabled.workflowFingerprint, /^[a-f0-9]{64}$/);
+  assert.deepEqual((await vault.session.nativeConnections()).find(connection => connection.id === sibling.id), siblingBefore);
   const notices = [], login = vault.session.loginNativeRuntime(nativeReference(enabled), selections, { type: 'chatgptDeviceCode' }, undefined, value => notices.push(value));
   await wait(() => notices.some(value => value.kind === 'login')); v.f.finishLogin(); let connected = await login;
   assert.equal(connected.accountType, 'chatgpt'); assert.equal(connected.revision, 3);
@@ -145,6 +150,8 @@ Then('native workflow management keeps credentials private and rejects stale run
   connected = await vault.session.loginNativeRuntime(nativeReference(connected), selections,
     { type: 'apiKey', credentialId: apiKeys.find(value => value.label === 'Codex provider key').id });
   assert.equal(connected.accountType, 'apiKey'); assert.equal(connected.revision, 4);
+  assert.deepEqual((await vault.session.nativeConnections()).find(connection => connection.id === sibling.id), siblingBefore,
+    'Logging into one profile preserves every field of its sibling under the same pairing key.');
   const start = selections.find(value => value.operation.rpc.method === 'thread/start');
   await assert.rejects(vault.session.executeNativeRuntime(nativeReference(enabled), selections, start, {}), error => error.code === 'CONFLICT');
   const malformed = structuredClone(selections); malformed[0].operation.fields.push({ key: 'forged' });
@@ -170,6 +177,10 @@ Then('native workflow management keeps credentials private and rejects stale run
   assert.equal(JSON.stringify(vault.storage.state).includes(v.f.key), false);
   assert.equal(JSON.stringify(vault.storage.state).includes('vault-native-secret-9182'), false);
   assert.equal(JSON.stringify(vault.storage.state).includes('native-vault-provider-key-9182'), false);
+  await vault.session.put(null, { id: vault.keyId, label: 'Reclassified native pairing key', kind: 'bearer', value: v.f.key });
+  assert.equal(await vault.session.copyCredential(vault.keyId), v.f.key);
+  assert.deepEqual(await vault.session.nativeConnections(), []);
+  await assert.rejects(vault.session.executeNativeRuntime(nativeReference(connected), selections, start, {}), { code: 'CONFLICT' });
 });
 
 Then('a native graph runs through parameters and typed terminal result ports without HTTP', async function () {

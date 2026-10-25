@@ -156,7 +156,8 @@ Then('Docker private profiles persist encrypted and key edits revoke their selec
   assert.equal((await v.vault.session.dockerConnections())[0].connected, false);
   await v.vault.session.checkDockerHost(dockerReference(v.connection), v.vault.selection);
   assert.equal((await v.vault.session.dockerConnections())[0].connected, true);
-  await v.vault.session.put(null, { id: v.vault.keyId, label: 'Replaced Docker key', kind: 'secret', value: 'replacement-docker-key-value-9182' });
+  await v.vault.session.put(null, { id: v.vault.keyId, label: 'Reclassified Docker key', kind: 'bearer', value: v.f.key });
+  assert.equal(await v.vault.session.copyCredential(v.vault.keyId), v.f.key);
   assert.deepEqual(await v.vault.session.dockerConnections(), []);
   const before = v.f.engineRequests.length;
   await assert.rejects(v.vault.session.executeDockerRead(v.binding, v.vault.selection, {}), error => error.code === 'CONFLICT');

@@ -399,18 +399,24 @@ Then('Jira selection retains capacity and rejects missing state or wrong reconne
   } finally { await f.close(); }
   const missing = await fixture();
   try {
-    await missing.connect(); const records = await missing.session.records(), record = records.find(item => item.oauthState);
+    await missing.connect();
+    const reconnect = await missing.begin(httpConnectionReference(missing.connection)); await missing.host.callback(reconnect); await missing.session.pollJiraOAuth(reconnect.id);
+    const records = await missing.session.records(), record = records.find(item => item.oauthState), old = JSON.parse(record.oauthState);
     delete record.oauthState; await missing.session.save(records);
+    const before = structuredClone(missing.storage.state);
+    await assert.rejects(missing.session.completeJiraOAuth(reconnect.id, jiraSites[0].id), error => error.code === 'AUTHORIZATION');
+    assert.deepEqual(missing.storage.state, before); assert.deepEqual(await missing.session.connections(), [missing.connection]);
+    assert.equal(missing.host.hostRequests.some(call => call.method === 'DELETE' && call.address.endsWith('/connections/'+old.connectionId)), false);
     await assert.rejects(missing.session.connectionBinding(httpConnectionReference(missing.connection), missing.approved), denied);
     await assert.rejects(missing.run(), denied); await assert.rejects(missing.session.removeConnection(httpConnectionReference(missing.connection)), denied);
   } finally { await missing.close(); }
 });
 
 Then('Jira late selection or reconnect cancellation and nullable expand never publish a new result', async () => {
-  for (const phase of ['selection-return', 'cleanup-return', 'nullable-expand']) {
+  for (const phase of ['selection-return', 'selection-offline', 'cleanup-return', 'nullable-expand']) {
     const f = await fixture(); let spy;
     try {
-      const previous = phase === 'selection-return' ? undefined : await f.connect();
+      const selection = phase.startsWith('selection'), previous = selection ? undefined : await f.connect();
       if (phase === 'nullable-expand') {
         const descriptor = await approvedOperation({ ...f.operation, fields: f.operation.fields.map(field => ({ ...field, nullable: true })) }, jiraSites[0].url);
         const binding = await f.session.connectionBinding(httpConnectionReference(previous), descriptor), requests = f.host.hostRequests.length;
@@ -420,15 +426,17 @@ Then('Jira late selection or reconnect cancellation and nullable expand never pu
       const task = await f.begin(previous && httpConnectionReference(previous)); await f.host.callback(task); await f.session.pollJiraOAuth(task.id);
       const controller = new AbortController(), before = structuredClone(f.storage.state), providerCalls = f.host.providerCalls.length;
       const selects = f.host.hostRequests.filter(call => call.address.endsWith('/select')).length;
-      const method = phase === 'selection-return' ? 'select' : 'remove', original = JiraCompanionBroker.prototype[method];
+      const method = selection ? 'select' : 'remove', original = JiraCompanionBroker.prototype[method];
       spy = vi.spyOn(JiraCompanionBroker.prototype, method).mockImplementation(async function (...args) {
-        const result = await original.apply(this, args); controller.abort(); return result;
+        const result = await original.apply(this, args); if (phase === 'selection-offline') f.host.clientFailure = true;
+        controller.abort(); return result;
       });
       await assert.rejects(f.session.completeJiraOAuth(task.id, jiraSites[0].id, controller.signal), error => error.code === 'CANCELLED');
       assert.equal(spy.mock.calls.length, 1); spy.mockRestore(); spy = undefined;
       assert.deepEqual(f.storage.state, before); assert.deepEqual(await f.session.connections(), previous ? [previous] : []);
       assert.equal(f.host.providerCalls.length, providerCalls+1);
       assert.equal(f.host.hostRequests.filter(call => call.address.endsWith('/select')).length, selects+1);
+      if (phase === 'selection-offline') assert.equal(f.host.hostRequests.filter(call => call.method === 'DELETE' && call.address.endsWith('/authorizations/'+task.id)).length, 1);
       const requests = f.host.hostRequests.length;
       await assert.rejects(f.session.completeJiraOAuth(task.id, jiraSites[0].id, controller.signal), denied);
       assert.equal(f.host.hostRequests.length, requests); assert.equal(f.host.providerCalls.length, providerCalls+1);

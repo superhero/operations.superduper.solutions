@@ -134,6 +134,8 @@ Then('Bluesky OAuth rejects stale schemas changed operations and manual managed 
 });
 Then('Bluesky OAuth redacts token echoes and keeps private material out of summaries and copies', async () => {
   const f = await fixture(), connection = await f.connect(); f.echo = true;
+  const ordinary = 'ATPROTO_ORDINARY_PRIVATE_5729';
+  await f.session.put(null, { label: 'Ordinary credential', kind: 'secret', value: ordinary }); f.privateValues.push(ordinary);
   const result = await f.session.execute(f.descriptor, {}, await f.binding(connection)); assert.equal(result.response.redacted, true);
   const summary = await f.session.list(), safe = JSON.stringify({ result, summary, connection, storage: f.storage.state });
   assert.equal(summary[0].oauthState, undefined); for (const value of f.privateValues) assert.ok(!safe.includes(value));

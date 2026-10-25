@@ -301,4 +301,8 @@ Then('malformed stored connection lists and OAuth payloads fail before vault sta
   assert.equal((await f.session.list()).some(record => record.id === owner), true);
   assert.deepEqual(await f.session.connections(), []);
   await fetched(async calls => { await assert.rejects(f.session.execute(basic, {}, selected), code('PERMISSION')); assert.equal(calls.length, 0); });
+  const retained = await f.session.putConnection(input('Retained account'), approved, manual(approved, [owner]));
+  const removed = await f.session.putConnection(input('Removed account'), approved, manual(approved, [owner]));
+  await f.session.removeConnection(httpConnectionReference(removed));
+  assert.deepEqual((await f.session.connections()).map(connection => connection.id), [retained.id]);
 });
