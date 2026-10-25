@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 export const paneStateKey = "v1/settings/pane-state";
-export const settingsSections = ["toolbar", "keybindings", "secrets", "theme", "locale", "logs", "schemas", "workflow", "storage", "developer", "assistant"] as const;
+export const settingsSections = ["keybindings", "secrets", "theme", "locale", "logs", "schemas", "workflow", "storage", "developer", "assistant"] as const;
 export type SettingsSection = typeof settingsSections[number] | null;
 export type NavigationPaneState = {
   prompt: string; catalogPath: string[]; workflowsOpen: boolean; matchingOpen: boolean;
@@ -28,6 +28,7 @@ export function readPaneState(): PaneState | null {
     const saved = object(JSON.parse(raw));
     if (saved.version !== 1 || typeof saved.navigationOpen !== "boolean" || typeof saved.settingsOpen !== "boolean") return null;
     const navigation = object(saved.navigation), settings = object(saved.settings);
+    const section = settings.section === "toolbar" ? "workflow" : settings.section;
     return {
       version: 1, navigationOpen: saved.navigationOpen, settingsOpen: saved.settingsOpen,
       lastOpenedPane: saved.lastOpenedPane === "settings" ? "settings" : "navigation",
@@ -38,7 +39,7 @@ export function readPaneState(): PaneState | null {
         searchExpansion: Object.fromEntries(Object.entries(object(navigation.searchExpansion)).filter(([key, value]) => key.length <= 8192 && typeof value === "boolean").slice(0, 256)) as Record<string, boolean>,
         scrollTop: scroll(navigation.scrollTop),
       },
-      settings: { section: settingsSections.includes(settings.section as Exclude<SettingsSection, null>) ? settings.section as SettingsSection : null, scrollTop: scroll(settings.scrollTop) },
+      settings: { section: settingsSections.includes(section as Exclude<SettingsSection, null>) ? section as SettingsSection : null, scrollTop: scroll(settings.scrollTop) },
     };
   } catch { return null; }
 }
