@@ -204,6 +204,14 @@ fix(ui): extend horizontal catalog separators
 
 ```
 
+<!-- changelog-commit:7b8affa54f64d033701e321d8b72a068cb86aefd -->
+### Commit [`7b8affa`](https://github.com/superhero/operations.superduper.solutions/commit/7b8affa54f64d033701e321d8b72a068cb86aefd)
+
+```text
+fix(ui): flatten transport prefixes in catalog navigation
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
