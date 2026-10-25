@@ -421,6 +421,16 @@ feat(http): preserve nullable multipart files
 
 ```
 
+<!-- changelog-commit:d3a6ba59bba6712df787e95a3df953b477984959 -->
+### Commit [`d3a6ba5`](https://github.com/superhero/operations.superduper.solutions/commit/d3a6ba59bba6712df787e95a3df953b477984959)
+
+```text
+feat(twilio): support bounded flat forms
+
+Preserve all 99 explicit parameter pairs in the two reviewed native models without changing global schema budgets. Select optional controls on demand and retain canonical private request preparation.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
