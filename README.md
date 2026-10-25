@@ -206,6 +206,35 @@ tests are needed.
 
 ## Dependency packages
 
+<a href="https://www.npmjs.com/package/@atproto/oauth-client"><img src=".github/badges/version-dependency-atproto--oauth-client.svg" alt="@atproto/oauth-client declared version"></a>
+<a href="https://www.npmjs.com/package/@atproto/jwk-webcrypto"><img src=".github/badges/version-dependency-atproto--jwk-webcrypto.svg" alt="@atproto/jwk-webcrypto declared version"></a>
+
+Provide Bluesky's public OAuth flow and private DPoP proof keys in the vault
+worker, with encrypted account state and rotating credentials.
+
+---
+
+<a href="https://www.npmjs.com/package/@smithy/core"><img src=".github/badges/version-dependency-smithy--core.svg" alt="@smithy/core declared version"></a>
+<a href="https://www.npmjs.com/package/@smithy/signature-v4"><img src=".github/badges/version-dependency-smithy--signature-v4.svg" alt="@smithy/signature-v4 declared version"></a>
+
+Provide AWS signing primitives so the vault worker signs final request bytes
+without exposing signing credentials to the workflow.
+
+---
+
+<a href="https://www.npmjs.com/package/fast-xml-parser"><img src=".github/badges/version-dependency-fast-xml-parser.svg" alt="fast-xml-parser declared version"></a>
+
+Decodes bounded AWS STS XML responses while retaining native identity fields and
+protocol errors.
+
+---
+
+<a href="https://www.npmjs.com/package/ws"><img src=".github/badges/version-dependency-ws.svg" alt="ws declared version"></a>
+
+Provides the WebSocket transport for the optional private Codex companion.
+
+---
+
 <a href="https://www.npmjs.com/package/parakeet.js"><img src=".github/badges/version-dependency-parakeet.js.svg" alt="parakeet.js declared version"></a>
 <a href="https://www.npmjs.com/package/onnxruntime-web"><img src=".github/badges/version-dependency-onnxruntime-web.svg" alt="onnxruntime-web declared version"></a>
 

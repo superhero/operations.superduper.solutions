@@ -28,8 +28,8 @@ Then('pinned Twilio and Atlassian Basic operations dispatch selected username an
       unavailable: inspection.operations.filter(operation => operation.unavailableReason).map(operation => ({ id: operation.id, reason: operation.unavailableReason })) };
     if (id === 'twilio') {
       assert.equal(inspection.operations.length, 197);
-      assert.equal(available.length, 194);
-      assert.equal(census[id].unavailable.length, 3);
+      assert.equal(available.length, 196);
+      assert.deepEqual(census[id].unavailable.map(operation => operation.id), ['twilio:CreatePayments']);
       assert.ok(census[id].unavailable.every(operation => /form.*structured/.test(operation.reason)));
       assert.ok(available.every(operation => operation.security.some(option => option.some(scheme => scheme.kind === 'basic'))));
     }
@@ -70,9 +70,11 @@ Then('the five pinned Twilio array forms preserve repeated fields and separate r
   const { executeCredentialed } = await import('./lib/secrets/execution.ts');
   const document = await readServiceSchema('twilio'), original = JSON.stringify(document);
   const inspection = inspectServiceSchema(document, 'twilio');
-  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 194);
+  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 196);
   assert.deepEqual(inspection.operations.filter(op => op.unavailableReason).map(op => op.id).sort(),
-    ['twilio:CreatePayments', 'twilio:CreateSiprec', 'twilio:CreateStream']);
+    ['twilio:CreatePayments']);
+  for (const id of ['twilio:CreateSiprec', 'twilio:CreateStream'])
+    assert.equal(inspection.operations.find(operation => operation.id === id).unavailableReason, undefined, id);
   const identities = { AccountSid: 'AC'+'1'.repeat(32), CallSid: 'CA'+'1'.repeat(32), ConferenceSid: 'CF'+'1'.repeat(32),
     Sid: 'CN'+'1'.repeat(32), To: '+15550000001', From: '+15550000002' };
   for (const name of ['CreateCall', 'CreateCallRecording', 'UpdateConnectApp', 'CreateMessage', 'CreateParticipant']) {
@@ -126,7 +128,7 @@ Then('pinned Atlassian and X authentication alternatives retain independently us
           operationId: 'auth-probe', security: declaration, responses: { 200: { description: 'Auth probe' } },
         } } } };
         const checked = inspectServiceSchema(probe, source.id).operations[0];
-        cache.set(key, checked.security?.some(option => option.some(scheme => scheme.kind === 'basic' || scheme.kind === 'unsupported'))
+        cache.set(key, checked.security?.length > 1 && checked.security.some(option => option.some(scheme => ['basic', 'oauth1', 'unsupported'].includes(scheme.kind)))
           && checked.security.some(option => supportedSecurityAlternative(option) && option.every(scheme => scheme.kind !== 'basic')));
       }
       if (!cache.get(key)) continue;
@@ -425,6 +427,7 @@ Then('Google Cloud corrections preserve published packs and enable both private 
   let available = 0, unavailable = 0;
   for (const source of sources) {
     assert.deepEqual(source.patches, [{ id: 'google-oauth-alternatives', version: 1 },
+      ...(source.id === 'gcp-bigquery' ? [{ id: 'bigquery-job-metadata', version: 1 }] : []),
       ...(source.id === 'gcp-storage' ? [{ id: 'google-storage-media', version: 1 }] : [])]);
     const document = await readServiceSchema(source.id);
     assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
@@ -432,8 +435,8 @@ Then('Google Cloud corrections preserve published packs and enable both private 
     available += inspection.operations.filter(operation => !operation.unavailableReason).length;
     unavailable += inspection.operations.filter(operation => operation.unavailableReason).length;
   }
-  assert.equal(available, 2122);
-  assert.equal(unavailable, 6, 'Separate request-media limitations remain explicit.');
+  assert.equal(available, 2123);
+  assert.equal(unavailable, 5, 'Separate request-media limitations remain explicit.');
   const original = await readServiceSchemaUpstream('gcp-speech');
   const corrected = await readServiceSchema('gcp-speech');
   const id = 'gcp-speech:speech.operations.list';
@@ -522,7 +525,7 @@ Then('all service schema packs match their size hash and operation inventory', a
   await assert.rejects(readServiceSchema(serviceSchemaDescriptors[0].id, { descriptors: serviceSchemaDescriptors, packs: {} }), /unavailable/);
 });
 
-Then('the pinned Codex schema preserves requests responses and events with execution unavailable', async () => {
+Then('the pinned Codex schema preserves native contracts and qualifies only private workflow methods', async () => {
   const source = serviceSchemaDescriptors.find(source => source.id === 'codex');
   assert.equal(source.name, 'OpenAI / Codex / App Server');
   assert.equal(source.version, '0.163.0');
@@ -551,21 +554,24 @@ Then('the pinned Codex schema preserves requests responses and events with execu
   assert.equal(inspected.operations.length, source.operations);
   for (const method of ['initialize', 'account/login/start', 'account/read', 'model/list', 'thread/start', 'thread/resume', 'turn/start', 'turn/interrupt'])
     assert.ok(inspected.operations.some(operation => operation.id === `codex:${method}`), method);
+  const qualified = new Set(['thread/start', 'thread/resume', 'turn/start']);
+  assert.deepEqual(inspected.operations.filter(operation => !operation.unavailableReason).map(operation => operation.path).sort(), [...qualified].sort());
   for (const operation of inspected.operations) {
     assert.equal(operation.method, 'RPC');
-    assert.equal(operation.unavailableReason, codexExecutionLimitation);
+    assert.equal(operation.unavailableReason, qualified.has(operation.path) ? undefined : codexExecutionLimitation);
     assert.throws(() => operationServerUrl(document, operation), /paths/);
   }
   const discovery = createSchemaDiscovery(inspected, source.sha256);
   assert.deepEqual(validateSchemaDiscovery(discovery, source.id, source.sha256), discovery);
   assert.equal(discovery.summary.protocol, 'json-rpc');
-  assert.equal(discovery.summary.unavailableCount, 105);
+  assert.equal(discovery.summary.unavailableCount, 102);
   assert.equal(discovery.document.openapi, undefined);
   assert.equal(discovery.document.paths, undefined);
   assert.equal(discovery.document.definitions, undefined, 'Discovery does not copy the full protocol bundle.');
-  assert.ok(discovery.operations.every(operation => operation.deferred && operation.unavailableReason));
-  assert.deepEqual(inspectServiceSchema(document, source.id, new Set(['codex:turn/start'])).operations,
-    inspected.operations.filter(operation => operation.id === 'codex:turn/start'));
+  assert.ok(discovery.operations.every(operation => operation.deferred && !operation.fields.length && operation.rpc === undefined));
+  const model = inspectServiceSchema(document, source.id, new Set(['codex:turn/start'])).operations[0];
+  assert.equal(model.protocol, 'json-rpc'); assert.equal(model.rpc.method, 'turn/start');
+  assert.equal(model.unavailableReason, undefined); assert.ok(model.fields.some(field => field.location === 'params'));
   assert.equal((await readServiceSchema('openai')).openapi, '3.1.0', 'The separate OpenAI HTTP schema remains available.');
 });
 

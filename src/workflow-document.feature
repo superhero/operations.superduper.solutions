@@ -255,3 +255,11 @@ Feature: Local workflow documents
 
   Scenario: Named connection styles retain legacy appearance and round trip
     Then named connection styles survive export while legacy flags retain their appearance
+
+  @coverage-gaps
+  Scenario: Native graph editors require the current matching schema group
+    Then native graph panels preserve parameterless methods and refuse stale or mismatched property editors
+
+  @coverage-gaps
+  Scenario: Persisted Docker bindings cannot change operation identity
+    Then workflow imports retain Docker bindings only on their reviewed operation identity

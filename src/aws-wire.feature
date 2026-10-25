@@ -3,6 +3,13 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @aws-wire
 Feature: Reviewed AWS target JSON and Action Version wire protocols
+  @coverage-gaps
+  Scenario: Logical models retain exact target and signing contracts
+    Then AWS logical profiles reject malformed models and preserve empty target requests
+
+  @coverage-gaps
+  Scenario: XML envelopes remain shallow and exact on every status
+    Then STS decoders reject deep envelopes and unreviewed success and error fields
 
   Scenario: Pinned AWS corrections retain native identities and independent residual limits
     Then AWS wire corrections preserve native sources and expose only the reviewed four methods

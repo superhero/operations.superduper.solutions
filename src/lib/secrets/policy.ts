@@ -85,6 +85,8 @@ function validateOperation(operation: Operation): void
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
   if (operation.awsWire !== undefined) { if (!validAwsWireModel(operation)) throw new VaultError("PERMISSION"); }
   else validateCredentialPath(operation.path, true);
+  if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
+  if (operation.security?.some(alternative => !Array.isArray(alternative))) throw new VaultError("PERMISSION");
   if (operation.privatePath !== undefined) {
     if (operation.privatePath !== "telegram-bot" || !/^(?:GET|POST)$/.test(operation.method)
       || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path)
@@ -92,10 +94,8 @@ function validateOperation(operation: Operation): void
   } else if (operation.security?.some(option => option.some(scheme => scheme.path !== undefined))) throw new VaultError("PERMISSION");
   if (operation.security !== undefined && !operation.privatePath)
   {
-    if (!Array.isArray(operation.security)) throw new VaultError("PERMISSION");
     if (operation.security.length && !operation.security.some(supportedSecurityAlternative)) throw new VaultError("PERMISSION");
     const validatedSecurity = operation.security.map(alternative => {
-      if (!Array.isArray(alternative)) throw new VaultError("PERMISSION");
       return alternative.map(scheme => {
         if (scheme?.kind !== "unsupported") return scheme;
         if (typeof scheme.reason !== "string" || !scheme.reason.trim() || scheme.reason.length > 4096

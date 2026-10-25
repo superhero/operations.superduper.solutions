@@ -12,7 +12,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
 import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
 import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
@@ -136,9 +136,11 @@ for (const source of sources) {
     throw new Error('S3 files require requalification before updating the pinned native source.');
   if (source.profile === 'aws-wire-protocols' && sha(json) !== awsWireSources[source.id])
     throw new Error('AWS wire protocols require requalification before updating the pinned native source.');
+  if (source.id === 'gcp-bigquery' && sha(json) !== bigqueryJobSourceSha256)
+    throw new Error('BigQuery job metadata requires requalification before updating the pinned native source.');
   if (source.id === 'gcp-storage' && sha(json) !== googleStorageMediaSourceSha256)
     throw new Error('Google Storage media requires requalification before updating the pinned native source.');
-  const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
+  const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
     : source.profile === 'azure-eventgrid-auth' ? [azureEventGridManagementAuth]

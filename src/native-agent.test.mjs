@@ -7,7 +7,7 @@ import { Before, After, Then } from '@cucumber/cucumber';
 import { nativeAgentFixture } from '../tests/native-agent.fixture.mjs';
 import { NativeRuntimeBroker } from './lib/secrets/native-runtime.ts';
 import { NativeAgentBroker } from './lib/secrets/native-agent.ts';
-import { nativeLoginParams, nativeWorkflowParams } from './lib/native-agent-contract.ts';
+import { nativeLoginParams, nativeWorkflowParams, nativeRpcId } from './lib/native-agent-contract.ts';
 import { nativeRuntimeProfile } from './lib/native-runtime-contract.ts';
 import { VaultError } from './lib/secrets/types.ts';
 import { nativeVaultFixture } from '../tests/native-vault.fixture.mjs';
@@ -136,8 +136,13 @@ Then('early native login completion is matched and a foreign completion is rejec
 Then('native workflow management keeps credentials private and rejects stale runtime selections', async function () {
   const v = await setup(this), vault = await nativeVaultFixture(v.f); this.nativeAgentVaults.push(vault);
   const selections = await vault.workflowSelections(), paired = await vault.session.pairNativeRuntime(vault.input, vault.selection);
+  await vault.session.disconnectNativeRuntime(nativeReference(paired)); await wait(() => v.f.stops === v.f.starts);
+  const sibling = await vault.session.pairNativeRuntime({ ...vault.input, label: 'Sibling native profile' }, vault.selection);
+  await vault.session.disconnectNativeRuntime(nativeReference(sibling)); await wait(() => v.f.stops === v.f.starts);
+  const siblingBefore = (await vault.session.nativeConnections()).find(connection => connection.id === sibling.id);
   const enabled = await vault.session.enableNativeWorkflow(nativeReference(paired), selections);
   assert.equal(enabled.revision, 2); assert.match(enabled.workflowFingerprint, /^[a-f0-9]{64}$/);
+  assert.deepEqual((await vault.session.nativeConnections()).find(connection => connection.id === sibling.id), siblingBefore);
   const notices = [], login = vault.session.loginNativeRuntime(nativeReference(enabled), selections, { type: 'chatgptDeviceCode' }, undefined, value => notices.push(value));
   await wait(() => notices.some(value => value.kind === 'login')); v.f.finishLogin(); let connected = await login;
   assert.equal(connected.accountType, 'chatgpt'); assert.equal(connected.revision, 3);
@@ -145,6 +150,8 @@ Then('native workflow management keeps credentials private and rejects stale run
   connected = await vault.session.loginNativeRuntime(nativeReference(connected), selections,
     { type: 'apiKey', credentialId: apiKeys.find(value => value.label === 'Codex provider key').id });
   assert.equal(connected.accountType, 'apiKey'); assert.equal(connected.revision, 4);
+  assert.deepEqual((await vault.session.nativeConnections()).find(connection => connection.id === sibling.id), siblingBefore,
+    'Logging into one profile preserves every field of its sibling under the same pairing key.');
   const start = selections.find(value => value.operation.rpc.method === 'thread/start');
   await assert.rejects(vault.session.executeNativeRuntime(nativeReference(enabled), selections, start, {}), error => error.code === 'CONFLICT');
   const malformed = structuredClone(selections); malformed[0].operation.fields.push({ key: 'forged' });
@@ -170,6 +177,10 @@ Then('native workflow management keeps credentials private and rejects stale run
   assert.equal(JSON.stringify(vault.storage.state).includes(v.f.key), false);
   assert.equal(JSON.stringify(vault.storage.state).includes('vault-native-secret-9182'), false);
   assert.equal(JSON.stringify(vault.storage.state).includes('native-vault-provider-key-9182'), false);
+  await vault.session.put(null, { id: vault.keyId, label: 'Reclassified native pairing key', kind: 'bearer', value: v.f.key });
+  assert.equal(await vault.session.copyCredential(vault.keyId), v.f.key);
+  assert.deepEqual(await vault.session.nativeConnections(), []);
+  await assert.rejects(vault.session.executeNativeRuntime(nativeReference(connected), selections, start, {}), { code: 'CONFLICT' });
 });
 
 Then('a native graph runs through parameters and typed terminal result ports without HTTP', async function () {
@@ -239,4 +250,217 @@ Then('a cancelled native account confirmation does not publish login success', a
   assert.equal(saved.revision, enabled.revision); assert.equal(saved.accountType, 'none');
   assert.equal(saved.identity.accountEpoch, enabled.identity.accountEpoch);
   assert.equal(v.f.frames.some(value => value.method === 'account/logout'), false);
+});
+
+Then('native text inputs and login credentials reject malformed bounds before dispatch', async () => {
+  for (const value of [null, [], 'text']) {
+    assert.throws(() => nativeWorkflowParams('thread/start', value)); assert.throws(() => nativeLoginParams(value));
+  }
+  for (const model of [1, '', ' ', 'x'.repeat(129), 'model\u0000name']) assert.throws(() => nativeWorkflowParams('thread/start', { model }));
+  assert.throws(() => nativeWorkflowParams('thread/resume', { threadId: '../foreign' }));
+  for (const input of [null, [], Array(17).fill({ type: 'text', text: 'x' }), [{ type: 'image', text: 'x' }],
+    [{ type: 'text', text: ' ' }], [{ type: 'text', text: 1 }], [{ type: 'text', text: 'é'.repeat(12289) }]])
+    assert.throws(() => nativeWorkflowParams('turn/start', { threadId: 'thread_1', input }));
+  for (const apiKey of [1, '', ' ', 'x'.repeat(4097), 'key\nvalue']) assert.throws(() => nativeLoginParams({ type: 'apiKey', apiKey }));
+  for (const [id, valid] of [[0, true], [1, true], [-1, false], [1.5, false], [null, false], ['', false]]) assert.equal(nativeRpcId(id), valid);
+  const source = await readServiceSchema('codex'), operation = method => nativeRpcOperation(scopeNativeRpcSchema(source, method), 'codex:' + method);
+  const turn = operation('turn/start'), thread = operation('thread/start'), valid = { 'params:threadId': 'thread_1', 'params:input': '[{"type":"text","text":"hello"}]' };
+  for (const [values, fieldKey] of [[{ ...valid, extra: 'x' }, 'extra'], [{ 'params:threadId': 'thread_1' }, 'params:input'],
+    [{ ...valid, 'params:input': '{' }, 'params:input'], [{ ...valid, 'params:input': null }, 'params:input'],
+    [{ ...valid, 'params:input': '[{"type":"text","text":" "}]' }, 'params:input']])
+    assert.throws(() => prepareNativeRequest(turn, values), error => error.fieldKey === fieldKey);
+  assert.throws(() => prepareNativeRequest(thread, { 'params:model': ' ' }), error => error.fieldKey === 'params:model');
+  assert.throws(() => prepareNativeRequest({ ...thread, protocol: 'http' }, {}), /Unsupported native/);
+  assert.throws(() => prepareNativeRequest({ ...thread, rpc: { ...thread.rpc, version: '0.164.0' } }, {}), /Unsupported native/);
+  assert.deepEqual(prepareNativeRequest(thread, {}), { protocol: 'json-rpc', method: 'thread/start', params: {} });
+  const params = { threadId: 'thread_1', input: [{ type: 'text', text: 'hello' }] }, cloned = nativeWorkflowParams('turn/start', params);
+  cloned.input[0].text = 'changed'; assert.equal(params.input[0].text, 'hello');
+});
+
+// Inject the broker's public transport port to deliver hostile private events.
+function controlledAgent(options = {}) {
+  const v = { notices: [], frames: [], replies: [], closed: 0, identity: { runtimeId: randomUUID(), generation: randomUUID(), accountEpoch: randomUUID(),
+    version: '0.163.0', configuration: 'a'.repeat(64), workspace: 'b'.repeat(64) } };
+  v.connection = { id: randomUUID(), host: 'https://native.example.test', identity: v.identity, accountType: 'apiKey' };
+  const transport = { async agent(_id, _host, _key, _fingerprint, _identity, _guard, events) {
+    v.events = events; options.connect?.(v); return v.peer;
+  }, close() { if (!v.closed++) v.events?.closed(); } };
+  v.peer = { identity: v.identity, scope: { connectionId: v.connection.id }, expiresAt: Date.now() + (options.expiresMs ?? 5000),
+    async request(method, params) { v.frames.push({ method, params });
+      if (options.request) return options.request(method, params, v);
+      return method === 'turn/start' ? { turn: { id: 'turn_1' } } : { thread: { id: 'thread_1' } };
+    }, reply(id, result) { v.replies.push({ id, result }); } };
+  v.agent = new NativeAgentBroker(transport);
+  v.guard = async () => { await options.guard?.(v); };
+  v.execute = (method = 'turn/start', signal) => v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), method,
+    method === 'turn/start' ? { threadId: 'thread_1', input: [{ type: 'text', text: 'hello' }] } : {}, v.guard, signal, notice => v.notices.push(notice));
+  v.login = (input, signal) => v.agent.login(v.connection, 'K'.repeat(43), 'c'.repeat(64), input, v.guard, signal, notice => v.notices.push(notice));
+  v.emit = frame => { try { return v.events.frame(frame, v.identity); } catch { transport.close(); return false; } };
+  v.close = () => transport.close(); return v;
+}
+
+Then('native workflow events reject foreign malformed and excessive approvals without authorizing commands', async () => {
+  const approval = { id: 'approval_1', method: 'item/commandExecution/requestApproval', params: {
+    threadId: 'thread_1', turnId: 'turn_1', itemId: 'item_1', command: 'pwd' } };
+  for (const mutate of [
+    frame => frame.params.threadId = 'foreign', frame => frame.id = -1, frame => frame.params.turnId = 'foreign',
+    frame => frame.params.itemId = '', frame => frame.params.command = '', frame => frame.params.command = 1,
+    frame => frame.params.cwd = 1, frame => frame.params.reason = 'x'.repeat(8193),
+    ...['grantRoot', 'networkApprovalContext', 'proposedExecpolicyAmendment', 'proposedNetworkPolicyAmendments', 'environmentId'].map(key => frame => frame.params[key] = {}),
+    frame => frame.params.kind = 'fileChange', frame => frame.method = 'unsupported/request',
+  ]) {
+    const v = controlledAgent(), run = v.execute(), failed = assert.rejects(run, { code: 'NATIVE_UNKNOWN' });
+    await wait(() => v.notices.some(value => value.kind === 'running'));
+    const frame = structuredClone(approval); mutate(frame); assert.equal(v.emit(frame), false); await failed;
+    assert.equal(v.notices.some(value => value.kind === 'approval'), false); assert.deepEqual(v.replies, []);
+  }
+  for (const duplicate of [true, false]) {
+    const v = controlledAgent(), run = v.execute(), failed = assert.rejects(run, { code: 'NATIVE_UNKNOWN' });
+    await wait(() => v.notices.length);
+    for (let index = 0; index < (duplicate ? 1 : 8); index++) assert.equal(v.emit({ ...approval, id: 'approval_' + index }), true);
+    assert.equal(v.emit({ ...approval, id: duplicate ? 'approval_0' : 'approval_8' }), false); await failed; assert.deepEqual(v.replies, []);
+  }
+});
+
+Then('native terminal results and account confirmations cannot claim success with malformed authority', async () => {
+  for (const params of [{ threadId: 'thread_1' }, { threadId: 'thread_1', turn: { id: '' } },
+    { threadId: 'thread_1', turn: { id: 'foreign', items: [], status: 'completed' } },
+    { threadId: 'thread_1', turn: { id: 'turn_1', items: {}, status: 'completed' } },
+    { threadId: 'thread_1', turn: { id: 'turn_1', items: [], status: 'inProgress' } }]) {
+    const v = controlledAgent(), run = v.execute(), failed = assert.rejects(run, { code: 'NATIVE_UNKNOWN' });
+    await wait(() => v.notices.length); v.emit({ method: 'turn/completed', params }); await failed;
+  }
+  for (const [method, result] of [['turn/start', {}], ['thread/start', { thread: { id: '../foreign' } }]]) {
+    const v = controlledAgent({ request: () => result }); await assert.rejects(v.execute(method), { code: 'AUTHORIZATION' }); assert.ok(v.closed);
+  }
+  const loggedOut = controlledAgent(); loggedOut.connection.accountType = 'none'; await assert.rejects(loggedOut.execute('thread/start'), { code: 'AUTHORIZATION' });
+  assert.deepEqual(loggedOut.frames, []);
+  const closed = controlledAgent({ connect: v => v.close() }); await assert.rejects(closed.execute('thread/start'), { code: 'NATIVE_UNKNOWN' });
+  const failed = controlledAgent({ request() { throw new Error('opaque private detail'); } });
+  await assert.rejects(failed.execute('thread/start'), error => error.code === 'NATIVE_UNKNOWN' && !error.message.includes('opaque private'));
+});
+
+Then('native login rejects unsafe instructions failed completion and secret echoes', async () => {
+  for (const result of [null, { type: 'apiKey' }, { type: 'chatgpt', loginId: '' },
+    ...[1, 'x'.repeat(8193), 'http://auth.example.test', 'https://user:secret@auth.example.test'].map(authUrl => ({ type: 'chatgpt', loginId: 'login_1', authUrl })),
+    ...[1, '', 'x'.repeat(129)].map(userCode => ({ type: 'chatgptDeviceCode', loginId: 'login_1', userCode, verificationUrl: 'https://auth.example.test' }))]) {
+    const type = result?.type === 'chatgptDeviceCode' ? 'chatgptDeviceCode' : 'chatgpt';
+    const v = controlledAgent({ request: () => result }); await assert.rejects(v.login({ type }), { code: 'AUTHORIZATION' });
+    assert.deepEqual(v.notices, []); assert.ok(v.closed);
+  }
+  const v = controlledAgent({ request: () => ({ type: 'chatgpt', loginId: 'login_1', authUrl: 'https://auth.example.test' }) });
+  const run = v.login({ type: 'chatgpt' }), failed = assert.rejects(run, { code: 'AUTHORIZATION' }); await wait(() => v.notices.length);
+  v.emit({ method: 'account/login/completed', params: { loginId: 'login_1', success: false } }); await failed;
+  for (const summary of [{ account: null, requiresOpenaiAuth: true }, { account: { type: 'chatgpt' }, requiresOpenaiAuth: true }, { account: { type: 'apiKey' } }]) {
+    const owner = controlledAgent({ request: method => method === 'account/login/start' ? { type: 'apiKey' } : summary });
+    await assert.rejects(owner.login({ type: 'apiKey', apiKey: 'provider-private-canary' }), { code: 'AUTHORIZATION' });
+  }
+  let release;
+  const secret = controlledAgent({ request: method => method === 'account/login/start' ? new Promise(resolve => { release = resolve; })
+    : { account: { type: 'apiKey' }, requiresOpenaiAuth: true } });
+  const login = secret.login({ type: 'apiKey', apiKey: 'provider-private-canary' });
+  await wait(() => release); assert.equal(secret.emit({ method: 'account/login/completed', params: { loginId: 'provider-private-canary', success: true } }), false);
+  release({ type: 'apiKey' }); await assert.rejects(login, { code: 'NATIVE_UNKNOWN' });
+});
+
+Then('native early login events and authority updates retain exact ownership', async () => {
+  for (const mode of ['success', 'duplicate', 'foreign', 'malformed', 'authority']) {
+    const v = controlledAgent({ request(method, _params, owner) {
+      if (method !== 'account/login/start') return { account: { type: 'chatgpt' }, requiresOpenaiAuth: true };
+      const completed = { method: 'account/login/completed', params: { loginId: mode === 'foreign' ? 'foreign' : 'login_1', success: true } };
+      if (mode === 'malformed') completed.params.success = 'yes';
+      owner.emit(completed);
+      if (mode === 'duplicate') owner.emit(completed);
+      if (mode === 'authority') owner.emit({ type: 'authority', identity: { ...owner.identity, accountEpoch: randomUUID() } });
+      return { type: 'chatgpt', loginId: 'login_1', authUrl: 'https://auth.example.test' };
+    } });
+    if (mode === 'success') assert.equal((await v.login({ type: 'chatgpt' })).accountType, 'chatgpt');
+    else await assert.rejects(v.login({ type: 'chatgpt' }), error => ['AUTHORIZATION', 'NATIVE_UNKNOWN'].includes(error.code));
+  }
+  const idle = controlledAgent(); await idle.execute('thread/start');
+  assert.equal(idle.emit({ method: 'turn/started', params: { threadId: 'thread_1', turn: { id: 'turn_1' } } }), false);
+  assert.ok(idle.closed, 'Events after the active operation ends revoke the transport.');
+  for (const error of [new Error('private login detail'), new VaultError('NETWORK')]) {
+    const unavailable = controlledAgent({ request() { throw error; } });
+    await assert.rejects(unavailable.login({ type: 'apiKey', apiKey: 'provider-private-canary' }),
+      error => error.code === 'NATIVE_UNKNOWN' && !error.message.includes('private login'));
+  }
+});
+
+Then('native active requests expire cancel and recheck approval ownership after asynchronous guards', async () => {
+  const v = controlledAgent({ expiresMs: 100 }), run = v.execute(), failed = assert.rejects(run, { code: 'NATIVE_UNKNOWN' });
+  await wait(() => v.notices.length); await assert.rejects(v.execute('thread/start'), { code: 'CONFLICT' }); await failed; assert.ok(v.closed);
+  const cancel = new AbortController(), cancelled = controlledAgent({ connect() { cancel.abort(); } });
+  await assert.rejects(cancelled.execute('thread/start', cancel.signal), { code: 'CANCELLED' });
+  let closeAtGuard = false;
+  const owner = controlledAgent({ guard: v => { if (closeAtGuard) v.close(); } }), turn = owner.execute(), stopped = assert.rejects(turn, { code: 'NATIVE_UNKNOWN' });
+  await wait(() => owner.notices.length);
+  owner.emit({ id: 0, method: 'item/commandExecution/requestApproval', params: { threadId: 'thread_1', turnId: 'turn_1', itemId: 'item_1', command: 'pwd', kind: 'command' } });
+  closeAtGuard = true; await assert.rejects(owner.agent.reply(owner.connection.id, owner.notices.find(value => value.kind === 'approval').interaction.token, 'accept'), { code: 'PERMISSION' });
+  await stopped; assert.deepEqual(owner.replies, []);
+  for (const closed of [true, false]) {
+    const controller = new AbortController(), late = controlledAgent({ guard: v => { if (closed) v.close(); else controller.abort(); } });
+    await assert.rejects(late.execute('thread/start', controller.signal), { code: closed ? 'NATIVE_UNKNOWN' : 'CANCELLED' });
+  }
+});
+
+Then('native private workflow management rejects incomplete selections and stale or unenabled authority', async function () {
+  const value = await setup(this), v = await nativeVaultFixture(value.f); this.nativeAgentVaults.push(v);
+  const selections = await v.workflowSelections(), paired = await v.session.pairNativeRuntime(v.input, v.selection), reference = nativeReference(paired);
+  await assert.rejects(v.session.enableNativeWorkflow(reference, null), { code: 'PERMISSION' });
+  await assert.rejects(v.session.enableNativeWorkflow(reference, selections.slice(1)), { code: 'PERMISSION' });
+  await assert.rejects(v.session.enableNativeWorkflow(reference, [selections[1], selections[0], ...selections.slice(2)]), { code: 'PERMISSION' });
+  await assert.rejects(v.session.loginNativeRuntime(reference, selections, { type: 'chatgpt' }), { code: 'AUTHORIZATION' });
+  const enabled = await v.session.enableNativeWorkflow(reference, selections), selected = nativeReference(enabled);
+  await assert.rejects(v.session.enableNativeWorkflow(reference, selections), { code: 'CONFLICT' });
+  for (const input of [{ type: 'chatgptAuthTokens' }, { type: 'apiKey', credentialId: randomUUID() }, { type: 'apiKey', credentialId: v.keyId }])
+    await assert.rejects(v.session.loginNativeRuntime(selected, selections, input), { code: 'PERMISSION' });
+  await assert.rejects(v.session.replyNativeRuntime('invalid', randomUUID(), 'accept'), { code: 'INVALID' });
+  await assert.rejects(v.session.replyNativeRuntime(enabled.id, 'invalid', 'accept'), { code: 'INVALID' });
+  await assert.rejects(v.session.replyNativeRuntime(enabled.id, randomUUID(), 'accept'), { code: 'PERMISSION' });
+  await assert.rejects(v.session.executeNativeRuntime(selected, selections, selections[1], {}), { code: 'PERMISSION' });
+  const thread = selections.find(selection => selection.operation.rpc.method === 'thread/start');
+  await assert.rejects(v.session.executeNativeRuntime(selected, selections, thread, { model: value.f.key }), { code: 'REDACTED' });
+  await assert.rejects(v.session.executeNativeRuntime(selected, selections, thread, {}), { code: 'AUTHORIZATION' });
+});
+
+Then('overlapping native connects revoke stale ownership and permit a fresh workflow without replay', async function () {
+  const v = await setup(this, { account: { type: 'apiKey' } }), Socket = v.f.runtime.WebSocket; let first = true, paired = false;
+  v.f.runtime.WebSocket = class extends Socket {
+    constructor(url) { super(url); this.holdPair = first; first = false; }
+    addEventListener(type, listener, options) {
+      return super.addEventListener(type, type === 'message' && this.holdPair ? event => { paired = true; } : listener, options);
+    }
+  };
+  const firstRun = v.execute('thread/start', {}), firstFailure = assert.rejects(firstRun, { code: 'CANCELLED' });
+  await wait(() => paired);
+  const secondRun = v.execute('thread/start', {}), secondFailure = assert.rejects(secondRun, { code: 'NATIVE_UNKNOWN' });
+  await Promise.all([firstFailure, secondFailure]);
+  assert.equal(v.f.frames.some(value => value.method === 'thread/start'), false);
+  assert.match(await v.thread(), /^thread_/);
+  v.transport.clear(); await wait(() => v.f.stops === v.f.starts);
+  assert.equal(v.f.frames.filter(value => value.method === 'thread/start').length, 1);
+});
+
+Then('native private login redacts progress and cancellation after confirmation cannot update its profile', async function () {
+  const value = await setup(this), v = await nativeVaultFixture(value.f); this.nativeAgentVaults.push(v);
+  const selections = await v.workflowSelections(), paired = await v.session.pairNativeRuntime(v.input, v.selection);
+  const enabled = await v.session.enableNativeWorkflow(nativeReference(paired), selections), selected = nativeReference(enabled), notices = [];
+  const entries = await v.session.put(null, { label: 'Device code canary', kind: 'secret', value: 'ABCD-EFGH' });
+  await assert.rejects(v.session.loginNativeRuntime(selected, selections, { type: 'chatgptDeviceCode' }, undefined, notice => notices.push(notice)), { code: 'REDACTED' });
+  assert.deepEqual(notices, []);
+  await v.session.remove(null, entries.find(entry => entry.label === 'Device code canary').id);
+  const cancel = new AbortController(); let confirmedGuards = 0;
+  v.onSchema = descriptor => {
+    if (descriptor.operation.rpc.method === 'account/read' && value.f.frames.filter(frame => frame.method === 'account/read').length >= 2
+      && ++confirmedGuards === 2) cancel.abort();
+  };
+  value.f.finishLogin = undefined;
+  const login = v.session.loginNativeRuntime(selected, selections, { type: 'chatgptDeviceCode' }, cancel.signal);
+  const failed = assert.rejects(login, { code: 'CANCELLED' }); await wait(() => value.f.finishLogin); value.f.finishLogin(); await failed;
+  assert.equal((await v.session.nativeConnections())[0].revision, enabled.revision);
+  await wait(() => value.f.stops === value.f.starts);
+  const sibling = await v.session.pairNativeRuntime({ ...v.input, label: 'Sibling runtime' }, v.selection);
+  const retained = await v.session.disconnectNativeRuntime(nativeReference(sibling), true);
+  assert.deepEqual(retained.map(connection => connection.id), [enabled.id]);
 });

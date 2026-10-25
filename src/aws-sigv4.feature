@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @aws-sigv4
 Feature: Private AWS Signature Version 4 requests
+  @coverage-gaps
+  Scenario: Signing bounds all supported byte sources before dispatch
+    Then AWS signer bounds every supported byte input and rejects invalid key material before signing
   Scenario: Published Smithy header signatures match final payload bytes
     Then AWS signatures match published empty string binary and temporary credential vectors
 

@@ -44,3 +44,31 @@ Feature: Optional confidential Jira connection with private host ownership
 
   Scenario: Workflow routes and inputs remain bounded to the supported consumer
     Then Jira unsupported routes forged metadata oversized responses and cancelled dispatch never broaden the companion
+
+  @coverage-gaps
+  Scenario: Saved Jira capabilities retain key and application authority
+    Then Jira saved capabilities reject malformed records missing keys and foreign application authority
+
+  @coverage-gaps
+  Scenario: Malformed companion replies cannot become selected Jira grants
+    Then Jira rejects malformed companion configuration consent sites and selected grants
+
+  @coverage-gaps
+  Scenario: Jira pending capacity cancellation and response envelopes remain bounded
+    Then Jira bounds pending consent and rejects cancelled streams or forged resource envelopes
+
+  @coverage-gaps
+  Scenario: Jira completion preserves names authority and privacy
+    Then Jira completion rejects duplicate names stale reconnect and private access key labels
+
+  @coverage-gaps
+  Scenario: Clearing Jira authority abandons unreachable companion work
+    Then Jira clear abandons pending claims and active calls when the companion becomes unavailable
+
+  @coverage-gaps
+  Scenario: Jira selection preserves capacity and current managed state
+    Then Jira selection retains capacity and rejects missing state or wrong reconnect authority
+
+  @coverage-gaps
+  Scenario: Late Jira cancellation and nullable inputs cannot publish new results
+    Then Jira late selection or reconnect cancellation and nullable expand never publish a new result

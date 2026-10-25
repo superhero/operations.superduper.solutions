@@ -10,8 +10,8 @@ import { VaultError } from './lib/secrets/types.ts';
 import { newVaultKey, recoveryKey, randomBase64, wrapVaultKey } from './lib/secrets/crypto.ts';
 import { sealSnapshot } from './lib/secrets/format.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
-import { GitlabOAuthBroker } from './lib/secrets/gitlab-oauth.ts';
-import { gitlabCallbackUri, gitlabOAuthAlternative } from './lib/secrets/gitlab-config.ts';
+import { GitlabOAuthBroker, validateGitlabTokenState, managedGitlabSecrets } from './lib/secrets/gitlab-oauth.ts';
+import { gitlabCallbackUri, gitlabOAuthAlternative, validateGitlabInput, validateGitlabMetadata, validateGitlabRedirect } from './lib/secrets/gitlab-config.ts';
 import { waitGitlabCallback, oauthCallbackMessage } from './lib/secrets/oauth-popup.ts';
 import { httpConnectionReference, formatHttpToken } from './lib/secrets/http-connections.ts';
 import { readServiceSchema, readServiceSchemaUpstream, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
@@ -113,7 +113,9 @@ Then('GitLab public authorization uses independent state and the published S256 
 });
 
 Then('the GitLab current user profile uses its native OAuth2 alternative and fixed authority', async () => {
-  const raw = await readServiceSchemaUpstream('gitlab'), doc = await readServiceSchema('gitlab'); assert.deepEqual(doc, raw);
+  const raw = await readServiceSchemaUpstream('gitlab'), doc = await readServiceSchema('gitlab');
+  assert.deepEqual(doc.paths['/api/v4/user'], raw.paths['/api/v4/user']);
+  assert.deepEqual(doc.components.securitySchemes.oauth2, raw.components.securitySchemes.oauth2);
   assert.equal(createHash('sha256').update(JSON.stringify(raw)).digest('hex'), 'e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3');
   assert.equal(serviceSchemaDescriptors.find(item => item.id === 'gitlab').version, '19.5');
   const models = inspectServiceSchema(doc, 'gitlab', new Set(['gitlab:getApiV4User'])).operations;
@@ -267,4 +269,145 @@ Then('GitLab ignores foreign callback messages and a severed opener can return t
     await assert.rejects(interrupted, error => error instanceof VaultError && error.code === 'CANCELLED');
     assert.equal(channels[1].closed, true);
   } finally { controller.abort(); cancelled.abort(); vi.useRealTimers(); vi.unstubAllGlobals(); }
+});
+
+Then('GitLab rejects malformed saved state registrations and noncanonical callback authority', async () => {
+  const f = await fixture(); await f.connect(); const state = JSON.parse((await f.session.records())[0].oauthState);
+  for (const changed of [null, [], { ...state, extra: true }, { ...state, refreshPending: false }, { ...state, username: 'bad user' },
+    { ...state, expiresAt: 0 }, { ...state, accessToken: 'short' }, { ...state, refreshToken: 'bad\nvalue' }, { ...state, accessToken: 'a'.repeat(4097) }])
+    assert.throws(() => validateGitlabTokenState(JSON.stringify(changed)), refused);
+  assert.throws(() => validateGitlabTokenState(JSON.stringify(state), { ...state.oauth, accountId: '99' }), refused);
+  assert.deepEqual(managedGitlabSecrets('not-json'), []); assert.deepEqual(managedGitlabSecrets('{}'), []);
+  assert.deepEqual(managedGitlabSecrets(JSON.stringify({ profile: state.profile, accessToken: '', refreshToken: 7 })), []);
+  for (const redirect of [undefined, 'x'.repeat(2049), origin+'/?operations_oauth_callback=gitlab#fragment', 'https://user:pass@operations.example.test/?operations_oauth_callback=gitlab'])
+    assert.throws(() => validateGitlabRedirect(redirect), refused);
+  for (const registration of [{ ...input, extra: true }, { ...input, clientId: 'bad' }, { ...input, label: '\u0000' }])
+    assert.throws(() => validateGitlabInput(registration, origin), refused);
+  assert.throws(() => validateGitlabMetadata({ ...state.oauth, accountId: '0' }), refused);
+  assert.equal(gitlabOAuthAlternative({ ...f.descriptor, operation: { ...operation, security: [] } }), undefined);
+  for (const record of [{ ...f.connection, expiresAt: Date.now()+1000 }]) {
+    const records = await f.session.records(); records[0].connections = [record]; await assert.rejects(f.session.save(records), refused);
+  }
+});
+
+Then('GitLab bounds pending consent and cancels authorization when its generation changes', async () => {
+  const f = await fixture(), broker = new GitlabOAuthBroker({ now: () => f.now, applicationOrigin: () => origin });
+  const tasks = []; for (let i = 0; i < 8; i++) tasks.push(await broker.begin(input, f.descriptor));
+  await assert.rejects(broker.begin(input, f.descriptor), error => error.code === 'LIMIT');
+  f.now += 300001; const fresh = await broker.begin(input, f.descriptor); assert.ok(fresh.id);
+  assert.throws(() => broker.take(tasks[0].id, { state: tasks[0].state, code }), refused);
+  broker.clear(); assert.throws(() => broker.take(fresh.id, { state: fresh.state, code }), refused);
+  const digest = crypto.subtle.digest.bind(crypto.subtle);
+  const spy = vi.spyOn(crypto.subtle, 'digest').mockImplementationOnce(async (...args) => { broker.clear(); return digest(...args); });
+  try { await assert.rejects(broker.begin(input, f.descriptor), error => error.code === 'CANCELLED'); } finally { spy.mockRestore(); }
+  for (const applicationOrigin of ['', 'null']) await assert.rejects(new GitlabOAuthBroker({ applicationOrigin: () => applicationOrigin }).begin(input, f.descriptor), refused);
+  vi.stubGlobal('location', { origin });
+  try { const fallback = new GitlabOAuthBroker(), task = await fallback.begin(input, f.descriptor); fallback.cancel(task.id); }
+  finally { vi.unstubAllGlobals(); }
+});
+
+Then('GitLab malformed provider replies and cancellation never publish exchanged credentials', async () => {
+  const f = await fixture();
+  for (const mode of ['no-body', 'stream-error', 'oversized', 'invalid-json', 'invalid-token', 'record-limit', 'string-account', 'network', 'expired', 'pre-abort', 'guard-abort', 'post-abort']) {
+    const controller = new AbortController(); let checks = 0, calls = 0;
+    const broker = new GitlabOAuthBroker({ now: () => f.now, applicationOrigin: () => origin, fetchRequest: async url => {
+      calls++;
+      if (mode === 'network') throw new Error(code);
+      if (mode === 'post-abort' && String(url).endsWith('/api/v4/user')) controller.abort();
+      if (String(url).endsWith('/api/v4/user')) return Response.json({ id: '42', username: 'gitlab_user' });
+      if (mode === 'no-body') return new Response(null, { headers: { 'Content-Type': 'application/json' } });
+      if (mode === 'stream-error') return new Response(new ReadableStream({ start(controller) { controller.error(new Error(code)); } }), { headers: { 'Content-Type': 'application/json' } });
+      if (mode === 'oversized') return Response.json({ value: 'a'.repeat(65536) });
+      if (mode === 'invalid-json') return new Response('{', { headers: { 'Content-Type': 'application/json' } });
+      return Response.json({ access_token: mode === 'invalid-token' ? 'short' : mode === 'record-limit' ? '\\'.repeat(4096) : 'access-token-private-5729',
+        refresh_token: mode === 'record-limit' ? '"'.repeat(4096) : 'refresh-token-private-5729', token_type: 'bearer', expires_in: 3600 });
+    } });
+    const task = await broker.begin(input, f.descriptor), taken = broker.take(task.id, { state: task.state, code });
+    if (mode === 'expired') f.now += 300001;
+    if (mode === 'pre-abort') controller.abort();
+    const result = broker.exchange(taken.pending, code, controller.signal, async () => { if (mode === 'guard-abort' && ++checks === 1) controller.abort(); });
+    if (mode === 'string-account') assert.equal((await result).oauth.accountId, '42');
+    else await assert.rejects(result, error => error instanceof VaultError && !error.message.includes(code));
+    if (['expired', 'pre-abort', 'guard-abort'].includes(mode)) assert.equal(calls, 0);
+  }
+  // An already approved refresh cannot persist a new grant after cancellation.
+  await f.connect(); const saved = JSON.parse((await f.session.records())[0].oauthState), controller = new AbortController(); saved.expiresAt = f.now-1;
+  const broker = new GitlabOAuthBroker({ now: () => f.now, applicationOrigin: () => origin, fetchRequest: f.provider }); let writes = 0;
+  await assert.rejects(broker.ensure('cancel-refresh', saved, controller.signal, async () => {}, async value => { writes++; assert.equal(value.refreshPending, true); controller.abort(); }), error => error.code === 'CANCELLED');
+  assert.equal(writes, 1); assert.equal(f.refreshCalls, 0);
+  const beforeSave = new AbortController(); let checks = 0; writes = 0;
+  await assert.rejects(broker.ensure('cancel-before-save', saved, beforeSave.signal, async () => { if (++checks === 2) beforeSave.abort(); },
+    async value => { writes++; assert.equal(value.refreshPending, true); }), error => error.code === 'CANCELLED');
+  assert.equal(writes, 1); assert.equal(f.refreshCalls, 1);
+});
+
+Then('GitLab reconnect refuses removed authority duplicate labels and private identity echoes', async () => {
+  const f = await fixture(); await f.connect();
+  await assert.rejects(f.begin(input, { ...httpConnectionReference(f.connection), id: crypto.randomUUID() }), refused);
+  const task = await f.begin(input, httpConnectionReference(f.connection)); await f.session.removeConnection(httpConnectionReference(f.connection));
+  await assert.rejects(f.complete(task), refused); assert.deepEqual(await f.session.connections(), []);
+  const duplicate = await fixture(); await duplicate.connect(); await assert.rejects(duplicate.connect(), error => error.code === 'DUPLICATE_KEY');
+  const label = await fixture(); await label.session.put(null, { label: input.label+' reference', kind: 'secret', value: 'ordinary-value' });
+  const consent = await label.begin(); await assert.rejects(label.complete(consent), error => error.code === 'DUPLICATE_KEY');
+  const echo = await fixture(); echo.username = 'GL_ACCESS_PRIVATE_5729_1'; await echo.connect();
+  assert.equal(echo.connection.account, 'GitLab @42'); safe(echo, echo.connection);
+  const exposed = await fixture(), leaked = await exposed.begin({ ...input, label: code });
+  await assert.rejects(exposed.complete(leaked), error => error.code === 'AUTHORIZATION');
+});
+
+Then('GitLab disconnect or missing managed state cannot be undone by a rotating grant', async () => {
+  const f = await fixture(); f.ttl = 60; await f.connect(); const binding = await f.binding(); f.now += 60001;
+  f.onRefresh = () => f.session.removeConnection(httpConnectionReference(f.connection));
+  await assert.rejects(f.execute(binding), refused); assert.equal(f.refreshCalls, 1); assert.equal(f.resourceReads, 0);
+  assert.deepEqual(await f.session.connections(), []);
+  const missing = await fixture(); await missing.connect(); const selected = await missing.binding(), records = await missing.session.records();
+  delete records[0].oauthState; await missing.session.save(records);
+  await assert.rejects(missing.binding(), refused); await assert.rejects(missing.execute(selected), refused);
+  const wrong = await approvedOperation({ ...operation, path: '/api/v4/projects' }, 'https://gitlab.com');
+  await assert.rejects(missing.session.beginGitlabOAuth(input, wrong), error => error.code === 'PERMISSION');
+  const ambient = await fixture(), broker = new GitlabOAuthBroker({ now: () => ambient.now, applicationOrigin: () => origin });
+  vi.stubGlobal('fetch', ambient.provider);
+  try {
+    const task = await broker.begin(input, ambient.descriptor), taken = broker.take(task.id, { state: task.state, code });
+    assert.equal((await broker.exchange(taken.pending, code, undefined, async () => {})).oauth.accountId, '42');
+  } finally { vi.unstubAllGlobals(); }
+});
+
+Then('GitLab bounds renewal cache retention and rejects evicted one use grant snapshots', async () => {
+  const f = await fixture(); await f.connect(); const initial = JSON.parse((await f.session.records())[0].oauthState);
+  const broker = new GitlabOAuthBroker({ now: () => f.now, applicationOrigin: () => origin, fetchRequest: f.provider }), originals = [], saved = new Map();
+  for (let i = 0; i < 129; i++) {
+    const state = { ...initial, refreshToken: 'GL_CACHE_REFRESH_PRIVATE_'+i, expiresAt: f.now-1 }; originals.push(state);
+    f.refreshTokens.set(state.refreshToken, state.oauth.accountId);
+    await broker.ensure('record-'+i, state, undefined, async () => {}, async next => { saved.set(i, next); });
+  }
+  assert.equal(f.refreshCalls, 129);
+  for (const [i, state] of saved) assert.deepEqual(await broker.ensure('record-'+i, state, undefined, async () => {}, async () => { assert.fail('A current grant was persisted again'); }), state);
+  await assert.rejects(broker.ensure('record-0', originals[0], undefined, async () => {}, async next => { assert.equal(next.refreshPending, true); }), refused);
+  assert.equal(f.refreshCalls, 130); assert.equal(f.resourceReads, 0);
+});
+
+Then('GitLab cancellation after exchange or authority reading cannot commit or replay consent', async () => {
+  for (const phase of ['exchange-return', 'authority-read']) {
+    const f = await fixture(), task = await f.begin(), controller = new AbortController(), before = structuredClone(f.storage.state);
+    const exchange = GitlabOAuthBroker.prototype.exchange; let exchanged = false, readSpy;
+    const spy = vi.spyOn(GitlabOAuthBroker.prototype, 'exchange').mockImplementation(async function (...args) {
+      const state = await exchange.apply(this, args); exchanged = true;
+      if (phase === 'exchange-return') controller.abort(); return state;
+    });
+    if (phase === 'authority-read') {
+      const records = f.session.records.bind(f.session);
+      readSpy = vi.spyOn(f.session, 'records').mockImplementation(async (...args) => {
+        const result = await records(...args); if (exchanged) controller.abort(); return result;
+      });
+    }
+    try {
+      await assert.rejects(f.session.completeGitlabOAuth(task.id, { state: task.state, code }, controller.signal), error => error.code === 'CANCELLED');
+      assert.equal(spy.mock.calls.length, 1);
+    } finally { readSpy?.mockRestore(); spy.mockRestore(); }
+    assert.deepEqual(f.storage.state, before); assert.deepEqual(await f.session.connections(), []);
+    assert.equal(f.authCalls, 1); assert.equal(f.identityReads, 1); assert.equal(f.resourceReads, 0);
+    await assert.rejects(f.session.completeGitlabOAuth(task.id, { state: task.state, code }, controller.signal), refused);
+    assert.equal(f.authCalls, 1); assert.equal(f.events.length, 2);
+  }
 });

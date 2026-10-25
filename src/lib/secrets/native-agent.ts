@@ -74,12 +74,12 @@ export class NativeAgentBroker {
     const kind = frame.method === "item/commandExecution/requestApproval" ? "command" : undefined;
     if (!kind || params.grantRoot != null || params.networkApprovalContext != null || params.proposedExecpolicyAmendment != null
       || params.proposedNetworkPolicyAmendments != null || params.environmentId != null || params.kind != null && params.kind !== "command") throw new VaultError("PERMISSION");
-    if (kind === "command" && (typeof params.command !== "string" || !params.command.trim())) throw new VaultError("AUTHORIZATION");
+    if (typeof params.command !== "string" || !params.command.trim()) throw new VaultError("AUTHORIZATION");
     for (const value of [params.command, params.cwd, params.reason])
       if (value != null && (typeof value !== "string" || value.length > 8192)) throw new VaultError("LIMIT");
     const token = crypto.randomUUID(); state.approvals.set(token, { id: frame.id, turnId: params.turnId });
     active.progress?.({ kind: "approval", interaction: { token, kind, threadId: active.turn.threadId, turnId: params.turnId,
-      itemId: params.itemId, ...(typeof params.command === "string" ? { command: params.command } : {}),
+      itemId: params.itemId, command: params.command,
       ...(typeof params.cwd === "string" ? { cwd: params.cwd } : {}), ...(typeof params.reason === "string" ? { reason: params.reason } : {}) } });
     return true;
   }

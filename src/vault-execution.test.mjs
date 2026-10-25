@@ -4,17 +4,218 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { Then } from "@cucumber/cucumber";
+import { vi } from "vitest";
 import { approvedOperation, canonicalPolicyValue, normalizeCredentialOrigin, validateApprovedOperation } from "./lib/secrets/policy.ts";
 import { CredentialResponseError, executeCredentialed } from "./lib/secrets/execution.ts";
 import { InputValidationError } from "./lib/operation-input.ts";
-import { extractOperations } from "./lib/catalog.ts";
+import { extractOperations, updateCatalogs } from "./lib/catalog.ts";
+import { catalogs } from "./lib/catalog-registry.ts";
+import { createWorkflowExecution } from "./lib/workflow-execution.ts";
+import { cloudflareOrigin, cloudflareUploadContracts, configureCloudflareUpload } from "./lib/cloudflare-upload.ts";
+import { CloudflareUploadSessions } from "./lib/secrets/cloudflare-upload.ts";
+import { createHttpConnection, createGitlabHttpConnection, httpConnectionReference } from "./lib/secrets/http-connections.ts";
 import { VaultError, vaultLimits } from "./lib/secrets/types.ts";
 import { vaultVariablePlaceholder } from "./lib/secrets/variables.ts";
+import { assertRequestDeadline } from "../tests/workflow-deadline.fixture.mjs";
 
 const canary = "credential-CANARY-17";
 const bearer = { name: "Bearer", kind: "bearer", header: "Authorization" };
 const key = { name: "Key", kind: "apiKey", header: "X-Api-Key" };
 const queryKey = { name: "Query", kind: "apiKey", query: "api_key" };
+
+function uploadOperation(profile, security) {
+  const [method, path] = cloudflareUploadContracts[profile];
+  const operation = { id: 'upload-guards:'+profile, name: profile, description: '', group: 'Upload guards', method, path,
+    fields: [], bodyRequired: false, security };
+  configureCloudflareUpload(operation, profile); return operation;
+}
+
+Then('private approval rejects malformed security and authentication outside its reviewed protocol profile', async () => {
+  for (const security of [null, {}, [[], {}]]) await assert.rejects(() => approvedOperation({ ...baseOperation(), security }, 'https://api.example.test'), denied);
+  const unavailable = [{ name: 'LegacyHeader', kind: 'unsupported', reason: 'This provider header requires an unavailable signing profile.', header: 'X-Legacy-Key' },
+    { name: 'LegacyQuery', kind: 'unsupported', reason: 'This provider query requires an unavailable signing profile.', query: 'legacy_key' }];
+  const mixed = await fixture({ ...baseOperation(), security: [[bearer], ...unavailable.map(scheme => [scheme])] });
+  assert.deepEqual(mixed.descriptor.operation.security.slice(1), unavailable.map(scheme => [scheme]));
+  let sent = 0;
+  const fetchRequest = async (_url, init) => { sent++; assert.equal(new Headers(init.headers).get('Authorization'), 'Bearer '+canary); return response(); };
+  assert.equal((await execute(mixed, { fetchRequest })).response.status, 200);
+  for (const [index, scheme] of unavailable.entries()) {
+    await assert.rejects(() => executeCredentialed(mixed.descriptor, {}, { fingerprint: mixed.descriptor.fingerprint, alternative: index+1,
+      credentials: { [scheme.name]: mixed.credentials[0].id } }, mixed.credentials, { assertCurrent() {}, fetchRequest }), denied);
+  }
+  assert.equal(sent, 1, 'Unavailable choices remain visible without becoming executable authentication.');
+  for (const invalid of [
+    ...[42, '', '   ', 'x'.repeat(4097)].map(reason => ({ ...unavailable[1], reason })),
+    { ...unavailable[1], extra: true }, { name: 'Legacy', kind: 'unsupported', reason: 'Unavailable.', cookie: 'session' },
+  ]) await assert.rejects(() => approvedOperation({ ...baseOperation(), security: [[bearer], [invalid]] }, mixed.descriptor.origin), denied);
+
+  const authId = crypto.randomUUID(), otherId = crypto.randomUUID(), header = 'X-Api-Key';
+  const headerDescriptor = await approvedOperation({ ...baseOperation(), security: [[key]], fields: [field('header', header)] }, 'https://api.example.test');
+  const headerBinding = { fingerprint: headerDescriptor.fingerprint, alternative: 0, credentials: { Key: authId } };
+  const records = [{ id: authId, label: 'Selected key', kind: 'secret', value: canary, grants: [] },
+    { id: otherId, label: 'Other private input', kind: 'secret', value: 'different-private-key-5729', grants: [] }];
+  let headerCalls = 0;
+  const values = { ['header:'+header]: vaultVariablePlaceholder };
+  const headerOptions = credentialId => ({ variables: [{ key: 'header:'+header, path: [], credentialId }], assertCurrent() {},
+    fetchRequest: async (_url, init) => { headerCalls++; assert.equal(new Headers(init.headers).get(header), canary); return response(); } });
+  await assert.rejects(() => executeCredentialed(headerDescriptor, values, headerBinding, records, headerOptions(otherId)), denied);
+  assert.equal(headerCalls, 0, 'A different private field cannot overwrite the selected authentication key.');
+  const retained = await executeCredentialed(headerDescriptor, values, headerBinding, records, headerOptions(authId));
+  assert.equal(headerCalls, 1); assert.equal(retained.request.headers?.[header], undefined);
+  assert.equal(JSON.stringify(retained).includes(canary), false);
+  const account = [{ name: 'api_token', kind: 'bearer', header: 'Authorization' }];
+  const legacy = [{ name: 'api_email', kind: 'apiKey', header: 'X-Auth-Email' }, { name: 'api_key', kind: 'apiKey', header: 'X-Auth-Key' }];
+  assert.ok((await approvedOperation(uploadOperation('workers-session', [legacy]), cloudflareOrigin)).fingerprint);
+  const wrongAccount = uploadOperation('workers-session', [[{ ...account[0], name: 'unreviewed_token' }]]);
+  const wrongSession = uploadOperation('pages-check', [[{ name: 'unreviewed_session', kind: 'cloudflare-upload', header: 'Authorization', profile: 'pages' }]]);
+  const standalone = { ...baseOperation(), security: [[{ name: 'assets_jwt', kind: 'cloudflare-upload', header: 'Authorization', profile: 'workers' }]] };
+  for (const operation of [wrongAccount, wrongSession, standalone]) await assert.rejects(() => approvedOperation(operation, cloudflareOrigin), denied);
+  await assert.rejects(() => approvedOperation({ ...baseOperation(), s3Files: 'get-object' }, 'https://api.example.test'), denied);
+  await assert.rejects(() => approvedOperation(baseOperation(), 'https://api.telegram.org'), denied);
+});
+
+Then('private uploads require a session manager and a qualified reference and cancel before accepting a response', async () => {
+  const operation = uploadOperation('workers-session', [[{ name: 'api_token', kind: 'bearer', header: 'Authorization' }]]);
+  const descriptor = await approvedOperation(operation, cloudflareOrigin), id = crypto.randomUUID();
+  const credentials = [{ id, label: 'Upload key', kind: 'bearer', value: canary, grants: [] }];
+  const binding = { fingerprint: descriptor.fingerprint, alternative: 0, credentials: { api_token: id } };
+  let calls = 0;
+  const options = { assertCurrent() {}, fetchRequest: async () => { calls++; return Response.json({}); } };
+  await assert.rejects(() => executeCredentialed(descriptor, {}, binding, credentials, options), denied);
+  const consumer = await approvedOperation(uploadOperation('pages-check', [[{ name: 'pages_upload_token', kind: 'cloudflare-upload', header: 'Authorization', profile: 'pages' }]]), cloudflareOrigin);
+  const manager = new CloudflareUploadSessions(), clear = vi.spyOn(manager, 'clear');
+  try {
+    await assert.rejects(() => executeCredentialed(consumer, {}, { alternative: 0, fingerprint: consumer.fingerprint,
+      credentials: { pages_upload_token: { username: id, password: id } } }, credentials, { ...options, uploadSessions: manager }), denied);
+    assert.equal(calls, 0);
+    const controller = new AbortController(); let checks = 0;
+    await assert.rejects(() => executeCredentialed(descriptor, { 'path:account_id': 'a'.repeat(32), 'path:script_name': 'fixture', 'body:manifest': '{}' },
+      binding, credentials, { ...options, uploadSessions: manager, signal: controller.signal,
+        assertCurrent() { if (++checks === 2) controller.abort(); } }), error => error.code === 'CANCELLED');
+    assert.equal(calls, 1); assert.equal(checks, 2); assert.ok(clear.mock.calls.length >= 2);
+  } finally { clear.mockRestore(); manager.clear(); }
+});
+
+Then('private OAuth signing and final response acceptance stop when their owner cancels', async () => {
+  const scheme = { name: 'OAuth', kind: 'oauth1', header: 'Authorization', profile: 'x-hmac-sha1' };
+  const descriptor = await approvedOperation({ ...baseOperation(), path: '/2/users/me', security: [[scheme]] }, 'https://api.x.com');
+  const parts = ['consumerKey', 'consumerSecret', 'accessToken', 'tokenSecret'];
+  const credentials = parts.map(name => ({ id: crypto.randomUUID(), label: name, kind: 'secret', value: 'private-oauth-'+name+'-5729', grants: [] }));
+  const reference = Object.fromEntries(parts.map((name, index) => [name, credentials[index].id]));
+  const binding = { fingerprint: descriptor.fingerprint, alternative: 0, credentials: { OAuth: reference } };
+  let dispatched = 0;
+  const fetchRequest = async () => { dispatched++; return Response.json({ ok: true }); };
+  await assert.rejects(() => executeCredentialed(descriptor, {}, { ...binding, credentials: { OAuth: credentials[0].id } }, credentials,
+    { assertCurrent() {}, fetchRequest }), denied);
+  const controller = new AbortController();
+  await assert.rejects(() => executeCredentialed(descriptor, {}, binding, credentials,
+    { signal: controller.signal, assertCurrent() { controller.abort(); }, fetchRequest }), error => error.code === 'CANCELLED');
+  assert.equal(dispatched, 0);
+  const ordinary = await fixture(), late = new AbortController(); let checks = 0;
+  await assert.rejects(() => execute(ordinary, { signal: late.signal, assertCurrent() { if (++checks === 2) late.abort(); }, fetchRequest }),
+    error => error.code === 'CANCELLED');
+  assert.equal(checks, 2); assert.equal(dispatched, 1);
+});
+
+Then('a saved connection that expires during policy confirmation cannot dispatch', async () => {
+  const now = Date.now(), clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+  try {
+    const state = await fixture(), id = crypto.randomUUID(); state.credentials[0].id = id; state.binding.credentials.Bearer = id;
+    const connection = await createHttpConnection({ label: 'Short lived', account: 'Fixture', format: 'schema', expiresAt: now+1000 },
+      state.descriptor, state.binding, state.credentials);
+    state.credentials[0].connections = [connection];
+    state.binding = { fingerprint: state.descriptor.fingerprint, alternative: 0, credentials: {}, connection: httpConnectionReference(connection) };
+    let dispatched = 0;
+    await assert.rejects(() => execute(state, { assertCurrent() { clock.mockReturnValue(now+1001); },
+      fetchRequest: async () => { dispatched++; return response(); } }), denied);
+    assert.equal(dispatched, 0);
+  } finally { clock.mockRestore(); }
+});
+
+async function managedExecutionFixture(now) {
+  const operation = { ...baseOperation(), id: 'managed-gitlab:user', path: '/api/v4/user', security: [[{ name: 'oauth2', kind: 'bearer', header: 'Authorization' }]] };
+  const descriptor = await approvedOperation(operation, 'https://gitlab.com'), id = crypto.randomUUID();
+  const oauth = { profile: 'gitlab-public-pkce-v1', clientId: 'a'.repeat(64), redirectUri: 'https://operations.example.test/?operations_oauth_callback=gitlab',
+    scope: 'read_user', accountId: '42' };
+  const state = { profile: 'gitlab-public-pkce-v1', oauth, username: 'fixture', accessToken: 'managed-access-private-5729',
+    refreshToken: 'managed-refresh-private-5729', expiresAt: now+1000 };
+  const connection = await createGitlabHttpConnection(descriptor, id, 'Managed fixture', state.username, oauth);
+  const credential = { id, label: 'Managed token', kind: 'bearer', value: state.accessToken, oauthState: JSON.stringify(state), grants: [], connections: [connection] };
+  return { descriptor, state, credential, binding: { fingerprint: descriptor.fingerprint, alternative: 0, credentials: {}, connection: httpConnectionReference(connection) } };
+}
+
+Then('managed private execution refuses stale token state account changes and expiry at every acceptance boundary', async () => {
+  for (const failure of ['missing state', 'refresh pending', 'expired state', 'before send', 'wrong account', 'null account', 'array account', 'during response', 'before accept']) {
+    const now = Date.now(), clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+    try {
+      const v = await managedExecutionFixture(now); let calls = 0, checks = 0;
+      if (failure === 'missing state') delete v.credential.oauthState;
+      if (failure === 'refresh pending') v.credential.oauthState = JSON.stringify({ ...v.state, refreshPending: true });
+      if (failure === 'expired state') v.credential.oauthState = JSON.stringify({ ...v.state, expiresAt: now });
+      await assert.rejects(() => executeCredentialed(v.descriptor, {}, v.binding, [v.credential], {
+        assertCurrent() { checks++; if (failure === 'before send' || failure === 'before accept' && checks === 2) clock.mockReturnValue(now+1001); },
+        fetchRequest: async (_url, init) => {
+          calls++; assert.equal(new Headers(init.headers).get('Authorization'), 'Bearer '+v.state.accessToken);
+          if (failure === 'during response') clock.mockReturnValue(now+1001);
+          return Response.json(failure === 'wrong account' ? { id: 99 } : failure === 'null account' ? null : failure === 'array account' ? [] : { id: 42 });
+        },
+      }), error => error.code === 'AUTHORIZATION' && !JSON.stringify(error).includes(v.state.accessToken) && !JSON.stringify(error).includes(v.state.refreshToken), failure);
+      assert.equal(calls, ['missing state', 'refresh pending', 'expired state', 'before send'].includes(failure) ? 0 : 1, failure);
+    } finally { clock.mockRestore(); }
+  }
+});
+
+Then('the default workflow executor forwards native and Docker calls to their selected private bridge', async () => {
+  const nativeModule = await import('./lib/secrets/native-workflow-executor.ts');
+  const dockerModule = await import('./lib/secrets/docker-client.ts');
+  const nativeResult = { request: { protocol: 'json-rpc', method: 'thread/start', params: {} },
+    response: { protocol: 'json-rpc', result: { thread: { id: 'thread_fixture' } } } };
+  const dockerResult = { request: { method: 'GET', path: '/containers/json', query: {} },
+    response: { status: 200, statusText: 'OK', headers: {}, body: [] } };
+  const nativeBridge = vi.spyOn(nativeModule, 'executeNativeWorkflow').mockResolvedValue(nativeResult);
+  const dockerBridge = vi.spyOn(dockerModule, 'executeDockerWorkflow').mockResolvedValue(dockerResult);
+  try {
+    const executor = createWorkflowExecution(), values = {}, controller = new AbortController(), progress = () => {};
+    const reference = { id: crypto.randomUUID(), revision: 1, fingerprint: 'a'.repeat(64) };
+    const nativeBinding = { runtime: reference, fingerprint: 'b'.repeat(64) }, dockerBinding = { host: reference, fingerprint: 'c'.repeat(64) };
+    const native = { id: 'codex:thread/start', method: 'RPC', path: 'thread/start', protocol: 'json-rpc' };
+    const docker = { id: 'docker:ContainerList', method: 'GET', path: '/containers/json' };
+    assert.equal(await executor.executeNative(native, values, nativeBinding, controller.signal, progress), nativeResult);
+    assert.deepEqual(nativeBridge.mock.calls, [[native, values, nativeBinding, controller.signal, progress]]);
+    assert.equal(await executor.executeDocker(docker, values, dockerBinding, controller.signal), dockerResult);
+    assert.deepEqual(dockerBridge.mock.calls, [[docker, values, dockerBinding, controller.signal]]);
+    const failure = new Error('The selected paired runtime is unavailable.');
+    nativeBridge.mockRejectedValueOnce(failure); dockerBridge.mockRejectedValueOnce(failure);
+    await assert.rejects(() => executor.executeNative(native, values, nativeBinding, controller.signal, progress), error => error === failure);
+    await assert.rejects(() => executor.executeDocker(docker, values, dockerBinding, controller.signal), error => error === failure);
+    assert.equal(nativeBridge.mock.calls.length, 2); assert.equal(dockerBridge.mock.calls.length, 2);
+  } finally { nativeBridge.mockRestore(); dockerBridge.mockRestore(); }
+});
+
+Then('workflow credential connections cannot authorize public alternatives or an unsecured upload profile', async () => {
+  const source = { openapi: '3.1.0', info: { title: 'Execution guard fixture', version: '1' }, servers: [{ url: 'https://guard.example.test' }],
+    components: { securitySchemes: { Bearer: { type: 'http', scheme: 'bearer' } } }, paths: {
+      '/public': { get: { operationId: 'public' } },
+      '/optional': { get: { operationId: 'optional', security: [{}, { Bearer: [] }] } },
+      '/pages/assets/check-missing': { post: { operationId: 'upload', 'x-operations-cloudflare-upload': 'pages-check' } },
+    } };
+  const previous = catalogs, models = extractOperations(source, 'execution-guards');
+  const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => assert.fail('A refused execution reached HTTP.'));
+  let privateCalls = 0;
+  try {
+    updateCatalogs([...previous, { id: 'execution-guards', name: 'Execution guards', file: 'guards.json', document: source, groups: [],
+      execution: { kind: 'http', origin: source.servers[0].url } }]);
+    const executor = createWorkflowExecution(async () => { privateCalls++; assert.fail('A refused selection reached private execution.'); });
+    for (const operation of models.filter(value => value.id !== 'execution-guards:upload')) {
+      const descriptor = await approvedOperation(operation, source.servers[0].url);
+      const context = { runId: crypto.randomUUID(), nodeId: operation.id, binding: { fingerprint: descriptor.fingerprint, alternative: 0, credentials: {},
+        connection: { id: crypto.randomUUID(), revision: 1, fingerprint: 'a'.repeat(64) } } };
+      await assert.rejects(() => executor.execute(operation, {}, undefined, context), error => error.code === 'PERMISSION');
+    }
+    await assert.rejects(() => executor.execute(models.find(value => value.id === 'execution-guards:upload'), {}), error => error.code === 'PERMISSION');
+    assert.equal(privateCalls, 0); assert.equal(fetch.mock.calls.length, 0);
+  } finally { fetch.mockRestore(); updateCatalogs(previous); }
+});
 const baseOperation = () => ({ id: "schema:read", name: "Read", description: "", group: "Items", method: "GET", path: "/items",
   fields: [], bodyRequired: false, security: [[bearer]] });
 const field = (location, name, extra = {}) => ({ key: `${location}:${name}`, location, name, label: name,
@@ -417,34 +618,36 @@ Then("credentialed response case {string} preserves safe HTTP semantics", async 
 
 Then("credential execution stops {string} without accepting stale results", async name => {
   const state = await fixture();
-  const controller = new AbortController();
-  let fetchCalls = 0, currentCalls = 0;
-  const timeoutOriginal = AbortSignal.timeout;
-  let timeoutMilliseconds;
-  if (name === "before dispatch") controller.abort();
-  if (name === "timed out") AbortSignal.timeout = milliseconds => { timeoutMilliseconds = milliseconds; return AbortSignal.abort(); };
-  try {
-    await assert.rejects(() => execute(state, { signal: controller.signal,
-      assertCurrent() { currentCalls++; if (name === "policy before send" || name === "policy before accept" && currentCalls === 2) throw new VaultError("PERMISSION"); },
-      fetchRequest: async () => {
-        fetchCalls++;
-        if (name === "while fetching") { controller.abort(); return response(); }
-        if (name === "transport failure") throw new Error(canary);
-        if (name === "redirected response") { const value = response(); Object.defineProperty(value, "redirected", { value: true }); return value; }
-        if (name === "response read failure") return new Response(new ReadableStream({ start(stream) { stream.error(new Error(canary)); } }));
-        if (name === "while streaming") return new Response(new ReadableStream({ pull() { controller.abort(); } }));
-        return response();
-      },
-    }), error => {
-      assert.ok(error instanceof VaultError);
-      assert.equal(error.code, name.startsWith("policy") ? "PERMISSION" : ["before dispatch", "while fetching", "while streaming"].includes(name) ? "CANCELLED" : "NETWORK");
-      assert.doesNotMatch(error.message, new RegExp(canary));
-      assert.equal(error.cause, undefined);
+  if (name === "timed out") {
+    await assertRequestDeadline(fetchRequest => execute(state, { assertCurrent() {}, fetchRequest }), error => {
+      assert.ok(error instanceof VaultError); assert.equal(error.code, "NETWORK");
+      assert.doesNotMatch(error.message, new RegExp(canary)); assert.equal(error.cause, undefined);
       return true;
     });
-    assert.equal(fetchCalls, ["before dispatch", "policy before send", "timed out"].includes(name) ? 0 : 1);
-    if (name === "timed out") assert.equal(timeoutMilliseconds, 15_000);
-  } finally { AbortSignal.timeout = timeoutOriginal; }
+    return;
+  }
+  const controller = new AbortController();
+  let fetchCalls = 0, currentCalls = 0;
+  if (name === "before dispatch") controller.abort();
+  await assert.rejects(() => execute(state, { signal: controller.signal,
+    assertCurrent() { currentCalls++; if (name === "policy before send" || name === "policy before accept" && currentCalls === 2) throw new VaultError("PERMISSION"); },
+    fetchRequest: async () => {
+      fetchCalls++;
+      if (name === "while fetching") { controller.abort(); return response(); }
+      if (name === "transport failure") throw new Error(canary);
+      if (name === "redirected response") { const value = response(); Object.defineProperty(value, "redirected", { value: true }); return value; }
+      if (name === "response read failure") return new Response(new ReadableStream({ start(stream) { stream.error(new Error(canary)); } }));
+      if (name === "while streaming") return new Response(new ReadableStream({ pull() { controller.abort(); } }));
+      return response();
+    },
+  }), error => {
+    assert.ok(error instanceof VaultError);
+    assert.equal(error.code, name.startsWith("policy") ? "PERMISSION" : ["before dispatch", "while fetching", "while streaming"].includes(name) ? "CANCELLED" : "NETWORK");
+    assert.doesNotMatch(error.message, new RegExp(canary));
+    assert.equal(error.cause, undefined);
+    return true;
+  });
+  assert.equal(fetchCalls, ["before dispatch", "policy before send"].includes(name) ? 0 : 1);
 });
 
 Then("credential response limit handles {string} before fully buffering", async name => {

@@ -120,6 +120,12 @@ checks do not establish those guarantees; record provider qualification separate
 Coverage includes pure crypto, session, policy, lifecycle and binding logic.
 Browser storage, worker/client adapters and type-only RPC declarations sit outside
 the source coverage scope; their observable behavior is exercised in browsers.
+This includes the native/Docker model-hydration and vault-RPC client bridges and
+OAuth popup delivery. Their production-worker contracts are exercised by the
+[native runtime](../../../tests/browser/native-runtime.feature),
+[native agent](../../../tests/browser/native-agent.feature),
+[Docker](../../../tests/browser/docker-native.feature) and
+[OAuth](../../../tests/browser/vault.feature) browser scenarios.
 
 ### AT Protocol public OAuth
 

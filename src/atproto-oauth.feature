@@ -35,3 +35,31 @@ Feature: Private browser AT Protocol OAuth connections
     Then Bluesky OAuth rejects a substituted proof key and a saved audience mismatch
   Scenario: Saved connection capacity remains bounded during consent
     Then Bluesky OAuth preserves the connection limit before and after interactive consent
+
+  @coverage-gaps
+  Scenario: Saved proof records retain registration and audience authority
+    Then Bluesky saved proof state and registrations reject malformed or mismatched authority
+
+  @coverage-gaps
+  Scenario: Pending authorization and development runtimes preserve private transport
+    Then Bluesky pending authorization expires and its loopback and ambient runtimes retain private transport
+
+  @coverage-gaps
+  Scenario: Malformed discovery and resource replies remain private
+    Then Bluesky malformed discovery and resource replies never publish private preferences
+
+  @coverage-gaps
+  Scenario: Consent completion requires current authority and available names
+    Then Bluesky reconnect and consent reject stale references duplicate names and cancelled callbacks
+
+  @coverage-gaps
+  Scenario: The SDK transport cannot broaden private request authority
+    Then Bluesky private transport policy rejects forged SDK requests and repeated refresh grants
+
+  @coverage-gaps
+  Scenario: Session continuation retains account registration and proof identity
+    Then Bluesky continuation policy preserves the selected account registration and proof key
+
+  @coverage-gaps
+  Scenario: Refresh failures and disconnect cannot restore removed authority
+    Then Bluesky invalid refresh replies and disconnect during rotation cannot recreate authority

@@ -23,3 +23,7 @@ Feature: Comma-separated primitive query arrays
 
   Scenario: The pinned GitLab checkpoints array prepares its native request
     Then native GitLab checkpoints preserve source identity and prepare channel arrays
+
+  @coverage-gaps
+  Scenario: Mixed query forms preserve credentials and omit absent optional members
+    Then mixed comma-separated and ordinary queries preserve their wire values and reject credential collisions

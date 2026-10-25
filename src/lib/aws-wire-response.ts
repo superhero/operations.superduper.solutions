@@ -27,11 +27,12 @@ export function decodeAwsWireResponse(profile: AwsWireProfile, text: string, med
   if (new TextEncoder().encode(text).byteLength > maxStsXmlBytes || /<!|<\?(?!xml(?:\s|\?>))/i.test(text)
     || /&(?!(?:amp|lt|gt|apos|quot|#(?:\d+|x[0-9a-fA-F]+));)/.test(text)
     || (text.match(/</g)?.length ?? 0) > 64 || XMLValidator.validate(text, { allowBooleanAttributes: false }) !== true) invalid();
-  let parsed: unknown;
+  let parsed: Record<string, unknown>;
   try { parsed = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", ignoreDeclaration: true,
     parseTagValue: false, parseAttributeValue: false, trimValues: true, processEntities: true, htmlEntities: true, maxNestedTags: 8 }).parse(text); }
   catch { invalid(); }
-  if (!object(parsed) || Object.keys(parsed).length !== 1) invalid();
+  // Self-closing siblings can pass XMLValidator, so verify the parsed envelope too.
+  if (Object.keys(parsed).length !== 1) invalid();
   const root = parsed[ok ? "GetCallerIdentityResponse" : "ErrorResponse"];
   if (!object(root) || root["@xmlns"] !== namespace) invalid();
   if (ok) {

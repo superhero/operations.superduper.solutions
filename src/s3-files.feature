@@ -3,6 +3,14 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @s3-files
 Feature: Signed bounded S3 object files
+  @coverage-gaps
+  Scenario: Object contracts reject malformed authority metadata and stale models
+    Then S3 rejects malformed addressing metadata and stale logical contracts at their public boundaries
+
+  @coverage-gaps
+  Scenario: A success status cannot replace the reviewed object response
+    Then S3 rejects a nonstandard success without releasing object bytes
+
   Scenario: Native object corrections preserve source provenance and identities
     Then S3 corrects only reviewed object byte contracts and retains all native methods
 

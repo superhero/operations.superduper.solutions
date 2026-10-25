@@ -365,11 +365,18 @@ of Google's [Discovery descriptions](https://developers.google.com/discovery/v1/
 The manifest links each contract to its provider Discovery endpoint. Available
 versions follow the preferred provider version where the conversion exists;
 Discovery Engine currently uses the available `v1beta` conversion. These snapshots
-do not imply coverage of every current provider method. Source OAuth requirements
-and URI templates remain intact, including explicit execution limits where the
-application cannot represent them. Some conversions declare two OAuth credential
-schemes that both use `Authorization`; these operations retain an explicit
-duplicate-credential limitation rather than becoming anonymously executable.
+do not imply coverage of every current provider method. Reviewed corrections retain
+the published source and OAuth scopes while allowing Google's equivalent grant
+schemes as alternatives. Other unsupported contracts retain explicit limitations.
+
+BigQuery `jobs.insert` accepts JSON Job metadata at
+`https://bigquery.googleapis.com/bigquery/v2/projects/{projectId}/jobs` through
+private bearer execution. The reviewed correction fixes the conversion's binary
+media type and preserves its original request contract. Configuration and job
+reference remain structured JSON inputs; result-only properties stay out of the
+request. Google's separate upload URI, multipart/related and resumable job uploads
+remain unsupported. Verification uses synthetic dispatch, without creating a live
+job. See the [provider contract](https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert).
 
 ### Microsoft Azure
 
