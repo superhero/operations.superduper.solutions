@@ -3375,10 +3375,14 @@
       {
         "id": "google-oauth-alternatives",
         "version": 1
+      },
+      {
+        "id": "google-storage-media",
+        "version": 1
       }
     ],
-    "effectiveSha256": "a9a4230a7c6b7bb9c6f8c65a1afac43ce3ea58bb8de9b851e25971e5389fbe7f",
-    "effectiveBytes": 237374
+    "effectiveSha256": "17f613d1c470c8a7fc64f3121208af3f6962b237e2b6c0dcbf5732d17aa9aa7d",
+    "effectiveBytes": 240909
   },
   {
     "id": "gcp-cloudtasks",
