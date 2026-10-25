@@ -245,9 +245,9 @@
         {/if}
         {@const entries = groupOperations(group)}
         {#if entries.length}
-          <ul class="catalog-operations">
+          <ul class="catalog-operations tree-children">
             {#each entries as operation (operation.id)}
-              <li data-operation-id={operation.id} data-operation-name={operation.name}>
+              <li class="tree-branch" data-operation-id={operation.id} data-operation-name={operation.name}>
                 {#if operation.unavailableReason}
                   <button type="button" class="catalog-operation-action"
                     aria-disabled="true" aria-haspopup="dialog" aria-label={`Add to workflow: ${operation.name}`}>
@@ -289,9 +289,9 @@
       {#if workflowError}
         <p role="alert" class="hint">{workflowError}</p><button type="button" class="text-button" onclick={onWorkflowRetry}>Retry</button>
       {:else if !workflows.length}<p class="hint">Save a workflow to use it here.</p>{/if}
-      <ul class="catalog-operations">
+      <ul class="catalog-operations tree-children">
         {#each workflows as workflow (workflow.id)}
-          <li data-workflow-id={workflow.id}>
+          <li class="tree-branch" data-workflow-id={workflow.id}>
             <button class="catalog-operation-action" type="button" aria-label={`Add to workflow: ${workflow.name}`}
               onclick={() => navigate(() => onWorkflowSelect(workflow))}>
               <span class="catalog-name">{workflow.name}</span>
