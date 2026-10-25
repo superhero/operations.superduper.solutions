@@ -10,10 +10,14 @@ import { validateWorkflowFileData, type WorkflowFileData } from "./workflow-file
 import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
+import { nativeRpcMethod } from "./native-rpc.ts";
 import { processingDefinition, validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
 import { isWorkflowLineStyle, type WorkflowLineStyle } from "./workflow-line-style.ts";
 
 export type OperationData = {
+  protocol?: "json-rpc";
+  /** Advisory saved identity; current schema policy remains authoritative. */
+  rpc?: { version: string; method: string };
   operationId: string;
   name: string;
   description: string;
@@ -31,6 +35,8 @@ export type WorkflowField = {
   required: boolean;
   description: string;
   connectable: boolean;
+  /** A documented unrestricted JSON schema, distinct from an unavailable type. */
+  jsonValue?: true;
   array?: ArrayBounds;
   itemType?: WorkflowField["type"];
   endpoint?: { nodeId: string; fieldId: string };
@@ -123,6 +129,19 @@ function uniqueIds(items: Array<{ id: string }>): void
 function operationData(value: Record<string, unknown>): OperationData
 {
   const method = text(value.method, "Operation method", 7);
+  if (value.protocol === "json-rpc") {
+    const rpc = record(value.rpc);
+    const version = text(rpc.version, "RPC version", 64), nativeMethod = text(rpc.method, "RPC method", 512);
+    const operationId = text(value.operationId, "Operation ID", 512), path = text(value.path, "Operation path", 2048);
+    if (method !== "RPC" || !/^[0-9]+\.[0-9]+\.[0-9]+$/.test(version) || !nativeRpcMethod.test(nativeMethod)
+      || path !== nativeMethod || operationId.indexOf(":") < 1
+      || operationId.slice(operationId.indexOf(":") + 1) !== nativeMethod || value.credentialBinding !== undefined)
+      throw new Error("Invalid native RPC operation identity.");
+    return { operationId, name: text(value.name, "Operation name", 200),
+      description: text(value.description, "Operation description", 4000, true), method, path,
+      protocol: "json-rpc", rpc: { version, method: nativeMethod } };
+  }
+  if (value.protocol !== undefined || value.rpc !== undefined) throw new Error("Unsupported operation protocol.");
   if (!["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE"].includes(method))
     throw new Error(`Unsupported operation method: ${method}.`);
   return {
@@ -163,7 +182,11 @@ function workflowData(value: Record<string, unknown>, extended: boolean): Workfl
       result.itemType = field.itemType as WorkflowField["type"];
     }
     if (field.array !== undefined) result.array = arrayBounds(field.array);
-    if (result.id === "value" || result.type === "Unknown" && result.connectable)
+    if (field.jsonValue !== undefined) {
+      if (field.jsonValue !== true || result.type !== "Unknown") throw new Error("JSON value ports must have an unknown concrete type.");
+      result.jsonValue = true;
+    }
+    if (result.id === "value" || result.type === "Unknown" && result.connectable && !result.jsonValue)
       throw new Error("Unknown fields and structural value ports cannot be mapping handles.");
     if (extended && field.endpoint !== undefined)
     {

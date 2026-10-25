@@ -4,13 +4,14 @@
 
 import { catalogForOperation, type CatalogGroup } from "./catalog-registry.ts";
 import type { Operation } from "./catalog.ts";
+import { nativeRpcOperation, scopeNativeRpcSchema } from "./native-rpc.ts";
 
 type RecordValue = Record<string, unknown>;
 type Group = { id: string; name: string; description: string };
 type Kind = "object" | "map" | "data" | "links" | "link";
 
 export type OperationReport = {
-  catalog: { file: string; title: string; version: string; openapi: string };
+  catalog: { file: string; title: string; version: string; openapi?: string; protocol?: "json-rpc" };
   operationId: string;
   summary: string;
   description: string;
@@ -158,6 +159,13 @@ export function getOperationReport(operation: Operation): OperationReport {
   const catalog = catalogForOperation(operation.id);
   if (!catalog)
     throw new Error(`Schema unavailable for ${operation.id}: its source schema is not registered.`);
+  if (catalog.execution.kind === "json-rpc") {
+    const canonical = nativeRpcOperation(catalog.document, operation.id);
+    const info = catalog.document.info as { title: string; version: string };
+    return { catalog: { file: catalog.file, title: info.title, version: info.version, protocol: "json-rpc" },
+      operationId: canonical.rpc!.method, summary: canonical.name, description: canonical.description,
+      groups: groupPath(catalog.groups, canonical.id), schema: scopeNativeRpcSchema(catalog.document, canonical.rpc!.method), warnings: [] };
+  }
   const { operation: source } = operationAt(catalog.document, operation.path, operation.method);
   const operationId = typeof source.operationId === "string" ? source.operationId : `${operation.method.toUpperCase()} ${operation.path}`;
   if (operation.id !== `${catalog.id}:${operationId}`)

@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import type { Operation } from "./catalog.ts";
+import { nativeRpcOperation } from "./native-rpc.ts";
 import { fileValueType } from "./workflow-file.ts";
 import { defaultProcessingData, type ProcessingKind } from "./workflow-processing.ts";
 import { placeUtilityNode, type WorkflowLayoutNode } from "./workflow-layout.ts";
@@ -33,6 +34,7 @@ const string = (value: unknown, fallback = "") => typeof value === "string" && v
 // Only documented schemas participate. Examples never provide field names or types.
 function resolve(value: unknown, document: Schema, seen: string[] = []): { schema: Schema; seen: string[]; notice?: string }
 {
+  if (value === true) return { schema: { "x-operations-json-value": true }, seen };
   if (!object(value)) return { schema: {}, seen, notice: "Schema not documented" };
   if (value.$ref === undefined) return { schema: value, seen };
   const ref = value.$ref;
@@ -58,7 +60,7 @@ function shape(value: unknown, document: Schema, seen: string[], depth: number, 
   const result = resolve(value, document, seen);
   const schema = result.schema;
   const types = Array.isArray(schema.type) ? schema.type.filter(type => type !== "null") : [schema.type];
-  const type = types.length === 1 && typeof types[0] === "string" ? (binary || schema["x-operations-binary-response"] === true) && types[0] === "string" && schema.format === "binary" ? "Binary" : labels[types[0]]
+  const type = schema["x-operations-json-value"] === true ? "Unknown" : types.length === 1 && typeof types[0] === "string" ? (binary || schema["x-operations-binary-response"] === true) && types[0] === "string" && schema.format === "binary" ? "Binary" : labels[types[0]]
     : schema.type === undefined && object(schema.properties) ? "Object" : undefined;
   const notice = depth > 12 ? "Deeper schema not expanded" : result.notice ||
     (schema.oneOf || schema.anyOf || schema.allOf ? "Alternative or combined schemas not expanded" : undefined) ||
@@ -92,6 +94,7 @@ function project(source: unknown, document: Schema, group: string, label: string
     const field: WorkflowField = {
       id: identity(group, fieldPath), label: string(result.schema.title, name).slice(0, 200), type: result.type, required,
       description: string(result.schema.description).slice(0, 4000), connectable: !result.notice,
+      ...(result.schema["x-operations-json-value"] === true ? { jsonValue: true as const } : {}),
       ...(result.type === "Array" ? { array: schemaArrayBounds(result.schema) } : {})
     };
     fields.push(field);
@@ -230,12 +233,21 @@ export function createOperationGraph(operation: Operation, position: { x: number
   const raw = pathItem[operation.method.toLowerCase()];
   const source = object(raw) ? raw : undefined;
   const nodes: WorkflowDocumentNode[] = [{ id: ownerId, type: "operation", position: { ...position }, data: {
-    operationId: operation.id, name: operation.name, description: operation.description, method: operation.method, path: operation.path
+    operationId: operation.id, name: operation.name, description: operation.description, method: operation.method, path: operation.path,
+    ...(operation.protocol === "json-rpc" && operation.rpc ? { protocol: "json-rpc" as const,
+      rpc: { version: operation.rpc.version, method: operation.rpc.method } } : {})
   } }];
   const edges: WorkflowDocumentEdge[] = [];
   const budget = { fields: 0, panels: 0 };
-  const inputs = inputGroups(operation, source, pathItem, schemaDocument);
+  const inputs = operation.protocol === "json-rpc" ? operation.rpc?.params === undefined ? []
+    : [{ id: "input:params", label: "Parameters", schema: operation.rpc.params }]
+    : inputGroups(operation, source, pathItem, schemaDocument);
   const outputs: { id: string; label: string; schema: unknown }[] = [];
+  if (operation.protocol === "json-rpc" && operation.rpc) {
+    for (const [name, value] of [["result", operation.rpc.result], ["error", operation.rpc.error]] as const)
+      outputs.push({ id: `rpc:${name}`, label: name === "result" ? "Result" : "Error",
+        schema: { type: "object", additionalProperties: false, properties: { [name]: value }, required: [name] } });
+  }
   const responses = object(source?.responses) ? source.responses : {};
   for (const [status, raw] of Object.entries(responses))
   {
@@ -408,28 +420,39 @@ function objectPanel(nodes: WorkflowDocumentNode[], nodeId: string, document: Sc
   if (!Array.isArray(decoded) || decoded.length !== 2 || decoded.some(value => typeof value !== "string")) return;
   const [group, path] = decoded as [string, string];
   if (node.id !== `${owner.id}:${identity(group, path)}` || path && (!path.startsWith("/") || /~(?:[^01]|$)/.test(path))) return;
-  const paths = object(document.paths) ? document.paths : {};
-  const pathItem = resolve(paths[owner.data.path], document);
-  const source = pathItem.schema[owner.data.method.toLowerCase()];
-  if (pathItem.notice || !object(source)) return;
   let value: unknown;
-  if (node.data.direction === "inputs")
-  {
-    if (!path && group !== "input:body") return; // Parameter collections are synthetic objects.
-    const operation: Operation = { ...owner.data, id: owner.data.operationId, group: "", fields: [], bodyRequired: false };
-    value = inputGroups(operation, source, pathItem.schema, document).find(item => item.id === group)?.schema;
-  }
-  else
-  {
-    const match = /^(output|response):([1-5](?:\d\d|XX)|default)(?::(.+))?$/i.exec(group);
-    if (!match || !object(source.responses)) return;
-    if (match[1] === "response") value = responseEnvelope(source.responses[match[2]!], match[3], document);
+  if (owner.data.protocol === "json-rpc") {
+    let rpc;
+    try { rpc = nativeRpcOperation(document, owner.data.operationId).rpc!; } catch { return; }
+    if (node.data.direction === "inputs" && group === "input:params") value = rpc.params;
+    else if (node.data.direction === "outputs" && (group === "rpc:result" || group === "rpc:error")) {
+      const name = group === "rpc:result" ? "result" : "error";
+      value = { type: "object", additionalProperties: false, properties: { [name]: rpc[name] }, required: [name] };
+    } else return;
+  } else {
+    const paths = object(document.paths) ? document.paths : {};
+    const pathItem = resolve(paths[owner.data.path], document);
+    const source = pathItem.schema[owner.data.method.toLowerCase()];
+    if (pathItem.notice || !object(source)) return;
+    if (node.data.direction === "inputs")
+    {
+      if (!path && group !== "input:body") return; // Parameter collections are synthetic objects.
+      const operation: Operation = { id: owner.data.operationId, name: owner.data.name, description: owner.data.description,
+        method: owner.data.method, path: owner.data.path, group: "", fields: [], bodyRequired: false };
+      value = inputGroups(operation, source, pathItem.schema, document).find(item => item.id === group)?.schema;
+    }
     else
     {
-      const response = resolve(source.responses[match[2]!], document);
-      const media = object(response.schema.content) && match[3] ? response.schema.content[match[3]] : undefined;
-      if (response.notice || !object(media)) return;
-      value = media.schema;
+      const match = /^(output|response):([1-5](?:\d\d|XX)|default)(?::(.+))?$/i.exec(group);
+      if (!match || !object(source.responses)) return;
+      if (match[1] === "response") value = responseEnvelope(source.responses[match[2]!], match[3], document);
+      else
+      {
+        const response = resolve(source.responses[match[2]!], document);
+        const media = object(response.schema.content) && match[3] ? response.schema.content[match[3]] : undefined;
+        if (response.notice || !object(media)) return;
+        value = media.schema;
+      }
     }
   }
   let resolved = shape(value, document, [], 0);

@@ -28,8 +28,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {@const data = report.data}
     <dl class="report-metrics">
       <div class="report-metric"><dd class="report-metric-value">{data.catalog.title}</dd><dt class="report-metric-label">Catalog</dt></div>
-      <div class="report-metric"><dd class="report-metric-value">{operation.method}</dd><dt class="report-metric-label">Method</dt></div>
-      <div class="report-metric"><dd class="report-metric-value">{#each operation.path.split("/") as segment, index}{#if index}/<wbr />{/if}{segment}{/each}</dd><dt class="report-metric-label">Path</dt></div>
+      <div class="report-metric"><dd class="report-metric-value">{data.catalog.protocol ? "JSON-RPC" : operation.method}</dd><dt class="report-metric-label">{data.catalog.protocol ? "Protocol" : "Method"}</dt></div>
+      <div class="report-metric"><dd class="report-metric-value">{#each operation.path.split("/") as segment, index}{#if index}/<wbr />{/if}{segment}{/each}</dd><dt class="report-metric-label">{data.catalog.protocol ? "Method" : "Path"}</dt></div>
     </dl>
 
     <section class="report-section" aria-label="Operation metadata">
@@ -39,10 +39,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <dt>Description</dt><dd>{data.description || "—"}</dd>
         <dt>Operation ID</dt><dd>{data.operationId}</dd>
         <dt>Catalog identifier</dt><dd>{operation.id}</dd>
-        <dt>{serverUrls.length > 1 ? "Server URLs" : "Server URL"}</dt><dd>{#each serverUrls as url, index}{#if index}<br />{/if}{url}{:else}—{/each}</dd>
+        {#if !data.catalog.protocol}<dt>{serverUrls.length > 1 ? "Server URLs" : "Server URL"}</dt><dd>{#each serverUrls as url, index}{#if index}<br />{/if}{url}{:else}—{/each}</dd>{/if}
         <dt>File</dt><dd>{data.catalog.file}</dd>
         <dt>Catalog version</dt><dd>{data.catalog.version}</dd>
-        <dt>OpenAPI version</dt><dd>{data.catalog.openapi}</dd>
+        {#if data.catalog.protocol}<dt>Protocol</dt><dd>JSON-RPC</dd>{:else}<dt>OpenAPI version</dt><dd>{data.catalog.openapi}</dd>{/if}
       </dl>
       {#each inputLocations as location (location.key)}
         {@const fields = operation.fields.filter(field => field.location === location.key)}
@@ -78,7 +78,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <section class="report-section" aria-label="Operation JSON schema">
       <h3>Operation JSON schema</h3>
       {#if data.warnings.length}<ul class="schema-warnings" role="status">{#each data.warnings as warning}<li>{warning}</li>{/each}</ul>{/if}
-      <JsonSchemaView value={data.schema} label="Operation OpenAPI JSON" />
+      <JsonSchemaView value={data.schema} label={data.catalog.protocol ? "Operation JSON-RPC schema" : "Operation OpenAPI JSON"} />
     </section>
   {:else}<p role="alert" class="error">{report.error}</p>{/if}
 </section>

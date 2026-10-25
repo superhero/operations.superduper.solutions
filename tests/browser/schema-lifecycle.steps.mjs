@@ -8,6 +8,82 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('native RPC schema storage preserves model identity and publishes complete batches only', async function () {
+  const first = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture, metadata = await api.setupNative();
+    const identity = api.schemaMetadataIdentity(metadata);
+    const discovery = await api.readSchemaDiscovery(metadata.id), before = api.counters();
+    const ids = discovery.operations.map(operation => operation.id);
+    let oversized = false, atomic = false, unpublished = false;
+    try { await api.readSchemaOperations(metadata.id, identity, ids); } catch { oversized = true; }
+    try { await api.readSchemaOperations(metadata.id, identity, [ids[0], 'native-fixture:absent']); } catch { atomic = true; }
+    const valid = await api.readSchemaOperations(metadata.id, identity, [ids[1]]);
+    const forged = { ...valid[0].operation, id: ids[0], name: 'read/0', path: 'read/0', rpc: { ...valid[0].operation.rpc, method: 'read/0' } };
+    const doc = structuredClone(valid[0].document); doc.definitions.ClientRequest.oneOf[0].properties.method.enum = ['read/0'];
+    try { await api.assertCurrentSchema(await api.approvedNativeOperation(forged, doc)); } catch (error) { unpublished = error.code === 'PERMISSION'; }
+    const models = await api.readSchemaOperations(metadata.id, identity, ids.slice(0, 16));
+    const approvals = [];
+    for (const model of models) {
+      const descriptor = await api.approvedNativeOperation(model.operation, model.document);
+      await api.assertCurrentSchema(descriptor); approvals.push(descriptor.fingerprint);
+    }
+    return { before, counters: api.counters(), oversized, atomic, unpublished, identity, approvals,
+      models: models.map(model => ({ protocol: model.protocol, origin: model.origin, rpc: model.operation.rpc,
+        reason: model.operation.unavailableReason, paths: model.document.paths, operations: model.document.definitions.ClientRequest.oneOf.length })) };
+  });
+  assert.equal(first.before.reads['native-fixture'] ?? 0, 0);
+  assert.equal(first.counters.reads['native-fixture'], 1);
+  assert.equal(first.oversized, true); assert.equal(first.atomic, true); assert.equal(first.unpublished, true);
+  assert.equal(first.models.length, 16); assert.equal(new Set(first.approvals).size, 16);
+  for (const model of first.models) {
+    assert.equal(model.protocol, 'json-rpc'); assert.equal(model.origin, undefined); assert.equal(model.paths, undefined);
+    assert.equal(model.rpc.version, '0.163.0'); assert.equal(model.rpc.result, true); assert.equal(model.operations, 1);
+    assert.match(model.reason, /not enabled/);
+  }
+  await this.page.reload();
+  const reloaded = await this.page.evaluate(async () => {
+    const api = await import('/schema-lifecycle-fixture.js');
+    const metadata = await api.setupNative(), identity = api.schemaMetadataIdentity(metadata);
+    const model = await api.readSchemaOperation('native-fixture:read/0', identity);
+    const approved = await api.approvedNativeOperation(model.operation, model.document);
+    await api.assertCurrentSchema(approved);
+    return { identity, fingerprint: approved.fingerprint, rpc: model.operation.rpc };
+  });
+  assert.equal(reloaded.identity, first.identity); assert.equal(reloaded.fingerprint, first.approvals[0]);
+  assert.deepEqual(reloaded.rpc, first.models[0].rpc);
+});
+
+Then('native RPC schema policies reject disabled replaced and forged models', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture, metadata = await api.setupNative();
+    const identity = api.schemaMetadataIdentity(metadata), operationId = 'native-fixture:read/0';
+    const original = await api.readSchemaOperation(operationId, identity);
+    const approved = await api.approvedNativeOperation(original.operation, original.document);
+    await api.assertCurrentSchema(approved);
+    const rejected = async action => { try { await action(); return false; } catch { return true; } };
+    await api.setSchemaDocumentEnabled(metadata.id, false);
+    const disabledPolicy = await rejected(() => api.assertCurrentSchema(approved));
+    const disabledModel = await rejected(() => api.readSchemaOperation(operationId, identity));
+    await api.setSchemaDocumentEnabled(metadata.id, true);
+    await api.setupNative(1);
+    const stalePolicy = await rejected(() => api.assertCurrentSchema(approved));
+    const staleModel = await rejected(() => api.readSchemaOperation(operationId, identity));
+    const current = (await api.listSchemaMetadata()).find(record => record.id === metadata.id);
+    const model = await api.readSchemaOperation(operationId, api.schemaMetadataIdentity(current));
+    const next = await api.approvedNativeOperation(model.operation, model.document);
+    await api.assertCurrentSchema(next);
+    const changed = structuredClone(model.document); changed.definitions.Params.properties.input.minLength = 99;
+    const forged = await api.approvedNativeOperation(model.operation, changed);
+    const forgedPolicy = await rejected(() => api.assertCurrentSchema(forged));
+    await api.editStore('policies', metadata.id, 'delete-policy');
+    const missingPolicy = await rejected(() => api.assertCurrentSchema(next));
+    return { disabledPolicy, disabledModel, stalePolicy, staleModel, forgedPolicy, missingPolicy,
+      old: approved.fingerprint, next: next.fingerprint, version: model.operation.rpc.version };
+  });
+  for (const key of ['disabledPolicy', 'disabledModel', 'stalePolicy', 'staleModel', 'forgedPolicy', 'missingPolicy']) assert.equal(result[key], true, key);
+  assert.notEqual(result.old, result.next); assert.equal(result.version, '0.163.1');
+});
+
 Then('deletion preserves default schemas and rejects enabled uploads before removing any saved data', async function () {
   const evidence = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;

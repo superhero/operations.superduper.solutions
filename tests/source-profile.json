@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/native-rpc.test.mjs",
     "src/jira-confidential-oauth.test.mjs",
     "src/gitlab-oauth.test.mjs",
     "src/cloudflare-upload.test.mjs",
@@ -77,6 +78,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/native-rpc.feature",
     "src/jira-confidential-oauth.feature",
     "src/gitlab-oauth.feature",
     "src/cloudflare-upload.feature",

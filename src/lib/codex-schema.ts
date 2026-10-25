@@ -3,9 +3,10 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
+import { nativeRpcOperation, codexExecutionLimitation } from "./native-rpc.ts";
+export { codexExecutionLimitation } from "./native-rpc.ts";
 
 type Value = Record<string, unknown>;
-export const codexExecutionLimitation = "Codex App Server requires a JSON-RPC connector. Execution is not enabled yet.";
 const object = (value: unknown): Value => value && typeof value === "object" && !Array.isArray(value) ? value as Value : {};
 
 /** Recognize the native protocol bundle, without pretending its methods are HTTP endpoints. */
@@ -40,7 +41,7 @@ export function inspectCodexSchema(document: Value, id: string, selected?: Reado
     seen.add(method);
     const identity = `${id}:${method}`;
     if (selected && !selected.has(identity)) continue;
-    operations.push({ id: identity, name: method, description: typeof source.description === "string" ? source.description : "",
+    operations.push(selected ? nativeRpcOperation(document, identity) : { id: identity, name: method, description: typeof source.description === "string" ? source.description : "",
       group: "Client requests", method: "RPC", path: method, fields: [], bodyRequired: false,
       unavailableReason: codexExecutionLimitation });
   }

@@ -45,7 +45,8 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
         const groups = record.groups ?? (record.displayName
           ? discovery.groups.map(group => ({ ...group, name })) : discovery.groups);
         snapshot.catalogs.push({ catalog: { id: record.id, file: record.file, name, document: discovery.document,
-          groups, execution: { kind: summary.protocol ?? "http", origin: summary.serverUrl } }, operations: discovery.operations, sourceIdentity: identity });
+          groups, execution: summary.protocol === "json-rpc" ? { kind: "json-rpc" }
+            : { kind: "http", origin: summary.serverUrl } }, operations: discovery.operations, sourceIdentity: identity });
       }
     }
     snapshot.records.push({ id: record.id, file: record.file, enabled: record.enabled,

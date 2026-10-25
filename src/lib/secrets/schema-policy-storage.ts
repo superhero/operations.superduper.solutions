@@ -8,7 +8,7 @@ import { VaultError, type ApprovedOperation } from "./types.ts";
 export type SchemaCredentialPolicies = Record<string, { revision: string; fingerprints: string[]; version?: 2; adapterRevision?: string }>;
 
 /** Read the current schema policy without importing Git, trusting page state or creating storage. */
-export async function assertCurrentSchema(descriptor: ApprovedOperation): Promise<void>
+export async function assertCurrentSchema(descriptor: Pick<ApprovedOperation, "fingerprint" | "operation">): Promise<void>
 {
   const id = descriptor?.operation?.id;
   const separator = typeof id === "string" ? id.indexOf(":") : -1;

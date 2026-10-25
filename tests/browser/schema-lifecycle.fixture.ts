@@ -10,6 +10,7 @@ import { inspectServiceSchema } from "../../src/lib/service-catalog.ts";
 import { createSchemaDiscovery } from "../../src/lib/schema-index.ts";
 import { approvedOperation } from "../../src/lib/secrets/policy.ts";
 import { assertCurrentSchema } from "../../src/lib/secrets/schema-policy-storage.ts";
+export { approvedNativeOperation } from "../../src/lib/secrets/native-rpc-policy.ts";
 
 export { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, readSchemaOperations, releaseSchemaDocument,
   schemaMetadataIdentity, setSchemaDocumentEnabled, getSchemaHistory, readSchemaVersion,
@@ -21,6 +22,30 @@ const failures = new Set<string>();
 const adapterRevision = "a".repeat(64);
 export const counters = () => ({ reads: { ...reads }, indexes: { ...indexReads } });
 export const failRead = (id: string) => failures.add(id);
+
+export async function setupNative(version = 0) {
+  const id = "native-fixture", protocolVersion = `0.163.${version}`;
+  const document = { $schema: "http://json-schema.org/draft-07/schema#", info: { title: "Native fixture", version: protocolVersion },
+    "x-codex-app-server": { protocol: "json-rpc", version: protocolVersion }, definitions: {
+      ClientRequest: { oneOf: Array.from({ length: 18 }, (_, index) => ({ type: "object", properties: {
+        id: { $ref: "#/definitions/RequestId" }, method: { type: "string", enum: [`read/${index}`] },
+        params: { $ref: "#/definitions/Params" } }, required: ["id", "method", "params"] })) },
+      RequestId: { type: "integer" }, Params: { type: "object", properties: { input: { type: "string", minLength: version } }, required: ["input"] },
+      ServerRequest: {}, ClientNotification: {}, ServerNotification: {},
+      JSONRPCResponse: { type: "object", properties: { id: { $ref: "#/definitions/RequestId" }, result: true }, required: ["id", "result"] },
+      JSONRPCError: { type: "object", properties: { id: { $ref: "#/definitions/RequestId" }, error: {
+        type: "object", properties: { code: { type: "integer" }, message: { type: "string" } }, required: ["code", "message"] } }, required: ["id", "error"] },
+    } };
+  const bytes = new TextEncoder().encode(JSON.stringify(document));
+  const revision = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
+  const index = createSchemaDiscovery(inspectServiceSchema(document, id), revision);
+  configureSchemaDefaults({ adapterRevision, catalogs: [{ id, name: "Native fixture", file: "native.schema.json", revision, bytes: bytes.length, summary: index.summary }],
+    read: async () => { reads[id] = (reads[id] ?? 0) + 1; return structuredClone(document); },
+    readIndex: async () => structuredClone(index), validate: inspectServiceSchema,
+    inspectOperation: (source, id, operation) => inspectServiceSchema(source, id, new Set([operation.id]), operation).operations[0]!,
+  });
+  return (await listSchemaMetadata()).find(record => record.id === id)!;
+}
 
 export function googleDocument(version = 1, fixed = false): Record<string, any> {
   const scopes = { "https://www.googleapis.com/auth/cloud-platform": "Google Cloud access" };
