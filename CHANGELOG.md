@@ -400,6 +400,14 @@ fix(ui): join assistant and settings header buttons
 
 ```
 
+<!-- changelog-commit:3959024867f9b8e72a3f2db48026ba84fa4e179c -->
+### Commit [`3959024`](https://github.com/superhero/operations.superduper.solutions/commit/3959024867f9b8e72a3f2db48026ba84fa4e179c)
+
+```text
+feat(ui): compact the assistant prompt and controls
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
