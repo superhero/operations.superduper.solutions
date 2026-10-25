@@ -184,7 +184,7 @@ Then('the assistant can inspect add move and connect through the workspace UI bo
   page.on('request', request => { if (request.url().startsWith('https://example.com/')) requests.push(request.url()); });
   await loadAssistantModel(page);
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Inspect and connect this workspace');
-  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Message', exact: true }).press('Enter');
   await expect(panel.getByRole('log')).toContainText('Done');
   const calls = await page.evaluate(() => window.assistantFixture.calls);
   for (const name of ['read_workflow','read_application','read_skill','add_operation','move_nodes','read_ports','connect_nodes'])
@@ -217,7 +217,7 @@ Then('assistant read only mode and unload prevent further workspace edits', asyn
   await panel.getByLabel('Workspace editing', { exact: true }).uncheck();
   await loadAssistantModel(page);
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Inspect but do not edit');
-  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Message', exact: true }).press('Enter');
   await expect(panel.getByRole('log')).toContainText('Done');
   const calls = await page.evaluate(() => window.assistantFixture.calls);
   expect(calls.find(call => call.name === 'add_operation').error).toContain('not available');
@@ -225,7 +225,7 @@ Then('assistant read only mode and unload prevent further workspace edits', asyn
   await expect(page.locator('.svelte-flow__node')).toHaveCount(2);
   await page.evaluate(() => window.assistantFixture.behavior = 'slow');
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Wait');
-  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Message', exact: true }).press('Enter');
   await panel.getByRole('button', { name: 'Stop and unload', exact: true }).click();
   await expect(panel.getByRole('textbox', { name: 'Message', exact: true })).toBeDisabled();
   expect(await page.evaluate(() => window.assistantFixture.terminated)).toBe(1);
@@ -240,7 +240,7 @@ Then('assistant messaging remains usable on a narrow viewport and reports failur
   await page.evaluate(() => window.assistantFixture.behavior = 'error');
   await loadAssistantModel(page);
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Hi');
-  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Message', exact: true }).press('Enter');
   await expect(panel.getByRole('alert')).toContainText('Synthetic inference failure');
   await expect(panel.getByRole('combobox', { name: 'Local model', exact: true })).toBeEnabled();
   consumeExpectedError(this, 'Synthetic inference failure');
@@ -358,7 +358,7 @@ Then('assistant streaming keeps drafts focus and readable tool details', async f
   await expect(input).toBeFocused(); await expect(input).toBeEnabled();
   await input.fill('A draft for the next message');
   const initialComposerY = (await input.boundingBox()).y;
-  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toHaveCount(0);
   await page.evaluate(() => {
     window.assistantFixture.history = [{ role: 'user', text: 'Start a reply' }, { role: 'tool', tool: 'read_operation', text: 'Complete tool details remain available.' },
       { role: 'assistant', text: 'A long streamed answer.\n\n'.repeat(100) }];
@@ -375,7 +375,7 @@ Then('assistant streaming keeps drafts focus and readable tool details', async f
   await expect(details.locator('pre')).toBeVisible();
   await page.evaluate(() => window.assistantFixture.emit({ type: 'done' }));
   await expect(input).toHaveValue('A draft for the next message');
-  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled();
+  await expect(panel.getByRole('status')).toHaveText('Ready for your next message.');
   await input.press('Enter');
   await page.evaluate(() => window.assistantFixture.emit({ type: 'update', messages: [...window.assistantFixture.history, { role: 'user', text: 'A draft for the next message' }, { role: 'assistant', text: 'New reply' }], error: '' }));
   await expect.poll(() => log.evaluate(element => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(2);
@@ -393,7 +393,7 @@ Then('assistant attachments and new conversation respect asynchronous image clea
   const file = { name: 'example.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') };
   await upload.setInputFiles(file);
   await expect(panel.getByRole('img', { name: 'Attachment ready to send', exact: true })).toBeVisible();
-  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Message', exact: true }).press('Enter');
   expect(await page.evaluate(() => window.assistantFixture.lastMessage.images.length)).toBe(1);
   await expect(panel.getByRole('img')).toHaveCount(0);
   await page.evaluate(() => { window.assistantFixture.emit({ type: 'update', messages: [{ role: 'user', text: '', imageCount: 1 }, { role: 'assistant', text: 'Image received' }], error: '' }); window.assistantFixture.emit({ type: 'done' }); });

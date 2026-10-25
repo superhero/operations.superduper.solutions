@@ -42,12 +42,12 @@ Then('Parakeet and Bonsai share the draft without sending during capture', async
   await loadAssistantModel(page); await load(speech);
   await draft(page).fill('Typed introduction.'); await start(page, speech, true);
   await page.evaluate(() => window.speechFixture.partial('First sentence.', 'Unconfirmed words'));
-  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toHaveCount(0);
   await draft(page).press('Enter'); expect(await page.evaluate(() => window.assistantFixture.lastMessage)).toBeUndefined();
   await button(page.locator('.composer-toolbar'), 'Stop dictation').click();
   await expect(draft(page)).toHaveValue('Typed introduction. First sentence. Second sentence.');
   expect(await page.evaluate(() => window.assistantFixture.lastMessage)).toBeUndefined();
-  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  await draft(page).press('Enter');
   await expect.poll(() => page.evaluate(() => window.assistantFixture.lastMessage?.text)).toBe('Typed introduction. First sentence. Second sentence.');
   expect(await page.evaluate(() => window.assistantFixture.calls)).toEqual([]);
   await page.evaluate(() => window.assistantFixture.emit({ type: 'done' }));

@@ -275,7 +275,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <div class="composer-tools">
         <HintButton type="button" class={speechRecording ? "composer-action recording" : "composer-action"} label={speechRecording ? "Stop dictation" : "Dictate"} aria-pressed={speechRecording} disabled={speechBusy && !speechRecording} onclick={() => void toggleDictation()}><MaterialIcon name={speechRecording ? "stop" : "mic"} size={16} /><span>{speechRecording ? "Stop" : "Dictate"}</span></HintButton>
         <HintButton type="button" class="composer-action" label="Assistant configuration" aria-expanded={configurationOpen} aria-controls="assistant-configuration-panel" onclick={() => configurationOpen = !configurationOpen}><MaterialIcon name="tune" size={18} /></HintButton>
-        <HintButton type="submit" class="composer-action send-action" label="Send message" disabled={phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)}><MaterialIcon name="send" size={18} /></HintButton>
       </div>
       <input hidden aria-label="Attach assistant image" type="file" accept="image/png,image/jpeg,image/webp" disabled={phase !== "ready" || imagePreparing} bind:this={imageInput} onchange={event => void prepareImage(event.currentTarget.files?.[0])} />
     </div>
@@ -354,7 +353,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .composer-tools { margin-left: auto; }
   .assistant-settings :global(.composer-action) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 30px; min-height: 32px; padding: 4px 6px; border: 0; border-radius: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; font-weight: 600; cursor: pointer; }
   .assistant-settings :global(.composer-action:disabled) { color: var(--color-muted-foreground); cursor: default; }
-  .assistant-settings :global(.send-action:not(:disabled)) { background: var(--color-primary); color: var(--color-primary-foreground); }
   .assistant-settings :global(.recording) { background: var(--color-error-background); color: var(--color-error-foreground); }
   .composer :global(:focus-visible) { outline-offset: -2px; }
   .image-preparing { padding: 0 10px; }

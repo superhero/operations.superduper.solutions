@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 Feature: Browser-local speech beside Bonsai
-  Scenario: Dictated messages reach Bonsai only after Send
+  Scenario: Dictated messages reach Bonsai only after pressing Enter
     Then Parakeet and Bonsai share the draft without sending during capture
   Scenario: Repeated dictation preserves drafts and never sends automatically
     Then Parakeet dictation appends confirmed text and saves local audio across recordings
