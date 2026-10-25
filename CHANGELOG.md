@@ -464,6 +464,14 @@ fix(ui): align pane switches with header buttons
 
 ```
 
+<!-- changelog-commit:f513878342e57ecf18be35e774e2f1f0091b3e00 -->
+### Commit [`f513878`](https://github.com/superhero/operations.superduper.solutions/commit/f513878342e57ecf18be35e774e2f1f0091b3e00)
+
+```text
+feat(ui): load assistant models when selected
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

@@ -10,11 +10,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "./MaterialIcon.svelte";
   import FieldSelectOptions from "./FieldSelectOptions.svelte";
 
-  let { id, label, value, options, includePlaceholder = true, required = false, disabled = false, invalid = false, active = true, describedBy, portalZIndex = 40, renderLabel, onValueChange }:
+  let { id, label, value, options, includePlaceholder = true, required = false, disabled = false, invalid = false, active = true, describedBy, portalZIndex = 40, renderLabel, onValueChange, onReselect }:
     { id: string; label: string; value: string; options: Array<string | number | boolean | null | { value: string; label: string; disabled?: boolean }>; includePlaceholder?: boolean; required?: boolean;
       disabled?: boolean; invalid?: boolean; active?: boolean; describedBy?: string | undefined; portalZIndex?: number;
-      renderLabel?: Snippet<[{ value: string; label: string }]>; onValueChange: (value: string) => void } = $props();
+      renderLabel?: Snippet<[{ value: string; label: string }]>; onValueChange: (value: string) => void; onReselect?: (value: string) => void } = $props();
   let open = $state(false);
+  function selectValue(next: string) {
+    if (next === "" && value && onReselect) { open = false; onReselect(value); }
+    else onValueChange(next);
+  }
   const items = $derived([
     ...(includePlaceholder ? [{ value: "", label: "Select…" }] : []),
     ...new Map(options.map(option => typeof option === "object" && option !== null
@@ -28,7 +32,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 {#snippet itemLabel(item: { value: string; label: string })}{#if renderLabel && item.value}{@render renderLabel(item)}{:else}{item.label}{/if}{/snippet}
 
-<Select.Root type="single" {value} {onValueChange} name={id} {required} {disabled} {items} bind:open>
+<Select.Root type="single" bind:value={() => value, selectValue} allowDeselect={Boolean(onReselect)} name={id} {required} {disabled} {items} bind:open>
   <Select.Trigger {id} class="field-select-trigger" type="button" role="combobox" aria-label={label}
     aria-required={required} aria-invalid={invalid || undefined} aria-describedby={describedBy}>
     <span class="field-select-value" class:placeholder={value === ""}>{#if selectedItem}{@render itemLabel(selectedItem)}{:else}{value || "Select…"}{/if}</span>
