@@ -248,7 +248,8 @@ async function openThemeSettings(page) {
   await setMode(page, 'settings');
   const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Theme"]');
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
-  await expect(page.getByRole('group', { name: 'Color palette', exact: true }).getByRole('switch', { name: 'Dark theme', exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Color palette', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Settings workspace', exact: true }).getByRole('switch', { name: 'Dark theme', exact: true })).toBeVisible();
   await expect(page.locator('#side-navigation').getByRole('switch', { name: 'Dark theme', exact: true })).toHaveCount(0);
 }
 
