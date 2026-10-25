@@ -441,6 +441,16 @@ Separate GitLab scan and issue routes while preserving native identities and pee
 
 ```
 
+<!-- changelog-commit:37ee0507e8631799312410037d3da0de355b59ea -->
+### Commit [`37ee050`](https://github.com/superhero/operations.superduper.solutions/commit/37ee0507e8631799312410037d3da0de355b59ea)
+
+```text
+feat(atlassian): bind explicit server identities
+
+Require Cloud ID and Workspace ID before resolving Assets servers and bind private approval to the complete destination. Replace the JSM subscriber override with its documented parent while preserving native inputs and source provenance.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

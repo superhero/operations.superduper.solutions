@@ -360,7 +360,8 @@
     "name": "Atlassian / Assets",
     "url": "https://dac-static.atlassian.com/cloud/assets/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/cloud/assets/rest/",
-    "operationIds": "method-path"
+    "operationIds": "method-path",
+    "profile": "atlassian-servers"
   },
   {
     "id": "atlassian-automation",
@@ -505,7 +506,7 @@
     "url": "https://dac-static.atlassian.com/cloud/jira/service-desk-ops/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/cloud/jira/service-desk-ops/rest/v2/",
     "operationIds": "method-path",
-    "profile": "provider-paths"
+    "profile": "atlassian-servers"
   },
   {
     "id": "jira-software",

@@ -5,9 +5,11 @@ import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
 import { bindProviderPaths } from "./provider-path-bindings.ts";
+import { bindAtlassianServers } from "./atlassian-server-bindings.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings"; version: 1 };
+export const atlassianServerBindings: SchemaPatch = { id: "atlassian-server-bindings", version: 1 };
 export const providerPathBindings: SchemaPatch = { id: "provider-path-bindings", version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
@@ -36,7 +38,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
     : patch.id === "github-authentication" ? "GitHub operation authentication"
     : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming"
-    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : patch.id === "cloudflare-private-upload" ? "Cloudflare private upload sessions" : patch.id === "provider-path-bindings" ? "Qualified provider path bindings" : "Unknown schema correction";
+    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : patch.id === "cloudflare-private-upload" ? "Cloudflare private upload sessions" : patch.id === "provider-path-bindings" ? "Qualified provider path bindings" : patch.id === "atlassian-server-bindings" ? "Atlassian server identities" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -421,7 +423,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -434,6 +436,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "http-response-streaming") responseStreaming(document);
     else if (patch.id === "telegram-private-path") telegramPath(document);
     else if (patch.id === "x-oauth1-signing") xOauth1(document);
+    else if (patch.id === "atlassian-server-bindings") bindAtlassianServers(document);
     else if (patch.id === "provider-path-bindings") bindProviderPaths(document);
     else cloudflareUploads(document);
   }

@@ -141,6 +141,7 @@
     "url": "https://dac-static.atlassian.com/cloud/assets/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/cloud/assets/rest/",
     "operationIds": "method-path",
+    "profile": "atlassian-servers",
     "version": "1",
     "openapi": "3.0.0",
     "operations": 64,
@@ -148,7 +149,15 @@
     "sha256": "b262df791938ce2e4b67e6239b871fc4d9e045e2107b42b0ce00bc131534dcd1",
     "sourceSha256": "83fc72ce3b1e4cc322d518260f98a53230c280672a5789a8994fa7f58cba56d8",
     "bytes": 274614,
-    "compressedBytes": 27348
+    "compressedBytes": 27348,
+    "patches": [
+      {
+        "id": "atlassian-server-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1770d858b48117ef5501810378ae01c41cfa182a405694934923ee4c6af8054e",
+    "effectiveBytes": 275034
   },
   {
     "id": "atlassian-automation",
@@ -509,7 +518,7 @@
     "url": "https://dac-static.atlassian.com/cloud/jira/service-desk-ops/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/cloud/jira/service-desk-ops/rest/v2/",
     "operationIds": "method-path",
-    "profile": "provider-paths",
+    "profile": "atlassian-servers",
     "version": "1",
     "openapi": "3.0.1",
     "operations": 240,
@@ -522,10 +531,14 @@
       {
         "id": "provider-path-bindings",
         "version": 1
+      },
+      {
+        "id": "atlassian-server-bindings",
+        "version": 1
       }
     ],
-    "effectiveSha256": "4880376e16d4f795bb1f759e50d4c383829d5c4a6a1065f027f480c5ca693d7d",
-    "effectiveBytes": 695938
+    "effectiveSha256": "ef77a1a70332a053b8fb636f4cbe911acb58cdff5fc04f3b8cda596730e9e797",
+    "effectiveBytes": 695949
   },
   {
     "id": "jira-software",
