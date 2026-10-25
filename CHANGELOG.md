@@ -220,6 +220,14 @@ fix(ui): continue catalog tree through operation rows
 
 ```
 
+<!-- changelog-commit:01f1287a19149290eeb9d8709f2a7fbc56b852f8 -->
+### Commit [`01f1287`](https://github.com/superhero/operations.superduper.solutions/commit/01f1287a19149290eeb9d8709f2a7fbc56b852f8)
+
+```text
+fix(ui): style catalog operations as primary buttons
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
