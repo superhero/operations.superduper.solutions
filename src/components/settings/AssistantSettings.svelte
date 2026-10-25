@@ -314,7 +314,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
-  .assistant-settings { padding: 16px; display: grid; gap: 12px; min-width: 0; container-type: inline-size; color: var(--color-foreground); font-size: 12px; }
+  .assistant-settings { padding: 16px 0; display: grid; gap: 12px; min-width: 0; container-type: inline-size; color: var(--color-foreground); font-size: 12px; }
   .assistant-details { padding: 12px; border-radius: 4px; background: var(--color-surface); min-width: 0; }
   .assistant-configuration { display: grid; gap: 12px; min-width: 0; }
   .assistant-configuration[hidden] { display: none; }
