@@ -424,6 +424,14 @@ fix(ui): grow assistant input with the message
 
 ```
 
+<!-- changelog-commit:a69de1cd186bbda27bef95e1c86d56fde4f1eb5a -->
+### Commit [`a69de1c`](https://github.com/superhero/operations.superduper.solutions/commit/a69de1cd186bbda27bef95e1c86d56fde4f1eb5a)
+
+```text
+fix(ui): scale grouped header buttons outwards
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
