@@ -440,6 +440,14 @@ fix(ui): use a 2px assistant composer border
 
 ```
 
+<!-- changelog-commit:76ceafdb20dfe0ed7e7fd9d8ba9d8b5cb8bcee60 -->
+### Commit [`76ceafd`](https://github.com/superhero/operations.superduper.solutions/commit/76ceafdb20dfe0ed7e7fd9d8ba9d8b5cb8bcee60)
+
+```text
+fix(ui): remove assistant composer helper text
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
