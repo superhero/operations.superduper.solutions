@@ -44,7 +44,7 @@ Then('GitHub authentication covers the native inventory and separates public acc
   assert.equal(corrected.security, undefined, 'No blanket global bearer requirement.');
   assert.equal(inspection.operations.length, 1242);
   assert.equal(Object.keys(contracts.operations).length, 1242);
-  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 1134);
+  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 1144);
   let publicCount = 0, unreviewed = 0, results = 0;
   for (const [id, contract] of Object.entries(contracts.operations)) {
     const native = published.paths[contract.path][contract.method];
@@ -59,7 +59,7 @@ Then('GitHub authentication covers the native inventory and separates public acc
     if (contract.profiles.includes('unreviewed')) { unreviewed++; assert.match(models.get(id).unavailableReason, /GitHubAuthenticationNotReviewed/); }
     if (contract.credentialFields?.length) { results++; assert.equal(models.get(id).credentialResult, true); assert.ok(models.get(id).unavailableReason); }
   }
-  assert.equal(publicCount, 214); assert.equal(unreviewed, 90); assert.equal(results, 19);
+  assert.equal(publicCount, 214); assert.equal(unreviewed, 80); assert.equal(results, 19);
   for (const id of ['users/get-authenticated', 'apps/get-authenticated', 'apps/list-repos-accessible-to-installation',
     'apps/revoke-installation-access-token', 'codespaces/list-for-authenticated-user', 'users/list-public-emails-for-authenticated-user',
     'projects/create-draft-item-for-org', 'issues/add-blocked-by-dependency']) assert.ok(securityRequiresCredentials(models.get(id).security), id);

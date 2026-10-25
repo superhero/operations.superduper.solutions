@@ -18,6 +18,7 @@ is explicitly anonymous-only; its provider contract rejects authenticated reques
 | GitHubAppJWT | A JWT authenticating as the app |
 | GitHubOAuthApp | Separate client-ID and client-secret vault references for Basic |
 | GitHubClassicUserToken | A documented OAuth/classic PAT with the method's scopes |
+| GitHubClassicPersonalAccessToken | A classic PAT with `notifications` or `repo` scope for Notifications |
 
 Each choice remains a separate security alternative in canonical approval and
 credential binding. The application does not retry another role or anonymous
@@ -25,12 +26,12 @@ access after an authentication failure. Credentials remain opaque: GitHub verifi
 their issuer, permissions, resource access and expiry. A named choice is not local
 proof of a token's validity or origin. Issuance, signing and refresh are separate.
 
-Ninety operations lack a qualified authentication profile in the reviewed data and
+Eighty operations lack a qualified authentication profile in the reviewed data and
 remain explicitly unavailable. This includes some classic-only and experimental
 families; missing fine-grained metadata does not prove they are public or that a
 generic bearer token works. Nineteen credential-sensitive response contracts also
 remain blocked pending private result handling. These groups overlap on app
-manifest conversion, leaving 1,134 models usable by the current adapter. This is
+manifest conversion, leaving 1,144 models usable by the current adapter. This is
 deterministic capability evidence, not live account or permission qualification.
 
 OAuth-app revocation can use the existing private-variable mechanism for the
@@ -39,12 +40,31 @@ privately and redacted. Token issuance/check/reset responses, app-manifest priva
 keys, runner tokens, webhook secrets and secret-scanning values are not emitted as
 ordinary workflow results.
 
+The ten Notifications methods use only the dedicated classic personal-token
+choice. Their [versioned provider contract](https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28)
+requires a classic PAT with `notifications` or `repo` scope and excludes fine-grained
+and GitHub App tokens. OAuth tokens are not offered for this family. Other
+classic-only or experimental families remain unreviewed; this qualification does
+not infer their credentials or anonymous access from missing metadata.
+
+All ten native methods retain their paths, inputs and result schemas. A denied
+request never retries with another role or anonymously. The local profile checks
+the selected authority; GitHub still verifies the opaque token's type, scopes and
+account access. Qualification uses synthetic private dispatch without reading or
+marking live notifications.
+
 ## Evidence and maintenance
 
 The matrix in [github-authentication-data.ts](../src/lib/github-authentication-data.ts)
-matches every native method/path against 51 first-party documentation data files.
+matches every native method/path against 51 first-party documentation data files,
+with two pinned guide/reusable files qualifying Notifications' classic-PAT rule.
 It records source URLs, byte counts, hashes, permission sets and reviewed
 exceptions. Its JSON is parsed only when the GitHub correction is applied.
+
+Matrix revision 2 preserves the native and documentation revisions while recording
+the Notifications guide and reusable source URLs, hashes and byte counts. The
+correction rejects previously corrected documents carrying an older matrix stamp;
+approval must be based on the current effective contract.
 
 - Native schema: version `1.1.4`, JSON SHA-256
   `f9293195f0097a6ae134f8652fca11d15dc26638ee312dd3ce35d5723d56925a`.
