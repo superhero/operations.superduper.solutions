@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/provider-path-bindings.test.mjs",
     "src/flat-form.test.mjs",
     "src/nullable-form.test.mjs",
     "src/query-array.test.mjs",
@@ -85,6 +86,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/provider-path-bindings.feature",
     "src/flat-form.feature",
     "src/nullable-form.feature",
     "src/query-array.feature",

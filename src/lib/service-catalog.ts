@@ -15,6 +15,7 @@ import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
 import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } from "./operation-capabilities.ts";
 import { configureQueryArray } from "./query-serialization.ts";
+import { providerPathSecurity } from "./provider-path-bindings.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -165,7 +166,7 @@ function security(document: Value, source: Value, operation: Operation): Operati
   const result = inspectSecurityAlternatives({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
   const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
   if (permissions) operation.credentialPermissions = permissions;
-  return result;
+  return providerPathSecurity(document, operation.id, result);
 }
 
 export function inspectServiceSchema(document: Value, id: string, selected?: ReadonlySet<string>, location?: Pick<Operation, "path" | "method">): {

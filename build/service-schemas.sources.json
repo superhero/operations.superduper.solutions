@@ -80,7 +80,8 @@
   {
     "id": "gitlab",
     "name": "GitLab",
-    "url": "https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml"
+    "url": "https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml",
+    "profile": "provider-paths"
   },
   {
     "id": "frankfurter",
@@ -503,7 +504,8 @@
     "name": "Atlassian / Jira / Service Management / Operations",
     "url": "https://dac-static.atlassian.com/cloud/jira/service-desk-ops/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/cloud/jira/service-desk-ops/rest/v2/",
-    "operationIds": "method-path"
+    "operationIds": "method-path",
+    "profile": "provider-paths"
   },
   {
     "id": "jira-software",
