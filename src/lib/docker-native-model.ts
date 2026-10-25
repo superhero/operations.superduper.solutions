@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { InputField, InputSchema, Operation } from "./catalog.ts";
 import { dockerNativeApi, dockerNativeOperationId, dockerNativeProfile } from "./docker-native-contract.ts";
+import { withOperationCapabilities } from "./operation-capabilities.ts";
 type ObjectValue = Record<string, unknown>;
 const object = (value: unknown): ObjectValue => value && typeof value === "object" && !Array.isArray(value) ? value as ObjectValue : {};
 
@@ -29,7 +30,7 @@ export function dockerNativeReadOperation(document: ObjectValue, base: Pick<Oper
       type: expected[name]!, schema: structuredClone(schema) as InputSchema,
       ...(schema.default !== undefined ? { defaultValue: typeof schema.default === "string" ? schema.default : JSON.stringify(schema.default) } : {}) });
   }
-  return { id: base.id, method: "GET", path: base.path, group: Array.isArray(source.tags) && typeof source.tags[0] === "string" ? source.tags[0] : "Operations",
+  return withOperationCapabilities({ id: base.id, method: "GET", path: base.path, group: Array.isArray(source.tags) && typeof source.tags[0] === "string" ? source.tags[0] : "Operations",
     name: typeof source.summary === "string" ? source.summary : "List containers", description: typeof source.description === "string" ? source.description : "",
-    fields, bodyRequired: false, responseMediaType: "application/json", dockerNative: { profile: dockerNativeProfile, apiVersion: dockerNativeApi } };
+    fields, bodyRequired: false, responseMediaType: "application/json", dockerNative: { profile: dockerNativeProfile, apiVersion: dockerNativeApi } });
 }

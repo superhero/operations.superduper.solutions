@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
 import { cloudflareOrigin, configureCloudflareUpload, cloudflareUploadProfile, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
@@ -76,7 +77,7 @@ export function normalizeCredentialOrigin(origin: string): string
 
 function validateOperation(operation: Operation): void
 {
-  if (operation?.credentialResult !== undefined) throw new VaultError("PERMISSION");
+  if (operation && operationBlockReason(operation) || operation?.credentialResult !== undefined) throw new VaultError("PERMISSION");
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
   validateCredentialPath(operation.path, true);

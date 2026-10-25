@@ -13,6 +13,7 @@ import { privatePathProfile, type PrivatePathProfile } from "./server-url.ts";
 import { codexExecutionLimitation, type NativeRpcContract } from "./native-rpc.ts";
 import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
 import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
+import { withOperationCapabilities, type OperationCapabilities, type CapabilitySummary } from "./operation-capabilities.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -75,6 +76,9 @@ export type Operation = {
   cloudflareUpload?: CloudflareUploadProfile;
   security?: OperationSecurity;
   unavailableReason?: string;
+  /** Compact discovery diagnostics; dispatch still resolves the current canonical model. */
+  capabilities?: OperationCapabilities;
+  capabilitySummary?: CapabilitySummary;
   oauthScopes?: Record<string, string[]>[];
   credentialPermissions?: CredentialPermissions;
   /** Credential acquisition needs a private result handler, not a JSON output. */
@@ -378,7 +382,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
         extracted.credentialResult = true;
         extracted.unavailableReason = "This operation returns credentials. Private credential acquisition is not supported yet.";
       }
-      result.push(extracted);
+      result.push(withOperationCapabilities(extracted, extracted.unavailableReason ? [{ area: "response", code: "unsupported-contract", message: extracted.unavailableReason }] : []));
     }
   }
   if (!result.length) throw new Error(`${source}: no operations found.`);

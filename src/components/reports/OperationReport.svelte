@@ -9,6 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { getOperationReport } from "$lib/operation-report.ts";
   import { categoryLabel } from "$lib/category-label.ts";
   import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
+  import OperationCapabilities from "$lib/components/OperationCapabilities.svelte";
 
   let { operation }: { operation: Operation } = $props();
   const inputLocations = [{ key: "path", label: "Path" }, { key: "query", label: "Query" }, { key: "header", label: "Headers" }, { key: "body", label: "Body" }] as const;
@@ -24,6 +25,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="detail-report" aria-label="Operation report">
+  <OperationCapabilities {operation} />
   {#if report.data}
     {@const data = report.data}
     <dl class="report-metrics">

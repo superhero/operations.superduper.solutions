@@ -1,12 +1,12 @@
 {
-  "adapterRevision": "f034ee761ed2354d13f526cca101d31b095a0f0b32189d233340e956ae4e343a",
+  "adapterRevision": "c3fd14bca935b2da9c00334d4a5b22c55046f65068102d34d6acd5f9d9d76114",
   "indexes": [
     {
       "id": "anthropic",
       "sourceRevision": "986cca3a187a8388cc1d73418112bb1976799a1ad6691795f6ef9e8299d04b9a",
-      "bytes": 49553,
-      "compressedBytes": 3461,
-      "sha256": "83fac8ce3a94a58071921479610a1abe5b553b8ba70fa5a4f8cc08244bb8c0f2",
+      "bytes": 69733,
+      "compressedBytes": 3824,
+      "sha256": "463bcfe35a15eb4e8e7893652a89f0d26e0c1ee428f0ca8a6ce15337a18599b0",
       "summary": {
         "name": "Anthropic API",
         "serverUrl": "https://api.anthropic.com",
@@ -19,7 +19,7 @@
       "sourceRevision": "ef715e5c27f9a02469088f9e6a4f85602b68043ba8890947f5603ba0e7554a83",
       "bytes": 8579,
       "compressedBytes": 1024,
-      "sha256": "200d4149549ae55b1f4f49b80c59166a7eb3f1269a5134fad0d4ee469b2832f5",
+      "sha256": "67c1aee2c640bd9745f1b889fc4ae3d39554ece24a5008f6006ddc77bc82e02d",
       "summary": {
         "name": "API Access",
         "serverUrl": "https://api.atlassian.com/admin/api-access/v1",
@@ -31,9 +31,9 @@
     {
       "id": "atlassian-admin-control",
       "sourceRevision": "4871c5b2e77beb68202c011dfa1904cd92788e32c9150552352c64234351dc0d",
-      "bytes": 9927,
-      "compressedBytes": 1201,
-      "sha256": "c9aa3092a883a91978d42ac7148d265dc38a0ce9b80bb0710323d797f9ff0f17",
+      "bytes": 11621,
+      "compressedBytes": 1248,
+      "sha256": "8c68a5e67998071b8b8a60507c4eba527ba97e760ca50b032d0fac69a461da5d",
       "summary": {
         "name": "Admin Control API",
         "serverUrl": "https://api.atlassian.com",
@@ -47,7 +47,7 @@
       "sourceRevision": "51295582435550a5d4c504920a1582ebe0cbdf30201b6f6b73b8b26b487f2b1d",
       "bytes": 3432,
       "compressedBytes": 634,
-      "sha256": "889ec2f3365364b73d349d596dba3f3d9839a8c89b4d8eb830dfb8c2dac81119",
+      "sha256": "c9fd377c6c52745bb72d085f0f4b4c5761f551c53ae5507b3ea8d47e216887d3",
       "summary": {
         "name": "Data Loss Prevention",
         "serverUrl": "https://api.atlassian.com/admin/dlp/v1",
@@ -58,9 +58,9 @@
     {
       "id": "atlassian-admin-organizations",
       "sourceRevision": "270392b944e9ad895c2c6ce6d81db50d5da336d0bb10a0edc47619ae44263bb1",
-      "bytes": 18823,
-      "compressedBytes": 1769,
-      "sha256": "c49c4f058f3339ad9f54716466e5e1a141e27eb29af7407ec64b0a7912520fe9",
+      "bytes": 23357,
+      "compressedBytes": 1878,
+      "sha256": "8dccc8a0657229ea2c1344ea44c57e28b14e12bff7c79ca0c8f48ef2dd5d04d7",
       "summary": {
         "name": "API for Atlassian Access",
         "serverUrl": "https://api.atlassian.com/admin",
@@ -71,9 +71,9 @@
     {
       "id": "atlassian-admin-users",
       "sourceRevision": "d0307ba411ffef927bf83eae437d09dc040aa4a83385e4b5579ab707ee10f6a4",
-      "bytes": 4176,
-      "compressedBytes": 751,
-      "sha256": "cdad5d347c94a98789cab8e93aa8511f9139bbf17862e33d51a27859b343c1fa",
+      "bytes": 4946,
+      "compressedBytes": 801,
+      "sha256": "832818f781d523bf8c16fac2906e8bd36d5c064bb2b5f2a40c525fbd03f72ab5",
       "summary": {
         "name": "IDv2: User management",
         "serverUrl": "https://api.atlassian.com",
@@ -84,9 +84,9 @@
     {
       "id": "atlassian-admin-provisioning",
       "sourceRevision": "e4577ee13569515109b3b0c4f23849cbb3bd29685d2fcff0edbb0709ec4f7644",
-      "bytes": 10266,
-      "compressedBytes": 1205,
-      "sha256": "3694cc523ac34670f1a8fbdb9f8dae99a19b75d5573cc9109af5c2bef761452d",
+      "bytes": 12378,
+      "compressedBytes": 1261,
+      "sha256": "a5373fc9a2f11aa78f6a442db34500a02659a03badc92195761522e3fa160e00",
       "summary": {
         "name": "User provisioning",
         "serverUrl": "https://api.atlassian.com",
@@ -98,9 +98,9 @@
     {
       "id": "atlassian-app-migration",
       "sourceRevision": "b24a0654a2f53a586724c2c4d2e323784988dca369af768d0b65ba4c39f4f794",
-      "bytes": 6429,
-      "compressedBytes": 974,
-      "sha256": "eb4a396eb8c11376dce2fa44a4ed27d33596a95ff385bbc566e06cd0459c8d46",
+      "bytes": 7320,
+      "compressedBytes": 1030,
+      "sha256": "1414d074a5df5f5cc430f511d29626447af3307a322ca5986eabbb0d417e4b13",
       "summary": {
         "name": "App migration",
         "serverUrl": "",
@@ -112,9 +112,9 @@
     {
       "id": "atlassian-assets",
       "sourceRevision": "b262df791938ce2e4b67e6239b871fc4d9e045e2107b42b0ce00bc131534dcd1",
-      "bytes": 26237,
-      "compressedBytes": 1803,
-      "sha256": "487f4b4d1718e7abc87bd9b66ec8ea71a67002b10b633fbdac8e034546a2b813",
+      "bytes": 35868,
+      "compressedBytes": 2077,
+      "sha256": "d6873380ea74844fb44c9bf5bd7c75e5bda4abb6a81a7efc78da53c78337b1d0",
       "summary": {
         "name": "REST",
         "serverUrl": "",
@@ -126,8 +126,8 @@
       "id": "atlassian-automation",
       "sourceRevision": "2075606d700985a8ba78baaf83ae736e6e977975c8e1a24ecb055fb8c60d5d34",
       "bytes": 9849,
-      "compressedBytes": 1080,
-      "sha256": "5457e8e5e6cc4ecad49961b31fb9bfa4337763b7e045f6bb8e05c598001b8342",
+      "compressedBytes": 1081,
+      "sha256": "700ded748a3548e72402e8477f827306ecce063d51ff8766f6326996996f6f5f",
       "summary": {
         "name": "New public APIs",
         "serverUrl": "https://api.atlassian.com/automation/public/jira/none",
@@ -141,7 +141,7 @@
       "sourceRevision": "e25ce0cd0ed9e3da5246b469f3caa6f5de3638c601ec43b2c4f8c5518b3523fa",
       "bytes": 8388,
       "compressedBytes": 1081,
-      "sha256": "7659a9c8119b1f0d203d88475ab2b62d1e5d10eb686a012640aa28544dac87c2",
+      "sha256": "bb42f9bbdcde2fec95af3e97184cfe0222ede81642a34aa668b4ec2d504c0b90",
       "summary": {
         "name": "Ixport Gateway",
         "serverUrl": "https://api.atlassian.com",
@@ -152,9 +152,9 @@
     {
       "id": "bamboo",
       "sourceRevision": "a5f54819ac94622e3855a4a809404b538858fd98ac51690e25960643634a2b4e",
-      "bytes": 168944,
-      "compressedBytes": 9772,
-      "sha256": "6b82ac14b99d00a91b20b6bdf8af7ea6d72c5773a5023bcca54cb77624ea24c2",
+      "bytes": 184319,
+      "compressedBytes": 10066,
+      "sha256": "64c90f50032e2f8be29f944638e3c7e9a8806dc77a7c097fc0b727ac790308f3",
       "summary": {
         "name": "Bamboo",
         "serverUrl": "http://example.com:8085/rest",
@@ -166,9 +166,9 @@
     {
       "id": "bitbucket",
       "sourceRevision": "701ee30fe04d2ac4708fbba10061836d663466e0d72ed9f5df78b4a239d12b2d",
-      "bytes": 104701,
-      "compressedBytes": 8293,
-      "sha256": "929bfb4e4f527f7af01293e1378a307ab2505028828f6d17ca978a97ef16902e",
+      "bytes": 137292,
+      "compressedBytes": 8621,
+      "sha256": "190c65183b3e031c153e0ac663970d7744d93e25f8d23b9e6a0d893fb60851ab",
       "summary": {
         "name": "Bitbucket API",
         "serverUrl": "https://api.bitbucket.org/2.0",
@@ -180,9 +180,9 @@
     {
       "id": "bitbucket-dc",
       "sourceRevision": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
-      "bytes": 219917,
-      "compressedBytes": 15527,
-      "sha256": "361db00a3e2a207fe464ac6d0a9bd8aca2455b90af7cf0d17626a694ebc35583",
+      "bytes": 221652,
+      "compressedBytes": 15630,
+      "sha256": "4e4f2b5139453d82d8a3023ea8e2ab5a92d27fcb9bb34a0c65d73fe3f73b0348",
       "summary": {
         "name": "Bitbucket Data Center",
         "serverUrl": "http://example.com:7990/rest",
@@ -194,9 +194,9 @@
     {
       "id": "atlassian-capacity-planning",
       "sourceRevision": "892c1816f193f0184726b8fe403ec0ed35bf025c3612cb7b5bd98b33193484af",
-      "bytes": 4860,
-      "compressedBytes": 815,
-      "sha256": "8bc47fd028c107ea1f9a05af695c6abeaf8c9236691413f7232520219fe7a7b1",
+      "bytes": 6136,
+      "compressedBytes": 881,
+      "sha256": "2ff2cd1f78fce5a332c197e1456652b52c9061d7201795b201f525fae163d495",
       "summary": {
         "name": "Capacity Planning Public REST API",
         "serverUrl": "https://api.atlassian.com/ex/capacity-planning/cloudId/v1",
@@ -208,9 +208,9 @@
     {
       "id": "atlassian-commerce",
       "sourceRevision": "f857bab047794449bede893e617f6d8f07169837197a6848546546b48faa1d08",
-      "bytes": 13605,
-      "compressedBytes": 1683,
-      "sha256": "5a0cdeb7191bdeadd0486c59a06237a2b25d984b1f6002d1674afc13442eefb6",
+      "bytes": 14065,
+      "compressedBytes": 1741,
+      "sha256": "b9786aaae73264944fe452ca1a13b8c671b68c921f3de62e07571b50d1d962f5",
       "summary": {
         "name": "Commerce Cloud REST API",
         "serverUrl": "https://api.atlassian.com/commerce/api",
@@ -221,9 +221,9 @@
     {
       "id": "atlassian-commerce-it",
       "sourceRevision": "ac779ad77abab91b30d49a1194e39fc025122e9e447ee27fbc3cc360314cd78d",
-      "bytes": 2012,
-      "compressedBytes": 526,
-      "sha256": "28ed9c2d95997cb881d3471f40f549a673ce99bef739c7c4f1739adf83a6b033",
+      "bytes": 2296,
+      "compressedBytes": 569,
+      "sha256": "4ab59ed9bf8b3e6f95c1f239e4a27f1a636921df76b0d5ed13809a8df8aa3097",
       "summary": {
         "name": "Contact Management Service",
         "serverUrl": "https://api.atlassian.com",
@@ -235,9 +235,9 @@
     {
       "id": "atlassian-compass",
       "sourceRevision": "8f958b9531ae81c59ba759c978788ed469dae80829eaadf533c9cab4dd7d96bf",
-      "bytes": 5141,
-      "compressedBytes": 896,
-      "sha256": "d2ceac0c3f66a6196e9efe0684bc7e57b2fc12706358c6e4edf66e0982bafead",
+      "bytes": 5977,
+      "compressedBytes": 947,
+      "sha256": "b4655ae6174eb55724435be163aa75b184c3ed9e19e3d0098d0cbc30b0f5b56c",
       "summary": {
         "name": "Compass REST API",
         "serverUrl": "https://your-domain.atlassian.net/gateway/api",
@@ -248,9 +248,9 @@
     {
       "id": "confluence",
       "sourceRevision": "246e0eec8f432eae39c32250a0ca1a32b233c166f86a80ff1de4dac7f92b9380",
-      "bytes": 93778,
-      "compressedBytes": 6308,
-      "sha256": "4209056800bf394702f718084910054e0e8daacf9cedc9b3d7e1914b1d4e3aff",
+      "bytes": 131287,
+      "compressedBytes": 6859,
+      "sha256": "555c4ac7e0cc97ca0909a98a65db407aeccd3536cb3d878e11968d510a9cd3d3",
       "summary": {
         "name": "The Confluence Cloud REST API v2",
         "serverUrl": "https://no-default/wiki/api/v2",
@@ -262,9 +262,9 @@
     {
       "id": "atlassian-confluence-v1",
       "sourceRevision": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
-      "bytes": 72898,
-      "compressedBytes": 4997,
-      "sha256": "eeb4c659c588a62413136f901a542f363aaa3a47edcf07dd506520c4e7b5920e",
+      "bytes": 94847,
+      "compressedBytes": 5394,
+      "sha256": "49f968f060600ce8289acade6b5ddce60a84b34c015fa89d3db39e75a9b47f12",
       "summary": {
         "name": "The Confluence Cloud REST API",
         "serverUrl": "",
@@ -278,7 +278,7 @@
       "sourceRevision": "a20bb68180054070bc809be40c65f7499492f346212081a120e02b3f086de13e",
       "bytes": 61707,
       "compressedBytes": 5702,
-      "sha256": "e6450d7d4e3ad3e24a8deda6333b984f37fa5f6d99e61752067f4879c4f8848c",
+      "sha256": "290e93e65362ed05c0cb406cae6de6fa37b11526077dc76e80bf657370dbf848",
       "summary": {
         "name": "Confluence Data Center",
         "serverUrl": "http://example.com:7990/confluence",
@@ -290,9 +290,9 @@
     {
       "id": "crowd-dc",
       "sourceRevision": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
-      "bytes": 48614,
-      "compressedBytes": 4377,
-      "sha256": "425a1bf79288a2778b9ac3ce741c27260542609ae496ab314854e6136b2dc6f1",
+      "bytes": 48740,
+      "compressedBytes": 4410,
+      "sha256": "72814669e57edd34235e5f2a828c858ef07580a562e08fa3d42c318976c0ad59",
       "summary": {
         "name": "Crowd Data Center",
         "serverUrl": "http://example.com:8095/rest",
@@ -304,9 +304,9 @@
     {
       "id": "atlassian-customer-service-management",
       "sourceRevision": "e4f38a292bbdd3ac6344be7b1bd8a8fbd92007c21480cd2afa671bd8fa6d0e02",
-      "bytes": 29073,
-      "compressedBytes": 1974,
-      "sha256": "00c477c0fb3f4d890047be4d08c213108a7795d5af55a49ebba7607681ef9b7d",
+      "bytes": 36213,
+      "compressedBytes": 2158,
+      "sha256": "1f2d1f1d9e1f8b3ea4703b71655463bcb361a240c6a2c2926e77d3360d231b55",
       "summary": {
         "name": "Atlassian CSM API",
         "serverUrl": "",
@@ -317,9 +317,9 @@
     {
       "id": "atlassian-focus",
       "sourceRevision": "1c6c34f5e4269cbb6de5ee2460c6cc8b0c7070116742fc194cfddc038285d7a4",
-      "bytes": 13770,
-      "compressedBytes": 1253,
-      "sha256": "147ba0704e6f9cac6e699471face9d9cb21222f5d6a0250922ecb59c60a7489f",
+      "bytes": 17488,
+      "compressedBytes": 1374,
+      "sha256": "f5527592f26350f9e1a5f38ce8ff2e22b15266c3136e7e122a56ef91adc60f7e",
       "summary": {
         "name": "Focus REST API",
         "serverUrl": "",
@@ -331,9 +331,9 @@
     {
       "id": "atlassian-forge-containers",
       "sourceRevision": "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1",
-      "bytes": 21202,
-      "compressedBytes": 2234,
-      "sha256": "2fdd35333da50e4b5254664b5e18c133db6ebe3b447f22057e4715314ac26396",
+      "bytes": 26554,
+      "compressedBytes": 2328,
+      "sha256": "8c9f3eaad54c4971cf4f88bddfc6ecc671305467a13989bb68a2a5a8e3c0226b",
       "summary": {
         "name": "Forge Containers API",
         "serverUrl": "http://localhost:7072",
@@ -347,7 +347,7 @@
       "sourceRevision": "7d88235425639ebd288e85745f17e6af5691e05ffddb86f5795c545aefe53f99",
       "bytes": 5904,
       "compressedBytes": 1005,
-      "sha256": "048fbfa8bdfa9da3a6e369c6386d6984a40a7b9a2a72baa05669e2c8cef65dff",
+      "sha256": "d8b7eecfa97f0996ac245e6fe58c8352121c3f10b52080f45a3c0d833b8d4d7f",
       "summary": {
         "name": "Key-Value Store/Custom Entity Store REST API",
         "serverUrl": "https://api.atlassian.com/forge/storage/kvs",
@@ -359,9 +359,9 @@
     {
       "id": "atlassian-forms",
       "sourceRevision": "59bc96a8e30792e5be7af817ac37100d9ffbebdde4d2c3614b288333b0220688",
-      "bytes": 15535,
-      "compressedBytes": 1334,
-      "sha256": "f95c3503766253425d702035f19936f22df33ba58009b07e0996971c50882714",
+      "bytes": 20635,
+      "compressedBytes": 1495,
+      "sha256": "eac32c2fe2b359ec2ff19945c5706d87d69a04d749aff86c2269bfd636b8ae27",
       "summary": {
         "name": "ProForma Forms RESTful API",
         "serverUrl": "",
@@ -372,9 +372,9 @@
     {
       "id": "atlassian-incidents",
       "sourceRevision": "9788e6bd62b45a5a157e5a0854f9586ea9bf18bfe573ea6d6932d5a40e950339",
-      "bytes": 14921,
-      "compressedBytes": 1354,
-      "sha256": "9b39862f228eea852f9295149f249ee0684f010dd08ec4be8057ddb9cb081dcb",
+      "bytes": 17837,
+      "compressedBytes": 1433,
+      "sha256": "b6a8f72220272335b214061be9bf18571a591b005d39da05643081ca16ff2063",
       "summary": {
         "name": "JSM Incident API",
         "serverUrl": "https://api.atlassian.com",
@@ -386,9 +386,9 @@
     {
       "id": "jira",
       "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
-      "bytes": 172915,
-      "compressedBytes": 18412,
-      "sha256": "349f0420d5e2ee7c44071066df16615a23057d5943ca806866b589239ff6b5ef",
+      "bytes": 229219,
+      "compressedBytes": 19130,
+      "sha256": "a66845ad92a3f507e9beafd903c377476e8d20ec86f72628bc39caf5269a3044",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
@@ -400,9 +400,9 @@
     {
       "id": "jira-service-management",
       "sourceRevision": "e2ff7579a087099e6482b78475730ea508e8933e8349af3b4fe58eb1a9cad944",
-      "bytes": 30606,
-      "compressedBytes": 2407,
-      "sha256": "1e1328527ba7fae19182000d50220e7709e38f3f678d4967338d72da46bdf196",
+      "bytes": 35929,
+      "compressedBytes": 2512,
+      "sha256": "c97ca421a75acf1f1958635816c1200beb982963cce29ff1e78bcfc7fdffb23c",
       "summary": {
         "name": "Service Management Public REST API",
         "serverUrl": "https://your-domain.atlassian.net",
@@ -414,9 +414,9 @@
     {
       "id": "jira-service-management-dc",
       "sourceRevision": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
-      "bytes": 214914,
-      "compressedBytes": 16742,
-      "sha256": "430a70dc6432294b020b02721d46b26f73b3df412547497665ccc8bf7fb850e0",
+      "bytes": 242179,
+      "compressedBytes": 17413,
+      "sha256": "545bd5de1c41f401ab266f61c75540eaab5bc0081c1a45d9f5481453c708a5ba",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
@@ -428,9 +428,9 @@
     {
       "id": "jira-service-management-ops",
       "sourceRevision": "c0fb62c243a89256567fdfb82d3667cd779f9a99dff9a9efe5b3a99b375b0d1d",
-      "bytes": 112914,
-      "compressedBytes": 6722,
-      "sha256": "b5a7922b7f6f49891409768439694c653f742b2e51bd7d78e403d210dc7b8d92",
+      "bytes": 143766,
+      "compressedBytes": 7086,
+      "sha256": "b2db26e7b191d53dc0c7a803372d680a8a8beefe6ee77bc5eff89b7884e71605",
       "summary": {
         "name": "JSM Operations API",
         "serverUrl": "https://api.atlassian.com/jsm/ops",
@@ -442,9 +442,9 @@
     {
       "id": "jira-software",
       "sourceRevision": "c4f7d6166c144f7d2be29caa0cb22f554798c5c022f7cbd778d3553978e7e8e8",
-      "bytes": 36162,
-      "compressedBytes": 3088,
-      "sha256": "d2e0f6a7f57d9698dda740f9aa1f7a45df9417224d4e4be24ba4aa87d23b5d02",
+      "bytes": 44562,
+      "compressedBytes": 3235,
+      "sha256": "a477379eb7da3c4cd1a4ba13df96493a729bd1e49fdfe6b791f643cbf11d4840",
       "summary": {
         "name": "Jira Software Cloud API",
         "serverUrl": "https://your-domain.atlassian.net",
@@ -456,9 +456,9 @@
     {
       "id": "jira-dc",
       "sourceRevision": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
-      "bytes": 165303,
-      "compressedBytes": 14011,
-      "sha256": "86219993b69a41875defe4f307565ff44a19db4136fd0921452605197d525ad8",
+      "bytes": 193675,
+      "compressedBytes": 14654,
+      "sha256": "c68ead79d795d32e20e03a496976c0690c594b0798955555f43ed1f9bfdde5d7",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
@@ -470,9 +470,9 @@
     {
       "id": "atlassian-marketplace",
       "sourceRevision": "7489e7bda44df7b659db8a8b448f1e918afab0ec8164370bac021ae5aed30f0a",
-      "bytes": 52417,
-      "compressedBytes": 4031,
-      "sha256": "835f2f764bd4387576c4d27203beb13402b4eaceebfab2e6bedcbe70a93a8c1b",
+      "bytes": 61562,
+      "compressedBytes": 4242,
+      "sha256": "2b994b8ddc9c4dfd43c00869ad483442fc3539b93c2e0c2d0d8ce8ceb18f8604",
       "summary": {
         "name": "Atlassian Marketplace API",
         "serverUrl": "https://marketplace.atlassian.com/rest/2",
@@ -483,9 +483,9 @@
     {
       "id": "atlassian-marketplace-product-tags",
       "sourceRevision": "b2ff5be0cacb2b1ec99fb496c271806513f7b1be71c5c7308ac11d07b3d40660",
-      "bytes": 1402,
-      "compressedBytes": 496,
-      "sha256": "c70e82d311273e5fcd2daa1cf9c3a6355acda5ffb220bb89b19b92b4b0a666a4",
+      "bytes": 1466,
+      "compressedBytes": 527,
+      "sha256": "ec3812c0e0ed3b2375d5ea95461e10e2c079c639a8bb311548fb4f901eb30dfd",
       "summary": {
         "name": "Atlassian Marketplace API",
         "serverUrl": "https://api.atlassian.com",
@@ -498,7 +498,7 @@
       "sourceRevision": "815d5b8d51820aa49d8a77916fd1732b1b2a1b1dd6dc4ca6d5013f271d8b297f",
       "bytes": 4102,
       "compressedBytes": 707,
-      "sha256": "55f7388a1d46a6763bdae149b8bf9a8272e4f70d54c7ed92bb9fc91b9285d47a",
+      "sha256": "5ef3d209e35cfcd8de68e0764ac411f351cb72afe53830d63e37ff78322644d4",
       "summary": {
         "name": "Migration Public APIs",
         "serverUrl": "https://api.atlassian.com",
@@ -509,9 +509,9 @@
     {
       "id": "atlassian-migration-utilities",
       "sourceRevision": "8bdd7cc1b4f8f01115d78bb5a2db3be0f7b2dc2be9582198ae28efbd0862ae4d",
-      "bytes": 2910,
-      "compressedBytes": 647,
-      "sha256": "e2fac44c1047ef757479375dee0491e818e235ece00b900ef6611b7d7e083623",
+      "bytes": 3642,
+      "compressedBytes": 721,
+      "sha256": "a7c29466090dbabb95170fa9ba77f987ee599612c676de1ee4b8f286d77da0f0",
       "summary": {
         "name": "Migration REST API",
         "serverUrl": "",
@@ -523,9 +523,9 @@
     {
       "id": "opsgenie",
       "sourceRevision": "b692deb7459813317d9586497bd16e72e12b30be3622d227f6c0b8eec84434b4",
-      "bytes": 49853,
-      "compressedBytes": 4210,
-      "sha256": "267705c1894efd4e9892fc8498a9070a49151208db47f8874cfb1b742066b320",
+      "bytes": 62773,
+      "compressedBytes": 4370,
+      "sha256": "b91b1d97871467e107f2e8c91e6fead64546df7a8a89a660a5dcc561551e7f64",
       "summary": {
         "name": "Opsgenie REST API",
         "serverUrl": "https://api.opsgenie.com",
@@ -537,9 +537,9 @@
     {
       "id": "atlassian-privacy-consent",
       "sourceRevision": "336dd349ab3630eeed6ff061d568260600a42a0a32da502d69946ca8aac64794",
-      "bytes": 1431,
-      "compressedBytes": 534,
-      "sha256": "88cc9bc7d7dba50cc8185ca1c2169227621e1b5237c75dbae83a21092e0e1ea6",
+      "bytes": 1617,
+      "compressedBytes": 587,
+      "sha256": "469fc3ce86cbba6cdceb7ff5344324c437ed866a55b4d6e99df86b61acf82b46",
       "summary": {
         "name": "ConsentHub API Documentation",
         "serverUrl": "https://api.atlassian.com/consent-hub",
@@ -553,7 +553,7 @@
       "sourceRevision": "83c1eec55cd522f6ecbf863166e2dd5647e23515a5b9b7b34cb93f7e7f7ad816",
       "bytes": 2243,
       "compressedBytes": 628,
-      "sha256": "231eb3ffaec87eb40a6c61dc229b526e28da4323c2f9dd58be2117d5d6c0f02f",
+      "sha256": "78c9f442b11be7444422cbc5759cd3e5cb73c16c034f0edc2dbf6d7120e42ad9",
       "summary": {
         "name": "Security Vulnerability API",
         "serverUrl": "https://api.atlassian.com/vuln-transparency",
@@ -565,9 +565,9 @@
     {
       "id": "statuspage",
       "sourceRevision": "347dd95cf7ea903307a8b1769efa7aa75fb07972bb51a050b7cceffaa441e911",
-      "bytes": 45327,
-      "compressedBytes": 4069,
-      "sha256": "9b545a28fcf413ee4fcdcb7310ad62989fcfec7d4d1a0ddee00e5945234c4b6f",
+      "bytes": 53615,
+      "compressedBytes": 4208,
+      "sha256": "f6975709cef803a5ee2d96c99c74bd4e5b656fc80f887d9775638853a0ccd0a2",
       "summary": {
         "name": "Statuspage API",
         "serverUrl": "https://api.statuspage.io/v1",
@@ -580,8 +580,8 @@
       "id": "atlassian-teams",
       "sourceRevision": "788af50e234210aef7604eabb6621b7dfe9a2fe44f0a13b5b2a2396b55547261",
       "bytes": 6660,
-      "compressedBytes": 1073,
-      "sha256": "48ce0dedf04aeafe2300e11a49566ae699350ed9c5f8544b61b414143423fb55",
+      "compressedBytes": 1072,
+      "sha256": "38f8533b0f9d0031abd5671f86106a3c4e5da206930dbc77de6fe94d15332a3a",
       "summary": {
         "name": "Teams API",
         "serverUrl": "https://api.atlassian.com",
@@ -593,9 +593,9 @@
     {
       "id": "trello",
       "sourceRevision": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
-      "bytes": 72901,
-      "compressedBytes": 6536,
-      "sha256": "5190d48df96f5b45afe01cda51fe91bc2e39113a0ac4c57eb0b62e95fdb9a418",
+      "bytes": 92995,
+      "compressedBytes": 6841,
+      "sha256": "37d38999cb892d4b4a73bd7aaa9e5d39191fa0c712aedc9f1adbd4fec78ba2e5",
       "summary": {
         "name": "Trello REST API",
         "serverUrl": "https://api.trello.com/1",
@@ -606,9 +606,9 @@
     {
       "id": "aws-apigatewayv2",
       "sourceRevision": "fec5b78bf48681187bd549d526da351d49a8e04d76e99a3248c37deb20c50f18",
-      "bytes": 26553,
-      "compressedBytes": 1940,
-      "sha256": "0b2e2b76d695e5fef25cd30dea1ccf99cdb84e88caa7a156df0507480a142b32",
+      "bytes": 34221,
+      "compressedBytes": 2104,
+      "sha256": "b744a249d99c26202deca7fbcf4bcc4fe5cb44a08ee6f1b2d1a0c59ddfc995d6",
       "summary": {
         "name": "AmazonApiGatewayV2",
         "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
@@ -620,9 +620,9 @@
     {
       "id": "aws-apigateway",
       "sourceRevision": "356f372e1b3a48d7a22aed61c7c0797dc8af5c4ed550ac8e8babab68d83b8917",
-      "bytes": 45163,
-      "compressedBytes": 3050,
-      "sha256": "bcc7d11e5dae0201571db21704549c2c3f868a6bcef11250ac703d4f67c0167a",
+      "bytes": 58027,
+      "compressedBytes": 3263,
+      "sha256": "c716dbc9a67dacf63819bf3e1bb843f13bd7213b36dec5d93f90d1a9e784f6f4",
       "summary": {
         "name": "Amazon API Gateway",
         "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
@@ -634,9 +634,9 @@
     {
       "id": "aws-athena",
       "sourceRevision": "1f4e7736ea3b962dd749aa5746575c4845f91a175d334c6974c505bfeee9c1ff",
-      "bytes": 26441,
-      "compressedBytes": 2298,
-      "sha256": "b61d396cd53d7668fefd5ee6263230b130bb89709b165974276e5ddecdc72be8",
+      "bytes": 42013,
+      "compressedBytes": 2550,
+      "sha256": "53906b902f1408db26c163ef0cd818e10cf3a64b6eba5b571e16472ca34ed5f0",
       "summary": {
         "name": "Amazon Athena",
         "serverUrl": "http://athena.us-east-1.amazonaws.com",
@@ -648,9 +648,9 @@
     {
       "id": "aws-autoscaling",
       "sourceRevision": "3dfd2af80a4764189fc0d3ea5a28bc9479e45447b1aae5efddf26d60a919ae3f",
-      "bytes": 48742,
-      "compressedBytes": 2935,
-      "sha256": "cc8a251f97f9bb1901286f72625024af1b346a15c72663bfbd62c654a30b491a",
+      "bytes": 84660,
+      "compressedBytes": 3573,
+      "sha256": "d87d04846a42c17d92ecfaa5fc87b0967757fbdc2ac2bd66ea7749094f4ffed2",
       "summary": {
         "name": "Auto Scaling",
         "serverUrl": "http://autoscaling.us-east-1.amazonaws.com",
@@ -662,9 +662,9 @@
     {
       "id": "aws-backup",
       "sourceRevision": "421781af6fbb43cf42a8d55dfbe68431a0df8c08d47afdd9c52404281a5e5990",
-      "bytes": 26972,
-      "compressedBytes": 2224,
-      "sha256": "d5e59c1ba46a871491d2e311299022820a343edeee95eba51f8ec9353fb34dc7",
+      "bytes": 34514,
+      "compressedBytes": 2422,
+      "sha256": "67def386496de3331fac6a06c2395b64e5bdffd395f36497a1b40e176f1ad042",
       "summary": {
         "name": "AWS Backup",
         "serverUrl": "http://backup.us-east-1.amazonaws.com",
@@ -676,9 +676,9 @@
     {
       "id": "aws-batch",
       "sourceRevision": "d3b0ea44f93b92609c9766312593952f9fb10b8cbbd0c294445e8538c6ff86e2",
-      "bytes": 10871,
-      "compressedBytes": 1541,
-      "sha256": "b83a4a1fc051ff5472ab0a9596de921abdbfa52876bb9b08016639103ae8d278",
+      "bytes": 13469,
+      "compressedBytes": 1653,
+      "sha256": "56fc0a67f83f76d477791f487b31c42cf0af603f22de1045ae6fdf237d9c27e5",
       "summary": {
         "name": "AWS Batch",
         "serverUrl": "http://batch.us-east-1.amazonaws.com",
@@ -690,9 +690,9 @@
     {
       "id": "aws-budgets",
       "sourceRevision": "53960528036628b78617ff8ed599d3b17b8fc0621acee9b2042d5daf222af954",
-      "bytes": 12988,
-      "compressedBytes": 1657,
-      "sha256": "e71449aad644c389af2228fe7d152d883422e3f91ebb39c9fcdc27947cbb0cf1",
+      "bytes": 18255,
+      "compressedBytes": 1818,
+      "sha256": "5057b43677163d8a399d0c1b6d0886e85b662e2fed120b35dfaf697cd8e190eb",
       "summary": {
         "name": "AWS Budgets",
         "serverUrl": "https://budgets.amazonaws.com",
@@ -704,9 +704,9 @@
     {
       "id": "aws-cloudformation",
       "sourceRevision": "4a68c9cffa40499b55c50b970591ff86129e779b0ef9e8bdfcaef552ebc14e3f",
-      "bytes": 52500,
-      "compressedBytes": 3345,
-      "sha256": "5aabeffb45a25c9b60ed2e9b66e8f8915e9e0b5ee8e6477957bfb6bd98e96c8e",
+      "bytes": 91980,
+      "compressedBytes": 3996,
+      "sha256": "442d47fac767f06a3b69c352b060b66764d2d43f245edaddbfe32a09677f268b",
       "summary": {
         "name": "AWS CloudFormation",
         "serverUrl": "http://cloudformation.us-east-1.amazonaws.com",
@@ -718,9 +718,9 @@
     {
       "id": "aws-cloudfront",
       "sourceRevision": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
-      "bytes": 44560,
-      "compressedBytes": 2999,
-      "sha256": "b8bd37dc6bef9bd0061fecf87b7f4b48d826f64dc1db5a7acb072a9d9a45a3ca",
+      "bytes": 61625,
+      "compressedBytes": 3299,
+      "sha256": "781a353c6723c85e0b854375127a08dab78309b6915017f3a706d6329d810292",
       "summary": {
         "name": "Amazon CloudFront",
         "serverUrl": "https://cloudfront.amazonaws.com",
@@ -732,9 +732,9 @@
     {
       "id": "aws-cloudtrail",
       "sourceRevision": "8d2daf1667f87143c7310a436a53e35517a8679054cf84b3e295bddc497019d8",
-      "bytes": 20918,
-      "compressedBytes": 2032,
-      "sha256": "5365e983ba2c026033dfd9940ea771d67023febfc63c5349b13c56f8fa2b1ce8",
+      "bytes": 31452,
+      "compressedBytes": 2236,
+      "sha256": "e872a97573c9e252747ad52b854564b2b7b01360c74ac82c91fe7ae963ee77f5",
       "summary": {
         "name": "AWS CloudTrail",
         "serverUrl": "http://cloudtrail.us-east-1.amazonaws.com",
@@ -746,9 +746,9 @@
     {
       "id": "aws-logs",
       "sourceRevision": "738f035ec0d944b378fa9f82c98c4f4af7689cbe4816aa07064b4831a88886b6",
-      "bytes": 21533,
-      "compressedBytes": 2248,
-      "sha256": "7da3beb72bd3c7c035d9c1083c21ea2066d398e8d650c60bffb64fb324eb8a00",
+      "bytes": 33212,
+      "compressedBytes": 2476,
+      "sha256": "d28d1c5d65071172a6ef0c9be4800295ee06621e533d023e491846c6a8d55789",
       "summary": {
         "name": "Amazon CloudWatch Logs",
         "serverUrl": "http://logs.us-east-1.amazonaws.com",
@@ -760,9 +760,9 @@
     {
       "id": "aws-monitoring",
       "sourceRevision": "85ff979bad127aab83a73b775f9905aac586238122296feb00b685d8deff936a",
-      "bytes": 28319,
-      "compressedBytes": 2165,
-      "sha256": "2945ad28878c74ac8e3a9e5fd65769efd7d55d50fdc3a4d5fb75dfb73bfeb9bc",
+      "bytes": 49751,
+      "compressedBytes": 2573,
+      "sha256": "906f9dfbf3f1aecd81bf603f6089e9e306a9ced2d22546c05b63b57fcc1b980c",
       "summary": {
         "name": "Amazon CloudWatch",
         "serverUrl": "http://monitoring.us-east-1.amazonaws.com",
@@ -774,9 +774,9 @@
     {
       "id": "aws-codebuild",
       "sourceRevision": "0e6b6a34f533bb23aef8395ee8b4b1c968dff7940c2e501672ce755ebb17553d",
-      "bytes": 17891,
-      "compressedBytes": 1710,
-      "sha256": "0a7237703a987b557587f0896bbb53506336e54bb32e2a60a9d06a9b4f6b854c",
+      "bytes": 28196,
+      "compressedBytes": 1918,
+      "sha256": "88002392cbb9bfa66353352a325470cb5406db675034dd78f1581440659f642b",
       "summary": {
         "name": "AWS CodeBuild",
         "serverUrl": "http://codebuild.us-east-1.amazonaws.com",
@@ -788,9 +788,9 @@
     {
       "id": "aws-codepipeline",
       "sourceRevision": "5cc1dc46e043c2a4abdbb902cbff0a14e441bd3245ea93ac9695716caf6824b1",
-      "bytes": 26735,
-      "compressedBytes": 3023,
-      "sha256": "02370c936c6b938fa32bfc87adc65679b898b44b5cce7b0342bff04ba791820d",
+      "bytes": 35666,
+      "compressedBytes": 3227,
+      "sha256": "247541593feab8fb5c067524e9b86fed86dadb067e459a97caa772817f632de6",
       "summary": {
         "name": "AWS CodePipeline",
         "serverUrl": "http://codepipeline.us-east-1.amazonaws.com",
@@ -802,9 +802,9 @@
     {
       "id": "aws-cognito-idp",
       "sourceRevision": "ba12458942a09007e006e4406e4aa86577b23b7b14ef07618da8a9b277a57e98",
-      "bytes": 46129,
-      "compressedBytes": 3482,
-      "sha256": "19105e5d73e1e8dd89940082de7f6b756cc024e30a6821ccc2c4cee320b715e9",
+      "bytes": 69716,
+      "compressedBytes": 3897,
+      "sha256": "ea65987791c847242a1cf7ee0347ec4ff41b4da9e511fe55fa1f56c9540e060e",
       "summary": {
         "name": "Amazon Cognito Identity Provider",
         "serverUrl": "http://cognito-idp.us-east-1.amazonaws.com",
@@ -816,9 +816,9 @@
     {
       "id": "aws-comprehend",
       "sourceRevision": "93f4ec0615f3af4ec36b57402ba5546693ebf41575fb61b334a38075be84905a",
-      "bytes": 32817,
-      "compressedBytes": 2139,
-      "sha256": "ea9340aa04b9d664e23076976a99c3e0b6a68ed588a8a7fcd4296d771d05d0ce",
+      "bytes": 52053,
+      "compressedBytes": 2436,
+      "sha256": "b08273edc3b8781b3b4aa364d4a8b7824c55975a5926e7e0806e86d25c83db59",
       "summary": {
         "name": "Amazon Comprehend",
         "serverUrl": "http://comprehend.us-east-1.amazonaws.com",
@@ -830,9 +830,9 @@
     {
       "id": "aws-ce",
       "sourceRevision": "73470bd31bb69e4c637bd5e031c47906412bd2ec3e3c4f3ed067dd51adcc10b1",
-      "bytes": 16125,
-      "compressedBytes": 1640,
-      "sha256": "c3e281c9113d7d383679b787acd74cd79728a6abc9d47b3e4c9582699df10e7b",
+      "bytes": 24827,
+      "compressedBytes": 1837,
+      "sha256": "5044804f0349b068518aa87ca6285a5645a2077728d5c39ca739d5af011cb9a9",
       "summary": {
         "name": "AWS Cost Explorer Service",
         "serverUrl": "http://ce.us-east-1.amazonaws.com",
@@ -844,9 +844,9 @@
     {
       "id": "aws-firehose",
       "sourceRevision": "d4ce44694309b05adfc13f5ff0304ef1a357340252c0aa8335df84d93c062522",
-      "bytes": 5581,
-      "compressedBytes": 892,
-      "sha256": "d9c752c607fabfdc0d4303cc75fa53d9e78a7111f1b20c3f5209f56b4931aebc",
+      "bytes": 8329,
+      "compressedBytes": 1029,
+      "sha256": "c6110c7dfc791f054fe14de27e8b54161136d31df745ad145dc2b71e6578bd50",
       "summary": {
         "name": "Amazon Kinesis Firehose",
         "serverUrl": "http://firehose.us-east-1.amazonaws.com",
@@ -858,9 +858,9 @@
     {
       "id": "aws-dynamodb",
       "sourceRevision": "edf78af7371e27e8b8440b0587d04830d881d8681558787f406ffdfe713108e0",
-      "bytes": 21418,
-      "compressedBytes": 2102,
-      "sha256": "a5b0113c2ba62e3dd2b7fde7428b68c19d3be7c0d2fd2a9d43e34fc76de48085",
+      "bytes": 33555,
+      "compressedBytes": 2331,
+      "sha256": "cd0464608b04f546f42442f7343501319c907dc16dd63b8ad3119db65737cecf",
       "summary": {
         "name": "Amazon DynamoDB",
         "serverUrl": "http://dynamodb.us-east-1.amazonaws.com",
@@ -872,9 +872,9 @@
     {
       "id": "aws-ec2",
       "sourceRevision": "ea5b1da045efed071bd26efab3b896f71282f662cc1e1683194d66023d3cfd04",
-      "bytes": 432714,
-      "compressedBytes": 22072,
-      "sha256": "3552bf2deef0d7100ee9769d245ce8a1fe08fe29522029214fbc382ad045096b",
+      "bytes": 767730,
+      "compressedBytes": 25784,
+      "sha256": "d83e8098625691c4b1d73343cb2b0a2e141881fcbbdbcdf196d06c107565e514",
       "summary": {
         "name": "Amazon Elastic Compute Cloud",
         "serverUrl": "http://ec2.us-east-1.amazonaws.com",
@@ -886,9 +886,9 @@
     {
       "id": "aws-ecr",
       "sourceRevision": "fbeab5c68abfe83723d66352c751edc87347a72204c1b68e6607c1043250d01b",
-      "bytes": 17399,
-      "compressedBytes": 1727,
-      "sha256": "22a6f1e04bf9e84d79b10714eb93eed41e60cc31e0e6401754ae9dab2f71192f",
+      "bytes": 26788,
+      "compressedBytes": 1924,
+      "sha256": "1cd6a0d5308761803ffcce286d1c72c75c5dd04f7f8bbb365d805126ef3d4e8c",
       "summary": {
         "name": "Amazon EC2 Container Registry",
         "serverUrl": "http://api.ecr.us-east-1.amazonaws.com",
@@ -900,9 +900,9 @@
     {
       "id": "aws-ecs",
       "sourceRevision": "4bf57dddad6c0cc36532b5b8fa76f9c110f786db7172982f133f5b4e7171d314",
-      "bytes": 22932,
-      "compressedBytes": 2071,
-      "sha256": "36543f545890ecac897c216aef620064691538b44516d4bd02242e4600afff89",
+      "bytes": 35756,
+      "compressedBytes": 2301,
+      "sha256": "78e956e0e14f4b1b66bf085b8b1f36d18a68e6153d632b0cfe9d95006feb1a69",
       "summary": {
         "name": "Amazon EC2 Container Service",
         "serverUrl": "http://ecs.us-east-1.amazonaws.com",
@@ -914,9 +914,9 @@
     {
       "id": "aws-elasticfilesystem",
       "sourceRevision": "dade2231707fbb8542eaecdf0215aa791cb409dd608c7ee8336c4f1dee408bf2",
-      "bytes": 13779,
-      "compressedBytes": 1511,
-      "sha256": "1222263330f54c604da9ae3f3910783dbd0b20cb73f2ca9ab4f69c7adcf5d6f8",
+      "bytes": 16995,
+      "compressedBytes": 1642,
+      "sha256": "02e560dee6239298baa9ba2965269f2ab39bba78cce176f6e350ffcc460c9c75",
       "summary": {
         "name": "Amazon Elastic File System",
         "serverUrl": "http://elasticfilesystem.us-east-1.amazonaws.com",
@@ -928,9 +928,9 @@
     {
       "id": "aws-eks",
       "sourceRevision": "476f3cff5ca1a16490dcf49ef5aee2c1041b9a1fa71289ae9ed5e5f7f643d302",
-      "bytes": 14466,
-      "compressedBytes": 1689,
-      "sha256": "b2dcd130906aec91207b1d9b8592893ee8dae01bce7ff6a90e147ece5543cc57",
+      "bytes": 18323,
+      "compressedBytes": 1827,
+      "sha256": "9428ec4912d5f8802a7efb61d2bac79d83e085fb732985bc5b8af30acdf74355",
       "summary": {
         "name": "Amazon Elastic Kubernetes Service",
         "serverUrl": "http://eks.us-east-1.amazonaws.com",
@@ -942,9 +942,9 @@
     {
       "id": "aws-elasticloadbalancingv2",
       "sourceRevision": "9bb94556618707f774795169f97fedcdc28f89a69a39627c6c14500ed5d6ada5",
-      "bytes": 28852,
-      "compressedBytes": 2263,
-      "sha256": "65dca6edb1fdbbf22780fe62fad82b43963487bb2926f770fdb5bd13b2d96436",
+      "bytes": 48028,
+      "compressedBytes": 2635,
+      "sha256": "bb4856342e5d26d19b3e03162625522921eb8d066dc6173a68a1093c78b4d206",
       "summary": {
         "name": "Elastic Load Balancing",
         "serverUrl": "http://elasticloadbalancing.us-east-1.amazonaws.com",
@@ -956,9 +956,9 @@
     {
       "id": "aws-elasticache",
       "sourceRevision": "f73df542876aded5810cd60675f944fa512810eb4875ab4b05e9cca1a42d3f7e",
-      "bytes": 49600,
-      "compressedBytes": 3027,
-      "sha256": "d3843dbb3cf1b7f1d551421066d400b72e03b57f1ca32e411391177157d097fb",
+      "bytes": 86260,
+      "compressedBytes": 3675,
+      "sha256": "c13f81e9c8446f699e7064970e655f357f93ba30082bc1a5638a0aa302294661",
       "summary": {
         "name": "Amazon ElastiCache",
         "serverUrl": "http://elasticache.us-east-1.amazonaws.com",
@@ -970,9 +970,9 @@
     {
       "id": "aws-events",
       "sourceRevision": "f8db1a08e00a64700d8561f161bb4df554a848193db9e5128b00f7be72f895d9",
-      "bytes": 19507,
-      "compressedBytes": 1935,
-      "sha256": "a78e1e9babb8dfb0cbbaf09e931707f682abdd200b532928ce3ac5c3439a0bfc",
+      "bytes": 31186,
+      "compressedBytes": 2162,
+      "sha256": "c8f957a8ab1cb45445b5ba139513f2ef699cfdbbc583c95e834607b672e6fa39",
       "summary": {
         "name": "Amazon CloudWatch Events",
         "serverUrl": "http://events.us-east-1.amazonaws.com",
@@ -984,9 +984,9 @@
     {
       "id": "aws-fsx",
       "sourceRevision": "34700f933d923f7e41dd007eac9345e3ad706486bde3df7a1cf9bea6bd84aa85",
-      "bytes": 15624,
-      "compressedBytes": 1350,
-      "sha256": "403079a20cf03f0d96d6305f0ff5d3f0972a221f27a1299bc0dc5a2989da0ffb",
+      "bytes": 25013,
+      "compressedBytes": 1546,
+      "sha256": "7905b128b6f7a6dc6546c4ff1f1a0ce2aef842eb5753b065210dcb2f00c6c63e",
       "summary": {
         "name": "Amazon FSx",
         "serverUrl": "http://fsx.us-east-1.amazonaws.com",
@@ -998,9 +998,9 @@
     {
       "id": "aws-glue",
       "sourceRevision": "27f1694cedeb25ce41ed5dc9b119ddd7953e18e4a96677498ca0ab7801ceceb6",
-      "bytes": 67770,
-      "compressedBytes": 4098,
-      "sha256": "2f145b5b02020d6cf2176c54aca4b55dc2b2222e2bfb1aa70a3acf6cf47b88f1",
+      "bytes": 114028,
+      "compressedBytes": 4701,
+      "sha256": "88fcbd959d59ecb2a6a3059b8fc4ee768be6d28a11b5dd7e401bff35621a51d7",
       "summary": {
         "name": "AWS Glue",
         "serverUrl": "http://glue.us-east-1.amazonaws.com",
@@ -1012,9 +1012,9 @@
     {
       "id": "aws-iam",
       "sourceRevision": "75b86d2d22322f224d07485f0a74f0927ec4b6bb90d6f4108c6cf98f89132b3d",
-      "bytes": 108600,
-      "compressedBytes": 5864,
-      "sha256": "a712430e6960209d836c93d3315a59ba4cb659504bd63f357a62c0ba9af5dbdc",
+      "bytes": 197746,
+      "compressedBytes": 7038,
+      "sha256": "95c5a6348788be37f2b4f82d3159997fe2ad340ae5f20e8b04a55c41ee72c0b6",
       "summary": {
         "name": "AWS Identity and Access Management",
         "serverUrl": "https://iam.amazonaws.com",
@@ -1026,9 +1026,9 @@
     {
       "id": "aws-kinesis",
       "sourceRevision": "bd4ea6c0e6f082d9b9fbbce188a623c034dee5ffa136b5d3aaa2325ead224ba5",
-      "bytes": 10636,
-      "compressedBytes": 1150,
-      "sha256": "a17944e0d184041752740ff30a9f6a0961003a44ae5bf9a7ec14fa9d18afb8a6",
+      "bytes": 17048,
+      "compressedBytes": 1333,
+      "sha256": "0dc479f98f75ce3cc2ff93439dbc2b8da33d6c3454b4c0c378a25f535417ed3e",
       "summary": {
         "name": "Amazon Kinesis",
         "serverUrl": "http://kinesis.us-east-1.amazonaws.com",
@@ -1040,9 +1040,9 @@
     {
       "id": "aws-kms",
       "sourceRevision": "f0c9733d4dd7ce2c51e3a49dea35531a37711c1ef2fecc09aa12615cf0500cb4",
-      "bytes": 26106,
-      "compressedBytes": 3189,
-      "sha256": "6400bde6b43214c902b7c007ee1592c268f28260d2325bf47b45bb1486048dfa",
+      "bytes": 37556,
+      "compressedBytes": 3412,
+      "sha256": "73cd02e19ba0e1ea1e312f0a0ed19adba7d91d3cb52b3b4e146f7760d1fb04aa",
       "summary": {
         "name": "AWS Key Management Service",
         "serverUrl": "http://kms.us-east-1.amazonaws.com",
@@ -1054,9 +1054,9 @@
     {
       "id": "aws-lambda",
       "sourceRevision": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
-      "bytes": 32946,
-      "compressedBytes": 3501,
-      "sha256": "f56ae41dcf29b3ce4b79280d6c7931d3809287df4c6bd12907c9064190b862ce",
+      "bytes": 40500,
+      "compressedBytes": 3701,
+      "sha256": "855da8479070703c9604e5ca4b440ec35ab5d0062ddc3d9a9812f6f03acfd2e0",
       "summary": {
         "name": "AWS Lambda",
         "serverUrl": "http://lambda.us-east-1.amazonaws.com",
@@ -1068,9 +1068,9 @@
     {
       "id": "aws-opensearch",
       "sourceRevision": "01d0ee509fc29cefc2403b8dff507be3bba690f3583710fe9b95bedb5a519d9e",
-      "bytes": 22923,
-      "compressedBytes": 2106,
-      "sha256": "c9331e8cf364f8baa94585f1848089a5a91481a08075a39c92cae2c3b102e62d",
+      "bytes": 28611,
+      "compressedBytes": 2276,
+      "sha256": "e4f9b66c988319783a94610ca5b6c49cd20f4845560b08ad4b2c0f0dae87a586",
       "summary": {
         "name": "Amazon OpenSearch Service",
         "serverUrl": "http://es.us-east-1.amazonaws.com",
@@ -1082,9 +1082,9 @@
     {
       "id": "aws-organizations",
       "sourceRevision": "a16e015497cbd98a09e67d6321e123d68bfb0fa916af5ccab77d815dfcb37f3c",
-      "bytes": 27972,
-      "compressedBytes": 2641,
-      "sha256": "d2343d38ee364c5298cca41dfb5c1226ddffa2b799519373c46341f820a0727e",
+      "bytes": 40567,
+      "compressedBytes": 2881,
+      "sha256": "4b239b1c515fc48fa287c1b3040a79d4ca7cbd8ec476c204fac8c323432a5bd3",
       "summary": {
         "name": "AWS Organizations",
         "serverUrl": "http://organizations.us-east-1.amazonaws.com",
@@ -1096,9 +1096,9 @@
     {
       "id": "aws-polly",
       "sourceRevision": "62fa911eba1d9141664783718fa74d34c1ba257025cd72df5a057e54d796ff55",
-      "bytes": 4286,
-      "compressedBytes": 861,
-      "sha256": "76ce10d9010e0942a378283acbd406db8c7c44232159e08783435d7f4c04d954",
+      "bytes": 5213,
+      "compressedBytes": 928,
+      "sha256": "04b2e0531d7cb3928e7b694087662e75650384527ddd50617e690eddf5d55616",
       "summary": {
         "name": "Amazon Polly",
         "serverUrl": "http://polly.us-east-1.amazonaws.com",
@@ -1110,9 +1110,9 @@
     {
       "id": "aws-rds",
       "sourceRevision": "c21871f272a1f369d3802e13d76f0625eac5dfc240c320f38c3a547da1901be5",
-      "bytes": 106614,
-      "compressedBytes": 6385,
-      "sha256": "14694d6729337d46b9be382079eb7f0f17322249feda6fb4c8a3d8ae29d4b201",
+      "bytes": 187266,
+      "compressedBytes": 7415,
+      "sha256": "593e28e3c5e5896e5eb89567f89cca6e51fabc680701ba608f0dd1dc93198c22",
       "summary": {
         "name": "Amazon Relational Database Service",
         "serverUrl": "http://rds.us-east-1.amazonaws.com",
@@ -1124,9 +1124,9 @@
     {
       "id": "aws-redshift",
       "sourceRevision": "d6271729a44df045024d5dff64e01968f4d1def0470f8aec3eac648fc8ec8b28",
-      "bytes": 92247,
-      "compressedBytes": 5432,
-      "sha256": "fd11ed9a875b497d406c7df816e4c1dcba816d7091e846ca73fd03d12a244b15",
+      "bytes": 161513,
+      "compressedBytes": 6383,
+      "sha256": "dadce6ecb72946e67a85a82a3a90202a3f349bb754a6cd1acb6afb13025b8254",
       "summary": {
         "name": "Amazon Redshift",
         "serverUrl": "http://redshift.us-east-1.amazonaws.com",
@@ -1138,9 +1138,9 @@
     {
       "id": "aws-rekognition",
       "sourceRevision": "eb61aa3f8f2f58f7890b06fd3af72bddddb454e7f372bcecadd2eb7fcbf2194f",
-      "bytes": 46692,
-      "compressedBytes": 2716,
-      "sha256": "454b318e877f1a1921ee24901860a0709b36ed983db38a045e00a8ca58968729",
+      "bytes": 63180,
+      "compressedBytes": 2971,
+      "sha256": "99fd0708045e1f4619fdab19121628a63063bb01bdddb95b59e1a7ada2ed55c5",
       "summary": {
         "name": "Amazon Rekognition",
         "serverUrl": "http://rekognition.us-east-1.amazonaws.com",
@@ -1152,9 +1152,9 @@
     {
       "id": "aws-route53",
       "sourceRevision": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
-      "bytes": 27784,
-      "compressedBytes": 2484,
-      "sha256": "08a0258800659fc0be77da6c397777084a655e5a954df83caa8a84fcacd66057",
+      "bytes": 38123,
+      "compressedBytes": 2715,
+      "sha256": "9087bcc6a7d756a5193e9b4cd2cf22b1938267c98314cde572e0fe01d140b4cf",
       "summary": {
         "name": "Amazon Route 53",
         "serverUrl": "https://route53.amazonaws.com",
@@ -1166,9 +1166,9 @@
     {
       "id": "aws-s3",
       "sourceRevision": "2c1283af457c374eea21b36eda33edbebd1d331b8954dff16c332d22881d212d",
-      "bytes": 31010,
-      "compressedBytes": 2374,
-      "sha256": "7a75c92976861ca37d668f5cb5bd5482c9107d98b0cd4d2bb9915ec41380335d",
+      "bytes": 44935,
+      "compressedBytes": 2705,
+      "sha256": "c184e23b1f78c1b2a18a4c04836caa981ad9c82d5d432759ce194f15c5d750f3",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "http://s3.us-east-1.amazonaws.com",
@@ -1180,9 +1180,9 @@
     {
       "id": "aws-s3control",
       "sourceRevision": "983b1815b0cd68eaf86d6cd316ba6177013be242600789992bf0d9cb83808e32",
-      "bytes": 24710,
-      "compressedBytes": 1850,
-      "sha256": "f0c8b796470bbb30a49eacaf5a42589c85d79ff9bbc7c38dbbf27aab6d9b0f14",
+      "bytes": 41379,
+      "compressedBytes": 2161,
+      "sha256": "b10d825abd713f59a03f1734509db7b1858bce20f8dc457874a27a07c8d18f59",
       "summary": {
         "name": "AWS S3 Control",
         "serverUrl": "http://s3-control.us-east-1.amazonaws.com",
@@ -1194,9 +1194,9 @@
     {
       "id": "aws-sagemaker",
       "sourceRevision": "2847fe69e459daa1eeafb95e2dffd5a52cee372709c718ff8f2e52ca6103ae09",
-      "bytes": 108550,
-      "compressedBytes": 6251,
-      "sha256": "5c3a6b4797f76e4386866850e2c1b925553a641d8810b6bb725d57f502d665f2",
+      "bytes": 178166,
+      "compressedBytes": 7139,
+      "sha256": "2769e9f0f41452562784b21b6a64a3769523bc6030537b385c34de5231d5be3b",
       "summary": {
         "name": "Amazon SageMaker Service",
         "serverUrl": "http://api.sagemaker.us-east-1.amazonaws.com",
@@ -1208,9 +1208,9 @@
     {
       "id": "aws-runtime-sagemaker",
       "sourceRevision": "d8a12efce47afa804033ea5428ae5168ebb8e100397672464aecc0ca6a16b7bf",
-      "bytes": 1496,
-      "compressedBytes": 584,
-      "sha256": "4e58195f4a7134e7e951408ac45e6265d8f1cfa88b8748d0554ffbe27371ec46",
+      "bytes": 1828,
+      "compressedBytes": 659,
+      "sha256": "b9414df29d54743d7d728615e6a05a6dca33bd8d43474f5050c68a379ec5a69b",
       "summary": {
         "name": "Amazon SageMaker Runtime",
         "serverUrl": "http://runtime.sagemaker.us-east-1.amazonaws.com",
@@ -1222,9 +1222,9 @@
     {
       "id": "aws-secretsmanager",
       "sourceRevision": "1c7ad235b89a6ebf714a9116d5be5055aced880a9227adabfb76a43a0c06f795",
-      "bytes": 13167,
-      "compressedBytes": 1660,
-      "sha256": "bb1b73a217c9407d45f5e7bdaacf51a2dfc4d3d9e5ba9d4cc00858d1bc49d23b",
+      "bytes": 18205,
+      "compressedBytes": 1821,
+      "sha256": "53b427569cc22b2f3e8daf767e133382209ea46b01d5febad443e168ec387718",
       "summary": {
         "name": "AWS Secrets Manager",
         "serverUrl": "http://secretsmanager.us-east-1.amazonaws.com",
@@ -1236,9 +1236,9 @@
     {
       "id": "aws-sesv2",
       "sourceRevision": "d8193d3b10ba22cf265b0fe76ff4474dbe8eb052a8b407c96eeda4d20b564aa5",
-      "bytes": 34737,
-      "compressedBytes": 2753,
-      "sha256": "3b1c50f007ace0cf9af0e70a8c46331397719c82c1e13b8bd3a97135245d220c",
+      "bytes": 44328,
+      "compressedBytes": 2993,
+      "sha256": "71ef73f13bbc765aaaf15aa283690f81cc7b428dda42d98bb721fa7a3faadddf",
       "summary": {
         "name": "Amazon Simple Email Service",
         "serverUrl": "http://email.us-east-1.amazonaws.com",
@@ -1250,9 +1250,9 @@
     {
       "id": "aws-sns",
       "sourceRevision": "14a210cbd1167e49aeb461e4ba8bff533c7bb6473f7cb8ff91f83beaf932f195",
-      "bytes": 31598,
-      "compressedBytes": 2493,
-      "sha256": "26237817c1ffad3a723b176d4e4b1321c2db88dcf8be663af515673b61e12f46",
+      "bytes": 55286,
+      "compressedBytes": 2924,
+      "sha256": "67118919d123a37ea0790bf5ccef2cca39b331c7a9bd39506722b260cf7a2a9c",
       "summary": {
         "name": "Amazon Simple Notification Service",
         "serverUrl": "http://sns.us-east-1.amazonaws.com",
@@ -1264,9 +1264,9 @@
     {
       "id": "aws-sqs",
       "sourceRevision": "5ba8e13697b8c58dd867c87318478c346afe694fdf47ccecae7404474d6b890b",
-      "bytes": 19859,
-      "compressedBytes": 2017,
-      "sha256": "e6fcc24b0f57ce8804818e912f1e1245149a4c12d76df3e50d8ffcd2e23c772d",
+      "bytes": 32831,
+      "compressedBytes": 2308,
+      "sha256": "a16b3a5e4a4b6afac2dcd8b8cb0bd0c9b01a4e4c3e985450e417670468837827",
       "summary": {
         "name": "Amazon Simple Queue Service",
         "serverUrl": "http://sqs.us-east-1.amazonaws.com",
@@ -1278,9 +1278,9 @@
     {
       "id": "aws-states",
       "sourceRevision": "015f7480d4276fe656b24c7dcd8880473ec534e0ea37445dc417cacfb830165e",
-      "bytes": 14916,
-      "compressedBytes": 1731,
-      "sha256": "d210f20296fda10b766fc19b62dc362e30bcabcd791a2cbc2af3a0712e939858",
+      "bytes": 22702,
+      "compressedBytes": 1913,
+      "sha256": "296dd5df6fe6eb04f6f985f771eb0fb40508f396cd6f170c07c311471be213f4",
       "summary": {
         "name": "AWS Step Functions",
         "serverUrl": "http://states.us-east-1.amazonaws.com",
@@ -1292,9 +1292,9 @@
     {
       "id": "aws-sts",
       "sourceRevision": "57abe7038ef9b4425e87706ef402117db67fa6822947457f49ec1d1abb78b022",
-      "bytes": 6638,
-      "compressedBytes": 968,
-      "sha256": "c0ea7bf3066e8462edf1acfe025b5703265297f1d4f216804da9eca3bab12bac",
+      "bytes": 11150,
+      "compressedBytes": 1177,
+      "sha256": "a60949a095d06eb8a34ba885fa8026856e4614e658e692617d727e27c722aed7",
       "summary": {
         "name": "AWS Security Token Service",
         "serverUrl": "https://sts.amazonaws.com",
@@ -1306,9 +1306,9 @@
     {
       "id": "aws-ssm",
       "sourceRevision": "ea1da9646ab7a272056e2f0d41fb933a0efc86c777f8aaefd35c111678cc7628",
-      "bytes": 53051,
-      "compressedBytes": 3682,
-      "sha256": "4f17ca3f9cf772b8ec5d670e508dbaf0c958b64f34288c7f559ac7c8ff228a16",
+      "bytes": 84653,
+      "compressedBytes": 4176,
+      "sha256": "df6e289e36f6390b869ae6f650c4a8df69dbec275413e731bbb96d8558a1cb6f",
       "summary": {
         "name": "Amazon Simple Systems Manager (SSM)",
         "serverUrl": "http://ssm.us-east-1.amazonaws.com",
@@ -1320,9 +1320,9 @@
     {
       "id": "aws-textract",
       "sourceRevision": "d3c0dbdf67385e256a951ed8d08661a9168c2432820433a46c6d3caa3f8b58a3",
-      "bytes": 5419,
-      "compressedBytes": 786,
-      "sha256": "40beeb4de9dd16e45039413a0c2b07b85a44aa70ca26056183ca6d2c6081be8d",
+      "bytes": 8396,
+      "compressedBytes": 926,
+      "sha256": "13db18b23224259604e5dd6568250d8449716de2ab3c0131d560ba0ade52be7d",
       "summary": {
         "name": "Amazon Textract",
         "serverUrl": "http://textract.us-east-1.amazonaws.com",
@@ -1334,9 +1334,9 @@
     {
       "id": "aws-transcribe",
       "sourceRevision": "b5cb42260d51188fefc2765402bd2e3fc1229467a15831d7972478268b6a3855",
-      "bytes": 16115,
-      "compressedBytes": 1464,
-      "sha256": "732091da09f939f8ac094193ca37583f63e548561ffa6faf165c7646511a8bdc",
+      "bytes": 25046,
+      "compressedBytes": 1662,
+      "sha256": "ee092f3ec3fcc9f88b8c50acaacec13725a130a6e0af3c613a612419a8b1657e",
       "summary": {
         "name": "Amazon Transcribe Service",
         "serverUrl": "http://transcribe.us-east-1.amazonaws.com",
@@ -1348,9 +1348,9 @@
     {
       "id": "aws-transfer",
       "sourceRevision": "dd19a58db893773435f113141bcc8972b0d9373bac3f0f88eb5e07d0b4337efc",
-      "bytes": 22124,
-      "compressedBytes": 1972,
-      "sha256": "38e96ca6509dfdf8868b9584c93c1f4460eebbc827b448404103d424817cb0d3",
+      "bytes": 35635,
+      "compressedBytes": 2199,
+      "sha256": "cc3949017931226f4b7f22cb0a15f220a09d17e28f95ad76826ac2ce26c79d3a",
       "summary": {
         "name": "AWS Transfer Family",
         "serverUrl": "http://transfer.us-east-1.amazonaws.com",
@@ -1362,9 +1362,9 @@
     {
       "id": "aws-translate",
       "sourceRevision": "1f9b0d20961033124575dd053bf84a7a63ba22d85816406cc7aaaf6cefa0e433",
-      "bytes": 7734,
-      "compressedBytes": 917,
-      "sha256": "bdcf56838e2ecc73726a1336aaf380aac077d4bafa232a80a726916b8e1f35b7",
+      "bytes": 12085,
+      "compressedBytes": 1076,
+      "sha256": "cf350c4258d2278d9d99ac10fd9e8a2334f3a8f9486bbc4da6e39e2bad176f58",
       "summary": {
         "name": "Amazon Translate",
         "serverUrl": "http://translate.us-east-1.amazonaws.com",
@@ -1376,9 +1376,9 @@
     {
       "id": "bluesky-app",
       "sourceRevision": "02fc57bf6b47faca285b60712403939e36ed4e997ad13ca52b2c523862df20ba",
-      "bytes": 51328,
-      "compressedBytes": 4798,
-      "sha256": "3bac6c3efe2f42c8d2558bee0b150d7b00669ebcff57d46658a58d0bc00a9f5d",
+      "bytes": 55737,
+      "compressedBytes": 4982,
+      "sha256": "89fa11bb9b1a856e29c2281ba318c85dcf04379918b9b64d1cb4bf4bcb181311",
       "summary": {
         "name": "Bluesky HTTP API Reference — Bluesky App",
         "serverUrl": "https://bsky.social",
@@ -1390,9 +1390,9 @@
     {
       "id": "bluesky-dms",
       "sourceRevision": "6931832a103cd04c4db77cea13faa77a5742f34b87d24548a011242d5fe16431",
-      "bytes": 15581,
-      "compressedBytes": 2153,
-      "sha256": "51ff7952ef09e78d9fd932e9dd2ed5c24cb4b9854329679eeac9ef0ce6e9846d",
+      "bytes": 18355,
+      "compressedBytes": 2198,
+      "sha256": "a07a2adc07014286b993f48dc81820968fd1845ee7e37c2cf27898c1389970fa",
       "summary": {
         "name": "Bluesky HTTP API Reference — Bluesky DMs",
         "serverUrl": "https://bsky.social",
@@ -1404,9 +1404,9 @@
     {
       "id": "bluesky-moderation",
       "sourceRevision": "d5c612b1515e9812f7fc571f77a2f28f2d5e64ed00ffc23f4f782784fd893435",
-      "bytes": 19945,
-      "compressedBytes": 2425,
-      "sha256": "0ddbbdbf2cd995567bbf2d611641d8aedc7463123ef39fa32297a4431f197157",
+      "bytes": 23230,
+      "compressedBytes": 2472,
+      "sha256": "6c9fdedc9023345194ce96498202d23c68664a90cd3511b232ade17043b73c5d",
       "summary": {
         "name": "Bluesky HTTP API Reference — Ozone Moderation",
         "serverUrl": "https://bsky.social",
@@ -1418,9 +1418,9 @@
     {
       "id": "cloudflare",
       "sourceRevision": "ca3f09b346bba9872f2aee6b4f243dbaf19da995f896b9d1de846994250e226a",
-      "bytes": 1254509,
-      "compressedBytes": 117065,
-      "sha256": "e9115d325cd66e01581a1133b7d4bf020adbd7ef8870b6ed17a409c15c9828c9",
+      "bytes": 1632313,
+      "compressedBytes": 120451,
+      "sha256": "ed3a1bf9025a54ce918a55f99e08b9d81f6963f6628cd1c90676d23d2f687e23",
       "summary": {
         "name": "Cloudflare API",
         "serverUrl": "https://api.cloudflare.com/client/v4",
@@ -1432,9 +1432,9 @@
     {
       "id": "cloudflare-realtime-sfu",
       "sourceRevision": "d226d761940a0c3e459a7e1b12e29d14d00f0c591d6a8fe2f070bea1615f51e0",
-      "bytes": 6775,
-      "compressedBytes": 1192,
-      "sha256": "b8d93da07729d69e37887b0381e5677f2e96f43ba9221b7d94187633b1081156",
+      "bytes": 7651,
+      "compressedBytes": 1242,
+      "sha256": "c3804898c6881653a9902d4cc8716c9b9b829d7922900511829c256fa597e2d0",
       "summary": {
         "name": "Cloudflare Realtime API",
         "serverUrl": "https://rtc.live.cloudflare.com/v1",
@@ -1445,9 +1445,9 @@
     {
       "id": "cohere",
       "sourceRevision": "75a54009440bcf35ba7dfc3141aeb173176448e68f1659d6435cecbd1af41712",
-      "bytes": 10254,
-      "compressedBytes": 1530,
-      "sha256": "2fe951a1dd79efe936f9a447846634e89a9f8de428e7388e73b1f44ff0ca6a5b",
+      "bytes": 13488,
+      "compressedBytes": 1594,
+      "sha256": "1db0e5850ff6e2f73e15741d1eca49ffbd305736520448fb89ab994dcce1e3c1",
       "summary": {
         "name": "API Reference",
         "serverUrl": "https://api.cohere.com",
@@ -1459,9 +1459,9 @@
     {
       "id": "deepseek",
       "sourceRevision": "56da9a4b5f75e48ad33a9cf92004e21bccd95f0b14eb67572be13b04f10c91ad",
-      "bytes": 3423,
-      "compressedBytes": 760,
-      "sha256": "1f4a67ad1e0d639f8c910649c061678511d3c62010b1d10f7b746019f08b86c3",
+      "bytes": 4270,
+      "compressedBytes": 809,
+      "sha256": "5f4ebe1b9d5325887deb3e4d38674dca2eefc8d67de3457f1291efbbaf39a3fc",
       "summary": {
         "name": "DeepSeek API",
         "serverUrl": "https://api.deepseek.com",
@@ -1473,9 +1473,9 @@
     {
       "id": "digitalocean",
       "sourceRevision": "5626dec576f33c3e55f04713ea83242bb246bec91c4bb623587a6a900b378738",
-      "bytes": 251305,
-      "compressedBytes": 24077,
-      "sha256": "12d33af25754d7982e154e4e2d26b5eaaf4fa5456d49e56a7cca65b3e386df9d",
+      "bytes": 318282,
+      "compressedBytes": 24421,
+      "sha256": "1e085756d28243becfecaeaf8a350265312b427c161da423f2fea5b3f9090ee7",
       "summary": {
         "name": "DigitalOcean API",
         "serverUrl": "https://api.digitalocean.com",
@@ -1486,9 +1486,9 @@
     {
       "id": "discord",
       "sourceRevision": "07512fa28e35b7e6df694f685b0a43fca8fe9e9bddf8da71d6c630171ed4683f",
-      "bytes": 64576,
-      "compressedBytes": 5800,
-      "sha256": "dbf7c9bc22dd6db2b3b1abc4bfb3d19ded21430e629ec9760b99bfbb54be8e9f",
+      "bytes": 83546,
+      "compressedBytes": 6069,
+      "sha256": "6a019fce8a8e7aba93fd44cc0c2fd0dc1848aaa3645e396d424a5459c32f7f74",
       "summary": {
         "name": "Discord HTTP API (Preview)",
         "serverUrl": "https://discord.com/api/v10",
@@ -1500,9 +1500,9 @@
     {
       "id": "docker",
       "sourceRevision": "84e994fb0d80850cb01d1a098c89ead30ca0c9cd8aff6cdbcd46f258304d88ba",
-      "bytes": 47662,
-      "compressedBytes": 4453,
-      "sha256": "21e31b4325ea09ba8aaef5c44320be2639af9a91dee9c2c804ee476b9a556da3",
+      "bytes": 56385,
+      "compressedBytes": 4585,
+      "sha256": "f1a3f5daca2a76a5f60b05d94e0dbe6e0ef6285d01cd6b1299375e200e4a368e",
       "summary": {
         "name": "Docker Engine API",
         "serverUrl": "",
@@ -1515,8 +1515,8 @@
       "id": "dukascopy",
       "sourceRevision": "55842575880e02e8bd30f447644e6c3037f7287f76c0ab32939dca10b2188792",
       "bytes": 1213,
-      "compressedBytes": 518,
-      "sha256": "72cfa67c72609f0e7cee8643d714e620a88f0ee0be6b9b62cf318003cbca1990",
+      "compressedBytes": 520,
+      "sha256": "f5f126f3ed449985a67fa6d232acef0c0f179731fd5d878ed171cf4ffaa0a2e0",
       "summary": {
         "name": "Dukascopy Trading Tools",
         "serverUrl": "https://freeserv.dukascopy.com",
@@ -1528,9 +1528,9 @@
     {
       "id": "ecb",
       "sourceRevision": "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020",
-      "bytes": 5925,
-      "compressedBytes": 938,
-      "sha256": "7fd1063a8950e7c557128bc7cd7d41b53ce704a7f6cff446a499f84bf71c8ca1",
+      "bytes": 6555,
+      "compressedBytes": 970,
+      "sha256": "88f51b9fd71bad84464db8be1ecbb790b2d478f775b2c5b2741f63d8b506522e",
       "summary": {
         "name": "SDMX RESTful API, v2.2.2",
         "serverUrl": "https://data-api.ecb.europa.eu/service",
@@ -1542,9 +1542,9 @@
     {
       "id": "elevenlabs",
       "sourceRevision": "27493b88c935cdb3d67c4e95c6df3e7f93a9b8afe876e8f3fe2f8ad5180833fa",
-      "bytes": 120441,
-      "compressedBytes": 12804,
-      "sha256": "221d3935722ead41aa1f2508af4037170fe98483609e5735ce2eda4f8f9d73b2",
+      "bytes": 155806,
+      "compressedBytes": 13295,
+      "sha256": "c9a93a846d984b6ae52ab3a6008e1b015aa73f4ed2f8051f2f45e1dde95b4b1f",
       "summary": {
         "name": "ElevenLabs API Documentation",
         "serverUrl": "https://api.elevenlabs.io",
@@ -1556,9 +1556,9 @@
     {
       "id": "alfred",
       "sourceRevision": "c808723c74b00cf4c21bb295588b3bef793c91b4974e5155c57fb8d490934bc5",
-      "bytes": 9205,
-      "compressedBytes": 1402,
-      "sha256": "acb9e4ff08e3f4e507824b063cb32d64a8be06d1132096a70e8813fa64b204be",
+      "bytes": 11592,
+      "compressedBytes": 1463,
+      "sha256": "f0e82aa2c56bdbeca60af02af67e685ed9cb6b32c1ffbb9540d581357cc47281",
       "summary": {
         "name": "Federal Reserve / ALFRED",
         "serverUrl": "https://api.stlouisfed.org",
@@ -1570,9 +1570,9 @@
     {
       "id": "fred",
       "sourceRevision": "ff1f2e5c5deb3620ae2716168fc929d2d560b2ed89be250ae6ec111b8d42ba66",
-      "bytes": 10381,
-      "compressedBytes": 1590,
-      "sha256": "e38bbe8eb8fcd876c515f4c861ee7c23cd97bc65ba020bc1ca37128616ed1cb8",
+      "bytes": 13155,
+      "compressedBytes": 1657,
+      "sha256": "b19e52971ebdf5b1ba5585237738c7b394feb07aaa31e43c4628695a920fb1d9",
       "summary": {
         "name": "Federal Reserve / FRED",
         "serverUrl": "https://api.stlouisfed.org",
@@ -1586,7 +1586,7 @@
       "sourceRevision": "5ba0aa5e8ea6226971acaacd06068ccfe84507adb0942e5d6f8b5409f1849aab",
       "bytes": 2828,
       "compressedBytes": 647,
-      "sha256": "b4a43dabaa03852f987de03383213a188f04c7fa20d8382b9088b9874955cc00",
+      "sha256": "bc1d0e3562166368738b9b52f21f76b567c6efe2ab2d7ff57bafcd024037686c",
       "summary": {
         "name": "Frankfurter API",
         "serverUrl": "https://api.frankfurter.dev/v2",
@@ -1598,9 +1598,9 @@
     {
       "id": "github",
       "sourceRevision": "17dc4046c2b656f04631e85339828391862174a189ea5ddc26aae549abe1b242",
-      "bytes": 387802,
-      "compressedBytes": 34509,
-      "sha256": "6ad9d2f0106f87eee8239d3100133e55988cae1a26e61237225a9d34a9103ead",
+      "bytes": 570146,
+      "compressedBytes": 37391,
+      "sha256": "03fece14cffefed8e7d75b63292419b8e6f6c4f2a3c2c1930a8385f6772eb7fd",
       "summary": {
         "name": "GitHub v3 REST API",
         "serverUrl": "https://api.github.com",
@@ -1612,9 +1612,9 @@
     {
       "id": "gitlab",
       "sourceRevision": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
-      "bytes": 619662,
-      "compressedBytes": 54567,
-      "sha256": "931f7dc200674304c3d8c284093d66913305ac6d23d0c4c3f56c17d0b97fbbea",
+      "bytes": 823285,
+      "compressedBytes": 56006,
+      "sha256": "1b6b182be7742c160171b566b7253ea3b4e1fe9be37622d5ccfef3ffa9686c9a",
       "summary": {
         "name": "GitLab REST API",
         "serverUrl": "https://gitlab.com",
@@ -1626,9 +1626,9 @@
     {
       "id": "google-analytics-admin",
       "sourceRevision": "d695715a8922b22b15fbd7123532fc985b332a53cb98fe7de2204bcc342b81f2",
-      "bytes": 10892,
-      "compressedBytes": 1300,
-      "sha256": "ce72c328613544a3b58541267e4cb25f6b45e7c8cad0d0845d51688b421cd63b",
+      "bytes": 13728,
+      "compressedBytes": 1389,
+      "sha256": "adba26783e6b03c3d7746992f64c6ecb3e407e630814bcbcaca6a7b2b8f70730",
       "summary": {
         "name": "Google Analytics Admin API",
         "serverUrl": "https://analyticsadmin.googleapis.com",
@@ -1640,9 +1640,9 @@
     {
       "id": "google-analytics-data",
       "sourceRevision": "4b72e26789ec1c3a9031768811a4cd091d55ac6fbaa8fe2274e3a4e991413eb6",
-      "bytes": 4933,
-      "compressedBytes": 886,
-      "sha256": "ad9a2082938cc22f76306ef4662e3e1b230c08783799df1e8136b2f6ed4bbe07",
+      "bytes": 6223,
+      "compressedBytes": 938,
+      "sha256": "6d852e838f3933ec64b76e939fe10bcce0258bb7423a41a8cbc2bead916b5a58",
       "summary": {
         "name": "Google Analytics Data API",
         "serverUrl": "https://analyticsdata.googleapis.com",
@@ -1654,9 +1654,9 @@
     {
       "id": "gcp-accesscontextmanager",
       "sourceRevision": "f51d108c1c1d5539c44a37b73824ba2363a74edb7e9d45f6f667c75857b95d4d",
-      "bytes": 10652,
-      "compressedBytes": 1312,
-      "sha256": "e003933c2b1904f8d112188b5ba1a5ee452415e77ed0601c4bc60dfb2a58ce8f",
+      "bytes": 12676,
+      "compressedBytes": 1363,
+      "sha256": "0fa9b7c4d83aa26c46c47cb8e73d084413092a84c489dd03d7faf1f42bce6a81",
       "summary": {
         "name": "Access Context Manager API",
         "serverUrl": "https://accesscontextmanager.googleapis.com",
@@ -1668,9 +1668,9 @@
     {
       "id": "gcp-apigateway",
       "sourceRevision": "1b842cc00d0110c1cd1877c0bf86c497ff6d68dbf9afb2815208b7e963259fee",
-      "bytes": 5364,
-      "compressedBytes": 720,
-      "sha256": "7a056e4bee8c180f16022139b15c84bb7d83ca3bf3c8553dcb73985d6393d9a9",
+      "bytes": 6744,
+      "compressedBytes": 768,
+      "sha256": "d4a980000d7e83f22a83acb9a5ceac616b14c583492e1b7cdb4ea2a1a947f095",
       "summary": {
         "name": "API Gateway API",
         "serverUrl": "https://apigateway.googleapis.com",
@@ -1681,9 +1681,9 @@
     {
       "id": "gcp-artifactregistry",
       "sourceRevision": "f0b2069f264e1ec82dd0dd8d9b367c02f38496efd1c0fc91d1ecec8c936a0d0d",
-      "bytes": 11995,
-      "compressedBytes": 1133,
-      "sha256": "02a84e07a676ad07a805c6cae04a12a3f2705f40b93e5a9de87e02f408938943",
+      "bytes": 15130,
+      "compressedBytes": 1232,
+      "sha256": "271007a34b8da4f93b78e910bd30f778c5ca3db479578c8e69b56cfec3ddc30e",
       "summary": {
         "name": "Artifact Registry API",
         "serverUrl": "https://artifactregistry.googleapis.com",
@@ -1695,9 +1695,9 @@
     {
       "id": "gcp-cloudasset",
       "sourceRevision": "bb234bced43bd85d068e2fed63cd8d0ceb093de9d1ac3bd3a6e348d35a8592f8",
-      "bytes": 6635,
-      "compressedBytes": 970,
-      "sha256": "325d585369a5bd58221727c32bbe997f76e6fc02d7864086eac53ca3dde56b2f",
+      "bytes": 8475,
+      "compressedBytes": 1026,
+      "sha256": "ef21c32e1aec7d5200664c0bcdec914cea42531cec8b1d3feb6d0d198dafbc21",
       "summary": {
         "name": "Cloud Asset API",
         "serverUrl": "https://cloudasset.googleapis.com",
@@ -1709,9 +1709,9 @@
     {
       "id": "gcp-bigquery",
       "sourceRevision": "75b5c0076c3187454398758715c83ede652c1f5ebd316a0c4297f617f5c30fb1",
-      "bytes": 11579,
-      "compressedBytes": 1357,
-      "sha256": "52591e12c26ff595d6b6d4655e5ed13ac9a038cf603355faf13ebe89b52a4424",
+      "bytes": 17200,
+      "compressedBytes": 1497,
+      "sha256": "9379a08b8831ac4aab1b3d2c2ee2436e421af66a14daac44a29bcc224f04d77e",
       "summary": {
         "name": "BigQuery API",
         "serverUrl": "https://bigquery.googleapis.com/bigquery/v2",
@@ -1723,9 +1723,9 @@
     {
       "id": "gcp-bigquerydatatransfer",
       "sourceRevision": "e2e983dd855fc6255f635ddf8ffaefd2c046aa12de01eaeb1c94567b44b7e8c4",
-      "bytes": 6112,
-      "compressedBytes": 800,
-      "sha256": "988e54596d8bbdd1af7535a860ed164b2e6efaba4afb64b35e554c34562e727e",
+      "bytes": 8103,
+      "compressedBytes": 875,
+      "sha256": "abe87f64f0877c3c70a6eb7eb77df48be0068aacc37771d447c3a8cd59565e2c",
       "summary": {
         "name": "BigQuery Data Transfer API",
         "serverUrl": "https://bigquerydatatransfer.googleapis.com",
@@ -1737,9 +1737,9 @@
     {
       "id": "gcp-bigtableadmin",
       "sourceRevision": "31eec62d1e2aba92b8968bec4e9e26e8fa5760cb4178e6bc1c2450c685cac389",
-      "bytes": 10010,
-      "compressedBytes": 1038,
-      "sha256": "1a22c22b28328f41bd5e794447b12868ca05817c2a90ff33542d882e82a54203",
+      "bytes": 17304,
+      "compressedBytes": 1161,
+      "sha256": "101aed7d8b3960a82af271291ecb9d94776ff21f0f3a8cd53a348f92f65dca1b",
       "summary": {
         "name": "Cloud Bigtable Admin API",
         "serverUrl": "https://bigtableadmin.googleapis.com",
@@ -1751,9 +1751,9 @@
     {
       "id": "gcp-cloudbilling",
       "sourceRevision": "c8f5f2adf8becb984004efacb8731a7004c141a554a08983ae92a4b64087ed67",
-      "bytes": 6693,
-      "compressedBytes": 905,
-      "sha256": "0680903243bb66228e97bf75955e8a4992f909fd3b4960b8a38f1b3b8ced6b82",
+      "bytes": 9385,
+      "compressedBytes": 1001,
+      "sha256": "db26cbb4fd7dac60136887aa6e1d676bfea21198f0306dbaeeda4e310c0fcbce",
       "summary": {
         "name": "Cloud Billing API",
         "serverUrl": "https://cloudbilling.googleapis.com",
@@ -1765,9 +1765,9 @@
     {
       "id": "gcp-billingbudgets",
       "sourceRevision": "0d9a6ae37e693ed1852219a86a0cd880e71d571598f5f5df7dd5fb7f05e8e259",
-      "bytes": 2559,
-      "compressedBytes": 584,
-      "sha256": "9f8501a735df09421c4a56737b73e5f1b92fd2e921a09cab61b5f5f6efdf35a3",
+      "bytes": 3204,
+      "compressedBytes": 634,
+      "sha256": "e2dcdf042a0762cc8271e9bd47c2aab96e2550fd9bcd050d593d30bed98631bb",
       "summary": {
         "name": "Cloud Billing Budget API",
         "serverUrl": "https://billingbudgets.googleapis.com",
@@ -1779,9 +1779,9 @@
     {
       "id": "gcp-cloudbuild",
       "sourceRevision": "d6d5dd3ea1fefcec763bb00b107916f45f6858bc725ea499dad0242cdbbe3208",
-      "bytes": 7150,
-      "compressedBytes": 881,
-      "sha256": "5df500b9ccd297d742d5398bf22ef99901d0ba0aa0dd2638332e16af8aa48458",
+      "bytes": 8714,
+      "compressedBytes": 933,
+      "sha256": "f6906ab81d120a3a303ec8c1c3f0c0313c3d3d00284694b7b1dbab65aa8556ca",
       "summary": {
         "name": "Cloud Build API",
         "serverUrl": "https://cloudbuild.googleapis.com",
@@ -1793,9 +1793,9 @@
     {
       "id": "gcp-certificatemanager",
       "sourceRevision": "876e04eeafff3c02aaf8640450eee6c9e9245e795c4d0b98fd721e7fde5b09b5",
-      "bytes": 7554,
-      "compressedBytes": 759,
-      "sha256": "38a3dacc97b793363d21387e27f33471107f40479c56ce3adb80c4d182b0df5c",
+      "bytes": 9210,
+      "compressedBytes": 814,
+      "sha256": "db08d96a9369e0fcadc499150850907172f7c8bcb7bb8bfe8fb320e128242da0",
       "summary": {
         "name": "Certificate Manager API",
         "serverUrl": "https://certificatemanager.googleapis.com",
@@ -1806,9 +1806,9 @@
     {
       "id": "gcp-compute",
       "sourceRevision": "650e74aa444884ec0825ab46538ad792482816bc902cde9e29ccdba641750cc1",
-      "bytes": 259524,
-      "compressedBytes": 16478,
-      "sha256": "394f60230ee3fe133c34c915ba214060e641c9e987d5b9e9c6bc8c3ee42f5cd1",
+      "bytes": 369738,
+      "compressedBytes": 17901,
+      "sha256": "697ad0fc4954b05574960446bb637338fe1c5c24672110c9255fc0db91cb274f",
       "summary": {
         "name": "Compute Engine API",
         "serverUrl": "https://compute.googleapis.com/compute/v1",
@@ -1820,9 +1820,9 @@
     {
       "id": "gcp-dataflow",
       "sourceRevision": "9e5dff63064bf624003e64370526b83086bd81b837ab892962b65391035fe075",
-      "bytes": 14421,
-      "compressedBytes": 1269,
-      "sha256": "29c731613c531c63d2502cd25d15b3fb9d1d7323ea412f2dcf81b6901706587d",
+      "bytes": 21227,
+      "compressedBytes": 1361,
+      "sha256": "3c32ed9bb2fb2ac1527810da2c870da4ad9a488e235d8c5862b65ec7d933c63c",
       "summary": {
         "name": "Dataflow API",
         "serverUrl": "https://dataflow.googleapis.com",
@@ -1834,9 +1834,9 @@
     {
       "id": "gcp-dataproc",
       "sourceRevision": "d706a417b6737f34ce0db3d14fb444706af80edf0a70e98ac7ce6f56e5638987",
-      "bytes": 14463,
-      "compressedBytes": 1339,
-      "sha256": "a592c58723242596f2174e4029071c24ae521f327994115abc6907c65decbdc8",
+      "bytes": 18235,
+      "compressedBytes": 1396,
+      "sha256": "f12eb9c4166b6e362070d4cee8306feafb0c2000e08a56a2cb33b668ca43e467",
       "summary": {
         "name": "Cloud Dataproc API",
         "serverUrl": "https://dataproc.googleapis.com",
@@ -1848,9 +1848,9 @@
     {
       "id": "gcp-dns",
       "sourceRevision": "3e0adfcd1128646c791f3091f342bda95e05ec5f0205c26810638f2fca1b2be6",
-      "bytes": 12637,
-      "compressedBytes": 1272,
-      "sha256": "3e716ac4a0a97e32651bdb6c26b431e04bd53ef735fb38e421c03b0b6f4e1258",
+      "bytes": 19203,
+      "compressedBytes": 1410,
+      "sha256": "87a3d3c1e13cf472eab120dd875b044fefd708803113d2f7f340305de151f810",
       "summary": {
         "name": "Cloud DNS API",
         "serverUrl": "https://dns.googleapis.com",
@@ -1861,9 +1861,9 @@
     {
       "id": "gcp-documentai",
       "sourceRevision": "b1276468e90832656ecb02f9599b4be61a91ee1a33428810dc2415d9942ad95b",
-      "bytes": 8217,
-      "compressedBytes": 989,
-      "sha256": "f59cfe6c59e2a816b2f71998eaa072f4a3091d2f21a6aa56d1e081eebbbbad85",
+      "bytes": 10057,
+      "compressedBytes": 1041,
+      "sha256": "985188c6cf9190303b4e45f1eda9e3aec778685765db0d87cad35329cfb52973",
       "summary": {
         "name": "Cloud Document AI API",
         "serverUrl": "https://documentai.googleapis.com",
@@ -1875,9 +1875,9 @@
     {
       "id": "gcp-clouderrorreporting",
       "sourceRevision": "c7d2ac96fb0b44248d297292a92ba36d6940b3b65da771406534a35dc2e8f7f1",
-      "bytes": 2941,
-      "compressedBytes": 640,
-      "sha256": "fc4dd977ddf33f6a20e0ddc80eca0a96248b45025949ea77cd45101eeb5eeb4f",
+      "bytes": 3493,
+      "compressedBytes": 689,
+      "sha256": "e0a9ba477de4f32f2f1a9d39110102d9a1117b1b3e493c06b6cec0db54b4b3a3",
       "summary": {
         "name": "Error Reporting API",
         "serverUrl": "https://clouderrorreporting.googleapis.com",
@@ -1889,9 +1889,9 @@
     {
       "id": "gcp-firestore",
       "sourceRevision": "d65d9111578d7c85951d04887b9b013b76dc8f1a338becda82d7581c638ada32",
-      "bytes": 10659,
-      "compressedBytes": 1135,
-      "sha256": "34c063f9ef457b998bb5b4ad4487f33173ad551a70b0025a9e28ae232f862982",
+      "bytes": 14529,
+      "compressedBytes": 1192,
+      "sha256": "fbfac1aaa09aa34d0e74a8bca1968fd4420e2252e4f96aaf02475198ab7bc028",
       "summary": {
         "name": "Cloud Firestore API",
         "serverUrl": "https://firestore.googleapis.com",
@@ -1903,9 +1903,9 @@
     {
       "id": "gcp-cloudfunctions",
       "sourceRevision": "911510d81ff6dc642ee2298a32f84b7021812381598b3b20c7f873dceec3b239",
-      "bytes": 7400,
-      "compressedBytes": 893,
-      "sha256": "9700a09f4840502ed4500ec40a4a79b0a1d0e533b7b2fb07bf1186682ba811e5",
+      "bytes": 9056,
+      "compressedBytes": 943,
+      "sha256": "bd804ce8f89fd9129e2359b1addfc1844adc9cf28ba58374ef79f1d7ea70c87c",
       "summary": {
         "name": "Cloud Functions API",
         "serverUrl": "https://cloudfunctions.googleapis.com",
@@ -1917,9 +1917,9 @@
     {
       "id": "gcp-iam",
       "sourceRevision": "0fa48395c305cdce8a2a6f9706d3c6144f384d74639f7775a856325cd5766743",
-      "bytes": 2137,
-      "compressedBytes": 619,
-      "sha256": "7e8b9e2e74f0d6758d93003ba257188c5ff18c55e70976061597ed25c0149e01",
+      "bytes": 2597,
+      "compressedBytes": 663,
+      "sha256": "16860633a51e74467acc3e8d3eaa404154600985a67812673dca6ea444cb2cd5",
       "summary": {
         "name": "Identity and Access Management (IAM) API",
         "serverUrl": "https://iam.googleapis.com",
@@ -1931,9 +1931,9 @@
     {
       "id": "gcp-iamcredentials",
       "sourceRevision": "caa82848370a12ee806e63d2d600d87915c2fab71af34e3d938732ff6c45fcfa",
-      "bytes": 2348,
-      "compressedBytes": 577,
-      "sha256": "aacf70ccd0eb5d50a2517e06b949b579786140b16eeb05b9a7a64e17f9b43f31",
+      "bytes": 2716,
+      "compressedBytes": 621,
+      "sha256": "3999e1322676a504610ecd31606c3ae45780402d4faaa542d14b2f7c6ac00dec",
       "summary": {
         "name": "IAM Service Account Credentials API",
         "serverUrl": "https://iamcredentials.googleapis.com",
@@ -1945,9 +1945,9 @@
     {
       "id": "gcp-cloudidentity",
       "sourceRevision": "7ffdb17e31745ce1c6849947d98ca1191b7dbaec404a67377a21382e4ed56d60",
-      "bytes": 12435,
-      "compressedBytes": 1280,
-      "sha256": "4a16c265a6fdfbfbf84b09d3eba08479fff36d9f8b169c0d3561e442980d232a",
+      "bytes": 16397,
+      "compressedBytes": 1371,
+      "sha256": "8439b97b7408a3fa5e87548ce00c5f23ed80a93f7c890d9f44641f1aee0dab8e",
       "summary": {
         "name": "Cloud Identity API",
         "serverUrl": "https://cloudidentity.googleapis.com",
@@ -1959,9 +1959,9 @@
     {
       "id": "gcp-cloudkms",
       "sourceRevision": "c2505a0b8ec278ad5759fa9827328573f28793d8d98b6628f929bc99737184d7",
-      "bytes": 12355,
-      "compressedBytes": 1180,
-      "sha256": "1a3366fbc341c7d1333b62c58fc74748dbe8e0b3fc83d9973b1738bb11aea624",
+      "bytes": 16354,
+      "compressedBytes": 1240,
+      "sha256": "3a1ca035b95ae39cbe6682372569bf144b0d7fe90de4b7538a87cdacb7577faa",
       "summary": {
         "name": "Cloud Key Management Service (KMS) API",
         "serverUrl": "https://cloudkms.googleapis.com",
@@ -1973,9 +1973,9 @@
     {
       "id": "gcp-container",
       "sourceRevision": "781726fa449b5fc94e6fabf9882e3744a4f00cd4567a091a28e51344af88a25d",
-      "bytes": 22494,
-      "compressedBytes": 1816,
-      "sha256": "79099e346a5e13756f3324bc3c2e43f3d1caba5cafee7a44983b91e709563228",
+      "bytes": 27922,
+      "compressedBytes": 1891,
+      "sha256": "b7e6ef9b30cfd1ca30f6d582a25a2efe431febf6607812168c211cb4025160e7",
       "summary": {
         "name": "Kubernetes Engine API",
         "serverUrl": "https://container.googleapis.com",
@@ -1987,9 +1987,9 @@
     {
       "id": "gcp-logging",
       "sourceRevision": "e3cdc9c407863b14cc849d72de3e028fab1c8319bcea90ce80e6d96fe73b97bd",
-      "bytes": 12627,
-      "compressedBytes": 1308,
-      "sha256": "d9138fc44fb498ce15932936fa6410d28afdb6970f807d3d06e42f00360ba2b8",
+      "bytes": 19599,
+      "compressedBytes": 1456,
+      "sha256": "8b5a7d54570d3045c766851d79259e579e79a2d1f7afa3cb48ee97a3cee28c92",
       "summary": {
         "name": "Cloud Logging API",
         "serverUrl": "https://logging.googleapis.com",
@@ -2001,9 +2001,9 @@
     {
       "id": "gcp-redis",
       "sourceRevision": "ec4a5c3d65ca67947d096b28ee11a258ddb489d73844f67ecb7a4b4a626bab18",
-      "bytes": 5503,
-      "compressedBytes": 789,
-      "sha256": "fd25ad3c107ad94fddef643ad932df4a6c2e585d73ee5174f2ad2f5aa1e0e750",
+      "bytes": 6975,
+      "compressedBytes": 846,
+      "sha256": "319df6a39960dafc5c3582bf87907bb16949b08525c2f57f8e876d60adff4abf",
       "summary": {
         "name": "Google Cloud Memorystore for Redis API",
         "serverUrl": "https://redis.googleapis.com",
@@ -2015,9 +2015,9 @@
     {
       "id": "gcp-monitoring",
       "sourceRevision": "80a99ce72220d7048e9e8c46a4d611c253cc7e6b371f97bd807dfbef677bf862",
-      "bytes": 10932,
-      "compressedBytes": 1112,
-      "sha256": "2021c0c50f1ebbfcecf139690e4c09df001f440867d64b9e882c961ace35a7ef",
+      "bytes": 15874,
+      "compressedBytes": 1226,
+      "sha256": "e22f248ab47463662b86533ac373cd9237fa3bff738258205b089e869a2ef481",
       "summary": {
         "name": "Cloud Monitoring API",
         "serverUrl": "https://monitoring.googleapis.com",
@@ -2029,9 +2029,9 @@
     {
       "id": "gcp-networkconnectivity",
       "sourceRevision": "0b02f2274c90ea3d6bc383c3a6b40ce491cda3a4f2f969c85e83d2c1bcc12ae3",
-      "bytes": 12390,
-      "compressedBytes": 1091,
-      "sha256": "2b42aad6009876cca2881087f9627cf596be8baab79a94beaf59c950f568fa90",
+      "bytes": 15150,
+      "compressedBytes": 1146,
+      "sha256": "3aac2fb736197a63835acdaf690285509819ed03f29aa35a9cbbb280be837519",
       "summary": {
         "name": "Network Connectivity API",
         "serverUrl": "https://networkconnectivity.googleapis.com",
@@ -2043,9 +2043,9 @@
     {
       "id": "gcp-orgpolicy",
       "sourceRevision": "1bb8ef1df027fdcf95ca74b29218e5c53d2d8f5c2e887f711a91a41af2b077f7",
-      "bytes": 3633,
-      "compressedBytes": 688,
-      "sha256": "6962d164403ab990036d27c44ca4aefe7ca6361a59ca92ebd26e912d47c919a1",
+      "bytes": 4461,
+      "compressedBytes": 738,
+      "sha256": "8ae53277725ba2801b0ee955321b8a44cca11187fe4547679a124fd6938da72d",
       "summary": {
         "name": "Organization Policy API",
         "serverUrl": "https://orgpolicy.googleapis.com",
@@ -2057,9 +2057,9 @@
     {
       "id": "gcp-pubsub",
       "sourceRevision": "2ab3879cfb88c9ab9b1e5caf0d9c11955cd8b2963b0dfbf77a3012a59f7c3a42",
-      "bytes": 9922,
-      "compressedBytes": 1132,
-      "sha256": "a3ab9fee289b2c9c87684bc2cb966a737f43241f39bd520edf363dcc2d6e4553",
+      "bytes": 14179,
+      "compressedBytes": 1189,
+      "sha256": "941215c8bcd01ffe25fcc7147ad061a6d309692f0df3116a30fbea166064d20e",
       "summary": {
         "name": "Cloud Pub/Sub API",
         "serverUrl": "https://pubsub.googleapis.com",
@@ -2071,9 +2071,9 @@
     {
       "id": "gcp-cloudresourcemanager",
       "sourceRevision": "c399f8ac03448145e3c7255adbe74c0a58c41d77bd514be7ddece29737950812",
-      "bytes": 10351,
-      "compressedBytes": 1136,
-      "sha256": "f869d7df820fde8b10daab0569d82a00ea98e31b93c899699a9227024f9e5056",
+      "bytes": 13593,
+      "compressedBytes": 1229,
+      "sha256": "384f1de256788cc1a0a3f27ade939457b2d9fd6d8a4b1a6362ba5906f43dc331",
       "summary": {
         "name": "Cloud Resource Manager API",
         "serverUrl": "https://cloudresourcemanager.googleapis.com",
@@ -2085,9 +2085,9 @@
     {
       "id": "gcp-run",
       "sourceRevision": "4beff58f068cd07494963292dba243cb77ca7a0e597be7ef21e3eada88ebca3f",
-      "bytes": 6086,
-      "compressedBytes": 924,
-      "sha256": "5e6283e755d1615c825b3951bed04e9e4dd7f1ee894bc657e814c874066ae142",
+      "bytes": 7650,
+      "compressedBytes": 977,
+      "sha256": "a5fa203a65dc149d1605921a15ca5e6a01cb7cdbb8e6f680faf2765f6c456714",
       "summary": {
         "name": "Cloud Run Admin API",
         "serverUrl": "https://run.googleapis.com",
@@ -2099,9 +2099,9 @@
     {
       "id": "gcp-cloudscheduler",
       "sourceRevision": "c7ee352039a65d1c04b0d4d0197b9531c11d1aa6898d45adf2c70194d2f0d7f3",
-      "bytes": 3574,
-      "compressedBytes": 626,
-      "sha256": "284e0b4cd04aebbcb55ad92dab837e64ab3f3d64cafbe17e20ee13c7e9667e93",
+      "bytes": 4402,
+      "compressedBytes": 676,
+      "sha256": "749f5eb1d909628c82b815347171d7fc5cd5269b0302714033a490d72e02a445",
       "summary": {
         "name": "Cloud Scheduler API",
         "serverUrl": "https://cloudscheduler.googleapis.com",
@@ -2113,9 +2113,9 @@
     {
       "id": "gcp-secretmanager",
       "sourceRevision": "5a731e9800524bdbefbe1e28108aaa5ae0ffc31d99ad71f8b07709aeb35f3b25",
-      "bytes": 5565,
-      "compressedBytes": 815,
-      "sha256": "e0fb636972ed7978c93c94feb04c9eaf847be51faa594815d992babcffc06f81",
+      "bytes": 6945,
+      "compressedBytes": 865,
+      "sha256": "792ee389961ca9c0f3304793cf1ba0e9a6c2136942edc9e7801540a70b5be90e",
       "summary": {
         "name": "Secret Manager API",
         "serverUrl": "https://secretmanager.googleapis.com",
@@ -2127,9 +2127,9 @@
     {
       "id": "gcp-securitycenter",
       "sourceRevision": "713e7dd3cdf43c8ebc03b4d1b8c4013105b10f50c4a1eb65dedcd130c5380d7e",
-      "bytes": 13381,
-      "compressedBytes": 1319,
-      "sha256": "d28f591faa503bc352547e0ff6641496c93b8fa722cdfce1b8afb1167827e3ef",
+      "bytes": 16509,
+      "compressedBytes": 1380,
+      "sha256": "d1d9410ab96b8fb87991f68032a2700a161466008379615331bff9477e0a4d2b",
       "summary": {
         "name": "Security Command Center API",
         "serverUrl": "https://securitycenter.googleapis.com",
@@ -2141,9 +2141,9 @@
     {
       "id": "gcp-dlp",
       "sourceRevision": "52315ed12d222b98c0a12a16c8cf1bcb730d60b139ca4fdb7e016269ad04f41c",
-      "bytes": 9250,
-      "compressedBytes": 1123,
-      "sha256": "33126d4c968913b83e84d5a0cd7923f7d99ff9cbcefada1c639c9a448193e880",
+      "bytes": 11826,
+      "compressedBytes": 1180,
+      "sha256": "78d6bd992fbc6d4679f6c76f706726ea6a0cec8c301539cc851214c20d17e150",
       "summary": {
         "name": "Sensitive Data Protection (DLP)",
         "serverUrl": "https://dlp.googleapis.com",
@@ -2155,9 +2155,9 @@
     {
       "id": "gcp-servicenetworking",
       "sourceRevision": "79c4a7dc39341cf748105fd0e85511f9b012eced3a401ee217d0402b48c91eac",
-      "bytes": 9822,
-      "compressedBytes": 1069,
-      "sha256": "46ca079c9e2d87db436091201c9e809cb95938cdb144fa4011f8ebe141c6a078",
+      "bytes": 13047,
+      "compressedBytes": 1118,
+      "sha256": "6fb63a1b2dcaeee0d6d386fa1dcf1c8e88ebdfcf5c35322d4c15117d7df85cff",
       "summary": {
         "name": "Service Networking API",
         "serverUrl": "https://servicenetworking.googleapis.com",
@@ -2169,9 +2169,9 @@
     {
       "id": "gcp-serviceusage",
       "sourceRevision": "c9217b7b8d8cdc0bc6d54fdffb153b782ae002487af3f88a842bedccf3e6187b",
-      "bytes": 3507,
-      "compressedBytes": 680,
-      "sha256": "546254e6309987a52d4963d055e9a8e701b7427d9cd5016082fa5c3e68c8bd26",
+      "bytes": 4668,
+      "compressedBytes": 733,
+      "sha256": "e6b400a2b4c56f843ec4fec0b9833323096d89244107471b55e332d734e2c456",
       "summary": {
         "name": "Service Usage API",
         "serverUrl": "https://serviceusage.googleapis.com",
@@ -2183,9 +2183,9 @@
     {
       "id": "gcp-spanner",
       "sourceRevision": "a991a70ec487618467be24f0f36e7f8dc8c07a16af75e20fb41e2b9d13701cb3",
-      "bytes": 13874,
-      "compressedBytes": 1295,
-      "sha256": "59c2cd141507fd1556387c411b92a65a4aef365b2adefe20629c183e267755a0",
+      "bytes": 19034,
+      "compressedBytes": 1357,
+      "sha256": "148aeef5cf72de1af1577ed32f77ad05032d371cde6d132f60df297396d01d5f",
       "summary": {
         "name": "Cloud Spanner API",
         "serverUrl": "https://spanner.googleapis.com",
@@ -2197,9 +2197,9 @@
     {
       "id": "gcp-speech",
       "sourceRevision": "46d2d9f314186ab3cb300ac0dbbdc2e05eebf0589a70358347288e18e57d1e24",
-      "bytes": 4020,
-      "compressedBytes": 724,
-      "sha256": "bd0457dfbca550ad04b263a194691cedde5a1cae40ee918d53f0ca84ae009652",
+      "bytes": 5032,
+      "compressedBytes": 774,
+      "sha256": "d70b44956ea47d3de7659d23df1301abc3968152fe47531dfdb59d5c2aa3cb81",
       "summary": {
         "name": "Cloud Speech-to-Text API",
         "serverUrl": "https://speech.googleapis.com",
@@ -2211,9 +2211,9 @@
     {
       "id": "gcp-sqladmin",
       "sourceRevision": "638fb7226a800572ff8db005cb0e2de50c85a4f37404eb3b1d943f67fbc0b47a",
-      "bytes": 17863,
-      "compressedBytes": 1804,
-      "sha256": "5cf4b3bc684136ed09aae1ea5abd55cef7921231f8e014ad4aa2bde05c312a99",
+      "bytes": 25271,
+      "compressedBytes": 1892,
+      "sha256": "9df54afe019707c6bf31924219633ec63c93b2759b3711ebe183a3255d3046d5",
       "summary": {
         "name": "Cloud SQL Admin API",
         "serverUrl": "https://sqladmin.googleapis.com",
@@ -2225,9 +2225,9 @@
     {
       "id": "gcp-storage",
       "sourceRevision": "a9a4230a7c6b7bb9c6f8c65a1afac43ce3ea58bb8de9b851e25971e5389fbe7f",
-      "bytes": 23225,
-      "compressedBytes": 2133,
-      "sha256": "4a4b9e56643966e57384de9bcc5f3f6591aeaa899c2f10f1fa3caf6fadb464b2",
+      "bytes": 36541,
+      "compressedBytes": 2366,
+      "sha256": "74dec1e4f1cabcab12cf80f5d3ef95356106ca78db7b4416e0a4f8e16e309938",
       "summary": {
         "name": "Cloud Storage JSON API",
         "serverUrl": "https://storage.googleapis.com/storage/v1",
@@ -2239,9 +2239,9 @@
     {
       "id": "gcp-cloudtasks",
       "sourceRevision": "8a6be25b1ffd9786c61d077ec2dcaaf82654013daa76c659564275b6fefa352a",
-      "bytes": 5816,
-      "compressedBytes": 786,
-      "sha256": "1ab645c95eae7a40e4a7c7b72ca5af1611a5c8556be75072ff913448b0a44921",
+      "bytes": 7288,
+      "compressedBytes": 836,
+      "sha256": "fa1e72836b1f02782e0976e53fd03a70d0f5ae5bee18ad4ca5d26de08a95006a",
       "summary": {
         "name": "Cloud Tasks API",
         "serverUrl": "https://cloudtasks.googleapis.com",
@@ -2253,9 +2253,9 @@
     {
       "id": "gcp-texttospeech",
       "sourceRevision": "aa2f63cb3ebdace6ef2801006a578af72f745d68d0aac009364399d858d4c148",
-      "bytes": 3099,
-      "compressedBytes": 675,
-      "sha256": "f8d01174320d77b31fcb8742bed01928bc51cbf3c088cb44f3ce923df8fee268",
+      "bytes": 3743,
+      "compressedBytes": 728,
+      "sha256": "ff630a40f0c46018adc17bcb5580c61278098ddb8e76683d9b5fc57cd280ede1",
       "summary": {
         "name": "Cloud Text-to-Speech API",
         "serverUrl": "https://texttospeech.googleapis.com",
@@ -2267,9 +2267,9 @@
     {
       "id": "gcp-cloudtrace",
       "sourceRevision": "798f322d87c29f7a5d58297f2b0078272983ada327afce70734be05625f0720f",
-      "bytes": 1908,
-      "compressedBytes": 630,
-      "sha256": "0f8d1ab28f4bfb7b100f6a8c059b264c543b4783ca7160f687da923ef5a968d4",
+      "bytes": 2166,
+      "compressedBytes": 679,
+      "sha256": "678e6facd428676b4d18f5061b25d141811466e516fe5815879d436a6b65b6ca",
       "summary": {
         "name": "Cloud Trace API",
         "serverUrl": "https://cloudtrace.googleapis.com",
@@ -2281,9 +2281,9 @@
     {
       "id": "gcp-translate",
       "sourceRevision": "9dc11d7cee47d03b606132ec5fef2a02740ea98c6669e268fce36293d64d9291",
-      "bytes": 11059,
-      "compressedBytes": 1104,
-      "sha256": "48f2425d71eedb760190e56f4bd254575fdf3dd2de2ec75363cdfd1a8d424620",
+      "bytes": 14947,
+      "compressedBytes": 1169,
+      "sha256": "b80b22450019789b42c197f835fc5d8e5fe186cd9eb02f8043fa3a8f6a863186",
       "summary": {
         "name": "Cloud Translation API",
         "serverUrl": "https://translation.googleapis.com",
@@ -2295,9 +2295,9 @@
     {
       "id": "gcp-aiplatform",
       "sourceRevision": "78a3f43465972276ab6a6642aa237a3bf36afbc3e27bf6cb4b7ded22bb7000b8",
-      "bytes": 63345,
-      "compressedBytes": 4310,
-      "sha256": "9bf2ee09542256adab1710a56f7da9dfef961807ede0d60dab2f2a6e3e8c079c",
+      "bytes": 79152,
+      "compressedBytes": 4477,
+      "sha256": "d8b78727fea5404f81072e6ab9e024d1220c8d5dc597f712bb9d4fe834cd91c8",
       "summary": {
         "name": "Vertex AI API",
         "serverUrl": "https://aiplatform.googleapis.com",
@@ -2309,9 +2309,9 @@
     {
       "id": "gcp-discoveryengine",
       "sourceRevision": "17958f9643885d8ff0953bc62b3deeebb5941a7904c7ad3d752c4cb30405dce0",
-      "bytes": 14725,
-      "compressedBytes": 1235,
-      "sha256": "d01fccbfc2a0a8a5e05a4701ed2ed226218da1d41e72e6640689e4e09e3d29eb",
+      "bytes": 17853,
+      "compressedBytes": 1287,
+      "sha256": "ca73d55a428cd187b91897d5aaff6d32f6dc260132abd2d944657c19204ee986",
       "summary": {
         "name": "Discovery Engine API",
         "serverUrl": "https://discoveryengine.googleapis.com",
@@ -2323,9 +2323,9 @@
     {
       "id": "gcp-vision",
       "sourceRevision": "058a7ab34a8abb1018750cbc01023d842914be78d27d2250a0355c8bede4bb73",
-      "bytes": 8132,
-      "compressedBytes": 1039,
-      "sha256": "47fafa878126e17a97c28077e82f17bf552cf67ab5fe4898797b7bdbceb81a0d",
+      "bytes": 11099,
+      "compressedBytes": 1093,
+      "sha256": "8d989e987499d4988afa11c51f4935208eeaddec65a0d3e0ea10b7d716650496",
       "summary": {
         "name": "Cloud Vision API",
         "serverUrl": "https://vision.googleapis.com",
@@ -2337,9 +2337,9 @@
     {
       "id": "gcp-vpcaccess",
       "sourceRevision": "a74a0938e9e1a2b2504eb2337690380f18f549fcb5bb2ce1b91b116854c51116",
-      "bytes": 2838,
-      "compressedBytes": 574,
-      "sha256": "a76080ff485c707aca633c339207a67b39eb718614a5c94222729656c2ad5255",
+      "bytes": 3482,
+      "compressedBytes": 625,
+      "sha256": "ebb3513b6ce5e5373fd518489094f8960486dd1f0fa0c770ab531669c99d59ca",
       "summary": {
         "name": "Serverless VPC Access API",
         "serverUrl": "https://vpcaccess.googleapis.com",
@@ -2351,9 +2351,9 @@
     {
       "id": "gcp-workflows",
       "sourceRevision": "cadc7f616f63d8ef1e205ff3ac5528e57ade1b1f3131aa2aeae6008ca65d94c9",
-      "bytes": 3260,
-      "compressedBytes": 611,
-      "sha256": "1ec3e07170c3c6986db5f758977ed1e0a22f7f3d91ed8d568708023aa725d51a",
+      "bytes": 3996,
+      "compressedBytes": 660,
+      "sha256": "526d8e9af22b571884200c6556b7c0def9aea2d32a5ee50482dd8a1a56e87ecb",
       "summary": {
         "name": "Workflows API",
         "serverUrl": "https://workflows.googleapis.com",
@@ -2365,9 +2365,9 @@
     {
       "id": "gcp-workflowexecutions",
       "sourceRevision": "236ea964f6f0ab33362554dbbcb25e7a3d7e424c6871cf8cff2a06a324a84488",
-      "bytes": 4001,
-      "compressedBytes": 629,
-      "sha256": "8c264fedd4893e9d0c931e27d1c3c52197d073b7d9df44861150def177166db3",
+      "bytes": 4737,
+      "compressedBytes": 676,
+      "sha256": "6f0a2ffa007cce6668d6c1ad3ad74a7e903ac24447a0bf48816b4b6b61bdbf89",
       "summary": {
         "name": "Workflow Executions API",
         "serverUrl": "https://workflowexecutions.googleapis.com",
@@ -2379,9 +2379,9 @@
     {
       "id": "gemini",
       "sourceRevision": "b8a847e0973966f84231a373f9afed6c6cdc2dded13f418c1c08a764c9b37d0b",
-      "bytes": 10657,
-      "compressedBytes": 1602,
-      "sha256": "8cc7e68970363060fa7e15edf59f9b9c6042994ca9dc05c8bd2c92f6eb899dd7",
+      "bytes": 14653,
+      "compressedBytes": 1674,
+      "sha256": "785059f2f5a54fd2cea93a848ec3e929a6e66dce24fb6861afadacda70996bbb",
       "summary": {
         "name": "Gemini API",
         "serverUrl": "https://generativelanguage.googleapis.com",
@@ -2393,9 +2393,9 @@
     {
       "id": "google-search-console",
       "sourceRevision": "e5e998eb18cea68d86632e13f0b62b9bc95f54dafe4f45bb42612592f65e6b25",
-      "bytes": 4637,
-      "compressedBytes": 835,
-      "sha256": "80cdf2472260110f6bb1e47e87134958e7ce6969702a76f457a3365e51f6cfb4",
+      "bytes": 5779,
+      "compressedBytes": 909,
+      "sha256": "cc838dd8ffe6ac5dce1cefe147ffbdd8fb0ca609a52777fc057629a653a13d59",
       "summary": {
         "name": "Google Search Console API",
         "serverUrl": "https://searchconsole.googleapis.com",
@@ -2407,9 +2407,9 @@
     {
       "id": "google-admin-data-transfer",
       "sourceRevision": "11cc64e797a5dbdd0df404d5e634f4e23cf9729fda331a713ef7742393d8953f",
-      "bytes": 2592,
-      "compressedBytes": 615,
-      "sha256": "60f00e4f950dcd6d7455a130ee99abda4cc3202bfc45307c8f271440eed38150",
+      "bytes": 3200,
+      "compressedBytes": 671,
+      "sha256": "394ed5d981d054fc4a95e2afeb7d639e52110240bfddaa01f7fca42ebf31ddd9",
       "summary": {
         "name": "Admin SDK API",
         "serverUrl": "https://admin.googleapis.com",
@@ -2421,9 +2421,9 @@
     {
       "id": "google-admin-directory",
       "sourceRevision": "870837ae6134d1c4549ec17c640518afe4bbc5bf4b5a1b0c3d5d6c8b1c67155c",
-      "bytes": 42620,
-      "compressedBytes": 3144,
-      "sha256": "59d943d4fb1e30b202ae017b27f11d0137342f3aad9b6628df44ea571e397551",
+      "bytes": 56378,
+      "compressedBytes": 3411,
+      "sha256": "749c261b2b8c58be1b1e13dec18f39799416f7a37e2beb071fab5b9c569fcbeb",
       "summary": {
         "name": "Admin SDK API",
         "serverUrl": "https://admin.googleapis.com",
@@ -2435,9 +2435,9 @@
     {
       "id": "google-admin-reports",
       "sourceRevision": "228615adc2f2abd9be8e6e0af468bffa1dff9f30c13eaee543efb150eacb6f54",
-      "bytes": 3219,
-      "compressedBytes": 737,
-      "sha256": "cecc53e4461cbc6d1a498625091e73b2f06536e3ec3eb95bd2790b724b0c09d5",
+      "bytes": 3771,
+      "compressedBytes": 786,
+      "sha256": "7ddcdf3d7d2f427397ad1f757255f5fc85007d497659f54421a0f884e8d6830d",
       "summary": {
         "name": "Admin SDK API",
         "serverUrl": "https://admin.googleapis.com",
@@ -2449,9 +2449,9 @@
     {
       "id": "google-apps-script",
       "sourceRevision": "67561113af54eca2ff823ba739814fa36f1aff2fa0bc2fd0b9c1c29e822c0b12",
-      "bytes": 5493,
-      "compressedBytes": 791,
-      "sha256": "49943b216399018edfaf89463e88f33ea60d1e5348977351ad8b7ac4b7ae0e64",
+      "bytes": 7594,
+      "compressedBytes": 875,
+      "sha256": "9980396bbf2cd5b700007b2e90eb28015f892ad51b17338ebad7b5ab4c240476",
       "summary": {
         "name": "Apps Script API",
         "serverUrl": "https://script.googleapis.com",
@@ -2463,9 +2463,9 @@
     {
       "id": "google-calendar",
       "sourceRevision": "f45cfb3ee1e20148cd6512fb681a452f24a6d333e3d38b6518339f3c09a6673c",
-      "bytes": 10992,
-      "compressedBytes": 1231,
-      "sha256": "b08b3b82651db2b1505e8b22a458ff69c5a466bc241672482f12a71257a53275",
+      "bytes": 15728,
+      "compressedBytes": 1342,
+      "sha256": "d5d9927c9da221773bf4c0d03d4bc0ede9db9b0be5f58361f5abddd3b4070087",
       "summary": {
         "name": "Calendar API",
         "serverUrl": "https://www.googleapis.com/calendar/v3",
@@ -2477,9 +2477,9 @@
     {
       "id": "google-chat",
       "sourceRevision": "376ea9392e52f5c11e643539539645636b450103da8f97bc5b8cace6fe1a9d39",
-      "bytes": 5318,
-      "compressedBytes": 915,
-      "sha256": "a436868dd9d350e1980f250e41b24c23260cd4959be8685e8b6a14f85428816f",
+      "bytes": 8211,
+      "compressedBytes": 1020,
+      "sha256": "ebf8ee1c317eac7c954f5af71f099a3fb2b4298145e5bcc56b9e7b0ed91797b8",
       "summary": {
         "name": "Google Chat API",
         "serverUrl": "https://chat.googleapis.com",
@@ -2491,9 +2491,9 @@
     {
       "id": "google-classroom",
       "sourceRevision": "ab5828ea51c1be917cc94d3dfd9c485590cb9198e60608122ca21802697b1c13",
-      "bytes": 20294,
-      "compressedBytes": 1590,
-      "sha256": "839a04c1fcf7a2b8359cc50b3fb4f9622fdae55c5ba1b70d83e49ffdfe5ec153",
+      "bytes": 27904,
+      "compressedBytes": 1768,
+      "sha256": "3fb206737c0f72f774731b4cb4f799c24f1d0ab38f3296912a56aa513444cec8",
       "summary": {
         "name": "Google Classroom API",
         "serverUrl": "https://classroom.googleapis.com",
@@ -2505,9 +2505,9 @@
     {
       "id": "google-docs",
       "sourceRevision": "b44eba46faf3780312bca085a83f30fd18b7a30f489aa309f05d2f2288580581",
-      "bytes": 1391,
-      "compressedBytes": 467,
-      "sha256": "c8e2477a5c432da42afd53d2727aa1c481b14007e40d7b115be86e96e52c954c",
+      "bytes": 1963,
+      "compressedBytes": 523,
+      "sha256": "b75ea1ccba40e27e09966f3f754bb7f029abbd410c05aabfd3d51d5872f73503",
       "summary": {
         "name": "Google Docs API",
         "serverUrl": "https://docs.googleapis.com",
@@ -2519,9 +2519,9 @@
     {
       "id": "google-drive-activity",
       "sourceRevision": "671bc349c4d68952d1f35448bce71cbde1fc98e123ec6ce83a3990cefaa40f87",
-      "bytes": 1000,
-      "compressedBytes": 432,
-      "sha256": "46e43ef2314df7d6e050196be3c4301812b0e1f9aaf07c20a1d955ecf109dc99",
+      "bytes": 1129,
+      "compressedBytes": 481,
+      "sha256": "abbc0e5ca78a03bc2da6c95df2e0c7785193a2abaf1d9339886bd2b69b7e1cca",
       "summary": {
         "name": "Drive Activity API",
         "serverUrl": "https://driveactivity.googleapis.com",
@@ -2533,9 +2533,9 @@
     {
       "id": "google-drive",
       "sourceRevision": "3eb1cb005a27f06c51a7f3880dcb3fa7ffdec18f30f3343202f503b6110f03c7",
-      "bytes": 13911,
-      "compressedBytes": 1577,
-      "sha256": "91ce1e640a779b16cd66fdb1d130833481574e25ca5c837b930fd19564f93e40",
+      "bytes": 23093,
+      "compressedBytes": 1772,
+      "sha256": "a793505efc0c8ed329d3a808fd819d12a31287e00e355239bad6def9365313ed",
       "summary": {
         "name": "Google Drive API",
         "serverUrl": "https://www.googleapis.com/drive/v3",
@@ -2547,9 +2547,9 @@
     {
       "id": "google-drive-labels",
       "sourceRevision": "1d2c311b9ec8b5f47a2f9122350f340341c53f02e58711fccf51b6c107e0af71",
-      "bytes": 5626,
-      "compressedBytes": 811,
-      "sha256": "039cc47ed685ff17722e7d296a5ea5945a60e08797027df81530d6d7df0a8224",
+      "bytes": 8060,
+      "compressedBytes": 876,
+      "sha256": "f7605191153a71b89c7b98e1f6228aa1b9a3bae9b66df8e08d3868b205de803f",
       "summary": {
         "name": "Drive Labels API",
         "serverUrl": "https://drivelabels.googleapis.com",
@@ -2561,9 +2561,9 @@
     {
       "id": "google-forms",
       "sourceRevision": "01982d9f462c5f17e38923c17dca62f36558afad71f1f3d44945e7fa8d6c1515",
-      "bytes": 2943,
-      "compressedBytes": 596,
-      "sha256": "453c9cfd3609fc03eaeb47a9bdbc35bc06e19d2ad7867978e8c3379bd49f0b2e",
+      "bytes": 4955,
+      "compressedBytes": 672,
+      "sha256": "c2957ef51d9cd57a01f545adeb1f4b52d995f80e8c89da84ccb27b0a21f7fcff",
       "summary": {
         "name": "Google Forms API",
         "serverUrl": "https://forms.googleapis.com",
@@ -2575,9 +2575,9 @@
     {
       "id": "google-gmail",
       "sourceRevision": "ce3d1b266163f6bcdd13342d06cae5e2daad26bd0d13e43522d08e6b3f2b3032",
-      "bytes": 24942,
-      "compressedBytes": 2025,
-      "sha256": "f5f5639d90bb7630253ec779d912e3868d48b654e2af9739af75143e265dadcb",
+      "bytes": 38297,
+      "compressedBytes": 2288,
+      "sha256": "8a03bec3a237a8308385dd3cc971530a9ed7ab22058f576d643a98c3c00817a1",
       "summary": {
         "name": "Gmail API",
         "serverUrl": "https://gmail.googleapis.com",
@@ -2589,9 +2589,9 @@
     {
       "id": "google-keep",
       "sourceRevision": "017e0fb74039342ffc3c984070f049174288a4eab58a3a16696d1bb6e1333306",
-      "bytes": 2278,
-      "compressedBytes": 600,
-      "sha256": "0c77accc48f97aa66ab9f99cf233f9b6a194a11ac0ae56c951672aac8e0282b1",
+      "bytes": 2904,
+      "compressedBytes": 663,
+      "sha256": "b45c77986c357a31ac40a00082771a2a3bd643405e69df97de2318e5af099965",
       "summary": {
         "name": "Google Keep API",
         "serverUrl": "https://keep.googleapis.com",
@@ -2603,9 +2603,9 @@
     {
       "id": "google-people",
       "sourceRevision": "e3b634cf1b0abeb7e6a46b0b8fd7f2132e0e0c7552efefe7e136b9db82150f4d",
-      "bytes": 7299,
-      "compressedBytes": 970,
-      "sha256": "92fe1e0669a6b92fc09ce0c30af72cfeb10ce824ef018c597b0333221c1c096d",
+      "bytes": 10340,
+      "compressedBytes": 1065,
+      "sha256": "64848a7a3265693b864b0841414e13b1c1f349378295ef14e6ff88737dab6917",
       "summary": {
         "name": "People API",
         "serverUrl": "https://people.googleapis.com",
@@ -2617,9 +2617,9 @@
     {
       "id": "google-sheets",
       "sourceRevision": "fd3a8b14d3bff12cd15f7f0417b4b1fb63deb31292a51b4696469298a8246778",
-      "bytes": 6167,
-      "compressedBytes": 774,
-      "sha256": "5f71830f3430e8382134115b3ebc79c26f2e868afb69f257340faa7a68c21082",
+      "bytes": 9211,
+      "compressedBytes": 863,
+      "sha256": "149f5f23fe0b9b0515f0f7580666129c32e6114616450c2bc04e23e1bdb97a26",
       "summary": {
         "name": "Google Sheets API",
         "serverUrl": "https://sheets.googleapis.com",
@@ -2631,9 +2631,9 @@
     {
       "id": "google-slides",
       "sourceRevision": "79bee2a52ede614d98a363a699f836534bbf71860b0b93348e956444934d4149",
-      "bytes": 2182,
-      "compressedBytes": 529,
-      "sha256": "a9c6038f6b451dd3a55977b3e9460c9fb4b4a2d1428b934c45476e133feb128b",
+      "bytes": 3345,
+      "compressedBytes": 594,
+      "sha256": "49dcd4a6b9494defae4780b9432ee397441ec796d6af9b953f26cf7f1a5d215b",
       "summary": {
         "name": "Google Slides API",
         "serverUrl": "https://slides.googleapis.com",
@@ -2645,9 +2645,9 @@
     {
       "id": "google-tasks",
       "sourceRevision": "e8d7eac86594d595e93e453d0ca14d45615e4978f098c0a5b586e2293338cafb",
-      "bytes": 4275,
-      "compressedBytes": 707,
-      "sha256": "c61a94345e09f073c7a74ba3fec3de55e5c5681ab731ea0c5134be548d329e70",
+      "bytes": 5711,
+      "compressedBytes": 776,
+      "sha256": "dd3fc00e961adabc33cda50fb02e9e62d06dd6da9eed83d66ec57625cd2c01d8",
       "summary": {
         "name": "Google Tasks API",
         "serverUrl": "https://tasks.googleapis.com",
@@ -2659,9 +2659,9 @@
     {
       "id": "google-vault",
       "sourceRevision": "82668a2bd1d3a884c2a8ceb9330046e0693e16cc1970c5f05fd002a1b578b367",
-      "bytes": 10250,
-      "compressedBytes": 1246,
-      "sha256": "2317d55a18d28e90e9d8b43848e75957fb10ddc10e117ad08deb3711cd02bdb4",
+      "bytes": 13251,
+      "compressedBytes": 1354,
+      "sha256": "b70de61468561e44a3698999ccad5defd79eba473eabee82d8e87add5d35d600",
       "summary": {
         "name": "Google Vault API",
         "serverUrl": "https://vault.googleapis.com",
@@ -2673,9 +2673,9 @@
     {
       "id": "google-youtube-analytics",
       "sourceRevision": "3429fe9de96422d813eb527bd74ae040372b32f947e58e79ae2c0b7ff187f286",
-      "bytes": 3209,
-      "compressedBytes": 582,
-      "sha256": "10e0864c5c9764fc9cd1a0eaa4655d1aa3a3ebe821aa62156b0a2de3100050af",
+      "bytes": 5129,
+      "compressedBytes": 653,
+      "sha256": "acb11ac1bd422bd5c7e8a6531253cf15a2470492ad6ce135d9c8ec07d0114b10",
       "summary": {
         "name": "YouTube Analytics API",
         "serverUrl": "https://youtubeanalytics.googleapis.com",
@@ -2687,9 +2687,9 @@
     {
       "id": "google-youtube",
       "sourceRevision": "1fea92aedfb6713b9b61a7aeb6ea523dea30689c054725e02c0e2a5edb0174bc",
-      "bytes": 26065,
-      "compressedBytes": 2369,
-      "sha256": "12a7bdcf690a854aea2478226b6633e12beeff93397ed51fd437a2c9acb40326",
+      "bytes": 37720,
+      "compressedBytes": 2585,
+      "sha256": "fe89f080ab005ec9d5c96d2adbbac8f9127382dece44a1cd363a6f9ef9e60085",
       "summary": {
         "name": "YouTube Data API v3",
         "serverUrl": "https://youtube.googleapis.com",
@@ -2701,9 +2701,9 @@
     {
       "id": "groq",
       "sourceRevision": "24a6ad42e199c84687dc4037a8173f52bdc721c74ed1670c8c58441805ee1cf2",
-      "bytes": 7378,
-      "compressedBytes": 1552,
-      "sha256": "e8640100895c28bccf6d402ea4684866b6c4f78abeb2af53b7cf93c414566903",
+      "bytes": 9148,
+      "compressedBytes": 1634,
+      "sha256": "1b2bd79ddd2627514006d9aee4ad1b3fc647982a98849166c0a3fde0b6382413",
       "summary": {
         "name": "GroqCloud API",
         "serverUrl": "https://api.groq.com",
@@ -2715,9 +2715,9 @@
     {
       "id": "hetzner",
       "sourceRevision": "2c64f5ca75a52a2d19471d78e513738a4558b6b895bfb0d8d1a0a9fcb9d20857",
-      "bytes": 82269,
-      "compressedBytes": 10321,
-      "sha256": "7ae3172876f2a0d89adf6327edb2312d8943cb7e1579f2c60374a817da7214a3",
+      "bytes": 96519,
+      "compressedBytes": 10490,
+      "sha256": "d9aad47ec536b211128783e4145addadc02052007b1fbc4e89037782559711c0",
       "summary": {
         "name": "Hetzner Cloud API",
         "serverUrl": "https://api.hetzner.cloud/v1",
@@ -2729,9 +2729,9 @@
     {
       "id": "huggingface",
       "sourceRevision": "b2a77dd815bdc106a9fef18d207b3fd023926413afc442a1afaf06869f0e2437",
-      "bytes": 13760,
-      "compressedBytes": 1833,
-      "sha256": "f98957c6072688f5954f7d46e374a64ab2c923482cc7bbdcb9fca57b5db4d75e",
+      "bytes": 17000,
+      "compressedBytes": 1891,
+      "sha256": "407d326579ba1488f6e408bf02dac7b618f0e51d80da87ebdf5547c05a5a8ebf",
       "summary": {
         "name": "HF Inference Endpoints API",
         "serverUrl": "https://api.endpoints.huggingface.cloud",
@@ -2743,9 +2743,9 @@
     {
       "id": "azure-app-service",
       "sourceRevision": "a4667a581be4897ab9d5a572f3f3c608442d7ab990f47e863fe986a60c5fb819",
-      "bytes": 306575,
-      "compressedBytes": 22320,
-      "sha256": "866ddffca180d436c9c6a9cfdcaeeb1314b8f3681a2e6430eefc42051d6fca60",
+      "bytes": 360783,
+      "compressedBytes": 22689,
+      "sha256": "2aa44c82946c691922c3758e1b40d59386d915ae829777f787c99868a4737534",
       "summary": {
         "name": "WebApps API Client",
         "serverUrl": "https://management.azure.com",
@@ -2756,9 +2756,9 @@
     {
       "id": "azure-compute",
       "sourceRevision": "0a553ebf1aa82d163875d8cb3af50e02c65f9d771d0341379f2e800afe322fe1",
-      "bytes": 90902,
-      "compressedBytes": 5132,
-      "sha256": "f5a72fa3954f4bf079b10ee33298d0c583c331d8232a30542129ca8a13f6eff0",
+      "bytes": 106687,
+      "compressedBytes": 5294,
+      "sha256": "e01b18b8623584024f13a0cc85bc4a286b153edb9d5e86b833641da8edb67e93",
       "summary": {
         "name": "Azure Compute resource management API.",
         "serverUrl": "https://management.azure.com",
@@ -2770,9 +2770,9 @@
     {
       "id": "azure-cosmos-db",
       "sourceRevision": "41b0ee0d49d0c484d66b81ed9115438fb45a57f5f0f96d16079fda7a84371717",
-      "bytes": 106149,
-      "compressedBytes": 5526,
-      "sha256": "8d75bd4806000ecdf07ed340744db64738c19810730ffa6dbca4db4ffb83df4d",
+      "bytes": 124398,
+      "compressedBytes": 5657,
+      "sha256": "ea20988ea59516ae50044a4631985adfc6cf5bb24f9b216ce7d8707e45ee6236",
       "summary": {
         "name": "Cosmos DB",
         "serverUrl": "https://management.azure.com",
@@ -2784,9 +2784,9 @@
     {
       "id": "azure-eventgrid",
       "sourceRevision": "bc47a8220775ef84854ff991cf9e7bdf5926ab9583963ed75f0957c40c1f848b",
-      "bytes": 72267,
-      "compressedBytes": 4195,
-      "sha256": "4b55df27776210940e0a0c91e0296d25668aae33187c7364d176fa75fc894a03",
+      "bytes": 85357,
+      "compressedBytes": 4366,
+      "sha256": "5161aa9067c2a6baa16a1db280a94d05d71fd524d20e1c795226cee6c756a2ca",
       "summary": {
         "name": "EventGridManagementClient",
         "serverUrl": "https://management.azure.com",
@@ -2798,9 +2798,9 @@
     {
       "id": "azure-keyvault",
       "sourceRevision": "b874fd11a2e158341794bd17d7f87bfbcaf5a9696ab069a952feb629fb759db1",
-      "bytes": 19247,
-      "compressedBytes": 1637,
-      "sha256": "93e6754d85430ec393c6fb8bf180a213912f6b522a69f92caedec123c09caa2c",
+      "bytes": 22943,
+      "compressedBytes": 1706,
+      "sha256": "74f9541a5954d8233dfe2b56527ab4ed9cd2947a26e4a2dbc818630a59b019bb",
       "summary": {
         "name": "KeyVaultManagementClient",
         "serverUrl": "https://management.azure.com",
@@ -2812,9 +2812,9 @@
     {
       "id": "azure-aks",
       "sourceRevision": "c2399e32c006cbff240ecf29d72a4c280b8181c1a3f86eaa7fd322537f55b9c8",
-      "bytes": 30039,
-      "compressedBytes": 2438,
-      "sha256": "679bf47a04e4f215c392f18b2844e7f0848504270a4baef76e6d3fc66e4ed928",
+      "bytes": 35352,
+      "compressedBytes": 2495,
+      "sha256": "f575126f2f37f5f52a9aea3817ba7e97bd9471a3149eb392092347b80947e0dc",
       "summary": {
         "name": "ContainerServiceClient",
         "serverUrl": "https://management.azure.com",
@@ -2826,9 +2826,9 @@
     {
       "id": "azure-load-balancers",
       "sourceRevision": "9639b0ec38547dac1576f7578c98fa1732371d809fbe165df076e8904a0e0b19",
-      "bytes": 12027,
-      "compressedBytes": 1125,
-      "sha256": "155bdd9d513c360a6583dbd757f9484f236a862ce1586b1fb9beac70a409efd1",
+      "bytes": 14106,
+      "compressedBytes": 1185,
+      "sha256": "0ae5f8469a0d05f0a8d429aef21c6313d1a697c1e1527631a13f915a2696945c",
       "summary": {
         "name": "WebApplicationFirewallManagement",
         "serverUrl": "https://management.azure.com",
@@ -2840,9 +2840,9 @@
     {
       "id": "azure-virtual-networks",
       "sourceRevision": "2338e0744ecf413dc324b058b784689477754112b8459d440cb9e060a1d28405",
-      "bytes": 107261,
-      "compressedBytes": 6464,
-      "sha256": "aa9eaf1e6ab25cd574186a8a002e304b63ee0abf471d3a1c73786a721cb6f161",
+      "bytes": 126126,
+      "compressedBytes": 6606,
+      "sha256": "554b4a738760d200a659e2c381cf45043fb167b9fcb271a580f112b86a8083e9",
       "summary": {
         "name": "WebApplicationFirewallManagement",
         "serverUrl": "https://management.azure.com",
@@ -2854,9 +2854,9 @@
     {
       "id": "azure-resources",
       "sourceRevision": "3229eb7c17e2b7737c4cfafe7671d3729a1f0bb71062f9411473224425637534",
-      "bytes": 13492,
-      "compressedBytes": 1502,
-      "sha256": "92cbe39dba2f7e5d5c50eb0ee888d32be7d6908ae5da114a5f99d80c96f41be8",
+      "bytes": 16572,
+      "compressedBytes": 1565,
+      "sha256": "2fed59a4bec5850a8f073a6b970a04bda96d942b0f089331d3ce3e3c7fc83b03",
       "summary": {
         "name": "ResourceManagementClient",
         "serverUrl": "https://management.azure.com",
@@ -2868,9 +2868,9 @@
     {
       "id": "azure-servicebus",
       "sourceRevision": "433c766188c3003da5c0a63f1743fe9ce94dc378f92f65f059fd83e702925a53",
-      "bytes": 31025,
-      "compressedBytes": 2124,
-      "sha256": "12f033b9faddbb0bbfbff0f58fdd759827d47f5137e10fba358e5383e76d596d",
+      "bytes": 36415,
+      "compressedBytes": 2180,
+      "sha256": "aeef45686fc0969cfd4cbe2bcd822709e8be65d630340b861e69084ddcd80972",
       "summary": {
         "name": "ServiceBusManagementClient",
         "serverUrl": "https://management.azure.com",
@@ -2882,9 +2882,9 @@
     {
       "id": "azure-sql-databases",
       "sourceRevision": "0eb4b56378105ba6df44e2a3ef465123b43d481628373c67729253329b2753b9",
-      "bytes": 6347,
-      "compressedBytes": 907,
-      "sha256": "0eb0f782199938e8e8356a39220c0316f4dd35c77c13207ee9fb7a78ef490317",
+      "bytes": 7425,
+      "compressedBytes": 961,
+      "sha256": "43c0ec689c94c49e06f34bbf30889d281ad13ad3286192b013ad4560229839af",
       "summary": {
         "name": "SqlManagementClient",
         "serverUrl": "https://management.azure.com",
@@ -2896,9 +2896,9 @@
     {
       "id": "azure-sql-servers",
       "sourceRevision": "85547b9bf5bd56b64c5a63919ccbd72cfb7eff2f9ac7a0f7e5bd26860872abe0",
-      "bytes": 4068,
-      "compressedBytes": 792,
-      "sha256": "9479f68e11c3770481e5edbfd6ec361899ec530dfad46626071b6df1ef13117d",
+      "bytes": 4761,
+      "compressedBytes": 837,
+      "sha256": "3fed30a5ab267d0c4f9a565ee9a1ed409b4870d1c06838bb72d26a048b849338",
       "summary": {
         "name": "SqlManagementClient",
         "serverUrl": "https://management.azure.com",
@@ -2910,9 +2910,9 @@
     {
       "id": "azure-storage",
       "sourceRevision": "1d7d79f7f92243d8ebae47902207e461b51ede51a596512f835a081289ae27f7",
-      "bytes": 60380,
-      "compressedBytes": 3999,
-      "sha256": "457286f2926a2510a25153bc51981cd7b3edbed8bd4ed9e8abbb4031985b239f",
+      "bytes": 71083,
+      "compressedBytes": 4102,
+      "sha256": "9bbdbdcfdea403116f3efb52ff8c0e341eeb9d5c4bde6b10b36b3ed62d32bd33",
       "summary": {
         "name": "StorageManagementClient",
         "serverUrl": "https://management.azure.com",
@@ -2924,9 +2924,9 @@
     {
       "id": "mistral",
       "sourceRevision": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
-      "bytes": 61453,
-      "compressedBytes": 6433,
-      "sha256": "bca04c870f4917f55626a2f6e6dfa199778f537ab05b753f0678ddf27dfaeeba",
+      "bytes": 74605,
+      "compressedBytes": 6723,
+      "sha256": "f654dcf599d5d5f9e19740281e7d1e946504a4752872d5589ed68768a1306926",
       "summary": {
         "name": "Mistral AI API",
         "serverUrl": "https://api.mistral.ai",
@@ -2938,9 +2938,9 @@
     {
       "id": "ollama",
       "sourceRevision": "d07f805ca2a0ad05018669a0366b0763f5e693ac11c8c53b68025cb900dc8ab5",
-      "bytes": 3817,
-      "compressedBytes": 800,
-      "sha256": "dc1c150ed371d5069d4cafd10d45436285e84cfd6d8fad8a38def99c9829c11f",
+      "bytes": 4038,
+      "compressedBytes": 864,
+      "sha256": "b4e98b08d0093e5fb86ed2960f7361fc6dc8e4cb4a3e39648124824a2f4a6d1c",
       "summary": {
         "name": "Ollama API",
         "serverUrl": "http://localhost:11434",
@@ -2952,9 +2952,9 @@
     {
       "id": "openai",
       "sourceRevision": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
-      "bytes": 93006,
-      "compressedBytes": 9115,
-      "sha256": "db4390787c4185d5f55b1449ac6e3125b25e24993cd6f3302ac397a1c6cbf35e",
+      "bytes": 122427,
+      "compressedBytes": 9677,
+      "sha256": "444cd2bd0c03fd33f3565fc8226f2a118458dd554fc1d009d4870e79b4cc35a4",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",
@@ -2966,9 +2966,9 @@
     {
       "id": "codex",
       "sourceRevision": "ef2cf80a7c1e02e63d1ff3565267f3faf1cdcaed315d3717b085de6eb6d7de16",
-      "bytes": 33427,
-      "compressedBytes": 2704,
-      "sha256": "f1d823c86f3dc10984307d9a1a36ddd0879c578f417ad52d73a2978fc6df34de",
+      "bytes": 49900,
+      "compressedBytes": 3070,
+      "sha256": "d4617c2a17546f4ae0d4402d973fbe84539a473c05a319261170e5886d6a327f",
       "summary": {
         "name": "OpenAI / Codex / App Server",
         "serverUrl": "",
@@ -2981,9 +2981,9 @@
     {
       "id": "openrouter",
       "sourceRevision": "8e9803815de386067a20d33b094c08a67c10db451178e7cf2f970a6b78ae9960",
-      "bytes": 40274,
-      "compressedBytes": 4979,
-      "sha256": "76200ea0f4bdf75bce444c4c6d26e939c6f6e4a0fce69bcf5d60d93f3483c77a",
+      "bytes": 51331,
+      "compressedBytes": 5180,
+      "sha256": "2f897a9cc680193cea8960cc46d9adada8565c3b59d56e208e532887dcbcc13f",
       "summary": {
         "name": "OpenRouter API",
         "serverUrl": "https://openrouter.ai/api/v1",
@@ -2995,9 +2995,9 @@
     {
       "id": "render",
       "sourceRevision": "97a86252d35cbe6b66c141483ad2cc52a323d8dfb0ecd5d73e11ac8cfc7dc3e3",
-      "bytes": 59130,
-      "compressedBytes": 6142,
-      "sha256": "d7d8e529799b931a82241b225bda5caf9b3aeec08b2e545cf39cb34e1230f0d5",
+      "bytes": 77502,
+      "compressedBytes": 6497,
+      "sha256": "4f3cc1e9ad90446c85c6f16dff6f3c1a3fc604472148506835d3823117207fe5",
       "summary": {
         "name": "Render Public API",
         "serverUrl": "https://api.render.com/v1",
@@ -3009,9 +3009,9 @@
     {
       "id": "replicate",
       "sourceRevision": "790b5dfeb6e9fffc5c967de5dd30b17e305bad4686ad700ad91650de7a457468",
-      "bytes": 9267,
-      "compressedBytes": 1289,
-      "sha256": "0ced54902da5320a517a698e016ccfecc343c3a20425ee5f078dc6269ae39ebc",
+      "bytes": 11996,
+      "compressedBytes": 1374,
+      "sha256": "8d351401a8e8fa502591c11cfafdfa1e614482c36f39ff17d9b329b8c2cf4cdc",
       "summary": {
         "name": "Replicate HTTP API",
         "serverUrl": "https://api.replicate.com/v1",
@@ -3023,9 +3023,9 @@
     {
       "id": "resend",
       "sourceRevision": "951d4cd61d760bfb79e85adf5bb5bec22299eab434ab3b4e87c8d71095a10d5e",
-      "bytes": 35676,
-      "compressedBytes": 3718,
-      "sha256": "7e07a8f60cedfd6b7910cbbf98dcf4969dd552b4861b39b10f7cdf44ce031f79",
+      "bytes": 46712,
+      "compressedBytes": 3853,
+      "sha256": "4f672eba988144032ac637088e67a76bff5e419f6329e3547a1e2ebdfedaf2cf",
       "summary": {
         "name": "Resend",
         "serverUrl": "https://api.resend.com",
@@ -3037,9 +3037,9 @@
     {
       "id": "telegram",
       "sourceRevision": "87e24e72f3a76ccfef04c486bd8fd11eed40851917d2e4e7b851531c34e1038d",
-      "bytes": 42405,
-      "compressedBytes": 3836,
-      "sha256": "fbe9512181422b4cede7d8d7344db48c185f87111aab1efa6f6a0c4ac8c3407b",
+      "bytes": 65479,
+      "compressedBytes": 4097,
+      "sha256": "c168f728448d7ca0e390899ce0f048ac678dd36b6ad68bcda7043f0099f2192c",
       "summary": {
         "name": "Telegram Bot API",
         "serverUrl": "https://api.telegram.org",
@@ -3051,9 +3051,9 @@
     {
       "id": "together",
       "sourceRevision": "5e1162180a8e29e07f9d0754f0d82815f493c7cea34b3c9ca2d7bd5b2115c69f",
-      "bytes": 60149,
-      "compressedBytes": 6314,
-      "sha256": "b7a927b818449a4b55b82db92effeb750768de73d71a562b9bfc8a529364d7c1",
+      "bytes": 76233,
+      "compressedBytes": 6560,
+      "sha256": "76553b2c0074a4af5ef5ed0615a72efd5d9c09fcd1320bd4d2ba13def3d0e465",
       "summary": {
         "name": "Together APIs",
         "serverUrl": "https://api.together.ai/v2",
@@ -3065,9 +3065,9 @@
     {
       "id": "twilio",
       "sourceRevision": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
-      "bytes": 72062,
-      "compressedBytes": 6539,
-      "sha256": "0312caa50d68c69e7910e7c47d26eb44eabdcc9bd36d2b9c881f5603519a6175",
+      "bytes": 89303,
+      "compressedBytes": 6723,
+      "sha256": "2ffb7328da20066455e1e80245e8399a223329fec09c695c972c11dce3142a01",
       "summary": {
         "name": "Twilio - Api",
         "serverUrl": "https://api.twilio.com",
@@ -3079,9 +3079,9 @@
     {
       "id": "vercel",
       "sourceRevision": "4d90721d2c1a6799222e55886f3faf3a2fc01c5fe1eacc22b3ba372b65db7665",
-      "bytes": 123865,
-      "compressedBytes": 14190,
-      "sha256": "5fdd327b8cfce2a5571513a57f8e3e7d957b7b36e64b6cdb617c9890f13e4903",
+      "bytes": 157093,
+      "compressedBytes": 14580,
+      "sha256": "42f7556a41661a27c6f0567ed80cf75367af5f759033d73712e1d369c6c9ea08",
       "summary": {
         "name": "Vercel API",
         "serverUrl": "https://api.vercel.com",
@@ -3093,9 +3093,9 @@
     {
       "id": "x",
       "sourceRevision": "10fb1c13f21c82f42839f63b8874205968a9650e18c9a332b78a339ab675dd13",
-      "bytes": 41338,
-      "compressedBytes": 4529,
-      "sha256": "374b7266d8df21030fc96a4db0f521b3c2a9d48b833f072f40fe8dd2ed49fea6",
+      "bytes": 59400,
+      "compressedBytes": 4954,
+      "sha256": "a95639bc26f3acb9f698ee2f9c4170deff72b9ed4420393cc2de4819163844a5",
       "summary": {
         "name": "X API v2",
         "serverUrl": "https://api.x.com",
@@ -3107,9 +3107,9 @@
     {
       "id": "xai",
       "sourceRevision": "1361ade8ea7ae8c3931e28410f996fae95eea3cfcaf8e6cd54850c31174be1b0",
-      "bytes": 15799,
-      "compressedBytes": 3072,
-      "sha256": "bb496b8ac091051519d5a841f00ca5f3c008faf3becfad8b503770d993e61686",
+      "bytes": 19255,
+      "compressedBytes": 3159,
+      "sha256": "3f8370d9f6ccaac9a09ae90c2cdc6a852259ad2824bdd26966c0a5ede2ce3195",
       "summary": {
         "name": "xAI's REST API",
         "serverUrl": "https://api.x.ai/v1",

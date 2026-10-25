@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
+import { operationCapabilityHint } from '../../src/lib/operation-capabilities.ts';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, searchOperations, setEvaluationDetails } from './workspace.fixture.mjs';
@@ -86,7 +87,7 @@ Then('delegated catalog help preserves disabled explanations anchors and dismiss
   await row.evaluate(element => element.scrollIntoView({ block: 'center' }));
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await row.evaluate(element => element.focus({ preventScroll: true }));
-  await expect(page.getByRole('tooltip')).toHaveText(unavailable.unavailableReason);
+  await expect(page.getByRole('tooltip')).toHaveText(operationCapabilityHint(unavailable));
   await expect(row).toHaveAttribute('aria-describedby', /.+/);
   const icon = row.locator('.catalog-action-icon');
   await icon.hover();
@@ -98,16 +99,19 @@ Then('delegated catalog help preserves disabled explanations anchors and dismiss
     await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => {})));
   });
   await row.locator('.catalog-name').hover({ position: { x: 2, y: 2 } });
-  await expect(page.getByRole('tooltip')).toHaveText(unavailable.unavailableReason);
+  await expect(page.getByRole('tooltip')).toHaveText(operationCapabilityHint(unavailable));
   await expect(page.getByRole('tooltip')).toHaveCount(1);
   await page.mouse.move(950, 10);
   // The closing animation retains its label and anchor until presence ends.
   const exiting = page.locator('.app-tooltip[data-state="closed"]');
-  await expect(exiting).toHaveText(unavailable.unavailableReason);
+  await expect(exiting).toHaveText(operationCapabilityHint(unavailable));
   await expect(exiting).toHaveCount(0);
   // Send the real click despite Playwright's aria-disabled actionability guard.
   await row.click({ force: true });
   await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+  const requirements = page.getByRole('dialog', { name: `Requirements: ${unavailable.name}`, exact: true });
+  await expect(requirements).toBeVisible();
+  await page.keyboard.press('Escape'); await expect(requirements).toBeHidden();
   await icon.hover();
   await page.locator('#side-navigation').evaluate(panel => panel.dispatchEvent(new Event('scroll')));
   await expect(page.getByRole('tooltip')).toHaveCount(0);

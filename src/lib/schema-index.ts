@@ -4,8 +4,9 @@
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { isCodexSchema } from "./codex-schema.ts";
+import { summarizeOperationCapabilities, validateOperationCapabilities, validateCapabilitySummary } from "./operation-capabilities.ts";
 
-export const schemaIndexVersion = 1;
+export const schemaIndexVersion = 2;
 export type SchemaSummary = { name: string; description?: string; serverUrl: string; operationCount: number; unavailableCount?: number; protocol?: "json-rpc" };
 export type SchemaDiscovery = {
   version: typeof schemaIndexVersion;
@@ -19,9 +20,11 @@ export type SchemaDiscovery = {
 /** Descriptors deliberately cannot execute until a canonical model is loaded. */
 export function operationDescriptor(operation: Operation): Operation
 {
+  const summary = summarizeOperationCapabilities(operation);
   return { id: operation.id, name: operation.name, method: operation.method, path: operation.path,
     group: operation.group, description: "", fields: [], bodyRequired: false, deferred: true,
-    ...(operation.unavailableReason ? { unavailableReason: operation.unavailableReason } : {}) };
+    ...(operation.unavailableReason ? { unavailableReason: operation.unavailableReason } : {}),
+    ...(summary ? { capabilitySummary: summary } : {}) };
 }
 
 export function createSchemaSummary(inspected: { document: Record<string, unknown>; name: string;
@@ -61,6 +64,8 @@ export function validateSchemaDiscovery(value: unknown, id: string, revision: st
       || typeof operation.name !== "string" || typeof operation.path !== "string" || typeof operation.method !== "string"
       || operation.deferred !== true || operation.fields?.length !== 0) throw new Error(`The discovery index for ${id} contains an invalid operation.`);
     seen.add(operation.id);
+    if (operation.capabilities !== undefined) validateOperationCapabilities(operation.capabilities);
+    if (operation.capabilitySummary !== undefined) validateCapabilitySummary(operation.capabilitySummary, operation.unavailableReason);
   }
   return index;
 }

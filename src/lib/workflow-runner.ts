@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { operationBlockReason } from "./operation-capabilities.ts";
 import { operationForId, type InputField, type InputSchema, type JsonValue, type Operation } from "./catalog.ts";
 import { additionalBodyField, inputAllowsNull, InputValidationError, validateInputValue, type InputValues } from "./operation-input.ts";
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
@@ -490,7 +491,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     const canonical = operationForId(node.data.operationId);
     if (!canonical || canonical.method !== node.data.method || canonical.path !== node.data.path)
       throw new Error(`“${node.data.name}” is unavailable in the registered schemas. Add an available operation before running it.`);
-    if (canonical.unavailableReason) throw new Error(canonical.unavailableReason);
+    if (operationBlockReason(canonical)) throw new Error(operationBlockReason(canonical));
     const operation = { ...canonical, fields: [...canonical.fields] };
     const values: InputValues = Object.fromEntries(operation.fields.filter(field => field.defaultValue !== undefined).map(field => [field.key, field.defaultValue]));
     const mappedFields: string[] = [];

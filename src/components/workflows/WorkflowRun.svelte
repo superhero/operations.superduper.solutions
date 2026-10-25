@@ -32,6 +32,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import DockerHostSelector from "$lib/components/DockerHostSelector.svelte";
   import type { DockerBinding } from "$lib/secrets/docker-config.ts";
   import { prepareDockerReadRequest } from "$lib/docker-operation-input.ts";
+  import OperationCapabilities from "$lib/components/OperationCapabilities.svelte";
 
   let { document, onClose, startingNodeId, onBindingChange = () => {}, onNativeBindingChange = () => {}, onDockerBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
     startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void;
@@ -220,6 +221,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       <Reveal open={operationDetails} id="run-operation-details">{#key view.id}<OperationReport operation={view.operation} />{/key}</Reveal>
       <p class="hint">{view.workflowName}</p>
+      <OperationCapabilities operation={view.operation} requirementsOnly selection={{ credentials: !!credentialBinding, native: !!nativeBinding, docker: dockerReady }} />
       {#if view.operation.protocol === "json-rpc"}
         {#key view.id}<NativeRuntimeSelector operation={view.operation} initial={view.nativeBinding} disabled={busy || executed}
           onChange={binding => { nativeBinding = binding; if (binding && view?.kind === "operation") onNativeBindingChange(view.bindingPath, binding); }} />{/key}

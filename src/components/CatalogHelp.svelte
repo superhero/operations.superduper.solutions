@@ -7,6 +7,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { flushSync, onMount, untrack, type Snippet } from "svelte";
   import { Tooltip } from "bits-ui";
   import type { Operation } from "$lib/catalog.ts";
+  import { operationCapabilityHint } from "$lib/operation-capabilities.ts";
+  import Modal from "$lib/components/Modal.svelte";
+  import OperationCapabilities from "$lib/components/OperationCapabilities.svelte";
   let { active, operations, revision, children }: {
     active: boolean; operations: Map<string, Operation>; revision: unknown; children: Snippet;
   } = $props();
@@ -15,10 +18,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let displayed = $state<Hint | null>(null);
   let open = $state(false);
   let content = $state<HTMLDivElement | null>(null);
+  let detailsOpen = $state(false), detailsId = $state("");
+  let detailsAnchor = $state.raw<HTMLElement>();
+  let detailsFocus = $state<HTMLDivElement>();
+  const details = $derived(operations.get(detailsId));
   const tooltip = Tooltip.createTether();
   const contentId = $props.id();
   function dismiss() { tooltip.close(); hint = null; }
   $effect(() => { void active; void operations; void revision; untrack(dismiss); });
+  $effect(() => { if (!active || !details) detailsOpen = false; });
   $effect(() => { if (!content && !hint) displayed = null; });
   $effect(() => {
     const target = open ? hint?.target : undefined;
@@ -38,7 +46,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (icon) return { target: icon, label: "Add to workflow", side: "right" };
     const row = target.closest<HTMLElement>('.catalog-operation-action[aria-disabled="true"]');
     const id = row?.closest<HTMLElement>("[data-operation-id]")?.dataset.operationId;
-    const reason = id ? operations.get(id)?.unavailableReason : undefined;
+    const operation = id ? operations.get(id) : undefined;
+    const reason = operation ? operationCapabilityHint(operation) : undefined;
     return row && reason ? { target: row, label: reason, side: "top" } : null;
   }
   function forward(props: Record<string, unknown>, name: string, event: Event) {
@@ -72,6 +81,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {@const { type: _type, tabindex: _tabindex, disabled: _disabled, "aria-describedby": _description, onfocus: _focus, onblur: _blur,
         onpointerenter: _enter, onpointerleave: _leave, ...triggerProps } = props}
       <div {...triggerProps} class="catalog-help-scope"
+        onclick={(event) => {
+          const row = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('.catalog-operation-action[aria-disabled="true"]') : null;
+          const id = row?.closest<HTMLElement>("[data-operation-id]")?.dataset.operationId;
+          if (active && row && id && operations.has(id)) { event.preventDefault(); event.stopPropagation(); dismiss(); detailsId = id; detailsAnchor = row; detailsOpen = true; }
+        }}
         onpointerover={(event) => { update(event, props); if (hint) forward(props, "onpointerenter", event); }}
         onpointermove={(event) => {
           const changed = update(event, props);
@@ -89,10 +103,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </Tooltip.Trigger>
   <Tooltip.Portal><Tooltip.Content bind:ref={content} id={contentId} customAnchor={displayed?.target ?? null} role="tooltip" aria-hidden={!open}
     class="app-tooltip" side={displayed?.side ?? "right"} sideOffset={8} collisionPadding={8}>
-    {displayed?.label}<Tooltip.Arrow class="tooltip-arrow" />
+    <span class="capability-hint">{displayed?.label}</span><Tooltip.Arrow class="tooltip-arrow" />
   </Tooltip.Content></Tooltip.Portal>
 </Tooltip.Root>
+<Modal bind:open={detailsOpen} title={details ? `Requirements: ${details.name}` : "Operation requirements"}
+  description="Review the operation's limitations and connection requirements."
+  initialFocus={() => detailsFocus}
+  onCloseAutoFocus={(event) => { if (detailsAnchor?.isConnected) { event.preventDefault(); detailsAnchor.focus(); } }}>
+  <div tabindex="-1" bind:this={detailsFocus} data-capability-details>
+    {#if details && (details.capabilities || details.capabilitySummary)}<OperationCapabilities operation={details} />
+    {:else if details?.unavailableReason}<p>{details.unavailableReason}</p>{/if}
+  </div>
+</Modal>
 
 <style>
   .catalog-help-scope { display: contents; }
+  .capability-hint { white-space: pre-line; }
 </style>

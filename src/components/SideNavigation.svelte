@@ -250,7 +250,7 @@
               <li data-operation-id={operation.id} data-operation-name={operation.name}>
                 {#if operation.unavailableReason}
                   <button type="button" class="catalog-operation-action"
-                    aria-disabled="true" aria-label={`Add to workflow: ${operation.name}`}>
+                    aria-disabled="true" aria-haspopup="dialog" aria-label={`Add to workflow: ${operation.name}`}>
                     {@render operationLabel(operation)}
                   </button>
                 {:else}

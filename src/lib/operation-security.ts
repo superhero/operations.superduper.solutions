@@ -158,10 +158,15 @@ export function extractOperationSecurity(document: ObjectValue, operation: Objec
   return operationSecurity(document, operation, false) as OperationSecurityScheme[][] | undefined;
 }
 export function inspectOperationSecurity(document: ObjectValue, operation: ObjectValue): OperationSecurity | undefined {
-  const security = operationSecurity(document, operation, true);
+  const security = inspectSecurityAlternatives(document, operation);
   if (security?.length && !security.some(supportedSecurityAlternative))
     throw new Error(security.flat().find(scheme => scheme.kind === "unsupported")!.reason);
   return security;
+}
+
+/** Preserve all well-formed choices for diagnostics, including all-unsupported declarations. */
+export function inspectSecurityAlternatives(document: ObjectValue, operation: ObjectValue): OperationSecurity | undefined {
+  return operationSecurity(document, operation, true);
 }
 
 /** Retain reviewed permission metadata in canonical models and private approval.
