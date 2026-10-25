@@ -472,6 +472,14 @@ feat(ui): load assistant models when selected
 
 ```
 
+<!-- changelog-commit:dabb1a1ed76c8086ed71d87affe1a1c33d8bc0e9 -->
+### Commit [`dabb1a1`](https://github.com/superhero/operations.superduper.solutions/commit/dabb1a1ed76c8086ed71d87affe1a1c33d8bc0e9)
+
+```text
+fix(ui): remove redundant assistant load button
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
