@@ -432,6 +432,30 @@ fix(ui): scale grouped header buttons outwards
 
 ```
 
+<!-- changelog-commit:7c7f34464fee1c94ae8e793ffd74b0fcc70d4bf2 -->
+### Commit [`7c7f344`](https://github.com/superhero/operations.superduper.solutions/commit/7c7f34464fee1c94ae8e793ffd74b0fcc70d4bf2)
+
+```text
+fix(ui): use a 2px assistant composer border
+
+```
+
+<!-- changelog-commit:76ceafdb20dfe0ed7e7fd9d8ba9d8b5cb8bcee60 -->
+### Commit [`76ceafd`](https://github.com/superhero/operations.superduper.solutions/commit/76ceafdb20dfe0ed7e7fd9d8ba9d8b5cb8bcee60)
+
+```text
+fix(ui): remove assistant composer helper text
+
+```
+
+<!-- changelog-commit:2622581fa7f920fc02eb54bbaa03727176beeeb0 -->
+### Commit [`2622581`](https://github.com/superhero/operations.superduper.solutions/commit/2622581fa7f920fc02eb54bbaa03727176beeeb0)
+
+```text
+fix(ui): keep assistant model options on one line
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

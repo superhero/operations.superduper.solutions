@@ -33,7 +33,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let phase = $state<"unloaded" | "checking" | "loading" | "ready" | "generating">("unloaded");
   const busy = $derived(["checking", "loading", "generating"].includes(phase));
   const locked = $derived(phase !== "unloaded");
-  let status = $state("Load a model to start a local conversation.");
+  let status = $state("");
   let error = $state("");
   let compatibility = $state<AssistantCompatibility>();
   let messages = $state.raw<AssistantMessageView[]>([]);
@@ -262,7 +262,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
     </div>
     <label for="assistant-message" class="sr-only">Message</label>
-    <textarea id="assistant-message" rows="3" maxlength="16000" use:growMessage={{ prompt, visible }} bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Prompt" aria-describedby="assistant-message-hint"
+    <textarea id="assistant-message" rows="3" maxlength="16000" use:growMessage={{ prompt, visible }} bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Prompt"
       onkeydown={event => { if (phase === "ready" && event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); send(); } }}></textarea>
     {#if attachment}<div class="attachment"><img alt="Attachment ready to send" src={`data:${attachment.mimeType};base64,${attachment.data}`} /><button type="button" class="secondary" disabled={busy} onclick={clearAttachment}>Remove image</button></div>{/if}
     {#if imagePreparing}<p class="image-preparing" role="status">Preparing image…</p>{/if}
@@ -277,8 +277,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   </form>
   </div>
-  <p class="status" role="status">{status}</p>
-  <p id="assistant-message-hint" class="composer-hint">Enter to send · Shift+Enter for a new line. {phase === "generating" ? "You can draft your next message while waiting." : ""}</p>
+  <p class="status" class:sr-only={!status} role="status">{status}</p>
   {#if preferenceError}<p class="error" role="alert">{preferenceError}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if dictationWarning}<p class="error" role="status">{dictationWarning}</p>{/if}
@@ -337,12 +336,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .assistant-configuration { display: grid; gap: 12px; min-width: 0; }
   .assistant-configuration[hidden] { display: none; }
   .assistant-chat { min-width: 0; }
-  .composer { padding: 0; border: 1px solid var(--color-muted); border-radius: 4px; background: var(--color-background); min-width: 0; overflow: clip; }
+  .composer { padding: 0; border: 2px solid var(--color-muted); border-radius: 4px; background: var(--color-background); min-width: 0; overflow: clip; }
   .composer-header, .composer-toolbar { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--color-surface); }
   .composer-header { border-bottom: 1px solid var(--color-muted); }
   .model-picker { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
   .model-picker :global(.field-select-trigger) { width: auto; min-height: 32px; padding: 4px 0; gap: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; }
   .model-picker :global(.field-select-value) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  :global(.field-select-content[aria-label="Local model"]) { width: max-content; min-width: var(--bits-select-anchor-width); max-width: calc(100vw - 24px); }
+  :global(.field-select-content[aria-label="Local model"] .field-select-option-label) { white-space: nowrap; }
   .context-window { color: var(--color-muted-foreground); font-size: 10px; white-space: nowrap; }
   .model-actions, .composer-tools { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
   .composer-toolbar { justify-content: space-between; flex-wrap: wrap; border-top: 1px solid var(--color-muted); }
@@ -396,7 +397,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .image-note { display: flex; align-items: center; gap: 6px; color: var(--color-muted-foreground); }
   pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; }
   textarea { width: 100%; padding: 10px; resize: none; overflow: hidden; min-height: 80px; display: block; border: 0; border-radius: 0; background: var(--color-background); font: inherit; }
-  .composer-hint { margin: 0; color: var(--color-muted-foreground); font-size: 11px; }
   .attachment { display: flex; align-items: center; gap: 12px; padding: 8px 10px; }
   .attachment img { max-width: 120px; max-height: 100px; }
   @container (max-width: 280px) { .context-window, .attach-label { display: none; } }
