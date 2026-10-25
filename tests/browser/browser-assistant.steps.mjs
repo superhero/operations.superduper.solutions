@@ -9,8 +9,8 @@ import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 
 async function openAssistant(page) {
   await setMode(page, 'settings');
-  const summary = page.locator('summary[aria-label="Assistant"]');
-  if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
+  const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
+  if (await mode.getAttribute('aria-checked') !== 'true') await mode.click();
   return page.getByRole('region', { name: 'Browser assistant', exact: true });
 }
 async function graph(page) {
@@ -24,6 +24,48 @@ function consumeExpectedError(world, message) {
   expect(matching).toHaveLength(1);
   world.diagnostics = world.diagnostics.filter(item => !matching.includes(item));
 }
+Then('the pane switches between settings and assistant without losing its session', async function() {
+  const page = this.page;
+  await installAssistantFixture(page);
+  await setMode(page, 'settings');
+  const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
+  const theme = page.getByRole('switch', { name: 'Dark theme', exact: true });
+  const application = page.locator('summary[aria-label="Application"]');
+  await application.click();
+  const positions = await Promise.all([mode.boundingBox(), theme.boundingBox()]);
+  expect(positions[0].x + positions[0].width).toBeLessThan(positions[1].x);
+  await mode.focus();
+  await page.keyboard.press('Space');
+  const panel = page.getByRole('region', { name: 'Browser assistant', exact: true });
+  await expect(panel).toBeVisible();
+  await expect(application).toBeHidden();
+  expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
+  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  const draft = panel.getByRole('textbox', { name: 'Message', exact: true });
+  await draft.fill('Keep my draft while I configure the app');
+  await mode.click();
+  await expect(application).toBeVisible();
+  await expect(application).toHaveAttribute('aria-expanded', 'true');
+  await expect(panel).toBeHidden();
+  expect(await page.evaluate(() => window.assistantFixture.terminated)).toBe(0);
+  await mode.click();
+  await expect(draft).toHaveValue('Keep my draft while I configure the app');
+  await expect(panel.getByRole('button', { name: 'Unload model', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(1);
+  await theme.click();
+  await expect(mode).toHaveAttribute('aria-checked', 'true');
+  await page.setViewportSize({ width: 390, height: 844 });
+  const narrow = await Promise.all([mode.boundingBox(), theme.boundingBox()]);
+  expect(narrow[0].x + narrow[0].width).toBeLessThanOrEqual(narrow[1].x);
+  expect(await page.locator('#settings-panel').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.screenshot({ path: `${this.artifactDirectory}/settings-assistant-switch.png` });
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await expect(mode).toHaveAttribute('aria-checked', 'true');
+  await expect(panel).toBeVisible();
+  expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
+});
+
 Then('the assistant settings expose only three Bonsai models and remember configuration', async function() {
   const page = this.page; await installAssistantFixture(page);
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
@@ -73,9 +115,9 @@ Then('the assistant can inspect add move and connect through the workspace UI bo
   await page.keyboard.press('Control+z');
   await expect(page.locator('.svelte-flow__edge:not(.workflow-schema-edge)')).toHaveCount(0);
   await openAssistant(page);
-  await page.locator('summary[aria-label="Assistant"]').click();
+  await page.getByRole('switch', { name: 'AI assistant', exact: true }).click();
   expect(await page.evaluate(() => window.assistantFixture.terminated)).toBe(0);
-  await page.locator('summary[aria-label="Assistant"]').click();
+  await page.getByRole('switch', { name: 'AI assistant', exact: true }).click();
   await expect(panel.getByRole('log')).toContainText('Done');
   await panel.getByRole('button', { name: 'New conversation', exact: true }).click();
   await expect(panel.getByRole('log')).not.toContainText('Done');
@@ -122,6 +164,7 @@ Then('assistant loading failures reach the shared history and copy their native 
   await panel.getByRole('button', { name: 'Load model', exact: true }).click();
   await expect(panel.getByRole('alert')).toContainText('Synthetic inference failure');
   consumeExpectedError(this, 'Synthetic inference failure');
+  await page.getByRole('switch', { name: 'AI assistant', exact: true }).click();
   const browser = page.locator('summary[aria-label="Browser"]');
   if (await browser.getAttribute('aria-expanded') !== 'true') await browser.click();
   await expect(browser.locator('..').locator('.storage-dashboard')).toBeVisible();

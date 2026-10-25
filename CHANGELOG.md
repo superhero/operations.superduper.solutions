@@ -335,6 +335,40 @@ fix(ui): reduce vertical padding on assistant buttons
 Merge branch 'develop' into bugfix/compact-assistant-buttons
 ```
 
+<!-- changelog-commit:970287e43ab665b47ba2eae3157d4462e4ba4c9a -->
+### Commit [`970287e`](https://github.com/superhero/operations.superduper.solutions/commit/970287e43ab665b47ba2eae3157d4462e4ba4c9a)
+
+```text
+fix(ui): make toolbar settings heading visible
+
+```
+
+<!-- changelog-commit:1febef710199a96334f958f6d3c767b325e3b493 -->
+### Commit [`1febef7`](https://github.com/superhero/operations.superduper.solutions/commit/1febef710199a96334f958f6d3c767b325e3b493)
+
+```text
+Merge branch 'develop' into bugfix/toolbar-settings-heading
+```
+
+<!-- changelog-commit:0f0b4509aba8cb28ba008596c834859e077eb4ab -->
+### Commit [`0f0b450`](https://github.com/superhero/operations.superduper.solutions/commit/0f0b4509aba8cb28ba008596c834859e077eb4ab)
+
+```text
+Merge commit '1d34426e270bd3a30367d33b2aeaf50ae2395dc0' into feature/settings-assistant-switch
+
+# Conflicts:
+#	CHANGELOG.md
+
+```
+
+<!-- changelog-commit:c54fbaa4de9c2a7fbabdfe4b4f8834fbff6a91e2 -->
+### Commit [`c54fbaa`](https://github.com/superhero/operations.superduper.solutions/commit/c54fbaa4de9c2a7fbabdfe4b4f8834fbff6a91e2)
+
+```text
+feat(ui): switch the settings pane between settings and assistant
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

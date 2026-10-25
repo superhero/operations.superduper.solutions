@@ -246,6 +246,8 @@ async function searchOperations(page, prompt) {
 
 async function openThemeSettings(page) {
   await setMode(page, 'settings');
+  const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
+  if (await mode.getAttribute('aria-checked') === 'true') await mode.click();
   const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Theme"]');
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   await expect(page.getByRole('group', { name: 'Color palette', exact: true })).toBeVisible();
