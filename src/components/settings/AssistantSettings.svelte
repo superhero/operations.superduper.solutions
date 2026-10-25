@@ -262,7 +262,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <HintButton type="button" class="composer-action" label={busy ? "Stop and unload" : "Unload model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
         {:else}
           <HintButton type="button" class="composer-action" label="Check compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
-          <HintButton type="button" class="composer-action" label="Load model" onclick={load}><MaterialIcon name="download" size={18} /></HintButton>
         {/if}
       </div>
     </div>

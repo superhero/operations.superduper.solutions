@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { installAssistantFixture } from './browser-assistant.fixture.mjs';
+import { installAssistantFixture, loadAssistantModel } from './browser-assistant.fixture.mjs';
 import { setMode } from './workspace.fixture.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 
@@ -81,7 +81,7 @@ Then('the pane switches between settings and assistant without losing its sessio
   await expect(panel).toBeVisible();
   await expect(application).toBeHidden();
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await loadAssistantModel(page);
   const draft = panel.getByRole('textbox', { name: 'Message', exact: true });
   await draft.fill('Keep my draft while I configure the app');
   await settingsButton.click();
@@ -126,6 +126,7 @@ Then('the assistant settings expose only three Bonsai models and remember config
   let panel = await openAssistant(page);
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
   const composer = panel.locator('form.composer');
+  await expect(panel.getByRole('button', { name: 'Load model', exact: true })).toHaveCount(0);
   await expect(panel.getByRole('textbox', { name: 'Message', exact: true })).toHaveAttribute('placeholder', 'Prompt');
   await expect(panel.locator('.assistant-configuration')).toBeHidden();
   expect((await panel.locator('.conversation').boundingBox()).height).toBe(0);
@@ -181,7 +182,7 @@ Then('the assistant can inspect add move and connect through the workspace UI bo
   const page = this.page; await installAssistantFixture(page); await graph(page);
   const panel = await openAssistant(page), requests = [];
   page.on('request', request => { if (request.url().startsWith('https://example.com/')) requests.push(request.url()); });
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await loadAssistantModel(page);
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Inspect and connect this workspace');
   await panel.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(panel.getByRole('log')).toContainText('Done');
@@ -214,7 +215,7 @@ Then('assistant read only mode and unload prevent further workspace edits', asyn
   const panel = await openAssistant(page);
   await openConfiguration(panel);
   await panel.getByLabel('Workspace editing', { exact: true }).uncheck();
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await loadAssistantModel(page);
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Inspect but do not edit');
   await panel.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(panel.getByRole('log')).toContainText('Done');
@@ -233,15 +234,15 @@ Then('assistant messaging remains usable on a narrow viewport and reports failur
   const page = this.page; await installAssistantFixture(page);
   await page.setViewportSize({ width: 390, height: 844 });
   const panel = await openAssistant(page);
-  await expect(panel.getByRole('button', { name: 'Load model', exact: true })).toBeVisible();
+  await expect(panel.getByRole('combobox', { name: 'Local model', exact: true })).toBeVisible();
   const bounds = await panel.boundingBox(); expect(bounds.width).toBeLessThanOrEqual(390);
   expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   await page.evaluate(() => window.assistantFixture.behavior = 'error');
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await loadAssistantModel(page);
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Hi');
   await panel.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(panel.getByRole('alert')).toContainText('Synthetic inference failure');
-  await expect(panel.getByRole('button', { name: 'Load model', exact: true })).toBeEnabled();
+  await expect(panel.getByRole('combobox', { name: 'Local model', exact: true })).toBeEnabled();
   consumeExpectedError(this, 'Synthetic inference failure');
 });
 Then('assistant loading failures reach the shared history and copy their native error chain', async function() {
@@ -300,7 +301,7 @@ Then('assistant drafts expand the message input without internal scrolling', asy
   const page = this.page; await installAssistantFixture(page);
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');
   const panel = await openAssistant(page), input = panel.getByRole('textbox', { name: 'Message', exact: true });
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await loadAssistantModel(page);
   const initialHeight = (await input.boundingBox()).height;
   const metrics = () => input.evaluate(el => ({ height: el.clientHeight, content: el.scrollHeight, scroll: el.scrollTop }));
   const expectNoScroll = async () => {
@@ -336,7 +337,7 @@ Then('assistant streaming keeps drafts focus and readable tool details', async f
   const page = this.page; await installAssistantFixture(page);
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');
   const panel = await openAssistant(page), input = panel.getByRole('textbox', { name: 'Message', exact: true }), log = panel.getByRole('log');
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await loadAssistantModel(page);
   await input.fill('Start a reply'); await input.press('Enter');
   await expect(input).toBeFocused(); await expect(input).toBeEnabled();
   await input.fill('A draft for the next message');
@@ -371,7 +372,7 @@ Then('assistant attachments and new conversation respect asynchronous image clea
   const page = this.page; await installAssistantFixture(page);
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');
   const panel = await openAssistant(page), upload = panel.getByLabel('Attach assistant image', { exact: true });
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await loadAssistantModel(page);
   const png = await page.evaluate(() => { const canvas = document.createElement('canvas'); canvas.width = canvas.height = 8; return canvas.toDataURL().split(',')[1]; });
   const file = { name: 'example.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') };
   await upload.setInputFiles(file);
