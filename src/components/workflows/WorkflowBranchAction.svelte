@@ -31,11 +31,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </HintButton>
 
 <style>
-  :global(.workflow-branch-action) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--color-primary); text-shadow: 1px 1px 0 var(--color-badge-background); transform: translate(-50%, -50%); transition: color 180ms ease-in, text-shadow 180ms ease-in, outline-color 180ms ease-in; }
+  :global(button.workflow-branch-action) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--color-primary); text-shadow: 1px 1px 0 var(--color-badge-background); transform: translate(-50%, -50%); transition: color 180ms ease-in, text-shadow 180ms ease-in, outline-color 180ms ease-in; }
   :global(.workflow-branch-action[data-side="left"]) { left: -28px; }
   :global(.workflow-branch-action[data-side="right"]) { right: -28px; transform: translate(50%, -50%); }
   :global(.workflow-branch-action[data-side="top"]), :global(.workflow-branch-action[data-side="bottom"]) { left: 50%; }
-  :global(.workflow-branch-action:hover:not(:disabled)) { color: var(--color-badge-background); text-shadow: 1px 1px 0 var(--color-primary); }
+  :global(.workflow-branch-action:disabled) { background: transparent; }
+  :global(.workflow-branch-action:hover:not(:disabled)) { background: transparent; color: var(--color-badge-background); text-shadow: 1px 1px 0 var(--color-primary); }
   :global(.workflow-branch-action .material-symbols-rounded) { font-variation-settings: "FILL" 1; }
   :global(.workflow-branch-action[data-side="left"] .material-symbols-rounded) { transform: rotate(-90deg); }
   :global(.workflow-branch-action[data-side="right"] .material-symbols-rounded) { transform: rotate(90deg); }
