@@ -10,6 +10,14 @@ fix(gcp): enable JSON BigQuery job metadata
 
 ```
 
+<!-- changelog-commit:3d20faf2830260a28a2e94fc5805816f61da063a -->
+### Commit [`3d20faf`](https://github.com/superhero/operations.superduper.solutions/commit/3d20faf2830260a28a2e94fc5805816f61da063a)
+
+```text
+chore(gcp): align BigQuery with released develop
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
