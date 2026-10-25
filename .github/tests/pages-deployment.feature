@@ -6,6 +6,35 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
   The destination branch, final HTML bytes, hosting headers, and every icon determine whether a deployment is needed.
   A preview for another branch or an older alias target cannot stand in for the current destination.
 
+  Scenario: Reviewed public OAuth metadata can accompany the application bundle
+    Given a tested Pages bundle for "develop"
+    And the Pages bundle includes reviewed public OAuth metadata
+    And the Pages destination is "identical"
+    When the Pages deployment is prepared
+    Then the Pages decision is deploy "false" and skipped "false"
+    And validation manifests accept reviewed public OAuth metadata alongside speech
+
+  Scenario: Public OAuth metadata bytes participate in the destination hash
+    Given a tested Pages bundle for "develop"
+    And the Pages bundle includes reviewed public OAuth metadata
+    And the Pages destination is "identical"
+    And the Pages OAuth metadata "oauth/bluesky-client-metadata.json" is "changed"
+    When the Pages deployment is prepared
+    Then the Pages decision is deploy "true" and skipped "false"
+
+  Scenario Outline: Unsafe or unreviewed OAuth assets fail before publication
+    Given a tested Pages bundle for "develop"
+    And the Pages bundle includes reviewed public OAuth metadata
+    And the Pages OAuth metadata "<path>" is "<state>"
+    When the Pages deployment is prepared
+    Then Pages preparation fails with "eleven nonempty regular application, hosting, and favicon files"
+
+    Examples:
+      | path                               | state     |
+      | oauth/bluesky-client-metadata.json | empty     |
+      | oauth/bluesky-client-metadata.json | a symlink |
+      | oauth/unreviewed.json              | extra     |
+
   Scenario: Optional speech resources are deployed and bound to validation manifests
     Given a tested Pages bundle for "develop"
     And the Pages bundle includes complete optional speech resources

@@ -620,6 +620,19 @@ build(schemas): refresh discovery for recovered provider profiles
 
 ```
 
+<!-- changelog-commit:b00864f4a46d838623b6d6c75a661dd8eadec2bf -->
+### Commit [`b00864f`](https://github.com/superhero/operations.superduper.solutions/commit/b00864f4a46d838623b6d6c75a661dd8eadec2bf)
+
+```text
+fix(ci): include public OAuth metadata in deployment bundles
+
+The restored Bluesky metadata asset was rejected by preview deployment.
+Allow its exact public path in the shared deployment and validation-artifact
+contract, include its bytes in destination hashing, and retain the existing
+file, symlink and complete speech-resource restrictions.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
