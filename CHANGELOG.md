@@ -266,6 +266,21 @@ fix(ui): place theme switch above application settings
 Merge branch 'develop' into bugfix/settings-theme-switch-position
 ```
 
+<!-- changelog-commit:ad73678e8caf13a18e388276037d4aa610c16d9a -->
+### Commit [`ad73678`](https://github.com/superhero/operations.superduper.solutions/commit/ad73678e8caf13a18e388276037d4aa610c16d9a)
+
+```text
+fix(ui): merge toolbar preferences into application settings
+
+```
+
+<!-- changelog-commit:b38805b927113d20fad2c31c2e877053072c0b96 -->
+### Commit [`b38805b`](https://github.com/superhero/operations.superduper.solutions/commit/b38805b927113d20fad2c31c2e877053072c0b96)
+
+```text
+Merge branch 'develop' into bugfix/application-toolbar-settings
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

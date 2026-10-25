@@ -12,13 +12,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <fieldset aria-label="Toolbar button preferences">
+  <legend>Toolbar buttons</legend>
   <div class="groups">
     {#each toolbarButtonGroups as group}
       <div class="button-group" role="group" aria-labelledby={`${id}-${group.label}`}>
         <h3 id={`${id}-${group.label}`}>{group.label}</h3>
         <div class="options">
           {#each group.buttons as key}
-            <button class="option" type="button" role="switch" aria-checked={value[key]}
+            <button class="option" type="button" role="switch" aria-label={`Show ${toolbarButtonLabels[key]} toolbar button`} aria-checked={value[key]}
               onclick={() => onValueChange({ ...value, [key]: !value[key] })}>
               <span>{toolbarButtonLabels[key]}</span><span class="toggle" aria-hidden="true"><span></span></span>
             </button>
@@ -32,6 +33,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; color: var(--color-foreground); container-type: inline-size; }
+  legend { padding: 0 10px; font-size: 14px; font-weight: 700; }
   .groups { columns: 3; column-gap: 10px; }
   .button-group { display: inline-block; box-sizing: border-box; width: 100%; min-width: 0; margin: 0 0 10px; padding: 10px; break-inside: avoid; border-radius: 4px; background: var(--color-surface); color: var(--color-catalog-foreground); }
   h3 { margin: 0 0 10px; padding: 0 10px; color: var(--color-accent); font-size: 14px; line-height: 2; font-weight: 700; }
