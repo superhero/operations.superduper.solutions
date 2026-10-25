@@ -373,6 +373,18 @@ feat(workflows): run bounded Codex agent sessions
 chore: refresh dependency badges
 ```
 
+<!-- changelog-commit:21ae4b9993eb385d1eb46d5ed3616d501e13a6a2 -->
+### Commit [`21ae4b9`](https://github.com/superhero/operations.superduper.solutions/commit/21ae4b9993eb385d1eb46d5ed3616d501e13a6a2)
+
+```text
+feat(docker): pair private hosts for bounded container reads
+
+Add a separately authorized HTTPS companion for one pinned Unix-socket read, encrypted host profiles and workflow destination selection. Preserve configured HTTP behavior, bind current source and daemon identity, and reject stale authority and duplex responses.
+
+Verify 11 Docker and 2 related source scenarios, 3 Docker and 1 related browser scenario, types, production build and generated discovery indexes on bounded sds-01 Swarm jobs. Document operator setup and live daemon qualification limits.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

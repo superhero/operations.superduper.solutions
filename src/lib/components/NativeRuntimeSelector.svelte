@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { nativeOperationSelection } from "../secrets/native-runtime-client.ts";
   import { approvedNativeOperation } from "../secrets/native-rpc-policy.ts";
   import { nativeReference, type NativeWorkflowBinding, type NativeRuntimeConnection } from "../secrets/native-runtime-config.ts";
-  import { readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
+  import { readVaultStatus, subscribeVaultLock, vaultCall, readVaultConnections } from "../secrets/client.ts";
   import { safeVaultError, type VaultStatus } from "../secrets/types.ts";
   let { operation, initial, disabled = false, onChange }: { operation: Operation; initial?: NativeWorkflowBinding | undefined; disabled?: boolean;
     onChange: (value: NativeWorkflowBinding | undefined) => void } = $props();
@@ -28,7 +28,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       const selection = await nativeOperationSelection(operation.rpc!.method), descriptor = await approvedNativeOperation(selection.operation, selection.document);
       const latest = await readVaultStatus();
-      const available = latest.unlocked ? (await vaultCall("nativeConnections", [])).filter(value => value.workflowFingerprint && value.accountType !== "none") : [];
+      const available = latest.unlocked ? (await readVaultConnections("nativeConnections")).filter(value => value.workflowFingerprint && value.accountType !== "none") : [];
       if (!alive) return; fingerprint = descriptor.fingerprint; status = latest; connections = available;
       const previous = initial && initial.fingerprint === fingerprint ? connections.find(value => value.id === initial.runtime.id
         && value.revision === initial.runtime.revision && value.fingerprint === initial.runtime.fingerprint) : undefined;

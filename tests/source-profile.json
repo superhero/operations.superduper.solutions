@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/docker-native.test.mjs",
     "src/native-agent.test.mjs",
     "src/native-runtime.test.mjs",
     "src/native-rpc.test.mjs",
@@ -80,6 +81,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/docker-native.feature",
     "src/native-agent.feature",
     "src/native-runtime.feature",
     "src/native-rpc.feature",

@@ -10,6 +10,8 @@ import { createWorkflowExecution, type AnyWorkflowExecutionResult, type Workflow
 import { prepareNativeRequest } from "./native-operation-input.ts";
 import type { NativeResponse, NativeProgressCallback } from "./native-agent-contract.ts";
 import type { NativeWorkflowBinding } from "./secrets/native-runtime-config.ts";
+import type { DockerBinding } from "./secrets/docker-config.ts";
+import { prepareDockerReadRequest } from "./docker-operation-input.ts";
 import { expandInputLinks } from "./workflow-input-links.ts";
 import { linkedResponseGroups } from "./workflow-response-links.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
@@ -43,6 +45,7 @@ export type WorkflowVisit = {
   values: InputValues; mappedFields: string[]; step: number;
   credentialBinding?: CredentialBinding;
   nativeBinding?: NativeWorkflowBinding;
+  dockerBinding?: DockerBinding;
   vaultVariables?: VaultVariableInput[];
   bindingPath: string[];
 };
@@ -566,6 +569,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       operation, values, mappedFields, step,
       ...(vaultVariables.length ? { vaultVariables } : {}),
       ...(node.data.nativeBinding ? { nativeBinding: structuredClone(node.data.nativeBinding) } : {}),
+      ...(node.data.dockerBinding ? { dockerBinding: structuredClone(node.data.dockerBinding) } : {}),
       ...(node.data.credentialBinding ? { credentialBinding: structuredClone(node.data.credentialBinding) } : {}) };
   }
 
@@ -693,7 +697,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     },
     get processingResults() { return structuredClone(processingResults); },
     async submit(values: InputValues, binding?: CredentialBinding | null, onProgress?: ResponseProgressCallback,
-      nativeBinding?: NativeWorkflowBinding | null, nativeProgress?: NativeProgressCallback): Promise<WorkflowExecution>
+      nativeBinding?: NativeWorkflowBinding | null, nativeProgress?: NativeProgressCallback, dockerBinding?: DockerBinding | null): Promise<WorkflowExecution>
     {
       if (!current || stopped || terminalError) throw new Error("There is no operation ready to run.");
       if (pending) throw new Error("This operation already has a request in progress.");
@@ -702,13 +706,18 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const completed = current;
       const native = completed.visit.operation.protocol === "json-rpc";
       if (native) prepareNativeRequest(completed.visit.operation, values);
+      const selectedDocker = dockerBinding === null ? undefined : dockerBinding ?? completed.visit.dockerBinding;
+      if (selectedDocker) prepareDockerReadRequest(completed.visit.operation, values);
       const controller = new AbortController();
       pending = controller;
       let result: AnyWorkflowExecutionResult;
       // An explicit UI clear must not fall back to a previously saved credential.
       const selectedBinding = binding === null ? undefined : binding ?? completed.visit.credentialBinding;
       try {
-        if (native) {
+        if (selectedDocker) {
+          if (native || !completed.visit.operation.dockerNative || !execution.executeDocker || selectedBinding || completed.visit.vaultVariables?.length) throw new VaultError("PERMISSION");
+          result = await execution.executeDocker(completed.visit.operation, values, selectedDocker, controller.signal);
+        } else if (native) {
           const selectedNative = nativeBinding === null ? undefined : nativeBinding ?? completed.visit.nativeBinding;
           if (!selectedNative || !execution.executeNative || completed.visit.vaultVariables?.length || selectedBinding) throw new VaultError("PERMISSION");
           result = await execution.executeNative(completed.visit.operation, values, selectedNative, controller.signal, nativeProgress);

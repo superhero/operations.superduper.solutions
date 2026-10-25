@@ -12,6 +12,7 @@ import { inspectResponseContent } from "./workflow-response-body.ts";
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile } from "./server-url.ts";
+import { dockerNativeReadOperation } from "./docker-native-model.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -169,6 +170,11 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
       try
       {
+        const docker = dockerNativeReadOperation(document, operation);
+        if (docker) {
+          Object.assign(operation, docker);
+          try { serverUrl ||= operationServerUrl(document, operation); } catch { /* The paired socket route has no implicit HTTP server. */ }
+        } else {
         const privatePath = privatePathProfile(source["x-operations-private-path"]);
         if (privatePath) operation.privatePath = privatePath;
         if (source["x-operations-credential-result"] !== undefined) {
@@ -260,6 +266,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         const media = value(content[mediaType!]);
         if (media.example !== undefined) operation.responseExample = media.example;
         if (operation.credentialResult) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
+        }
       }
       catch (error) { operation.unavailableReason = error instanceof Error ? error.message : String(error); }
       operations.push(operation);

@@ -15,6 +15,13 @@ import { validateApprovedOperation, approvedOperation } from "./policy.ts";
 import { approvedNativeOperation, type ApprovedNativeOperation } from "./native-rpc-policy.ts";
 import { NativeRuntimeBroker, type NativeRuntimeRuntime } from "./native-runtime.ts";
 import { NativeAgentBroker } from "./native-agent.ts";
+import { DockerCompanionBroker, type DockerCompanionRuntime } from "./docker-companion.ts";
+import { approvedDockerOperation, type ApprovedDockerOperation } from "./docker-policy.ts";
+import { storedDockerConnections, validateDockerConnection, validateDockerInput, validateDockerReference, validateDockerBinding,
+  type DockerHostInput, type DockerHostReference, type DockerBinding } from "./docker-config.ts";
+import { dockerNativeProfile, dockerReadParams } from "../docker-native-contract.ts";
+import { prepareDockerReadRequest } from "../docker-operation-input.ts";
+import type { WorkflowExecutionResult } from "../workflow-execution.ts";
 import { nativeAgentMethods, isNativeWorkflowMethod, type NativeDecision, type NativeLoginKind, type NativeProgressCallback,
   type NativeExecutionResult } from "../native-agent-contract.ts";
 import { nativeHash, storedNativeConnections, validateNativeConnection, validateNativeInput, validateNativeReference,
@@ -38,7 +45,7 @@ const context = (snapshot: Pick<VaultSnapshot, "id" | "epoch">, item: { id: stri
   ({ vaultId: snapshot.id, epoch: snapshot.epoch, kind: item.kind, id: item.id, revision: item.revision });
 
 function credential(value: VaultCredential): VaultCredential {
-  ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections", "nativeConnections", "oauthState"]);
+  ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections", "nativeConnections", "dockerConnections", "oauthState"]);
   if (!validId(value.id) || typeof value.label !== "string" || !value.label.trim() || value.label.length > 120
     || !["bearer", "apiKey", "secret"].includes(value.kind) || typeof value.value !== "string" || !value.value
     || /[^\x21-\x7e]/.test(value.value) || value.value.length > vaultLimits.secretBytes
@@ -51,6 +58,10 @@ function credential(value: VaultCredential): VaultCredential {
   if (value.nativeConnections !== undefined) {
     if (!Array.isArray(value.nativeConnections) || value.nativeConnections.length > 32) throw new VaultError("LIMIT");
     value.nativeConnections.forEach(validateNativeConnection);
+  }
+  if (value.dockerConnections !== undefined) {
+    if (!Array.isArray(value.dockerConnections) || value.dockerConnections.length > 32) throw new VaultError("LIMIT");
+    value.dockerConnections.forEach(validateDockerConnection);
   }
   if (value.oauthState !== undefined) {
     if (typeof value.oauthState !== "string" || new TextEncoder().encode(value.oauthState).byteLength > vaultLimits.secretBytes
@@ -94,15 +105,17 @@ export class VaultSession {
   private readonly jiraCompanion: JiraCompanionBroker;
   private readonly nativeRuntime: NativeRuntimeBroker;
   private readonly nativeAgent: NativeAgentBroker;
+  private readonly dockerCompanion: DockerCompanionBroker;
   private pending: Pending | undefined;
 
-  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: Pick<ApprovedOperation, "fingerprint" | "operation">) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}, nativeRuntime: NativeRuntimeRuntime = {}) {
+  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: Pick<ApprovedOperation, "fingerprint" | "operation">) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}, nativeRuntime: NativeRuntimeRuntime = {}, dockerRuntime: DockerCompanionRuntime = {}) {
     this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime); this.jiraCompanion = new JiraCompanionBroker(jiraRuntime);
     this.nativeRuntime = new NativeRuntimeBroker(nativeRuntime);
     this.nativeAgent = new NativeAgentBroker(this.nativeRuntime);
+    this.dockerCompanion = new DockerCompanionBroker(dockerRuntime);
   }
 
-  lock(): void { this.nativeRuntime.clear(); this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
+  lock(): void { this.dockerCompanion.clear(); this.nativeRuntime.clear(); this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -237,6 +250,7 @@ export class VaultSession {
     }));
     storedHttpConnections(result);
     storedNativeConnections(result);
+    storedDockerConnections(result);
     this.guard(generation); return result;
   }
 
@@ -253,6 +267,84 @@ export class VaultSession {
 
   async nativeConnections() {
     return storedNativeConnections(await this.records()).map(connection => ({ ...connection, connected: this.nativeRuntime.connected(connection.id) }));
+  }
+
+  async dockerConnections() {
+    return storedDockerConnections(await this.records()).map(value => ({ ...value, connected: this.dockerCompanion.connected(value.id) }));
+  }
+
+  private dockerGuard(generation: number, descriptor: ApprovedDockerOperation, signal?: AbortSignal) {
+    return async () => {
+      this.guard(generation); if (signal?.aborted) throw new VaultError("CANCELLED");
+      await this.assertCurrent(); await this.assertSchema(descriptor); this.guard(generation);
+      if (signal?.aborted) throw new VaultError("CANCELLED");
+    };
+  }
+
+  async pairDockerHost(value: DockerHostInput, selection: Pick<ApprovedDockerOperation, "operation" | "document">, signal?: AbortSignal) {
+    const generation = this.generation, input = validateDockerInput(value), descriptor = await approvedDockerOperation(selection.operation, selection.document);
+    const records = await this.records(), record = records.find(value => value.id === input.pairingKeyId);
+    if (!record || record.oauthState !== undefined) throw new VaultError("PERMISSION");
+    if (storedDockerConnections(records).length >= 32) throw new VaultError("LIMIT");
+    const id = crypto.randomUUID(), guard = this.dockerGuard(generation, descriptor, signal);
+    try {
+      const pair = await this.dockerCompanion.check(id, input.host, record.value, descriptor.fingerprint, undefined, guard, signal);
+      const config = { id, revision: 1, ...input, profile: dockerNativeProfile, keyHash: await nativeHash(record.value), modelFingerprint: descriptor.fingerprint, identity: pair.identity };
+      const connection = validateDockerConnection({ ...config, fingerprint: await nativeHash(config) });
+      record.dockerConnections = [...record.dockerConnections ?? [], connection];
+      await guard(); await this.save(records, undefined, undefined, undefined, signal);
+      return { ...connection, connected: true };
+    } catch (error) { this.dockerCompanion.close(id); throw error; }
+  }
+
+  private async dockerAuthority(value: DockerHostReference, selection: Pick<ApprovedDockerOperation, "operation" | "document">, signal?: AbortSignal) {
+    const generation = this.generation, reference = validateDockerReference(value), descriptor = await approvedDockerOperation(selection.operation, selection.document);
+    const records = await this.records(), connection = storedDockerConnections(records).find(value => value.id === reference.id);
+    if (!connection || connection.revision !== reference.revision || connection.fingerprint !== reference.fingerprint) throw new VaultError("CONFLICT");
+    const record = records.find(value => value.id === connection.pairingKeyId), { fingerprint, ...config } = connection;
+    if (!record || record.oauthState !== undefined || connection.keyHash !== await nativeHash(record.value) || connection.modelFingerprint !== descriptor.fingerprint
+      || fingerprint !== await nativeHash(config)) { this.dockerCompanion.close(connection.id); throw new VaultError("DOCKER_AUTHORITY"); }
+    const guard = this.dockerGuard(generation, descriptor, signal); await guard();
+    return { connection, record, records, descriptor, guard };
+  }
+
+  async checkDockerHost(value: DockerHostReference, selection: Pick<ApprovedDockerOperation, "operation" | "document">, signal?: AbortSignal) {
+    try {
+      const a = await this.dockerAuthority(value, selection, signal);
+      await this.dockerCompanion.check(a.connection.id, a.connection.host, a.record.value, a.descriptor.fingerprint, a.connection.identity, a.guard, signal);
+      return { ...a.connection, connected: true };
+    } catch (error) { this.dockerCompanion.close(value.id); throw error; }
+  }
+
+  async disconnectDockerHost(value: DockerHostReference, remove = false) {
+    const reference = validateDockerReference(value), records = await this.records(), connection = storedDockerConnections(records).find(value => value.id === reference.id);
+    if (typeof remove !== "boolean" || !connection || connection.revision !== reference.revision || connection.fingerprint !== reference.fingerprint) throw new VaultError("CONFLICT");
+    this.dockerCompanion.close(connection.id);
+    if (remove) {
+      const record = records.find(value => value.id === connection.pairingKeyId)!;
+      record.dockerConnections = record.dockerConnections!.filter(value => value.id !== connection.id);
+      if (!record.dockerConnections.length) delete record.dockerConnections;
+      await this.save(records);
+    }
+    return this.dockerConnections();
+  }
+
+  async executeDockerRead(input: DockerBinding, selection: Pick<ApprovedDockerOperation, "operation" | "document">, values: InputValues,
+    signal?: AbortSignal): Promise<WorkflowExecutionResult> {
+    const binding = validateDockerBinding(input), a = await this.dockerAuthority(binding.host, selection, signal);
+    if (binding.fingerprint !== a.descriptor.fingerprint || Object.keys(values).some(key => !a.descriptor.operation.fields.some(field => field.key === key))) throw new VaultError("PERMISSION");
+    const request = prepareDockerReadRequest(a.descriptor.operation, values);
+    const params = dockerReadParams(request.query);
+    const inputScrub = redactor(a.records.map(record => record.value)); inputScrub.value(params);
+    if (inputScrub.changed) throw new VaultError("REDACTED");
+    try {
+      const response = await this.dockerCompanion.read(a.connection.id, a.connection.host, a.record.value, a.descriptor.fingerprint, a.connection.identity, params, a.guard, signal);
+      const scrub = redactor(a.records.map(record => record.value).sort((a, b) => b.length - a.length));
+      const safe = scrub.value(response) as typeof response;
+      if (scrub.changed) throw new VaultError("REDACTED"); await a.guard();
+      if (safe.status < 200 || safe.status >= 300) throw new CredentialResponseError("The Docker daemon returned HTTP " + safe.status + ".", safe);
+      return { request, response: safe };
+    } catch (error) { this.dockerCompanion.close(binding.host.id); throw error; }
   }
 
   private async nativeSelection(selection: Pick<ApprovedNativeOperation, "operation" | "document">): Promise<ApprovedNativeOperation> {
@@ -607,6 +699,7 @@ export class VaultSession {
     const value = credential({ id: previous?.id ?? crypto.randomUUID(), label: input.label, kind: input.kind,
       value: input.value, grants: previous?.kind === input.kind ? previous.grants : [],
       ...(previous?.connections ? { connections: previous.connections } : {}),
+      ...(previous?.dockerConnections ? { dockerConnections: previous.dockerConnections } : {}),
       ...(previous?.nativeConnections ? { nativeConnections: previous.nativeConnections } : {}) });
     const key = value.label.trim().normalize("NFC").toLowerCase();
     if (records.some(item => item.id !== value.id && item.label.trim().normalize("NFC").toLowerCase() === key))
@@ -614,6 +707,8 @@ export class VaultSession {
     const next = [...records.filter(item => item.id !== value.id), value];
     if (previous && (previous.value !== value.value || previous.kind !== value.kind)) {
       for (const connection of previous.nativeConnections ?? []) this.nativeRuntime.close(connection.id);
+      for (const connection of previous.dockerConnections ?? []) this.dockerCompanion.close(connection.id);
+      delete value.dockerConnections;
       delete value.nativeConnections; await invalidateHttpConnections(next, value.id);
     }
     await this.save(next);
@@ -625,6 +720,7 @@ export class VaultSession {
     const values = await this.records();
     if (!values.some(item => item.id === id)) throw new VaultError("INVALID");
     for (const connection of values.find(item => item.id === id)?.nativeConnections ?? []) this.nativeRuntime.close(connection.id);
+    for (const connection of values.find(item => item.id === id)?.dockerConnections ?? []) this.dockerCompanion.close(connection.id);
     const next = values.filter(item => item.id !== id);
     for (const record of next) if (record.connections) {
       record.connections = record.connections.filter(item => !connectionCredentialIds(item).includes(id));

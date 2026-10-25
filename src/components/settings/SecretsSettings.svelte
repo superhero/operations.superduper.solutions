@@ -13,6 +13,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import VaultAuthentication from "$lib/components/VaultAuthentication.svelte";
   import NativeRuntimeSettings from "./NativeRuntimeSettings.svelte";
+  import DockerHostSettings from "./DockerHostSettings.svelte";
   import { enrollPasskey } from "$lib/secrets/passkeys.ts";
   import { loadVaultPreferences, lockVault, lockVaultLocally, readVaultKeys, readVaultStatus, saveVaultPreferences, subscribeVaultLock, vaultCall, vaultCeremony } from "$lib/secrets/client.ts";
   import { defaultVaultPreferences, safeVaultError, VaultError, vaultLimits, type VaultKey,
@@ -373,6 +374,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   {#if ready && status.unlocked}
     <NativeRuntimeSettings {records} {busy} {run} {refresh} />
+    <DockerHostSettings {records} {busy} {run} {refresh} />
     <div class="card">
       <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
         {#if credentialId}<h4>Replace credential</h4>{/if}

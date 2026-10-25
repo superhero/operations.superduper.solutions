@@ -23,6 +23,7 @@ let accessActive = false;
 let sequence = 0;
 let preferences: VaultPreferences = { ...defaultVaultPreferences };
 let ceremony: AbortController | undefined;
+let connectionMetadata = Promise.resolve();
 const listeners = new Set<() => void>();
 const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void;
   cleanup: () => void; generation: number; method: VaultMethod; nativeProgress: NativeProgressCallback | undefined; progress: ResponseProgressCallback | undefined }>();
@@ -122,11 +123,12 @@ function ensureWorker(): Worker {
   return created;
 }
 
-const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeJiraOAuth", "pairNativeRuntime", "enableNativeWorkflow", "loginNativeRuntime", "restore", "addMethod", "removeMethod", "rotate"]);
+const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeJiraOAuth", "pairNativeRuntime", "pairDockerHost", "enableNativeWorkflow", "loginNativeRuntime", "restore", "addMethod", "removeMethod", "rotate"]);
 export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArguments<M>, signal?: AbortSignal, onProgress?: ResponseProgressCallback,
   onNativeProgress?: NativeProgressCallback): Promise<VaultResult<M>> {
   if (signal?.aborted) throw new VaultError("CANCELLED");
   const requestGeneration = generation;
+  if (method !== "nativeConnections" && method !== "dockerConnections") await connectionMetadata;
   configureVaultIdle(await loadVaultPreferences());
   if (requestGeneration !== generation || signal?.aborted) throw new VaultError("CANCELLED");
   const target = ensureWorker();
@@ -136,7 +138,7 @@ export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArg
     const native = method === "loginNativeRuntime" || method === "executeNativeRuntime";
     let cancellationTimer: ReturnType<typeof setTimeout> | undefined;
     const cancel = () => {
-      if (native) {
+      if (native || method === "executeDockerRead") {
         const item = pending.get(id); if (item) item.nativeProgress = undefined;
         target.postMessage({ kind: "cancel", id }); cancellationTimer = setTimeout(lockVaultLocally, 2500); return;
       }
@@ -152,8 +154,18 @@ export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArg
     catch { pending.delete(id); cleanup(); reject(new VaultError("UNAVAILABLE")); lockVaultLocally(); }
   });
   if (["unlock", "prepareCreate", "confirmCreate", "restore"].includes(method)) { accessActive = true; lifecycle.activate(); }
-  if (mutations.has(method)) channel?.postMessage({ kind: "lock" });
+  if (mutations.has(method) || method === "disconnectDockerHost" && args[1] === true) channel?.postMessage({ kind: "lock" });
   return result as VaultResult<M>;
+}
+
+/** Settings panes share one private worker; serialize their initial metadata reads. */
+export function readVaultConnections<M extends "nativeConnections" | "dockerConnections">(method: M): Promise<VaultResult<M>> {
+  const expected = generation;
+  const result = connectionMetadata.then(() => {
+    if (expected !== generation) throw new VaultError("CANCELLED");
+    return vaultCall(method, [] as VaultArguments<M>);
+  });
+  connectionMetadata = result.then(() => {}, () => {}); return result;
 }
 
 export function replyNativeInteraction(connectionId: string, token: string, decision: NativeDecision): void {

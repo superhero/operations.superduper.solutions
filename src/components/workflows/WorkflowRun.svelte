@@ -29,16 +29,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { prepareNativeRequest } from "$lib/native-operation-input.ts";
   import { replyNativeInteraction } from "$lib/secrets/client.ts";
   import NativeRuntimeSelector from "$lib/components/NativeRuntimeSelector.svelte";
+  import DockerHostSelector from "$lib/components/DockerHostSelector.svelte";
+  import type { DockerBinding } from "$lib/secrets/docker-config.ts";
+  import { prepareDockerReadRequest } from "$lib/docker-operation-input.ts";
 
-  let { document, onClose, startingNodeId, onBindingChange = () => {}, onNativeBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
+  let { document, onClose, startingNodeId, onBindingChange = () => {}, onNativeBindingChange = () => {}, onDockerBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
     startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void;
-    onNativeBindingChange?: (path: string[], binding: NativeWorkflowBinding) => void } = $props();
+    onNativeBindingChange?: (path: string[], binding: NativeWorkflowBinding) => void;
+    onDockerBindingChange?: (path: string[], binding: DockerBinding | undefined) => void } = $props();
   const operationFormId = $props.id();
   let runner: ReturnType<typeof createWorkflowRunner> | undefined;
   let view = $state<WorkflowStep>();
   let values = $state<InputValues>({});
   let credentialBinding = $state<CredentialBinding>();
   let nativeBinding = $state<NativeWorkflowBinding>(), nativeApprovals = $state<NativeInteraction[]>([]);
+  let dockerBinding = $state<DockerBinding>(), dockerReady = $state(false);
   let selected = $state("");
   let error = $state("");
   let fieldError = $state<InputValidationError | null>(null);
@@ -55,7 +60,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let disposed = false;
   let history = $state<WorkflowExecution[]>([]);
   let heading = $state<HTMLHeadingElement>();
-  const destination = $derived(view?.kind === "operation" && view.operation.protocol !== "json-rpc" ? workflowExecutionForOperation(view.operation) : undefined);
+  const destination = $derived.by(() => {
+    if (view?.kind !== "operation" || view.operation.protocol === "json-rpc" || view.operation.dockerNative && (!dockerReady || dockerBinding)) return;
+    try { return workflowExecutionForOperation(view.operation); } catch (cause) { if (!view.operation.dockerNative) throw cause; }
+  });
 
   let processingResults = $state<ReturnType<typeof createWorkflowRunner>["processingResults"]>([]);
   let processingLocked = $state(false);
@@ -84,6 +92,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       processingResults = runner!.processingResults;
       credentialBinding = view.kind === "operation" ? view.credentialBinding : undefined;
       nativeBinding = view.kind === "operation" ? view.nativeBinding : undefined;
+      dockerBinding = view.kind === "operation" ? view.dockerBinding : undefined; dockerReady = false;
       values = view.kind === "operation" ? { ...view.values } : {};
       selected = view.kind === "choice" ? view.choices[0]?.id ?? "" : "";
       void tick().then(() => heading?.focus());
@@ -117,14 +126,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try
     {
       const submittedValues = { ...values };
-      if (!view.vaultVariables?.length) prepared = view.operation.protocol === "json-rpc" ? prepareNativeRequest(view.operation, submittedValues) : prepareRequest(view.operation, submittedValues);
+      if (!view.vaultVariables?.length) prepared = view.operation.protocol === "json-rpc" ? prepareNativeRequest(view.operation, submittedValues)
+        : dockerBinding ? prepareDockerReadRequest(view.operation, submittedValues) : prepareRequest(view.operation, submittedValues);
       const visitId = view.id;
       const result = await runner!.submit(submittedValues, credentialBinding ?? null, progress => {
         if (!disposed && view?.kind === "operation" && view.id === visitId && sending) responseProgress = progress;
       }, nativeBinding ?? null, progress => {
         if (!disposed && view?.kind === "operation" && view.id === visitId && sending && progress.kind === "approval")
           nativeApprovals = [...nativeApprovals, progress.interaction];
-      });
+      }, dockerBinding ?? null);
       if (!disposed) { prepared = result.request; history = [...history, result]; executed = true; retry = false; }
     }
     catch (cause)
@@ -214,6 +224,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#key view.id}<NativeRuntimeSelector operation={view.operation} initial={view.nativeBinding} disabled={busy || executed}
           onChange={binding => { nativeBinding = binding; if (binding && view?.kind === "operation") onNativeBindingChange(view.bindingPath, binding); }} />{/key}
       {/if}
+      {#if view.operation.dockerNative}
+        {#key view.id}<DockerHostSelector operation={view.operation} initial={view.dockerBinding} disabled={busy || executed}
+          onChange={(binding, ready) => {
+            dockerBinding = binding; dockerReady = ready; if (binding) credentialBinding = undefined;
+            if (ready && view?.kind === "operation") onDockerBindingChange(view.bindingPath, binding);
+          }} />{/key}
+      {/if}
       {#if view.operation.responseStream}
         <p class="run-stream-progress" role="status" aria-label="Response progress">{sending
           ? responseProgress ? `Receiving response · ${responseProgress.events} updates` : "Waiting for response…" : ""}</p>
@@ -301,7 +318,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <span>Proceed</span><MaterialIcon name="start" size={20} />
       </button>
     {:else if view?.kind === "operation" && !fatal && !executed}
-      <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy || view.operation.protocol === "json-rpc" && !nativeBinding}>
+      <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy || view.operation.protocol === "json-rpc" && !nativeBinding || !!view.operation.dockerNative && !dockerReady}>
         <span>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</span><MaterialIcon name="start" size={20} />
       </button>
     {/if}

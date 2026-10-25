@@ -44,6 +44,8 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
 };
 export type BodyMediaType = `${string}/${string}`;
 export type Operation = {
+  /** Optional explicitly paired Unix-socket route; configured HTTP remains independent. */
+  dockerNative?: { profile: "docker-unix-read-v1"; apiVersion: "1.57" };
   protocol?: "json-rpc";
   /** Native wire schemas resolve against this operation's scoped model document. */
   rpc?: NativeRpcContract;

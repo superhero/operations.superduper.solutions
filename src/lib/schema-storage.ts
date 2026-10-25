@@ -12,6 +12,7 @@ import { operationServerUrl, validateSchemaDocument, validateSchemaDocumentId, t
 import { catalogsDatabaseName, catalogsIndexDatabaseName } from "./storage-names.ts";
 import { approvedOperation } from "./secrets/policy.ts";
 import { approvedNativeOperation } from "./secrets/native-rpc-policy.ts";
+import { approvedDockerOperation } from "./secrets/docker-policy.ts";
 import { isCodexSchema } from "./codex-schema.ts";
 import { nativeRpcOperation, scopeNativeRpcSchema } from "./native-rpc.ts";
 import { VaultError } from "./secrets/types.ts";
@@ -356,8 +357,14 @@ export function readSchemaOperations(id: string, expectedIdentity: string, opera
       const operation = inspect ? inspect(record.document, id, descriptor) : canonical!.get(operationId);
       if (!operation) throw new Error("This operation is not available in the registered schemas.");
       if (operation.unavailableReason) throw new Error(operation.unavailableReason);
-      const origin = operationServerUrl(record.document, operation);
       const { schema } = scopeOperationSchema(record.document, operation.path, operation.method, true);
+      let origin = "";
+      try {
+        origin = operationServerUrl(record.document, operation);
+        if (operation.dockerNative && new URL(origin).hostname === "no-default") origin = "";
+      }
+      catch (error) { if (!operation.dockerNative) throw error; }
+      if (operation.dockerNative) approved.add((await approvedDockerOperation(operation, schema)).fingerprint);
       try { approved.add((await approvedOperation(operation, origin)).fingerprint); }
       catch (error) { if (!(error instanceof VaultError) || error.code !== "PERMISSION") throw error; }
       models.push({ operation, document: schema, origin, sourceIdentity: expectedIdentity,
@@ -401,7 +408,17 @@ async function credentialPolicy(record: SchemaDocumentRecord, revision: string):
     for (const operation of validated.operations)
     {
       if (operation.unavailableReason) continue;
-      try { fingerprints.push((await approvedOperation(operation, operationServerUrl(validated.document, operation))).fingerprint); }
+      if (operation.dockerNative) {
+        const scoped = scopeOperationSchema(validated.document, operation.path, operation.method, true).schema;
+        fingerprints.push((await approvedDockerOperation(operation, scoped)).fingerprint);
+      }
+      try {
+        let origin: string;
+        try { origin = operationServerUrl(validated.document, operation); }
+        catch (error) { if (operation.dockerNative) continue; throw error; }
+        if (operation.dockerNative && new URL(origin).hostname === "no-default") continue;
+        fingerprints.push((await approvedOperation(operation, origin)).fingerprint);
+      }
       catch (error)
       {
         // A schema may describe destinations unavailable to credential execution,

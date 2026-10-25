@@ -13,6 +13,7 @@ import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
 import { createJiraBrowserEndpoint } from './jira-companion.fixture.mjs';
 import { createNativeBrowserEndpoint } from './native-runtime.fixture.mjs';
+import { createDockerBrowserEndpoint } from './docker-native.fixture.mjs';
 import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
 import { enterBrowserFeature, releaseDevelopmentResources } from './development-resources.fixture.mjs';
 import { exampleCatalogState } from "./catalog-state.fixture.mjs";
@@ -26,6 +27,7 @@ let server;
 let baseURL;
 let jiraEndpoint;
 let nativeEndpoint;
+let dockerEndpoint;
 
 // These scenarios exercise standalone fixtures, not application startup.
 // Keep UI and startup scenarios on the built application by default.
@@ -68,9 +70,11 @@ BeforeAll(async function () {
   const vaultEndpoint = createVaultEndpoint();
   jiraEndpoint = createJiraBrowserEndpoint();
   nativeEndpoint = createNativeBrowserEndpoint();
+  dockerEndpoint = createDockerBrowserEndpoint();
   server = createServer((request, response) => {
     if (jiraEndpoint.handle(request, response)) return;
     if (nativeEndpoint.handle(request, response)) return;
+    if (dockerEndpoint.handle(request, response)) return;
     if (vaultEndpoint(request, response)) return;
     if (new URL(request.url, 'http://localhost').pathname === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
@@ -271,6 +275,7 @@ AfterAll(async function () {
   } finally {
     await jiraEndpoint?.close();
     await nativeEndpoint?.close();
+    await dockerEndpoint?.close();
     if (server?.listening) await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
   }
 });

@@ -62,6 +62,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowRun from "./workflows/WorkflowRun.svelte";
   import type { CredentialBinding } from "$lib/secrets/types.ts";
   import type { NativeWorkflowBinding } from "$lib/secrets/native-runtime-config.ts";
+  import type { DockerBinding } from "$lib/secrets/docker-config.ts";
   import Modal from "$lib/components/Modal.svelte";
   import { editAssistantWorkspace } from "$lib/assistant/workspace.ts";
   import type { AssistantEdit, AssistantPort } from "$lib/assistant/tools.ts";
@@ -712,6 +713,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (runDocument?.id === id) nodes = update(nodes, path);
   }
 
+  function bindRunDocker(path: string[], binding: DockerBinding | undefined) {
+    const update = <T extends { id: string; data: unknown }>(items: T[], trail: string[]): T[] => items.map(node => {
+      if (node.id !== trail[0]) return node;
+      const data = node.data as Record<string, unknown>;
+      if (trail.length === 1) {
+        const next = { ...data }; delete next.dockerBinding;
+        if (binding) { next.dockerBinding = structuredClone(binding); delete next.credentialBinding; }
+        return { ...node, data: next };
+      }
+      const snapshot = data.snapshot as WorkflowDocument | undefined;
+      return snapshot ? { ...node, data: { ...data, snapshot: { ...snapshot, nodes: update(snapshot.nodes, trail.slice(1)) } } } : node;
+    });
+    if (runDocument?.id === id) nodes = update(nodes, path);
+  }
+
   async function saveWorkflowDetails() {
     version = 3;
     if (await flushAutosave()) { descriptionOpen = false; descriptionError = ""; }
@@ -1290,7 +1306,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <Modal bind:open={runOpen} size="wide" title={`Run workflow: ${runDocument?.name ?? name}`}
   onCloseAutoFocus={(event) => { event.preventDefault(); void tick().then(focusCanvas); }}>
-  {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} onNativeBindingChange={bindRunCredential} />{/if}
+  {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} onNativeBindingChange={bindRunCredential} onDockerBindingChange={bindRunDocker} />{/if}
 </Modal>
 
 <Modal bind:open={replacementOpen} title="Unsaved changes" description={`“${name}” has unsaved changes. Save them before replacing this workflow?`} initialFocus={() => cancelReplacement} onCloseAutoFocus={restoreReplacementFocus}>
