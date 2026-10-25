@@ -315,6 +315,25 @@ existing connection UI and preserve native Jira authentication alternatives.
 
 ```
 
+<!-- changelog-commit:369f7cf5d3f61d8252735be732e6bccb016f5cef -->
+### Commit [`369f7cf`](https://github.com/superhero/operations.superduper.solutions/commit/369f7cf5d3f61d8252735be732e6bccb016f5cef)
+
+```text
+docs(auth): qualify the Codex native host contract
+
+Select a paired browser WSS companion with an isolated Codex stdio
+child. The pinned listener rejects browser Origin headers and expects
+handshake credentials that browser WebSocket cannot supply directly.
+
+Define account and workspace ownership, public login candidates,
+private pairing, initialization, cancellation and disconnect behavior.
+Preserve native schema identities and the application execution guard.
+
+Record the isolated native and Chromium transport evidence, hosting
+limits and required model, pairing and workflow deliveries.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

@@ -463,6 +463,11 @@ an execution limitation until Operations has a Codex connector. Adding the schem
 does not start Codex, sign in to ChatGPT or enable subscription access. The
 separate OpenAI HTTP API schema remains unchanged.
 
+The [native connector contract](codex-native-connector.md) qualifies a paired
+browser companion using the pinned stdio protocol and an isolated account home.
+Its transport probe does not enable application execution; native model loading,
+pairing and a complete agent workflow remain separate implementation steps.
+
 ## Execution limits
 
 Typed controls cover supported constraints. Advanced JSON schemas use a JSON

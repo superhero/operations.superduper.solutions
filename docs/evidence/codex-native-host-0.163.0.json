@@ -1,0 +1,62 @@
+{
+  "codexVersion": "codex-cli 0.163.0",
+  "node": "v26.7.0",
+  "observations": {
+    "pairedStdioInitialize": true,
+    "accountReadWithoutLogin": {
+      "account": null,
+      "requiresOpenaiAuth": true
+    },
+    "pairing": {
+      "rejectedForeignOrigin": true,
+      "rejectedWrongTicket": true,
+      "rejectedExpiredTicket": true,
+      "rejectedReplay": true,
+      "nativeChildrenForAuthorizedSession": 1,
+      "corsPreflight": true
+    },
+    "disconnect": {
+      "logoutSent": false,
+      "ownedChildStopped": true
+    },
+    "noCredentialsInUrls": true,
+    "isolatedHomesCreated": 2,
+    "nativeBearerWithoutOrigin": 101,
+    "nativeWithoutBearerOrOrigin": 401,
+    "nativeBearerWithBrowserOrigin": 403,
+    "realBrowserWssNativeOriginRejected": 403,
+    "sentNativeMethods": [
+      "initialize",
+      "initialized",
+      "account/read"
+    ]
+  },
+  "binarySha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "browser": "153.0.8010.12",
+  "limits": [
+    "No sign-in, agent turn, provider inference or deployment",
+    "TLS certificate bypass is restricted to the isolated test certificate",
+    "Other browsers, public-origin local-network policy and real remote/mobile reachability remain unqualified"
+  ],
+  "qualification": "transport and ownership feasibility only",
+  "verifiedAt": "2026-10-25",
+  "probeSha256": "29b08b2d548dc90d60dc01d124601307322762167ed8ba334a25b4709f106f2a",
+  "resourceBoundary": {
+    "cpu": 4,
+    "memoryBytes": 17179869184,
+    "additionalSwapBytes": 0,
+    "pids": 512,
+    "gpu": 0
+  },
+  "nativeSchema": {
+    "version": "0.163.0",
+    "clientMethods": 105,
+    "annotatedPackGzipSha256": "654e7897bce38ee1bba6feefd5ca871dd9f963bd384dbe3c41799780d0e5ce10"
+  },
+  "pinnedSources": [
+    "https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/app-server-transport/src/transport/websocket.rs",
+    "https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/websocket-auth/src/lib.rs",
+    "https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json"
+  ],
+  "scope": "Isolated Linux x64 runtime/browser transport experiment; application connector not implemented"
+}
