@@ -82,9 +82,12 @@ execution unavailable; it does not silently upgrade the bundled schema.
 
 Keep provider authentication separate from transport pairing. API keys, browser
 authorization URLs and device codes pass through dedicated private account
-controls, never ordinary workflow output/history. Correlate login completion by
-`loginId`; an acknowledgement alone does not authenticate the account. Read and
-confirm the resulting account before allowing an agent turn. The pinned
+controls, never ordinary workflow output/history. For managed ChatGPT flows,
+correlate completion by `loginId`, then read and confirm the resulting account.
+The `apiKey` response has no login ID: read its configured account mode and bind
+it to the host account epoch. An acknowledgement or account summary alone does
+not prove provider credential validity or model entitlement; preserve provider
+errors when an explicitly approved operation is attempted. The pinned
 [native contract](https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json)
 does not provide a universal account ID: API-key account metadata has only its
 type. Bind to a host-owned account epoch as well as available account metadata;

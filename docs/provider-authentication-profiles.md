@@ -131,3 +131,5 @@ key custody, audience, expiry and account/resource evidence.
 ## Implementation follow-up: 2026-10-25
 
 The configurable [GitLab public consumer](gitlab-oauth.md) and [Jira confidential consumer](jira-oauth.md) now have implementation artifacts and synthetic verification. The optional [Jira companion](../companions/jira/README.md) owns confidential exchange/storage and only the reviewed site/account/resource route. The live registration/host/site inputs above remain separate; no deployment or real provider qualification is implied.
+
+The [Bluesky public consumer](bluesky-oauth.md) adds the reviewed AT Protocol PAR/PKCE/DPoP profile in the vault worker. It selects only the private preferences read, its granular RPC permission and the discovered account/PDS. Live metadata hosting, account consent, provider CORS and cross-browser qualification remain separate.

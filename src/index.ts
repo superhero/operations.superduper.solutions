@@ -74,12 +74,25 @@ export function takeGitlabCallback(host: Pick<Window, "location" | "history">): 
   return { state, ...(code === null ? {} : { code }), ...(error === null ? {} : { error }) };
 }
 
+export function takeAtprotoCallback(host: Pick<Window, "location" | "history">): { state: string; iss: string; code?: string; error?: string } | undefined {
+  const parameters = new URLSearchParams(host.location.search);
+  if (parameters.get("operations_oauth_callback") !== "bluesky") return;
+  host.history.replaceState(null, "", host.location.pathname + "?operations_oauth_callback=bluesky");
+  const state = parameters.get("state"), iss = parameters.get("iss"), code = parameters.get("code"), error = parameters.get("error");
+  if (parameters.getAll("operations_oauth_callback").length !== 1 || parameters.getAll("state").length !== 1 || !state || !/^[a-zA-Z0-9_-]{22}$/.test(state)
+    || parameters.getAll("iss").length !== 1 || !iss || iss.length > 2048 || parameters.getAll("code").length > 1 || parameters.getAll("error").length > 1
+    || code !== null && (!code || code.length > 4096 || /[^\x21-\x7e]/.test(code)) || error !== null && (!error || error.length > 128)
+    || code === null && error === null || code !== null && error !== null) return { state: "", iss: "", error: "invalid_callback" };
+  return { state, iss, ...(code === null ? {} : { code }), ...(error === null ? {} : { error }) };
+}
+
 if (typeof window !== "undefined") {
-  const callback = takeGitlabCallback(window);
+  const atprotoCallback = takeAtprotoCallback(window);
+  const callback = atprotoCallback ?? takeGitlabCallback(window);
   if (callback) {
     const stage = document.getElementById("startup-stage");
     if (stage) stage.textContent = "Returning to your connection…";
-    if (callback.state) void import("./lib/secrets/oauth-popup.ts").then(module => module.deliverGitlabCallback(callback)).catch(() => {
+    if (callback.state) void import("./lib/secrets/oauth-popup.ts").then(module => module.deliverGitlabCallback(callback, atprotoCallback ? "bluesky" : "gitlab")).catch(() => {
       if (stage) stage.textContent = "Return to the original tab and try connecting again.";
     });
     else if (stage) stage.textContent = "This sign-in response cannot be used. Return to the original tab.";

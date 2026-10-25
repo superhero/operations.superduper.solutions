@@ -451,6 +451,175 @@ Require Cloud ID and Workspace ID before resolving Assets servers and bind priva
 
 ```
 
+<!-- changelog-commit:d2d89cd2a9bcaf76ec27ecd93670d31bbfa2b94d -->
+### Commit [`d2d89cd`](https://github.com/superhero/operations.superduper.solutions/commit/d2d89cd2a9bcaf76ec27ecd93670d31bbfa2b94d)
+
+```text
+feat(aws): sign private Lambda requests with SigV4
+
+```
+
+<!-- changelog-commit:75d6bfb816b93a3c2f1c444783bd353b4e95f328 -->
+### Commit [`75d6bfb`](https://github.com/superhero/operations.superduper.solutions/commit/75d6bfb816b93a3c2f1c444783bd353b4e95f328)
+
+```text
+feat(s3): transfer signed object files with exact bytes
+
+Correct the pinned GetObject and PutObject models to raw bounded files.
+Sign final regional S3 requests privately and preserve bucket keys, file
+media and saved credential references.
+
+Verify exposed object checksums before releasing data, require explicit
+bucket CORS, and report interrupted writes without automatic replay.
+Keep other native S3 operations and their limitations unchanged.
+
+```
+
+<!-- changelog-commit:c9f6671af5f00826c47045f70fb0ec0934de9643 -->
+### Commit [`c9f6671`](https://github.com/superhero/operations.superduper.solutions/commit/c9f6671af5f00826c47045f70fb0ec0934de9643)
+
+```text
+feat(aws): execute reviewed JSON and Query wire profiles
+
+Translate DynamoDB BatchGetItem/ListTables targets and STS identity actions
+into their actual HTTP headers, query and body before private SigV4 signing.
+Keep native operation identities and source-pinned contract provenance.
+
+Decode matching AWS JSON and bounded STS XML without changing numeric
+identifiers, retrying partial results or enabling unrelated AWS codecs.
+Preserve saved connection authority through schema hydration and reload.
+
+```
+
+<!-- changelog-commit:47761e5fb99175ffbf3b5beb435ce2135b1ae1cc -->
+### Commit [`47761e5`](https://github.com/superhero/operations.superduper.solutions/commit/47761e5fb99175ffbf3b5beb435ce2135b1ae1cc)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:0b3d4d308fe5ed0caa38081045876e1571e139f5 -->
+### Commit [`0b3d4d3`](https://github.com/superhero/operations.superduper.solutions/commit/0b3d4d308fe5ed0caa38081045876e1571e139f5)
+
+```text
+fix(integration): reconcile pending AWS provider support
+
+Combine the pending signing, object transfer and wire protocol work with
+current capability diagnostics, provider bindings and native transports.
+Preserve the published feature history during integration recovery.
+
+```
+
+<!-- changelog-commit:c4e7cb10512a7dd4e31fae43e82433ab1514e29d -->
+### Commit [`c4e7cb1`](https://github.com/superhero/operations.superduper.solutions/commit/c4e7cb10512a7dd4e31fae43e82433ab1514e29d)
+
+```text
+feat(auth): connect Bluesky with private DPoP OAuth
+
+Allow the preferences read to use an account-bound public OAuth
+connection. Resolve identity and server authority through the pinned
+AT Protocol core; keep proof keys and rotating tokens in the encrypted
+vault worker.
+
+Bind requests to the selected PDS, issuer, client and callback. Reject
+changed authority and ambiguous refresh, preserve cryptographic proof
+uniqueness, and enforce saved-connection capacity across consent.
+Reuse the existing connection controls and popup lifecycle.
+
+Publish client metadata and document hosting and account qualification
+limits. Preserve native operation identities and legacy bearer paths.
+
+```
+
+<!-- changelog-commit:13b6e45f4b328fbf0b7abee2cb425205533f4d1c -->
+### Commit [`13b6e45`](https://github.com/superhero/operations.superduper.solutions/commit/13b6e45f4b328fbf0b7abee2cb425205533f4d1c)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:1a006cc2a84b8dd227b97cc681bc12253cb54909 -->
+### Commit [`1a006cc`](https://github.com/superhero/operations.superduper.solutions/commit/1a006cc2a84b8dd227b97cc681bc12253cb54909)
+
+```text
+fix(integration): reconcile pending Bluesky OAuth support
+
+```
+
+<!-- changelog-commit:2298e7a62b15960756baedd9a98a9cc577af6bd8 -->
+### Commit [`2298e7a`](https://github.com/superhero/operations.superduper.solutions/commit/2298e7a62b15960756baedd9a98a9cc577af6bd8)
+
+```text
+docs(auth): distinguish native API key login completion
+
+The pinned API-key login response contains its type without a login ID.
+Reserve completion-event correlation for managed ChatGPT flows and
+confirm API-key configuration through account state and the host epoch.
+Keep provider validity and model entitlement separate from that status.
+
+```
+
+<!-- changelog-commit:1f5792cd484f94242f946375b7251527e0bc55c1 -->
+### Commit [`1f5792c`](https://github.com/superhero/operations.superduper.solutions/commit/1f5792cd484f94242f946375b7251527e0bc55c1)
+
+```text
+docs(auth): preserve API key login qualification during recovery
+
+```
+
+<!-- changelog-commit:d4542036036055e4f448cf751e358328cb14c0fa -->
+### Commit [`d454203`](https://github.com/superhero/operations.superduper.solutions/commit/d4542036036055e4f448cf751e358328cb14c0fa)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:9d19bf121db5bf47b72af80fe56bf8387c665d06 -->
+### Commit [`9d19bf1`](https://github.com/superhero/operations.superduper.solutions/commit/9d19bf121db5bf47b72af80fe56bf8387c665d06)
+
+```text
+fix(integration): retain the newer native runtime implementation
+
+```
+
+<!-- changelog-commit:82cdc4d55ce514a2bdf5e097c8c7781195689165 -->
+### Commit [`82cdc4d`](https://github.com/superhero/operations.superduper.solutions/commit/82cdc4d55ce514a2bdf5e097c8c7781195689165)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:343157e1636735412ca0c9e6ca61c57692245ebd -->
+### Commit [`343157e`](https://github.com/superhero/operations.superduper.solutions/commit/343157e1636735412ca0c9e6ca61c57692245ebd)
+
+```text
+fix(integration): reconcile the pending S3 branch history
+
+```
+
+<!-- changelog-commit:5c954cfc6c51e8533fac01cc3a1590e5098f5751 -->
+### Commit [`5c954cf`](https://github.com/superhero/operations.superduper.solutions/commit/5c954cfc6c51e8533fac01cc3a1590e5098f5751)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:f4968ac834997d18be305906dad9cf1091313270 -->
+### Commit [`f4968ac`](https://github.com/superhero/operations.superduper.solutions/commit/f4968ac834997d18be305906dad9cf1091313270)
+
+```text
+fix(integration): reconcile the pending SigV4 branch history
+
+```
+
+<!-- changelog-commit:9f877c738a8fc6c58d803a349feade3720306ac5 -->
+### Commit [`9f877c7`](https://github.com/superhero/operations.superduper.solutions/commit/9f877c738a8fc6c58d803a349feade3720306ac5)
+
+```text
+build(schemas): refresh discovery for recovered provider profiles
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

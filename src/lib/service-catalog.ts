@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
+import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
+import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
+import { configureS3Files, s3FilesProfile, validS3FilesModel } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
@@ -149,6 +152,11 @@ function security(document: Value, source: Value, operation: Operation): Operati
   }
   const schemes = value(value(document.components).securitySchemes);
   const normalizedSchemes = { ...schemes };
+  if (lambdaSigningCandidate(operation)) for (const [name, raw] of Object.entries(schemes)) {
+    const definition = resolve(raw, document);
+    if (definition["x-amazon-apigateway-authtype"] === "awsSigv4" && definition["x-operations-aws-sigv4"] === undefined)
+      normalizedSchemes[name] = { ...definition, "x-operations-aws-sigv4": awsRestProfile };
+  }
   let oauth = false;
   const requirements = declaration.map(raw => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Security requirements must be objects.");
@@ -158,12 +166,13 @@ function security(document: Value, source: Value, operation: Operation): Operati
       if (!Array.isArray(scopes) || scopes.some(scope => typeof scope !== "string")) throw new Error("OAuth scopes must be strings.");
       oauth = true;
       Object.defineProperty(normalizedSchemes, name, { value: { type: "http", scheme: "bearer",
-        ...(definition["x-amazon-apigateway-authtype"] === "awsSigv4" ? { "x-amazon-apigateway-authtype": "awsSigv4" } : {}) }, enumerable: true, configurable: true });
+        ...(awsSigningMarker(definition) ? { "x-amazon-apigateway-authtype": definition["x-amazon-apigateway-authtype"] } : {}) }, enumerable: true, configurable: true });
       return [name, []];
     }));
   });
   if (oauth) operation.oauthScopes = declaration.map(raw => Object.fromEntries(Object.entries(raw).map(([name, scopes]) => [name, [...scopes as string[]]])));
-  const result = inspectSecurityAlternatives({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
+  const result = inspectSecurityAlternatives({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } },
+    { security: requirements, ...(source["x-operations-aws-signing"] === undefined ? {} : { "x-operations-aws-signing": source["x-operations-aws-signing"] }) });
   const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
   if (permissions) operation.credentialPermissions = permissions;
   return providerPathSecurity(document, operation.id, result);
@@ -222,15 +231,20 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           serverUrl ||= url;
           if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
         });
-        inspect("endpoint", "unsupported-contract", () => {
-          if (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path)) throw new Error("This endpoint uses a path or transport that is not supported.");
-        });
         let upload: ReturnType<typeof cloudflareUploadProfile>;
+        let wire: ReturnType<typeof awsWireProfile>, s3: ReturnType<typeof s3FilesProfile>;
         inspect("request", "invalid-contract", () => {
+          wire = awsWireProfile(source["x-operations-aws-wire"]);
+          s3 = s3FilesProfile(source["x-operations-s3-files"]);
           upload = cloudflareUploadProfile(source["x-operations-cloudflare-upload"]);
-          if (upload) configureCloudflareUpload(operation, upload);
+          if (wire) configureAwsWire(operation, wire);
+          else if (s3) configureS3Files(operation, s3);
+          else if (upload) configureCloudflareUpload(operation, upload);
         });
-        if (!upload) {
+        inspect("endpoint", "unsupported-contract", () => {
+          if (!wire && (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path))) throw new Error("This endpoint uses a path or transport that is not supported.");
+        });
+        if (!upload && !wire && !s3) {
           const parametersValid = inspect("request", "unsupported-contract", () => {
             const fields = new Map<string, InputField>();
             for (const parameters of [item.parameters, source.parameters])
@@ -307,6 +321,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         inspect("authentication", "invalid-contract", () => {
           const authorization = security(document, source, operation);
           if (authorization !== undefined) operation.security = authorization;
+          if (!wire && !s3 && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
           if (authorization?.length && !authorization.some(supportedSecurityAlternative)) issues.push({ area: "authentication", code: "unsupported-authentication",
             message: authorization.flat().find(scheme => scheme.kind === "unsupported")!.reason });
         });
@@ -322,6 +337,13 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           if (mediaType) operation.responseMediaType = mediaType;
           const media = value(content[mediaType!]);
           if (media.example !== undefined) operation.responseExample = media.example;
+          if (s3) configureS3Files(operation, s3);
+          if (wire) configureAwsWire(operation, wire);
+        });
+        inspect("request", "unsupported-contract", () => {
+          if ((wire || s3 || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4"))
+            && !(wire ? validAwsWireModel(operation) : s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
+            throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
         });
         if (operation.credentialResult) issues.push({ area: "response", code: "unsupported-contract", message: "This operation returns credentials. Private credential acquisition is not supported yet." });
       }

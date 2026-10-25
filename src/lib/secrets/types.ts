@@ -41,16 +41,18 @@ export type VaultKey = Pick<VaultCredential, "id" | "label" | "kind">;
 export type CredentialSummary = Omit<VaultCredential, "value" | "oauthState">;
 export type BasicCredentialReference = { username: string; password: string };
 export type OAuth1CredentialReference = { consumerKey: string; consumerSecret: string; accessToken: string; tokenSecret: string };
-export type CredentialReference = string | BasicCredentialReference | OAuth1CredentialReference;
+export type AwsCredentialReference = { accessKeyId: string; secretAccessKey: string; sessionToken?: string };
+export type CredentialReference = string | BasicCredentialReference | OAuth1CredentialReference | AwsCredentialReference;
 export type HttpConnectionReference = { id: string; revision: number; fingerprint: string };
 export type GitlabOAuthMetadata = { profile: "gitlab-public-pkce-v1"; clientId: string; redirectUri: string; scope: "read_user"; accountId: string };
 export type JiraOAuthMetadata = { profile: "atlassian-jira-3lo-v1"; host: string; hostId: string; configuration: string; clientId: string;
   redirectUri: string; scope: "read:jira-user offline_access"; cloudId: string; siteUrl: string; accountId: string };
-export type HttpTokenFormat = "schema" | "discord-bot" | "opsgenie-key" | "gitlab-oauth" | "jira-companion";
+export type AtprotoOAuthMetadata = { profile: "atproto-public-dpop-v1"; clientId: string; redirectUri: string; scope: string; accountId: string; issuer: string; pds: string };
+export type HttpTokenFormat = "schema" | "discord-bot" | "opsgenie-key" | "gitlab-oauth" | "jira-companion" | "atproto-oauth";
 export type HttpConnection = HttpConnectionReference & {
   label: string; account: string; provider: string; endpoint: string; runtime: "browser-http";
   alternative: number; security: import("../operation-security.ts").OperationSecurityScheme[];
-  credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata | JiraOAuthMetadata;
+  credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata | JiraOAuthMetadata | AtprotoOAuthMetadata;
 };
 export type HttpConnectionInput = { label: string; account: string; format: HttpTokenFormat;
   reference?: HttpConnectionReference; expiresAt?: number };
@@ -73,7 +75,7 @@ export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
   | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN"
-  | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX";
+  | "S3_INTEGRITY" | "WRITE_UNCONFIRMED" | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX";
 const messages: Record<VaultErrorCode, string> = {
   DOCKER_UNAVAILABLE: "The paired Docker host could not complete its read. Check the companion and configured daemon socket.",
   DOCKER_VERSION: "The Docker daemon does not support the paired API version 1.57.",
@@ -81,6 +83,8 @@ const messages: Record<VaultErrorCode, string> = {
   DOCKER_DUPLEX: "Docker streaming and upgraded connections are unavailable in this native read mode.",
   NATIVE_FAILED: "The native operation failed. Check the thread before starting another turn.",
   NATIVE_UNKNOWN: "The native connection ended without a confirmed result. A dispatched turn may have taken effect; it will not be retried automatically.",
+  S3_INTEGRITY: "The S3 object could not be verified. Check its checksum and exposed bucket CORS headers.",
+  WRITE_UNCONFIRMED: "The upload may have completed. Check the object and bucket CORS settings before retrying.",
   LOCKED: "Unlock the secrets vault to continue.",
   AUTHORIZATION: "Connect this account again to continue.",
   AUTHENTICATION: "The vault could not be unlocked. Check the unlock method and saved data.",

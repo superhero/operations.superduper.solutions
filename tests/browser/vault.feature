@@ -23,6 +23,34 @@ Feature: Browser vault persistence and controlled credential execution
       | 1280  |
 
   @chromium-only
+  Scenario Outline: AWS wire workflows preserve JSON and STS identity at <width>px
+    Then AWS wire workflows at <width> pixels sign real requests and reuse encrypted connections
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @chromium-only
+  Scenario Outline: S3 object transfers preserve files at <width>px
+    Then S3 transfers at <width> pixels use private signatures raw bytes and verified binary downloads
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @vault-browser-network @chromium-only
+  Scenario: S3 browser CORS requires declared methods headers and visible checksums
+    Then native S3 CORS preflight rejects missing permissions and hidden integrity headers cannot confirm a write
+
+  @chromium-only
+  Scenario Outline: AWS SigV4 connections survive reload at <width>px
+    Then an AWS connection at <width> pixels signs a regional Lambda request after encrypted reload
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @chromium-only
   Scenario Outline: Cloudflare private upload works at <width>px
     Then a Cloudflare upload at <width> pixels carries opaque session references through private worker calls
     Examples:
@@ -287,6 +315,14 @@ Feature: Browser vault persistence and controlled credential execution
     When I use a viewport of <width> by 900 pixels
     Given I create a vault in the Secrets settings and save a synthetic credential
     Then the ElevenLabs private key connection survives reload without exposing credentials
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @chromium-only
+  Scenario Outline: Bluesky OAuth connections survive reload at <width>px
+    Then Bluesky OAuth at <width> pixels uses private proofs and a saved resource connection
     Examples:
       | width |
       | 390   |

@@ -9,8 +9,12 @@ import { expect } from '@playwright/test';
 import { exampleCatalogState } from './catalog-state.fixture.mjs';
 import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
+import { atprotoProvider } from '../atproto-oauth.fixture.mjs';
 import { jiraCanaries } from '../jira-companion.fixture.mjs';
 import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
+import { awsSyntheticValues, verifyAwsSignature } from '../aws-sigv4.fixture.mjs';
+import { s3FixtureChecksums, s3CorsLogicalUrl } from './s3-cors-endpoint.fixture.mjs';
+import { signAwsRequest } from '../../src/lib/secrets/aws-sigv4.ts';
 
 const fixture = '/vault-storage-fixture.js';
 const canaries = ['browser-VAULT-password-9182', 'browser-BEARER-canary-9182', 'browser-APIKEY-canary-9182', 'browser-PRIVATE-label-9182'];
@@ -1110,6 +1114,166 @@ Then('the ElevenLabs private key connection survives reload without exposing cre
   await privateHeaderSelection.call(this, 'connected API key', 'ElevenLabs');
 });
 
+Then('S3 transfers at {int} pixels use private signatures raw bytes and verified binary downloads', { timeout: 90_000 }, async function (width) {
+  const page=this.page,endpoint='https://s3.us-east-1.amazonaws.com',bucket='operations-test-bucket',key='folder//雪 +?%2F/data.bin';
+  const bytes=Buffer.from([0,255,13,10,239,187,191,65]),calls=[];let stored;
+  await page.setViewportSize({width,height:900});await invoke(page,'seedAWS',this.baseURL,randomUUID(),awsSyntheticValues);
+  await this.context.route(endpoint+'/**',async route=>{
+    const request=route.request(),cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'GET, PUT, OPTIONS','Access-Control-Expose-Headers':'ETag, x-amz-checksum-sha256, x-amz-checksum-type, Content-Disposition'};
+    if(request.method()==='OPTIONS')return route.fulfill({status:204,headers:cors});
+    const body=request.postDataBuffer()??undefined,signature=verifyAwsSignature(request.url(),{method:request.method(),headers:request.headers(),body},awsSyntheticValues,'s3');calls.push(signature);
+    assert.equal(decodeURIComponent(new URL(request.url()).pathname),'/'+bucket+'/'+key);assert.equal(request.headers().cookie,undefined);assert.equal(request.headers().referer,undefined);
+    if(request.method()==='PUT'){assert.deepEqual(body,bytes);assert.equal(request.headers()['content-type'],'application/octet-stream');assert.equal(request.headers()['x-amz-meta-note'],'exact file');stored=body;
+      return route.fulfill({status:200,headers:{...cors,...s3FixtureChecksums(body),'Content-Type':'text/plain'},body:''});}
+    assert.equal(request.method(),'GET');assert.equal(request.headers()['x-amz-checksum-mode'],'ENABLED');assert.ok(stored);
+    return route.fulfill({status:200,headers:{...cors,...s3FixtureChecksums(stored),'Content-Type':'application/octet-stream','Content-Disposition':'attachment; filename="s3-object.bin"'},body:stored});
+  });
+  const names={put:'S3 upload fixture',get:'S3 download fixture'};
+  const document={openapi:'3.0.3',info:{title:'S3 files fixture',version:'1'},servers:[{url:endpoint}],security:[{hmac:[]}],components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':'awsS3'}}},
+    paths:{'/{Bucket}/{Key}':Object.fromEntries(['put','get'].map(method=>[method,{operationId:method+'Object',summary:names[method],'x-operations-s3-files':method==='put'?'put-object':'get-object','x-operations-aws-signing':'s3-object',
+      ...(method==='put'?{requestBody:{required:true,content:{'application/octet-stream':{schema:{type:'string',format:'binary'}}}}}:{}),responses:{200:{description:'Object result',content:{[method==='put'?'text/plain':'application/octet-stream']:{schema:{type:'string',...(method==='get'?{format:'binary'}:{})}}}}}}]))}};
+  await setMode(page,'settings');const schemas=page.locator('summary[aria-label="Schemas"]');if(await schemas.getAttribute('aria-expanded')!=='true')await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({name:'s3-files.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
+  await expect(page.getByRole('switch',{name:'Enable S3 files fixture',exact:true})).toHaveAttribute('aria-checked','true');await chooseCatalogOperation(page,names.put);
+  await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'hmac',exact:true}).click();
+  const unlock=page.getByLabel('Unlock the vault password',{exact:true});await unlock.fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();
+  for(const [part,label] of [['accessKeyId','Access key ID'],['secretAccessKey','Secret access key'],['sessionToken','Session token']]){
+    await page.getByRole('combobox',{name:label+' for hmac',exact:true}).click();await page.getByRole('option',{name:'AWS '+part,exact:true}).click();}
+  await page.getByText('Save as connection',{exact:true}).click();await page.getByLabel('Connection name',{exact:true}).fill('S3 connection');await page.getByLabel('Account label',{exact:true}).fill('S3 sandbox');await page.getByRole('button',{name:'Save connection',exact:true}).click();
+  const connection=page.getByRole('combobox',{name:'Saved HTTP connection',exact:true});await expect(connection).toContainText('S3 connection · S3 sandbox');
+  await page.getByRole('textbox',{name:'Bucket',exact:true}).fill(bucket);await page.getByRole('textbox',{name:'Key',exact:true}).fill(key);
+  await page.getByRole('checkbox',{name:'Do not send Metadata',exact:true}).uncheck();await page.getByRole('textbox',{name:'Metadata',exact:true}).fill('{"note":"exact file"}');
+  await page.getByLabel('Object data',{exact:true}).setInputFiles({name:'source.bin',mimeType:'application/octet-stream',buffer:bytes});
+  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();
+  assert.equal(calls.length,1);await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});await chooseCatalogOperation(page,names.get);
+  await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'hmac',exact:true}).click();
+  await unlock.fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();await connection.click();await page.getByRole('option',{name:'S3 connection · S3 sandbox',exact:true}).click();
+  await page.getByRole('textbox',{name:'Bucket',exact:true}).fill(bucket);await page.getByRole('textbox',{name:'Key',exact:true}).fill(key);
+  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();
+  const body=page.locator('[aria-label="Response body"]').last();await expect(body).toContainText('s3-object.bin');const downloading=page.waitForEvent('download');await body.getByRole('button',{name:'Download file',exact:true}).click();
+  const chunks=[];for await(const chunk of await (await downloading).createReadStream())chunks.push(chunk);assert.deepEqual(Buffer.concat(chunks),bytes);assert.equal(calls.length,2);
+  const secrets=[...Object.values(awsSyntheticValues),...calls.flatMap(call=>[call.authorization,call.signature])];for(const value of [await page.locator('body').innerText(),await repository(page,'list'),await storage(page,'read')])for(const secret of secrets)assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page,'persistedCanaries',[...privateCanaries,...secrets]),[]);await mkdir(this.artifactDirectory,{recursive:true});await page.screenshot({path:`${this.artifactDirectory}/s3-files-${width}.png`});
+});
+
+Then('native S3 CORS preflight rejects missing permissions and hidden integrity headers cannot confirm a write', {timeout:60_000}, async function(){
+  const page=this.page,id=randomUUID(),bytes=Uint8Array.from([0,255,13,10,65]);await this.context.unrouteAll({behavior:'wait'});
+  const cross=this.baseURL.replace('127.0.0.1','localhost')+'/s3-cors/'+id;
+  const put=await signAwsRequest('PUT',s3CorsLogicalUrl,new Headers({'Content-Type':'application/octet-stream','x-amz-meta-note':'CORS fixture','x-amz-checksum-sha256':s3FixtureChecksums(bytes)['x-amz-checksum-sha256']}),bytes,awsSyntheticValues,{service:'s3',region:'us-east-1'});
+  const request={method:'PUT',headers:Object.fromEntries(put.headers),bytes:Array.from(bytes)};
+  const allowed=await invoke(page,'probeS3Cors',cross+'/allow',request);assert.equal(allowed.status,200);assert.equal(allowed.verified,true);assert.ok(allowed.checksum);assert.ok(allowed.etag);
+  const get=await signAwsRequest('GET',s3CorsLogicalUrl,new Headers({'x-amz-checksum-mode':'ENABLED'}),undefined,awsSyntheticValues,{service:'s3',region:'us-east-1'});
+  const result=await invoke(page,'probeS3Cors',cross+'/allow',{method:'GET',headers:Object.fromEntries(get.headers)});assert.equal(result.verified,true);assert.deepEqual(result.bytes,Array.from(bytes));
+  for(const mode of ['deny-header','deny-method']){const refused=await invoke(page,'probeS3Cors',cross+'/'+mode,request);assert.equal(refused.error,'TypeError');}
+  const hidden=await invoke(page,'probeS3Cors',cross+'/hidden',request);assert.equal(hidden.status,200);assert.equal(hidden.verified,false);assert.equal(hidden.error,'S3_INTEGRITY');assert.equal(hidden.etag,null);assert.equal(hidden.checksum,null);
+  const events=await (await this.context.request.get(this.baseURL+'/s3-cors/'+id+'/observations')).json();assert.ok(events.some(event=>event.method==='OPTIONS'&&event.requestedHeaders.includes('authorization')&&event.requestedHeaders.includes('x-amz-security-token')&&!event.sentAuthorization));
+  assert.equal(events.filter(event=>['deny-header','deny-method'].includes(event.mode)&&event.method!=='OPTIONS').length,0);assert.equal(events.filter(event=>event.mode==='hidden'&&event.method==='PUT'&&event.verified).length,1);assert.ok(!events.some(event=>event.failed));
+  this.diagnostics=this.diagnostics.filter(item=>!(item.type==='console-error'&&(/CORS|Failed to load resource|net::ERR_FAILED/.test(item.message))&&(item.message.includes('/s3-cors/'+id)||item.location?.url?.startsWith(cross))));
+});
+
+Then('AWS wire workflows at {int} pixels sign real requests and reuse encrypted connections', {timeout:60_000}, async function(width){
+  const page=this.page,calls=[],names={batch:'AWS wire BatchGetItem fixture',tables:'AWS wire ListTables fixture',identity:'AWS wire STS identity fixture'};
+  await page.setViewportSize({width,height:900});await invoke(page,'seedAWS',this.baseURL,randomUUID(),awsSyntheticValues);
+  const items={Orders:{Keys:[{id:{S:'雪 +/%?&='},revision:{N:'900719925474099312345'}}]}};
+  const identity='<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><GetCallerIdentityResult><Account>001234567890</Account><Arn>arn:aws:iam::001234567890:user/Alice</Arn><UserId>000123:Alice</UserId></GetCallerIdentityResult><ResponseMetadata><RequestId>00001234</RequestId></ResponseMetadata></GetCallerIdentityResponse>';
+  for(const service of ['dynamodb','sts'])await this.context.route('https://'+service+'.us-east-1.amazonaws.com/**',async route=>{
+    const request=route.request(),cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'POST, OPTIONS'};
+    if(request.method()==='OPTIONS')return route.fulfill({status:204,headers:cors});
+    const bytes=request.postDataBuffer(),signed=verifyAwsSignature(request.url(),{method:request.method(),headers:request.headers(),body:bytes},awsSyntheticValues,service);
+    const url=new URL(request.url());assert.equal(url.pathname,'/');assert.equal(url.hash,'');assert.equal(url.search,'');assert.equal(request.method(),'POST');calls.push({...signed,service});
+    if(service==='sts'){assert.equal(bytes.toString(),'Action=GetCallerIdentity&Version=2011-06-15');assert.equal(request.headers()['content-type'],'application/x-www-form-urlencoded');return route.fulfill({status:200,headers:{...cors,'Content-Type':'text/xml'},body:identity});}
+    assert.equal(request.headers()['content-type'],'application/x-amz-json-1.0');const body=JSON.parse(bytes.toString()),target=request.headers()['x-amz-target'];
+    if(target==='DynamoDB_20120810.BatchGetItem'){assert.deepEqual(body,{RequestItems:items});return route.fulfill({status:200,headers:{...cors,'Content-Type':'application/x-amz-json-1.0'},body:JSON.stringify({Responses:{Orders:[{revision:{N:'900719925474099312345'}}]},UnprocessedKeys:items})});}
+    assert.equal(target,'DynamoDB_20120810.ListTables');assert.deepEqual(body,{});return route.fulfill({status:200,headers:{...cors,'Content-Type':'application/x-amz-json-1.0'},body:'{"TableNames":["Orders"]}'});
+  });
+  const source=(operationId,name,profile,signing,service)=>({operationId,summary:name,'x-operations-aws-wire':profile,'x-operations-aws-signing':signing,
+    servers:[{url:'https://'+service+'.us-east-1.amazonaws.com'}],responses:{200:{description:'Decoded result',content:{'application/json':{schema:{type:'object'}}}}}});
+  const document={openapi:'3.0.3',info:{title:'AWS wire fixture',version:'1'},servers:[{url:'https://dynamodb.us-east-1.amazonaws.com'}],security:[{hmac:[]}],
+    components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':'awsSigv4'}}},paths:{
+      '/#X-Amz-Target=DynamoDB_20120810.BatchGetItem':{post:source('BatchGetItem',names.batch,'dynamodb-batch-get-item','dynamodb-json-1.0','dynamodb')},
+      '/#X-Amz-Target=DynamoDB_20120810.ListTables':{post:source('ListTables',names.tables,'dynamodb-list-tables','dynamodb-json-1.0','dynamodb')},
+      '/#Action=GetCallerIdentity':{post:source('POST_GetCallerIdentity',names.identity,'sts-get-caller-identity','sts-query-2011-06-15','sts')}}};
+  await setMode(page,'settings');const schemas=page.locator('summary[aria-label="Schemas"]');if(await schemas.getAttribute('aria-expanded')!=='true')await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({name:'aws-wire.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
+  await expect(page.getByRole('switch',{name:'Enable AWS wire fixture',exact:true})).toHaveAttribute('aria-checked','true');
+  const authentication=async()=>{await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'hmac',exact:true}).click();};
+  const unlock=async()=>{await page.getByLabel('Unlock the vault password',{exact:true}).fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();};
+  const save=async name=>{for(const [part,label] of [['accessKeyId','Access key ID'],['secretAccessKey','Secret access key'],['sessionToken','Session token']]){
+    await page.getByRole('combobox',{name:label+' for hmac',exact:true}).click();await page.getByRole('option',{name:'AWS '+part,exact:true}).click();}
+    await page.getByText('Save as connection',{exact:true}).click();await page.getByLabel('Connection name',{exact:true}).fill(name);await page.getByLabel('Account label',{exact:true}).fill('AWS sandbox');await page.getByRole('button',{name:'Save connection',exact:true}).click();};
+  const run=async()=>{await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();};
+  await chooseCatalogOperation(page,names.batch);await authentication();await unlock();await save('DynamoDB wire');
+  await page.getByRole('textbox',{name:'RequestItems',exact:true}).fill(JSON.stringify(items));await run();
+  await expect(page.locator('[aria-label="Response body"]').last()).toContainText('900719925474099312345');assert.equal(calls.length,1);
+  await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});await chooseCatalogOperation(page,names.tables);await authentication();await unlock();
+  await page.getByRole('combobox',{name:'Saved HTTP connection',exact:true}).click();await page.getByRole('option',{name:'DynamoDB wire · AWS sandbox',exact:true}).click();await run();
+  await expect(page.locator('[aria-label="Response body"]').last()).toContainText('Orders');assert.equal(calls.length,2);
+  await chooseCatalogOperation(page,names.identity);await authentication();await save('STS wire');await run();
+  await expect(page.locator('[aria-label="Response body"]').last()).toContainText('001234567890');await expect(page.locator('[aria-label="Response body"]').last()).toContainText('00001234');assert.equal(calls.length,3);
+  const secrets=[...Object.values(awsSyntheticValues),...calls.flatMap(call=>[call.authorization,call.signature])];for(const value of [await page.locator('body').innerText(),await repository(page,'list'),await storage(page,'read')])for(const secret of secrets)assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page,'persistedCanaries',[...privateCanaries,...secrets]),[]);await mkdir(this.artifactDirectory,{recursive:true});await page.screenshot({path:`${this.artifactDirectory}/aws-wire-${width}.png`});
+});
+
+Then('an AWS connection at {int} pixels signs a regional Lambda request after encrypted reload', { timeout: 60_000 }, async function (width) {
+  const page = this.page, seen = [], endpoint = 'https://lambda.us-east-1.amazonaws.com';
+  await page.setViewportSize({ width, height: 900 }); await invoke(page, 'seedAWS', this.baseURL, randomUUID(), awsSyntheticValues);
+  await this.context.route(endpoint+'/**', async route => {
+    const request = route.request(), headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    assert.equal(request.method(), 'GET'); assert.equal(request.postData(), null);
+    const signed = verifyAwsSignature(request.url(), { method: request.method(), headers: request.headers() });
+    assert.equal(request.headers().cookie, undefined); assert.equal(request.headers().referer, undefined);
+    const url = new URL(request.url()); assert.equal(url.pathname, '/2015-03-31/functions/');
+    assert.equal(url.searchParams.get('Marker'), 'next +/?=%雪'); assert.equal(url.searchParams.get('MaxItems'), '2');
+    seen.push(signed);
+    return route.fulfill({ status: 200, headers: { ...headers, 'Content-Type': 'application/json' }, body: '{"Functions":[]}' });
+  });
+  const name = 'AWS Lambda signing fixture';
+  const document = { openapi: '3.0.3', info: { title: name, version: '1' }, servers: [{ url: endpoint }], security: [{ hmac: [] }],
+    components: { securitySchemes: { hmac: { type: 'apiKey', in: 'header', name: 'Authorization',
+      'x-amazon-apigateway-authtype': 'awsSigv4', 'x-operations-aws-sigv4': 'lambda-list-functions' } } },
+    paths: { '/2015-03-31/functions/': { get: { operationId: 'ListFunctions', summary: name,
+      parameters: [{ name: 'Marker', in: 'query', required: true, schema: { type: 'string' } }, { name: 'MaxItems', in: 'query', required: true, schema: { type: 'integer' } }],
+      responses: { 200: { description: 'Functions', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'aws-lambda.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable '+name, exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: 'hmac', exact: true }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  for (const [part, label] of [['accessKeyId', 'Access key ID'], ['secretAccessKey', 'Secret access key'], ['sessionToken', 'Session token']]) {
+    await page.getByRole('combobox', { name: label+' for hmac', exact: true }).click();
+    await page.getByRole('option', { name: 'AWS '+part, exact: true }).click();
+  }
+  await page.getByText('Save as connection', { exact: true }).click();
+  await page.getByLabel('Connection name', { exact: true }).fill('AWS connection');
+  await page.getByLabel('Account label', { exact: true }).fill('AWS sandbox');
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click();
+  const connection = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connection).toContainText('AWS connection · AWS sandbox');
+  const binding = async () => (await repository(page, 'list')).flatMap(document => document.nodes).find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await binding())?.connection?.revision).toBe(1); assert.deepEqual((await binding()).credentials, {}); assert.equal(seen.length, 0);
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connection).toContainText('AWS connection · AWS sandbox'); await expect(connection).toBeEnabled();
+  // Run-form values are transient; saved connection references survive reload.
+  await page.getByRole('textbox', { name: 'Marker', exact: true }).fill('next +/?=%雪');
+  const maxItems = page.getByRole('slider', { name: 'MaxItems', exact: true });
+  await maxItems.press('ArrowRight'); await expect(maxItems).toHaveAttribute('aria-valuenow', '1');
+  await maxItems.press('ArrowRight'); await expect(maxItems).toHaveAttribute('aria-valuenow', '2');
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible(); assert.equal(seen.length, 1);
+  const privateValues = [...Object.values(awsSyntheticValues), seen[0].authorization, seen[0].signature];
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), await storage(page, 'read')])
+    for (const secret of privateValues) assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...privateValues]), []);
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/aws-sigv4-${width}.png` });
+});
+
 Then('an X OAuth1 connection at {int} pixels signs privately after selecting four stored credentials', { timeout: 60_000 }, async function (width) {
   const page = this.page, seen = [], parts = ['consumerKey', 'consumerSecret', 'accessToken', 'tokenSecret'];
   const secrets = Object.fromEntries(parts.map(part => [part, 'browser_X_'+part+'_canary_5729']));
@@ -1402,4 +1566,79 @@ Then('a Cloudflare upload at {int} pixels carries opaque session references thro
     for (const token of [uploadToken, completionToken]) assert.ok(!JSON.stringify(value).includes(token));
   assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, uploadToken, completionToken]), []);
   await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/cloudflare-upload-${width}.png` });
+});
+
+Then('Bluesky OAuth at {int} pixels uses private proofs and a saved resource connection', { timeout: 75_000 }, async function (width) {
+  const page = this.page, provider = atprotoProvider(new URL(this.baseURL).origin);
+  let consents = 0; const expectedHTTP = [];
+  await page.setViewportSize({ width, height: 900 }); await seed(this, 'ok');
+  const redirect = new URL(this.baseURL); redirect.searchParams.set('operations_oauth_callback', 'bluesky');
+  await this.context.route(/^https:\/\/(?:[^/]+\.example\.com|plc\.directory|bsky\.social)\//, async route => {
+    const request = route.request(), url = new URL(request.url());
+    const headers = { 'Access-Control-Allow-Origin': new URL(this.baseURL).origin, 'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Expose-Headers': 'DPoP-Nonce, WWW-Authenticate', 'Cache-Control': 'no-store' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    if (url.origin === provider.issuer && url.pathname === '/authorize') {
+      const callback = provider.consent(url.href, consents++ === 0), target = new URL(redirect);
+      for (const [key, value] of Object.entries(callback)) target.searchParams.set(key, value);
+      return route.fulfill({ status: 302, headers: { ...headers, Location: target.href } });
+    }
+    assert.equal(request.headers().cookie, undefined); assert.equal(request.headers().referer, undefined);
+    const response = await provider.fetch(new Request(request.url(), { method: request.method(), headers: request.headers(),
+      ...(request.postDataBuffer() ? { body: request.postDataBuffer() } : {}), credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer' }));
+    if (response.status >= 400) {
+      const body = await response.clone().json(); assert.ok(['use_dpop_nonce', 'invalid_token'].includes(body.error));
+      expectedHTTP.push({ url: request.url(), status: response.status });
+    }
+    return route.fulfill({ status: response.status, headers: { ...headers, ...Object.fromEntries(response.headers) }, body: Buffer.from(await response.arrayBuffer()) });
+  });
+  const name = 'Bluesky OAuth fixture';
+  const document = { openapi: '3.0.3', info: { title: name, version: '1' }, servers: [{ url: provider.pds }], security: [{ Bearer: [] }],
+    components: { securitySchemes: { Bearer: { type: 'http', scheme: 'bearer' } } },
+    paths: { '/xrpc/app.bsky.actor.getPreferences': { get: { operationId: 'app.bsky.actor.getPreferences', summary: name,
+      responses: { 200: { description: 'Preferences', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'bluesky-oauth.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable '+name, exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: /Bearer/, exact: false }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await page.getByText('Connect Bluesky account', { exact: true }).click();
+  await expect(page.getByLabel('Bluesky redirect URL', { exact: true })).toHaveValue(redirect.href);
+  await page.getByLabel('Bluesky handle or DID', { exact: true }).fill(provider.handle);
+  await page.getByLabel('Bluesky connection name', { exact: true }).fill('Bluesky connection');
+  const deniedWindow = this.context.waitForEvent('page');
+  await page.getByRole('button', { name: 'Connect Bluesky', exact: true }).click();
+  const denied = await deniedWindow;
+  await expect(page.getByRole('alert').filter({ hasText: 'Sign-in was not completed.' })).toBeVisible();
+  await expect.poll(() => denied.isClosed()).toBe(true); assert.equal(provider.tokenCalls, 0);
+  const opened = this.context.waitForEvent('page');
+  await page.getByRole('button', { name: 'Connect Bluesky', exact: true }).click();
+  const popup = await opened;
+  await expect.poll(() => provider.tokenCalls).toBe(1);
+  await expect.poll(() => popup.isClosed()).toBe(true);
+  const connection = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connection).toContainText('Bluesky connection · Bluesky ' + provider.did);
+  const binding = async () => (await repository(page, 'list')).flatMap(document => document.nodes).find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await binding())?.connection?.revision).toBe(1); assert.deepEqual((await binding()).credentials, {});
+  assert.equal(provider.resources, 0); assert.ok(provider.proofs.length >= 4);
+  provider.expiredAccess.add([...provider.tokens.keys()][0]);
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connection).toContainText('Bluesky connection · Bluesky ' + provider.did); await expect(connection).toBeEnabled();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  assert.equal(provider.tokenCalls, 1); assert.equal(provider.refreshCalls, 1); assert.ok(provider.resources >= 2);
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), await storage(page, 'read')])
+    for (const secret of provider.privateValues) assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...provider.privateValues]), []);
+  this.diagnostics = this.diagnostics.filter(item => {
+    const index = expectedHTTP.findIndex(expected => item.type === 'http-error' && item.url === expected.url && item.status === expected.status);
+    if (index < 0) return true; expectedHTTP.splice(index, 1); return false;
+  });
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/bluesky-oauth-${width}.png` });
 });
