@@ -50,6 +50,22 @@ chore(github): align notification access with completed service contracts
 
 ```
 
+<!-- changelog-commit:003286a6cc39330dd496279292e4954fbfc11270 -->
+### Commit [`003286a`](https://github.com/superhero/operations.superduper.solutions/commit/003286a6cc39330dd496279292e4954fbfc11270)
+
+```text
+chore(ci): reconcile BigQuery squash integration
+
+```
+
+<!-- changelog-commit:9a9bc112324e4ae99786258b66be77444d65d9a8 -->
+### Commit [`9a9bc11`](https://github.com/superhero/operations.superduper.solutions/commit/9a9bc112324e4ae99786258b66be77444d65d9a8)
+
+```text
+chore(ci): retain current develop ancestry for notification access
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
