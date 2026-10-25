@@ -262,7 +262,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <HintButton type="button" class="composer-action" label={busy ? "Stop and unload" : "Unload model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
         {:else}
           <HintButton type="button" class="composer-action" label="Check compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
-          <HintButton type="button" class="composer-action" label="Load model" onclick={load}><MaterialIcon name="download" size={18} /></HintButton>
         {/if}
       </div>
     </div>
@@ -344,7 +343,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .composer { padding: 0; border: 2px solid var(--color-muted); border-radius: 4px; background: var(--color-background); min-width: 0; overflow: clip; }
   .composer-header, .composer-toolbar { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--color-surface); }
   .composer-header { border-bottom: 1px solid var(--color-muted); }
-  .model-picker { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
+  .model-picker { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; padding-left: 6px; }
   .model-picker :global(.field-select-trigger) { width: auto; min-height: 32px; padding: 4px 0; gap: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; }
   .model-picker :global(.field-select-value) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   :global(.field-select-content[aria-label="Local model"]) { width: max-content; min-width: var(--bits-select-anchor-width); max-width: calc(100vw - 24px); }

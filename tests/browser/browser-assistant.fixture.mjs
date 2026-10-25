@@ -5,6 +5,13 @@ import { operations } from '../../src/lib/catalog.ts';
 
 // Only inference is scripted. The production Settings UI, capability dispatcher,
 // graph validation, real handles, autosave and persistence run unchanged.
+export async function loadAssistantModel(page) {
+  const picker = page.getByRole('combobox', { name: 'Local model', exact: true });
+  const selected = (await picker.locator('.field-select-value').innerText()).trim();
+  await picker.click();
+  await page.getByRole('option', { name: selected, exact: true }).click();
+}
+
 export async function installAssistantFixture(page) {
   const operation = operations.find(operation => operation.name === 'Example GET request');
   await page.addInitScript(({ operationId }) => {

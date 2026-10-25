@@ -6,7 +6,7 @@ import { installSpeechFixture } from './parakeet.fixture.mjs';
 import { setMode } from './workspace.fixture.mjs';
 import { wav } from '../../src/lib/speech/diagnostics.js';
 import { readFile } from 'node:fs/promises';
-import { installAssistantFixture } from './browser-assistant.fixture.mjs';
+import { installAssistantFixture, loadAssistantModel } from './browser-assistant.fixture.mjs';
 
 async function open(page, fixture = true, fromComposer = false) {
   if (fixture) await installSpeechFixture(page);
@@ -39,7 +39,7 @@ Then('Parakeet and Bonsai share the draft without sending during capture', async
   const speech = await open(page, false, true), panel = page.getByRole('region', { name: 'Browser assistant', exact: true });
   expect(await page.evaluate(() => window.speechFixture.workers)).toBe(0);
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');
-  await panel.getByRole('button', { name: 'Load model', exact: true }).click(); await load(speech);
+  await loadAssistantModel(page); await load(speech);
   await draft(page).fill('Typed introduction.'); await start(page, speech, true);
   await page.evaluate(() => window.speechFixture.partial('First sentence.', 'Unconfirmed words'));
   await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
