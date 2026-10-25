@@ -296,6 +296,14 @@ fix(ui): render logs pagination icons without overflow
 Merge branch 'develop' into bugfix/logs-pagination-icons
 ```
 
+<!-- changelog-commit:22abf15251f3ecf8798a3d6845d20b5374eff1a3 -->
+### Commit [`22abf15`](https://github.com/superhero/operations.superduper.solutions/commit/22abf15251f3ecf8798a3d6845d20b5374eff1a3)
+
+```text
+fix(dev): allow dismissing import and build error overlays
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

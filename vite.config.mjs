@@ -30,7 +30,7 @@ overlay.transformIndexHtml = async function (...args) {
     && typeof tag.children === "string" && tag.children.includes("async function sendError("));
   if (!runtime) throw new Error("Visulima runtime injection changed; review the browser error normalization hook.");
   // Module dependencies run before its body registers the error listeners.
-  runtime.children = `import "/dev/error-chain.ts";\n${runtime.children}`;
+  runtime.children = `import "/dev/error-chain.ts";\nimport { initErrorOverlayContext } from "/dev/error-overlay-context.ts";\ninitErrorOverlayContext();\n${runtime.children}`;
   return result;
 };
 const configureOverlay = overlay.configureServer;

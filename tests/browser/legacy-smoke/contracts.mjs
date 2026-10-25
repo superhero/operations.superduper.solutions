@@ -63,6 +63,7 @@ export const contracts = {
     "schema management recovers after the origin-wide repository lock is released",
     "schema browser contexts contain no unexpected errors"
   ],
+  "dev-overlay-dismiss": ["build errors support button and keyboard dismissal before application startup"],
   "dev-overlay": [
     "developer toolbar settings persist and disabled tools cannot receive pointer or keyboard input",
     "saved appearance and source-linked native errors initialize the development overlay",
