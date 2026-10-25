@@ -222,11 +222,11 @@ h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px;
 .tree-children > .tree-branch::before, .tree-children > .tree-branch::after { content: ''; position: absolute; left: calc(-1 * var(--tree-line-inset, 12px)); pointer-events: none; }
 .tree-children > .tree-branch::before { top: calc(-1 * var(--tree-branch-gap)); bottom: 0; width: 2px; background: var(--color-tree-line); }
 .tree-children > .tree-branch:last-child::before { bottom: auto; height: calc(var(--tree-hook-top, 15px) + 3px + var(--tree-branch-gap)); }
-/* Preserve the solid rounded elbow; only its downward continuation is dashed. */
+/* Continue the category stem into operation branches in the primary button color. */
 .catalog-children:has(+ .catalog-operations) > .tree-branch:last-child::before {
   bottom: -4px; height: auto;
   background: linear-gradient(var(--color-tree-line), var(--color-tree-line)) left top / 2px calc(var(--tree-hook-top, 15px) + 3px + var(--tree-branch-gap)) no-repeat,
-    repeating-linear-gradient(to bottom, transparent 0 4px, var(--color-background) 4px 9px, transparent 9px 13px) left bottom / 2px calc(100% - var(--tree-hook-top, 15px) - 8px - var(--tree-branch-gap)) no-repeat;
+    linear-gradient(var(--color-primary), var(--color-primary)) left bottom / 2px calc(100% - var(--tree-hook-top, 15px) - 3px - var(--tree-branch-gap)) no-repeat;
 }
 .tree-children > .tree-branch::after { top: var(--tree-hook-top, 15px); width: var(--tree-line-inset, 12px); height: 8px; border-left: 2px solid var(--color-tree-line); border-bottom: 2px solid var(--color-tree-line); border-bottom-left-radius: 4px; }
 .catalog-group summary { display: flex; align-items: center; gap: 8px; list-style: none; color: var(--color-catalog-foreground); }
@@ -237,14 +237,12 @@ summary::-webkit-details-marker { display: none; }
 .catalog-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .catalog-count { display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 4px; background: var(--color-badge-background); font-family: Rationale, sans-serif; font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1; font-weight: 400; color: var(--color-badge-foreground); }
 .catalog-count-value { display: block; text-box-trim: trim-both; text-box-edge: cap alphabetic; }
-/* Keep guides inside the list and rows so every separator starts at the same edge. */
-.catalog-operations { position: relative; list-style: none; padding: 6px 0 4px; margin: 0 0 0 calc(var(--tree-indent, 20px) - var(--tree-line-inset, 12px)); }
-.catalog-operations::before { content: ''; position: absolute; top: 0; bottom: 12px; left: 0; width: 2px; background: linear-gradient(to bottom, transparent 0 4px, var(--color-background) 4px 9px, transparent 9px) center / 100% 13px repeat-y; pointer-events: none; }
-.catalog-operations > li { position: relative; padding: 4px 0 4px var(--tree-line-inset, 12px); }
-.catalog-operations > li + li { padding-top: 5px; }
-.catalog-operations > li + li::before { content: ''; position: absolute; top: 0; left: 0; right: 10px; height: 2px; background: linear-gradient(to right, var(--color-background) 0 5px, transparent 5px 13px) left center / 13px 100% repeat-x; pointer-events: none; }
-.catalog-operations > li:has(> .catalog-operation > summary[aria-expanded="true"], > .catalog-operation-action[aria-current="page"])::before,
-.catalog-operations > li:has(> .catalog-operation > summary[aria-expanded="true"], > .catalog-operation-action[aria-current="page"]) + li::before { display: none; }
+/* Reuse the category tree elbows; the final row ends at its rounded branch. */
+.catalog-operations { --color-tree-line: var(--color-primary); list-style: none; padding: 6px 0 4px; margin: 0; }
+.catalog-operations.tree-children > .tree-branch { --tree-branch-gap: 0px; padding: 4px 0; }
+.catalog-operations.tree-children > .tree-branch:first-child { --tree-branch-gap: 6px; }
+.catalog-operations.tree-children > .tree-branch::after { top: calc(50% - 7px); }
+.catalog-operations.tree-children > .tree-branch:last-child::before { bottom: calc(50% + 4px); height: auto; }
 .catalog-operation > summary, .catalog-operation-action { min-height: var(--navigation-control-size); padding: 9px 8px 9px 16px; border-radius: 4px; font-size: 12px; font-weight: 700; line-height: 1.45; }
 .catalog-operation-action { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; color: var(--color-catalog-foreground); text-align: left; }
 .catalog-action-icon { display: grid; place-items: center; flex: 0 0 32px; margin-left: auto; color: var(--color-primary); }
