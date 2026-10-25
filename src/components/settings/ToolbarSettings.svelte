@@ -33,7 +33,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; color: var(--color-foreground); container-type: inline-size; }
-  legend { padding: 0 10px; font-size: 14px; font-weight: 700; }
+  legend { padding: 0 10px; color: var(--color-catalog-active-foreground); font-size: 14px; font-weight: 700; }
   .groups { columns: 3; column-gap: 10px; }
   .button-group { display: inline-block; box-sizing: border-box; width: 100%; min-width: 0; margin: 0 0 10px; padding: 10px; break-inside: avoid; border-radius: 4px; background: var(--color-surface); color: var(--color-catalog-foreground); }
   h3 { margin: 0 0 10px; padding: 0 10px; color: var(--color-accent); font-size: 14px; line-height: 2; font-weight: 700; }
