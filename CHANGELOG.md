@@ -416,6 +416,14 @@ fix(ui): align assistant composer with pane controls
 
 ```
 
+<!-- changelog-commit:ba6dfcd35bf1bfe8412fe203354d64acd61ca1f2 -->
+### Commit [`ba6dfcd`](https://github.com/superhero/operations.superduper.solutions/commit/ba6dfcd35bf1bfe8412fe203354d64acd61ca1f2)
+
+```text
+fix(ui): grow assistant input with the message
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
