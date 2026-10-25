@@ -32,7 +32,7 @@ Then('the pane switches between settings and assistant without losing its sessio
   const aiButton = header.getByRole('button', { name: 'AI assistant', exact: true });
   const settingsButton = header.getByRole('button', { name: 'Settings', exact: true });
   const headerPositions = await Promise.all([aiButton.boundingBox(), settingsButton.boundingBox()]);
-  expect(headerPositions[0].x + headerPositions[0].width).toBeLessThan(headerPositions[1].x);
+  expect(headerPositions[0].x + headerPositions[0].width).toBeCloseTo(headerPositions[1].x, 2);
   await expect(aiButton.locator('.material-symbols-rounded')).toHaveText('robot');
   await aiButton.click();
   const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
