@@ -246,7 +246,7 @@ summary::-webkit-details-marker { display: none; }
 .catalog-operations > li:has(> .catalog-operation > summary[aria-expanded="true"], > .catalog-operation-action[aria-current="page"]) + li::before { display: none; }
 .catalog-operation > summary, .catalog-operation-action { min-height: var(--navigation-control-size); padding: 9px 8px 9px 16px; border-radius: 4px; font-size: 12px; font-weight: 500; line-height: 1.45; }
 .catalog-operation-action { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; color: var(--color-catalog-foreground); text-align: left; }
-.catalog-action-icon { display: grid; place-items: center; flex: 0 0 32px; margin-left: auto; }
+.catalog-action-icon { display: grid; place-items: center; flex: 0 0 32px; margin-left: auto; color: var(--color-primary); }
 .catalog-operation > summary > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .catalog-group > summary[aria-expanded="true"] { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
 .catalog-operation > summary[aria-expanded="true"], .catalog-operation-action[aria-current="page"] { background: var(--color-catalog-operation-active); color: var(--color-catalog-operation-active-foreground); }
