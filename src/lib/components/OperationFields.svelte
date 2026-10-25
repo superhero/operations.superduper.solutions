@@ -19,7 +19,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     fieldError?: InputValidationError | null; portalZIndex?: number;
   } = $props();
   const locations = [{ key: "path", label: "Path" }, { key: "query", label: "Query" },
-    { key: "header", label: "Headers" }, { key: "body", label: "Request body" }] as const;
+    { key: "header", label: "Headers" }, { key: "body", label: "Request body" }, { key: "params", label: "Parameters" }] as const;
   let fieldHelp = $state<string[]>([]);
   let drafts = $state<Record<string, string>>({});
   let includedValues = $state<InputValues>({});

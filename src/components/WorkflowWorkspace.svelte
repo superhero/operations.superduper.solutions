@@ -61,6 +61,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowReferenceNode from "./workflows/WorkflowReferenceNode.svelte";
   import WorkflowRun from "./workflows/WorkflowRun.svelte";
   import type { CredentialBinding } from "$lib/secrets/types.ts";
+  import type { NativeWorkflowBinding } from "$lib/secrets/native-runtime-config.ts";
   import Modal from "$lib/components/Modal.svelte";
   import { editAssistantWorkspace } from "$lib/assistant/workspace.ts";
   import type { AssistantEdit, AssistantPort } from "$lib/assistant/tools.ts";
@@ -700,11 +701,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function describeWorkflow() { descriptionError = ""; descriptionOpen = true; }
 
-  function bindRunCredential(path: string[], binding: CredentialBinding) {
+  function bindRunCredential(path: string[], binding: CredentialBinding | NativeWorkflowBinding) {
     const update = <T extends { id: string; data: unknown }>(items: T[], trail: string[]): T[] => items.map(node => {
       if (node.id !== trail[0]) return node;
       const data = node.data as Record<string, unknown>;
-      if (trail.length === 1) return { ...node, data: { ...data, credentialBinding: structuredClone(binding) } };
+      if (trail.length === 1) return { ...node, data: { ...data, ["runtime" in binding ? "nativeBinding" : "credentialBinding"]: structuredClone(binding) } };
       const snapshot = data.snapshot as WorkflowDocument | undefined;
       return snapshot ? { ...node, data: { ...data, snapshot: { ...snapshot, nodes: update(snapshot.nodes, trail.slice(1)) } } } : node;
     });
@@ -1289,7 +1290,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <Modal bind:open={runOpen} size="wide" title={`Run workflow: ${runDocument?.name ?? name}`}
   onCloseAutoFocus={(event) => { event.preventDefault(); void tick().then(focusCanvas); }}>
-  {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} />{/if}
+  {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} onNativeBindingChange={bindRunCredential} />{/if}
 </Modal>
 
 <Modal bind:open={replacementOpen} title="Unsaved changes" description={`“${name}” has unsaved changes. Save them before replacing this workflow?`} initialFocus={() => cancelReplacement} onCloseAutoFocus={restoreReplacementFocus}>

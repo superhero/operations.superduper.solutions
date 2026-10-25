@@ -19,7 +19,7 @@ const branch = (page, id, root) => (root ? catalog(page).locator(`[data-catalog-
 const heading = (page, id, root) => branch(page, id, root).locator(':scope > .catalog-group > summary');
 const operation = (page, id) => catalog(page).locator(`[data-operation-id="${id}"] > .catalog-operation-action`);
 
-Then('Codex schema settings preserve native protocol data and block execution', async function () {
+Then('Codex schema settings preserve native data and guard unsupported methods', async function () {
   const page = this.page;
   await setMode(page, 'settings');
   await page.locator('summary[aria-label="Schemas"]').click();
@@ -53,12 +53,16 @@ Then('Codex schema settings preserve native protocol data and block execution', 
   await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' });
   await openCatalog(page);
-  await searchOperations(page, 'thread/start');
-  const start = operation(page, 'codex:thread/start');
+  await searchOperations(page, 'thread/fork');
+  const start = operation(page, 'codex:thread/fork');
   await expect(start).toBeVisible();
   await expect(start).toHaveAttribute('aria-disabled', 'true');
   await start.press('Enter');
   await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+  await searchOperations(page, 'thread/start');
+  const reviewed = operation(page, 'codex:thread/start');
+  await expect(reviewed).toBeVisible(); await expect(reviewed).not.toHaveAttribute('aria-disabled', 'true');
+  await reviewed.press('Enter'); await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
 });
 
 async function expand(page, id, root) {

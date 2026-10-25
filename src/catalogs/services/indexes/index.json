@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "ee36c9ba58f35941f26b3243c28ba9ac913cea524a1a79490fb296445fe877ff",
+  "adapterRevision": "dfa78be53b72432098135633330e9bb7d5d3e183a9b06120c366cbc649501f26",
   "indexes": [
     {
       "id": "anthropic",
@@ -2966,16 +2966,16 @@
     {
       "id": "codex",
       "sourceRevision": "ef2cf80a7c1e02e63d1ff3565267f3faf1cdcaed315d3717b085de6eb6d7de16",
-      "bytes": 35155,
-      "compressedBytes": 2675,
-      "sha256": "14b12bf8e09f8f373897f5d88f6d078645c2060130153ed025340a9e0532a107",
+      "bytes": 33427,
+      "compressedBytes": 2704,
+      "sha256": "f1d823c86f3dc10984307d9a1a36ddd0879c578f417ad52d73a2978fc6df34de",
       "summary": {
         "name": "OpenAI / Codex / App Server",
         "serverUrl": "",
         "description": "Codex App Server JSON-RPC protocol for authentication, threads, turns, approvals and streamed agent events. Requires a Codex connector; execution is not enabled yet.",
         "operationCount": 105,
         "protocol": "json-rpc",
-        "unavailableCount": 105
+        "unavailableCount": 102
       }
     },
     {

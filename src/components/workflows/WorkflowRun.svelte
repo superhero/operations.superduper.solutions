@@ -24,18 +24,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
   import { WorkflowResponseError, workflowExecutionForOperation, type WorkflowResponse } from "$lib/workflow-execution.ts";
   import type { ResponseProgress } from "$lib/workflow-response-stream.ts";
+  import type { NativeRequest, NativeResponse, NativeInteraction } from "$lib/native-agent-contract.ts";
+  import type { NativeWorkflowBinding } from "$lib/secrets/native-runtime-config.ts";
+  import { prepareNativeRequest } from "$lib/native-operation-input.ts";
+  import { replyNativeInteraction } from "$lib/secrets/client.ts";
+  import NativeRuntimeSelector from "$lib/components/NativeRuntimeSelector.svelte";
 
-  let { document, onClose, startingNodeId, onBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
-    startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void } = $props();
+  let { document, onClose, startingNodeId, onBindingChange = () => {}, onNativeBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
+    startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void;
+    onNativeBindingChange?: (path: string[], binding: NativeWorkflowBinding) => void } = $props();
   const operationFormId = $props.id();
   let runner: ReturnType<typeof createWorkflowRunner> | undefined;
   let view = $state<WorkflowStep>();
   let values = $state<InputValues>({});
   let credentialBinding = $state<CredentialBinding>();
+  let nativeBinding = $state<NativeWorkflowBinding>(), nativeApprovals = $state<NativeInteraction[]>([]);
   let selected = $state("");
   let error = $state("");
   let fieldError = $state<InputValidationError | null>(null);
-  let prepared = $state<ReturnType<typeof prepareRequest> | null>(null);
+  let prepared = $state<ReturnType<typeof prepareRequest> | NativeRequest | null>(null);
   let failedResponse = $state<WorkflowResponse | null>(null);
   let operationDetails = $state(false);
   let operationDescription = $state(false);
@@ -48,7 +55,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let disposed = false;
   let history = $state<WorkflowExecution[]>([]);
   let heading = $state<HTMLHeadingElement>();
-  const destination = $derived(view?.kind === "operation" ? workflowExecutionForOperation(view.operation) : undefined);
+  const destination = $derived(view?.kind === "operation" && view.operation.protocol !== "json-rpc" ? workflowExecutionForOperation(view.operation) : undefined);
 
   let processingResults = $state<ReturnType<typeof createWorkflowRunner>["processingResults"]>([]);
   let processingLocked = $state(false);
@@ -68,6 +75,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     executed = false;
     retry = false;
     responseProgress = null;
+    nativeApprovals = [];
     try
     {
       const next = await runner!.nextAsync();
@@ -75,6 +83,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       view = next;
       processingResults = runner!.processingResults;
       credentialBinding = view.kind === "operation" ? view.credentialBinding : undefined;
+      nativeBinding = view.kind === "operation" ? view.nativeBinding : undefined;
       values = view.kind === "operation" ? { ...view.values } : {};
       selected = view.kind === "choice" ? view.choices[0]?.id ?? "" : "";
       void tick().then(() => heading?.focus());
@@ -108,10 +117,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try
     {
       const submittedValues = { ...values };
-      if (!view.vaultVariables?.length) prepared = prepareRequest(view.operation, submittedValues);
+      if (!view.vaultVariables?.length) prepared = view.operation.protocol === "json-rpc" ? prepareNativeRequest(view.operation, submittedValues) : prepareRequest(view.operation, submittedValues);
       const visitId = view.id;
       const result = await runner!.submit(submittedValues, credentialBinding ?? null, progress => {
         if (!disposed && view?.kind === "operation" && view.id === visitId && sending) responseProgress = progress;
+      }, nativeBinding ?? null, progress => {
+        if (!disposed && view?.kind === "operation" && view.id === visitId && sending && progress.kind === "approval")
+          nativeApprovals = [...nativeApprovals, progress.interaction];
       });
       if (!disposed) { prepared = result.request; history = [...history, result]; executed = true; retry = false; }
     }
@@ -120,6 +132,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (disposed) return;
       error = cause instanceof Error ? cause.message : "The operation could not run.";
       retry = !(cause instanceof InputValidationError);
+      if (view?.kind === "operation" && view.operation.protocol === "json-rpc" && !(cause instanceof InputValidationError)) { fatal = true; retry = false; }
       if (cause instanceof WorkflowResponseError) failedResponse = cause.response;
       if (cause instanceof InputValidationError)
       {
@@ -129,7 +142,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         globalThis.document.getElementById(`run-${cause.fieldKey}`)?.focus();
       }
     }
-    finally { busy = false; sending = false; responseProgress = null; }
+    finally { busy = false; sending = false; responseProgress = null; nativeApprovals = []; }
   }
 
   function edit(field: InputField, value: string | null | undefined) {
@@ -145,8 +158,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 </script>
 
-{#snippet responseDetails(response: WorkflowResponse, label: string)}
+{#snippet responseDetails(response: WorkflowResponse | NativeResponse, label: string)}
   <section class="run-response" aria-label={label}>
+    {#if "protocol" in response}
+      <p class="run-status">Native operation completed</p>
+      <JsonView value={response.result} label={`${label} JSON`} />
+    {:else}
     <p class="run-status">HTTP {response.status}{response.statusText ? ` ${response.statusText}` : ""}</p>
     <section class="run-response-body" aria-label="Response body">
       {#if response.body === null}<p class="hint">{response.redacted ? "Sensitive response data was withheld." : "No response body."}</p>
@@ -154,6 +171,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {:else if typeof response.body === "string"}<pre>{response.body}</pre>
       {:else}<JsonView value={response.body} label={`${label} JSON`} />{/if}
     </section>
+    {/if}
   </section>
 {/snippet}
 
@@ -192,6 +210,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       <Reveal open={operationDetails} id="run-operation-details">{#key view.id}<OperationReport operation={view.operation} />{/key}</Reveal>
       <p class="hint">{view.workflowName}</p>
+      {#if view.operation.protocol === "json-rpc"}
+        {#key view.id}<NativeRuntimeSelector operation={view.operation} initial={view.nativeBinding} disabled={busy || executed}
+          onChange={binding => { nativeBinding = binding; if (binding && view?.kind === "operation") onNativeBindingChange(view.bindingPath, binding); }} />{/key}
+      {/if}
       {#if view.operation.responseStream}
         <p class="run-stream-progress" role="status" aria-label="Response progress">{sending
           ? responseProgress ? `Receiving response · ${responseProgress.events} updates` : "Waiting for response…" : ""}</p>
@@ -240,13 +262,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </details>
   {/if}
   {#if failedResponse}{@render responseDetails(failedResponse, "Operation response")}{/if}
+  {#each nativeApprovals as prompt (prompt.token)}
+    <section aria-label="Codex approval" class="run-response">
+      <h3>{prompt.kind === "command" ? "Allow this command?" : "Allow this file change?"}</h3>
+      {#if prompt.command}<pre>{prompt.command}</pre>{/if}
+      {#if prompt.cwd}<p class="hint">Workspace: {prompt.cwd}</p>{/if}
+      {#if prompt.reason}<p>{prompt.reason}</p>{/if}
+      {#each [{ label: "Allow once", decision: "accept" }, { label: "Decline", decision: "decline" }] as choice}
+        <button type="button" onclick={() => {
+          if (!nativeBinding) return;
+          replyNativeInteraction(nativeBinding.runtime.id, prompt.token, choice.decision as "accept" | "decline");
+          nativeApprovals = nativeApprovals.filter(value => value.token !== prompt.token);
+        }}>{choice.label}</button>
+      {/each}
+      <button type="button" onclick={() => runner?.cancelPending()}>Cancel turn</button>
+    </section>
+  {/each}
   {#if prepared && !executed}<div class="json-report" role="region" aria-label="Prepared request"><pre>{JSON.stringify(prepared, null, 2)}</pre></div>{/if}
   {#if history.length}
     <section class="run-results" aria-label="Workflow results">
       <h3>Operation results</h3>
       {#each [...history].reverse() as result (result.step)}
         <details open={result.step === history.at(-1)?.step}>
-          <summary>{result.step}. {result.operation.name} · {result.response.status}</summary>
+          <summary>{result.step}. {result.operation.name} · {"protocol" in result.response ? "Completed" : result.response.status}</summary>
           {@render responseDetails(result.response, `Step ${result.step} response`)}
           <div class="json-report" role="region" aria-label={`Step ${result.step} prepared request`}><pre>{JSON.stringify(result.request, null, 2)}</pre></div>
         </details>
@@ -263,7 +301,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <span>Proceed</span><MaterialIcon name="start" size={20} />
       </button>
     {:else if view?.kind === "operation" && !fatal && !executed}
-      <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy}>
+      <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy || view.operation.protocol === "json-rpc" && !nativeBinding}>
         <span>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</span><MaterialIcon name="start" size={20} />
       </button>
     {/if}

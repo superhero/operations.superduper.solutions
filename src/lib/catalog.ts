@@ -11,6 +11,8 @@ import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile, type ResponseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile, type PrivatePathProfile } from "./server-url.ts";
 import { codexExecutionLimitation, type NativeRpcContract } from "./native-rpc.ts";
+import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
+import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -36,7 +38,7 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
   name: string;
   label: string;
   description: string;
-  location: "path" | "query" | "header" | "body";
+  location: "path" | "query" | "header" | "body" | "params";
   required: boolean;
   schema?: InputSchema;
 };
@@ -433,7 +435,7 @@ export function installOperationModel(model: OperationModel): Operation {
     || model.operation.deferred || descriptor.method !== model.operation.method || descriptor.path !== model.operation.path
     || (model.protocol === "json-rpc" ? catalog.execution.kind !== "json-rpc" || model.operation.protocol !== "json-rpc"
       || model.operation.rpc?.method !== descriptor.path || model.operation.rpc?.version !== (catalog.document.info as { version?: string })?.version
-      || model.operation.unavailableReason !== codexExecutionLimitation || model.origin !== undefined
+      || model.operation.unavailableReason !== (isNativeWorkflowMethod(descriptor.path) && model.operation.rpc?.version === nativeRuntimeVersion ? undefined : codexExecutionLimitation) || model.origin !== undefined
       : catalog.execution.kind !== "http" || model.operation.protocol === "json-rpc")
     || !Number.isSafeInteger(model.bytes) || model.bytes < 0)
     throw new Error("The schema changed while its operation was loading. Try again.");

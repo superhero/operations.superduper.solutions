@@ -15,12 +15,16 @@ import { isBasicCredentialReference, isOAuth1CredentialReference, uploadSessionS
 import { executeVaultOperation } from "./secrets/vault-executor.ts";
 import { readWorkflowResponseBody, WorkflowBodyError } from "./workflow-response-body.ts";
 import { workflowResponseLifetime, responseAccept, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
+import type { NativeExecutionResult, NativeProgressCallback } from "./native-agent-contract.ts";
+import type { NativeWorkflowBinding } from "./secrets/native-runtime-config.ts";
 
 export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown;
   bodyType?: "binary"; mediaType?: string; transportMediaType?: string; stream?: ResponseProgress; redacted?: boolean };
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
+export type AnyWorkflowExecutionResult = WorkflowExecutionResult | NativeExecutionResult;
 export type WorkflowExecutor = {
   execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext, onProgress?: ResponseProgressCallback): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
+  executeNative?(operation: Operation, values: InputValues, binding: NativeWorkflowBinding, signal?: AbortSignal, progress?: NativeProgressCallback): Promise<NativeExecutionResult>;
 };
 export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: InputValues,
   context: CredentialExecutionContext, signal?: AbortSignal, onProgress?: ResponseProgressCallback) => Promise<WorkflowExecutionResult>;
@@ -145,6 +149,10 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
 {
   const anonymous = createWorkflowRequestExecution();
   return {
+    async executeNative(operation, values, binding, signal, progress) {
+      const { executeNativeWorkflow } = await import("./secrets/native-workflow-executor.ts");
+      return executeNativeWorkflow(operation, values, binding, signal, progress);
+    },
     async execute(operation, values, signal, context, onProgress) {
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)

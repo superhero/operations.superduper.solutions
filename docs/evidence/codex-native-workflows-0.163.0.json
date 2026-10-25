@@ -1,0 +1,232 @@
+{
+  "date": "2026-10-25",
+  "task": "Bounded Codex native workflows",
+  "baseCommit": "5e1b47e41a88463da909d8243dc1b6baf0f2f9f6",
+  "nativeVersion": "0.163.0",
+  "profile": "codex-stdio-paired-v1",
+  "binarySha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "host": "sds-01",
+  "resourceBoundary": {
+    "cpu": 4,
+    "memoryBytes": 17179869184,
+    "additionalSwapBytes": 0,
+    "pids": 512,
+    "gpu": 0
+  },
+  "focusedSource": {
+    "uniquePassed": 24,
+    "newNativePassed": 12,
+    "cases": [
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Public login waits for completion and account confirmation (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: An owned turn waits for explicit approval and terminal output (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Cancellation interrupts only the owned turn (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Source changes invalidate an outstanding approval and result (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Disconnect never replays a dispatched native turn (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Failed and interrupted native terminals cannot succeed (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Internal login and foreign threads are rejected (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Early login completion remains correlated (@native-agent)"
+      },
+      {
+        "file": "src/native-runtime.feature",
+        "name": "Feature: Explicit private native runtime pairing Scenario: The paired channel rejects arbitrary methods and initialization overrides (@native-runtime)"
+      },
+      {
+        "file": "src/native-runtime.feature",
+        "name": "Feature: Explicit private native runtime pairing Scenario: Concurrent responses retain their owned request identities (@native-runtime)"
+      },
+      {
+        "file": "src/native-runtime.feature",
+        "name": "Feature: Explicit private native runtime pairing Scenario: Private initialization reads the account without publishing native frames (@native-runtime)"
+      },
+      {
+        "file": "src/native-runtime.feature",
+        "name": "Feature: Explicit private native runtime pairing Scenario: Runtime workspace account and source changes revoke pairing authority (@native-runtime)"
+      },
+      {
+        "file": "src/native-runtime.feature",
+        "name": "Feature: Explicit private native runtime pairing Scenario: Cancelled and timed out requests stop owned work without replay (@native-runtime)"
+      },
+      {
+        "file": "src/native-runtime.feature",
+        "name": "Feature: Explicit private native runtime pairing Scenario: Vault lock and disconnect release only the owned native child (@native-runtime)"
+      },
+      {
+        "file": "src/native-runtime.feature",
+        "name": "Feature: Explicit private native runtime pairing Scenario: A late pairing response cannot survive vault invalidation (@native-runtime)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Private native management binds canonical sources account and encrypted profiles (@native-agent)"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Native graph mappings carry a thread ID into a terminal turn (@native-agent)"
+      },
+      {
+        "file": "src/native-rpc.feature",
+        "name": "Feature: Native RPC operation models Scenario: Pinned Codex requests hydrate with exact parameter reference closures (@native-rpc)"
+      },
+      {
+        "file": "src/native-rpc.feature",
+        "name": "Feature: Native RPC operation models Scenario: Native policy identity binds the exact method version and schema (@native-rpc)"
+      },
+      {
+        "file": "src/workflow-runner.feature",
+        "name": "Feature: Step through workflow requests with explicit test responses Scenario: Both example catalogs use real HTTP execution by default"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Unimplemented interactions stop an owned turn (@native-agent)"
+      },
+      {
+        "file": "src/native-rpc.feature",
+        "name": "Feature: Native RPC operation models Scenario: Hydrated native methods never enter HTTP or credential execution (@native-rpc)"
+      },
+      {
+        "file": "src/workflow-runner.feature",
+        "name": "Feature: Step through workflow requests with explicit test responses Scenario: Inject HTTP execution for transport tests"
+      },
+      {
+        "file": "src/native-agent.feature",
+        "name": "Feature: Owned native Codex workflows Scenario: Cancellation during account confirmation cannot save a new profile (@native-agent)"
+      }
+    ]
+  },
+  "productionWorkerBrowser": {
+    "uniquePassed": 4,
+    "cases": [
+      {
+        "file": "tests/browser/native-agent.feature",
+        "name": "Feature: Execute a native Codex workflow from its private runtime Scenario: Browser login remains pending until completion and can be cancelled (@native-runtime-ui @native-agent-ui @native-test-tls @service-defaults)"
+      },
+      {
+        "file": "tests/browser/catalog-hierarchy.feature",
+        "name": "Feature: Nested operation catalog Scenario: Codex schemas retain native inspection and expose only reviewed workflow methods (@service-defaults)"
+      },
+      {
+        "file": "tests/browser/native-agent.feature",
+        "name": "Feature: Execute a native Codex workflow from its private runtime Scenario Outline: Device login and a mapped native workflow use the production worker [Examples 1, row 1] (@native-runtime-ui @native-agent-ui @native-test-tls @service-defaults)"
+      },
+      {
+        "file": "tests/browser/native-agent.feature",
+        "name": "Feature: Execute a native Codex workflow from its private runtime Scenario Outline: Device login and a mapped native workflow use the production worker [Examples 1, row 2] (@native-runtime-ui @native-agent-ui @native-test-tls @service-defaults)"
+      }
+    ],
+    "widths": [
+      1280,
+      390
+    ]
+  },
+  "realRuntime": {
+    "passed": 1,
+    "cases": [
+      {
+        "file": "tests/evaluations/native-runtime.feature",
+        "name": "Feature: Qualify the production paired runtime with the pinned Codex binary Scenario: The real pinned runtime accepts the isolated agent permission profile (@native-runtime-ui @service-defaults @native-test-tls @native-real-runtime @native-agent-profile)"
+      }
+    ],
+    "providerLogin": false,
+    "providerInference": false,
+    "liveToolSandboxQualified": false,
+    "ownedChildrenStarted": 2,
+    "ownedChildrenStopped": 2
+  },
+  "typecheck": {
+    "errors": 0,
+    "existingWarnings": 1
+  },
+  "productionBuild": "passed",
+  "schemaIndexesVerified": 224,
+  "limitations": [
+    "No provider credentials, entitlement or live inference qualification",
+    "Requires operator-provisioned reachable HTTPS/TLS/origin/private home/workspace and agent opt-in",
+    "File-change/extra-permission/MCP interactions are unavailable; command approval is one-off",
+    "Physical mobile, Safari and Firefox qualification deferred"
+  ],
+  "implementationSha256": {
+    "build/schema-indexes.mjs": "ad85a181b51f253ce0ad37bdde1bbca46283191f690e88967a549834a1f18f51",
+    "companions/codex/agent.mjs": "a99c39a9ebc48009d13cd56af6f84b3fe06eed5bd2493e514c13631e639ed79e",
+    "companions/codex/host.mjs": "da426cf20b968ae2ab0b0ed65094015e157f4e33322177c4107de1988f971c3a",
+    "companions/codex/runtime.mjs": "c8b13b2df872f484a300a064f2e00661c2f2fb3d626bd5849cc50f48807134b7",
+    "companions/codex/server.mjs": "9cddf4d30ffe34b5ea781726e75fa4ad7cd9c2a0c1d0fdf52d1721c77f9fa913",
+    "src/components/WorkflowWorkspace.svelte": "ff0c278df5234a622eebaaa82d1492b7908f84fac9eac2d572b43b8329ffe445",
+    "src/components/settings/NativeRuntimeSettings.svelte": "c6daa67c9ccaa19227da461263d4b54f9295658ae8cbfe7d0dab8b73e4b742bd",
+    "src/components/workflows/WorkflowRun.svelte": "b3d50887b82eb85383c0b704171c26e8c5dbf743d834e96355964b6dac03600f",
+    "src/lib/catalog.ts": "d8d3d94d1a9bb727b5ef4a47200e037785f7e9d08aaad0e5fe8cbdb4f89d0f29",
+    "src/lib/codex-schema.ts": "72af15ef4abbd300675b5e33a7b7776a4abd4892b20ef23d1b7c76ad865b51fc",
+    "src/lib/components/NativeRuntimeSelector.svelte": "220a6ac07a2fa69e2d28b842ecd5d1d39c05e628a30c98b63ababb868a9afcab",
+    "src/lib/components/OperationFields.svelte": "cac651ee62a195a56f200b4c6f0ba52ebe45b0833cb9b9c71b4aeb9f2b264089",
+    "src/lib/native-agent-contract.ts": "e87b9231de4d5ee2969b0529d6edd4187ac7bce423730dd5e5ca74ef87988a1a",
+    "src/lib/native-operation-input.ts": "c2d7d6676cc76056934c04c551fcb1f2812fdc842a4011945128a866327192e0",
+    "src/lib/native-rpc.ts": "d2cc0ef33c84557b73ef2e787ade3daf2f1f177075345fdb7cd007172094b50d",
+    "src/lib/native-runtime-contract.ts": "475e8d520ab20ddc0ff288e61094ca352d0b01ac59e6c584d2281bc46d14ba50",
+    "src/lib/secrets/client.ts": "59fae107a13085c8273933fb13a7354a2de0dae929fd26308590f5133aab3477",
+    "src/lib/secrets/native-agent.ts": "f06b5e6e931dfa9599d2de4cab3d8758dc0fbd3f0345f1314100c8c50a7597ea",
+    "src/lib/secrets/native-runtime-client.ts": "1538f42fa501d5402fb41a4094e222b23d29f3d0cfdd52db619d37a20e57d598",
+    "src/lib/secrets/native-runtime-config.ts": "0e1c164dc3d8ec1eadf5a71bf6ef6a482f3ed6d84129410e5cf09877a1124176",
+    "src/lib/secrets/native-runtime.ts": "4f97d6380779a55f4443e3db0e4c77c26063099bf3bd8280d8375d4dea2c6378",
+    "src/lib/secrets/native-workflow-executor.ts": "aedaaa6935800357694b81c12f16c7b6705e44dfbedb7cf556fe0fc3fd0ffebb",
+    "src/lib/secrets/protocol.ts": "308beaf353343b393c5c6b0d709dbfb34633f066ebf6f07ccf30670d6f52127a",
+    "src/lib/secrets/session.ts": "5a841c92b8627e708db13755dbda39ae955cb34ac526f17892f1450a699474d8",
+    "src/lib/secrets/types.ts": "051c668595d8b76e5544092424536baa65f13ab9d1b088ec6c02f84aa73a3347",
+    "src/lib/secrets/vault.worker.ts": "47da200e1d0f18e70f046b6026f0e7a1e04c962cc144e7c8536d9e5335bf31f7",
+    "src/lib/workflow-document.ts": "529227579951e9bf3573ed6351d36edd4d1924660514e62382d8f472028289ab",
+    "src/lib/workflow-execution.ts": "8e31c906e0b68a33cffb5f92f3bb6eed09a2a417649267f7a89a0247274259c0",
+    "src/lib/workflow-graph.ts": "53b74497d25c08542ec9cd7903480f46074df40b5486d0eb67ca51e195468c83",
+    "src/lib/workflow-runner.ts": "5664684f2ca8b1858105ebe068aa0bce011996c1a981c51d1fa2942936ca84c3",
+    "src/native-agent.feature": "914a1e353f909feacc131e63bd3ccf3e1cf729a4d6a146de232b5f6a7fe18e3b",
+    "src/native-agent.test.mjs": "53a1812236dd451bb3843d1ed7f072468f8c50d302b82b610ad4ac9040b601fe",
+    "src/native-rpc.test.mjs": "6839ac2fb76a51a0add6f7739c75b7b2febef5e07b9c5915382a3ab686df7f86",
+    "src/native-runtime.test.mjs": "4f52a5960b28f81ab68d13f1376cc1117cf7e4be5b006d3fd1a7e6d916240ec5",
+    "tests/browser/catalog-hierarchy.feature": "d864c7c1b3a03303fb772b53a996d212ddcdf1231968acfea39fed8588deb1e7",
+    "tests/browser/catalog-hierarchy.steps.mjs": "8cb55591cbe1690398d83b087f6a7306f5ee0e7c78ff71923a4ccfd954e57d47",
+    "tests/browser/fixture-bundles.mjs": "80873a9c30b26fbd79ab3a19af45f1086667379b42a9af8c31a41e8f1abc119a",
+    "tests/browser/native-agent.feature": "59eabb1c587f0430f1b3a8dd725edcd20b24ec73ad26c5910e5141608112df98",
+    "tests/browser/native-agent.steps.mjs": "290b57465f56aeb105ed92744ed8bb295c6bd1d94bfb6498fae756d5e0455116",
+    "tests/browser/native-runtime.fixture.mjs": "da7ca3b16fecb2616ae5c182a57564a0035b18ef7109dfc5fd064d4b69dc6123",
+    "tests/browser/native-runtime.steps.mjs": "c4ce5f1bbc51f466aed3b2696c3893ff8a477de57c4dbc6e3baef7dc961c498a",
+    "tests/browser/support.mjs": "cac12bcd0e10872d4bb70875d68ef777618e498b550ea89d7d1a56df4478d1d7",
+    "tests/evaluations/native-runtime.feature": "348c7c74f0d44ae099d247ead7cf6078d0020c2f57fb026c44f19a352554b44a",
+    "tests/native-agent.fixture.mjs": "ea3da3d3a3c36c84b041b134671d8f5903a633442d665ce5ecc4f4e6a89c8f40",
+    "tests/native-runtime.fixture.mjs": "43594e393afeefd9de02ef73d829690910e0955e110cf05fd669c1d63fbc6df0",
+    "tests/native-vault.fixture.mjs": "52164f894bd90608dcdc60c62ebdc9d2760d8fc3a2fb4ab38456517b56a20a28",
+    "tests/source-profile.json": "fda4cd6a255c022a417adaa503764802cfd1d9cab0d3707abdc3a72865695cc1"
+  },
+  "schemaPins": {
+    "src/catalogs/services/codex.json.gz": "654e7897bce38ee1bba6feefd5ca871dd9f963bd384dbe3c41799780d0e5ce10",
+    "src/catalogs/services/indexes/codex.json.gz": "218d805c36efd23408c231df1ac0923c5742b6f68821a6401d2c4908e87f251c",
+    "src/catalogs/services/indexes/index.json": "459476824c7c6047a4953ead18c826c24810a85d6364bd6e21d4f618085a02e7"
+  },
+  "nativeClientMethods": 105,
+  "workflowMethods": [
+    "thread/start",
+    "thread/resume",
+    "turn/start"
+  ],
+  "postVerificationEdits": [
+    "Documentation/evidence readback and removal of one trailing blank line in the shared test fixture."
+  ]
+}

@@ -67,8 +67,10 @@ Then('native RPC hydration preserves pinned methods versions and schema referenc
     assert.deepEqual(hydrated.operation, selected);
     assert.equal(hydrated.protocol, 'json-rpc'); assert.equal(hydrated.operation.rpc.version, '0.163.0');
     assert.equal(hydrated.operation.rpc.method, method); assert.equal(hydrated.operation.rpc.result, true);
-    assert.equal(hydrated.operation.unavailableReason, codexExecutionLimitation);
-    assert.equal(hydrated.operation.bodyRequired, false); assert.deepEqual(hydrated.operation.fields, []);
+    const handled = ['thread/start', 'thread/resume', 'turn/start'].includes(method);
+    assert.equal(hydrated.operation.unavailableReason, handled ? undefined : codexExecutionLimitation);
+    assert.equal(hydrated.operation.bodyRequired, false);
+    assert.equal(hydrated.operation.fields.length > 0, handled);
     assert.deepEqual(hydrated.operation.rpc.params, document.definitions.ClientRequest.oneOf
       .find(request => request.properties.method.enum[0] === method).properties.params);
     assert.deepEqual(nativeRpcOperation(JSON.parse(JSON.stringify(hydrated.document)), `codex:${method}`), hydrated.operation);
@@ -212,8 +214,8 @@ Then('native execution remains guarded after model loading and forged page edits
   let requests = 0, credentials = 0;
   const executors = [createWorkflowRequestExecution(() => { requests++; assert.fail('Native HTTP fetch'); }),
     createWorkflowExecution(() => { credentials++; assert.fail('Native HTTP credentials'); })];
-  for (const executor of executors) await assert.rejects(executor.execute(current.operation, {}), /JSON-RPC connector/);
-  assert.throws(() => workflowExecutionForOperation(current.operation), /JSON-RPC connector/);
+  for (const executor of executors) await assert.rejects(executor.execute(current.operation, {}), /native workflow execution/);
+  assert.throws(() => workflowExecutionForOperation(current.operation), /native workflow execution/);
   assert.throws(() => prepareRequest({ ...current.operation, unavailableReason: undefined }, {}), /paired runtime/);
   assert.equal(requests, 0); assert.equal(credentials, 0);
 });

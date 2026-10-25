@@ -1,7 +1,9 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import type { Operation } from "./catalog.ts";
+import type { Operation, InputSchema } from "./catalog.ts";
+import { isNativeWorkflowMethod, nativeWorkflowInputSchema, nativeWorkflowResultTypes } from "./native-agent-contract.ts";
+import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 
 type Document = Record<string, unknown>;
 export type NativeSchema = boolean | Document;
@@ -12,8 +14,10 @@ export type NativeRpcContract = {
   params?: NativeSchema;
   result: NativeSchema;
   error: NativeSchema;
+  workflowParams?: NativeSchema;
+  workflowResult?: NativeSchema;
 };
-export const codexExecutionLimitation = "Codex App Server requires a JSON-RPC connector. Execution is not enabled yet.";
+export const codexExecutionLimitation = "This Codex method is not enabled for native workflow execution.";
 const object = (value: unknown): value is Document => !!value && typeof value === "object" && !Array.isArray(value);
 const schema = (value: unknown): value is NativeSchema => typeof value === "boolean" || object(value);
 const literals = new Set(["default", "example", "examples", "enum", "const"]);
@@ -45,6 +49,10 @@ export function scopeNativeRpcSchema(document: Document, method: string): Docume
   const result: Document = structuredClone({ $schema: document.$schema, info,
     "x-codex-app-server": metadata, definitions: { ClientRequest: { oneOf: [request] },
       JSONRPCResponse: definitions.JSONRPCResponse, JSONRPCError: definitions.JSONRPCError } });
+  const workflow = info.version === nativeRuntimeVersion && isNativeWorkflowMethod(method) ? {
+    params: nativeWorkflowInputSchema(method), result: { $ref: "#/definitions/v2/" + nativeWorkflowResultTypes[method] }
+  } : undefined;
+  if (workflow) result["x-operations-native-workflow"] = workflow;
   const visited = new Set<string>();
   let nodes = 0;
   function walk(value: unknown, depth = 0): void {
@@ -77,6 +85,7 @@ export function scopeNativeRpcSchema(document: Document, method: string): Docume
     }
   }
   walk(request); walk(definitions.JSONRPCResponse); walk(definitions.JSONRPCError);
+  if (workflow) walk(workflow);
   if (new TextEncoder().encode(JSON.stringify(result)).byteLength > 1024 * 1024)
     throw new Error("The native RPC operation model must fit within 1 MiB.");
   return result;
@@ -97,10 +106,16 @@ export function nativeRpcOperation(document: Document, operationId: string): Ope
   const error = definitions.JSONRPCError;
   const errorProperties = object(error) && object(error.properties) ? error.properties : {};
   if (!schema(errorProperties.error)) throw new Error("The native RPC error schema is unavailable.");
+  const workflow = scoped["x-operations-native-workflow"] as { params: ReturnType<typeof nativeWorkflowInputSchema>; result: Document } | undefined;
   return { id: operationId, name: method, description: typeof request.description === "string" ? request.description : "",
     group: "Client requests", method: "RPC", path: method, protocol: "json-rpc",
     rpc: { version: (scoped.info as { version: string }).version, method,
       paramsRequired: (request.required as string[]).includes("params"),
-      ...(schema(properties.params) ? { params: properties.params } : {}), result: responseProperties.result, error: errorProperties.error },
-    fields: [], bodyRequired: false, unavailableReason: codexExecutionLimitation };
+      ...(schema(properties.params) ? { params: properties.params } : {}), result: responseProperties.result, error: errorProperties.error,
+      ...(workflow ? { workflowParams: workflow.params, workflowResult: workflow.result } : {}) },
+    fields: workflow ? Object.entries(workflow.params.properties).map(([name, value]) => ({
+      key: "params:" + name, name, label: name === "threadId" ? "Thread ID" : name === "input" ? "Input" : "Model",
+      description: name === "input" ? 'Text input, for example [{"type":"text","text":"Hello"}].' : name === "model" ? "Optional model name supported by the connected account." : "A thread created by this paired runtime.",
+      location: "params", required: workflow.params.required.includes(name), type: name === "input" ? "array" : "string", schema: value as InputSchema
+    })) : [], bodyRequired: false, ...(!workflow ? { unavailableReason: codexExecutionLimitation } : {}) };
 }

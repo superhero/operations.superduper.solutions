@@ -12,6 +12,7 @@ import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
 import { createJiraBrowserEndpoint } from './jira-companion.fixture.mjs';
+import { createNativeBrowserEndpoint } from './native-runtime.fixture.mjs';
 import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
 import { enterBrowserFeature, releaseDevelopmentResources } from './development-resources.fixture.mjs';
 import { exampleCatalogState } from "./catalog-state.fixture.mjs";
@@ -24,6 +25,7 @@ let browser;
 let server;
 let baseURL;
 let jiraEndpoint;
+let nativeEndpoint;
 
 // These scenarios exercise standalone fixtures, not application startup.
 // Keep UI and startup scenarios on the built application by default.
@@ -61,12 +63,14 @@ BeforeAll(async function () {
     })));
   if (typeof this.parameters.fixtureBundlesFile !== 'string')
     throw new Error('Start browser scenarios with npm run test:browser or node tests/browser/run.mjs.');
-  const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture } =
+  const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture, fixtureChunks = {} } =
     JSON.parse(await readFile(this.parameters.fixtureBundlesFile, 'utf8'));
   const vaultEndpoint = createVaultEndpoint();
   jiraEndpoint = createJiraBrowserEndpoint();
+  nativeEndpoint = createNativeBrowserEndpoint();
   server = createServer((request, response) => {
     if (jiraEndpoint.handle(request, response)) return;
+    if (nativeEndpoint.handle(request, response)) return;
     if (vaultEndpoint(request, response)) return;
     if (new URL(request.url, 'http://localhost').pathname === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
@@ -75,6 +79,9 @@ BeforeAll(async function () {
     } else if (request.url === '/workflow-repository-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(repositoryFixture);
+    } else if (Object.hasOwn(fixtureChunks, request.url.slice(1))) {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(fixtureChunks[request.url.slice(1)]);
     } else if (request.url === '/error-history-storage-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(errorHistoryFixture);
@@ -159,6 +166,7 @@ Before(async function ({ pickle }) {
     ? { cookies: [], origins: [{ origin: baseURL, localStorage: [], indexedDB }] }
     : exampleCatalogState(baseURL, indexedDB);
   this.context = await browser.newContext({ storageState,
+    ignoreHTTPSErrors: pickle.tags.some(tag => tag.name === '@native-test-tls'),
     viewport: { width: 1280, height: 900 },
     hasTouch: pickle.tags.some(tag => tag.name === '@touch-pane'),
     locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light',
@@ -262,6 +270,7 @@ AfterAll(async function () {
     finally { await browser?.close(); }
   } finally {
     await jiraEndpoint?.close();
+    await nativeEndpoint?.close();
     if (server?.listening) await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
   }
 });

@@ -12,6 +12,14 @@ import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passke
   runtimeKey, unwrapVaultKey, wrapVaultKey, validId, canonicalJSON, ownObject } from "./crypto.ts";
 import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.ts";
 import { validateApprovedOperation, approvedOperation } from "./policy.ts";
+import { approvedNativeOperation, type ApprovedNativeOperation } from "./native-rpc-policy.ts";
+import { NativeRuntimeBroker, type NativeRuntimeRuntime } from "./native-runtime.ts";
+import { NativeAgentBroker } from "./native-agent.ts";
+import { nativeAgentMethods, isNativeWorkflowMethod, type NativeDecision, type NativeLoginKind, type NativeProgressCallback,
+  type NativeExecutionResult } from "../native-agent-contract.ts";
+import { nativeHash, storedNativeConnections, validateNativeConnection, validateNativeInput, validateNativeReference,
+  type NativeRuntimeInput, type NativeRuntimeReference } from "./native-runtime-config.ts";
+import { nativeRuntimeProfile, nativeRuntimeVersion, nativeObject, nativeUuid } from "../native-runtime-contract.ts";
 import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed, CredentialResponseError, redactor } from "./execution.ts";
 import { connectionCredentialIds, createHttpConnection, createGitlabHttpConnection, createJiraHttpConnection, httpConnectionLimit, httpConnectionReference, resolveHttpConnection,
@@ -30,7 +38,7 @@ const context = (snapshot: Pick<VaultSnapshot, "id" | "epoch">, item: { id: stri
   ({ vaultId: snapshot.id, epoch: snapshot.epoch, kind: item.kind, id: item.id, revision: item.revision });
 
 function credential(value: VaultCredential): VaultCredential {
-  ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections", "oauthState"]);
+  ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections", "nativeConnections", "oauthState"]);
   if (!validId(value.id) || typeof value.label !== "string" || !value.label.trim() || value.label.length > 120
     || !["bearer", "apiKey", "secret"].includes(value.kind) || typeof value.value !== "string" || !value.value
     || /[^\x21-\x7e]/.test(value.value) || value.value.length > vaultLimits.secretBytes
@@ -39,6 +47,10 @@ function credential(value: VaultCredential): VaultCredential {
   if (value.connections !== undefined) {
     if (!Array.isArray(value.connections) || value.connections.length > 32) throw new VaultError("LIMIT");
     value.connections.forEach(validateHttpConnection);
+  }
+  if (value.nativeConnections !== undefined) {
+    if (!Array.isArray(value.nativeConnections) || value.nativeConnections.length > 32) throw new VaultError("LIMIT");
+    value.nativeConnections.forEach(validateNativeConnection);
   }
   if (value.oauthState !== undefined) {
     if (typeof value.oauthState !== "string" || new TextEncoder().encode(value.oauthState).byteLength > vaultLimits.secretBytes
@@ -73,20 +85,24 @@ async function wrappingKey(envelope: KeyEnvelope, proof: UnlockProof): Promise<C
 export class VaultSession {
   private readonly storage: VaultStorage;
   private readonly assertActive: () => void;
-  private readonly assertSchema: (descriptor: ApprovedOperation) => Promise<void>;
+  private readonly assertSchema: (descriptor: Pick<ApprovedOperation, "fingerprint" | "operation">) => Promise<void>;
   private state: VaultState | undefined;
   private key: CryptoKey | undefined;
   private generation = 0;
   private readonly uploadSessions = new CloudflareUploadSessions();
   private readonly gitlabOAuth: GitlabOAuthBroker;
   private readonly jiraCompanion: JiraCompanionBroker;
+  private readonly nativeRuntime: NativeRuntimeBroker;
+  private readonly nativeAgent: NativeAgentBroker;
   private pending: Pending | undefined;
 
-  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}) {
+  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: Pick<ApprovedOperation, "fingerprint" | "operation">) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}, nativeRuntime: NativeRuntimeRuntime = {}) {
     this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime); this.jiraCompanion = new JiraCompanionBroker(jiraRuntime);
+    this.nativeRuntime = new NativeRuntimeBroker(nativeRuntime);
+    this.nativeAgent = new NativeAgentBroker(this.nativeRuntime);
   }
 
-  lock(): void { this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
+  lock(): void { this.nativeRuntime.clear(); this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -220,6 +236,7 @@ export class VaultSession {
       return value;
     }));
     storedHttpConnections(result);
+    storedNativeConnections(result);
     this.guard(generation); return result;
   }
 
@@ -233,6 +250,160 @@ export class VaultSession {
   }
 
   async connections() { return storedHttpConnections(await this.records()); }
+
+  async nativeConnections() {
+    return storedNativeConnections(await this.records()).map(connection => ({ ...connection, connected: this.nativeRuntime.connected(connection.id) }));
+  }
+
+  private async nativeSelection(selection: Pick<ApprovedNativeOperation, "operation" | "document">): Promise<ApprovedNativeOperation> {
+    const descriptor = await approvedNativeOperation(selection.operation, selection.document);
+    if (descriptor.operation.id !== "codex:account/read" || descriptor.operation.rpc?.method !== "account/read"
+      || descriptor.operation.rpc.version !== nativeRuntimeVersion) throw new VaultError("PERMISSION");
+    await this.assertSchema(descriptor); return descriptor;
+  }
+
+  async pairNativeRuntime(value: NativeRuntimeInput, selection: Pick<ApprovedNativeOperation, "operation" | "document">, signal?: AbortSignal) {
+    const generation = this.generation, input = validateNativeInput(value), descriptor = await this.nativeSelection(selection);
+    const records = await this.records(), all = storedNativeConnections(records), record = records.find(item => item.id === input.pairingKeyId);
+    if (!record || record.oauthState !== undefined) throw new VaultError("PERMISSION");
+    if (all.length >= 32) throw new VaultError("LIMIT");
+    const id = crypto.randomUUID();
+    const guard = async () => { this.guard(generation); await this.assertCurrent(); await this.assertSchema(descriptor); this.guard(generation); };
+    try {
+      const result = await this.nativeRuntime.check(id, input.host, record.value, descriptor.fingerprint, undefined, guard, signal);
+      const config = { id, revision: 1, profile: nativeRuntimeProfile, ...input, keyHash: await nativeHash(record.value),
+        identity: result.identity, modelFingerprint: descriptor.fingerprint, accountType: result.accountType };
+      const connection = validateNativeConnection({ ...config, fingerprint: await nativeHash(config) });
+      record.nativeConnections = [...record.nativeConnections ?? [], connection];
+      await guard(); await this.save(records); this.guard(generation);
+      return { ...connection, connected: true };
+    } catch (error) { this.nativeRuntime.close(id); throw error; }
+  }
+
+  async checkNativeRuntime(value: NativeRuntimeReference, selection: Pick<ApprovedNativeOperation, "operation" | "document">, signal?: AbortSignal) {
+    const generation = this.generation, reference = validateNativeReference(value);
+    try {
+      const descriptor = await this.nativeSelection(selection);
+      const records = await this.records(), connection = storedNativeConnections(records).find(item => item.id === reference.id);
+      if (!connection || connection.revision !== reference.revision || connection.fingerprint !== reference.fingerprint) throw new VaultError("CONFLICT");
+      const record = records.find(item => item.id === connection.pairingKeyId);
+      const { fingerprint, ...config } = connection;
+      if (!record || connection.keyHash !== await nativeHash(record.value) || connection.modelFingerprint !== descriptor.fingerprint
+        || fingerprint !== await nativeHash(config)) { this.nativeRuntime.close(reference.id); throw new VaultError("AUTHORIZATION"); }
+      const guard = async () => { this.guard(generation); await this.assertCurrent(); await this.assertSchema(descriptor); this.guard(generation); };
+      const result = await this.nativeRuntime.check(connection.id, connection.host, record.value, descriptor.fingerprint, connection.identity, guard, signal);
+      if (result.accountType !== connection.accountType) throw new VaultError("AUTHORIZATION");
+      return { ...connection, connected: true };
+    } catch (error) { this.nativeRuntime.close(reference.id); throw error; }
+  }
+
+  async disconnectNativeRuntime(value: NativeRuntimeReference, remove = false) {
+    if (typeof remove !== "boolean") throw new VaultError("INVALID");
+    const reference = validateNativeReference(value), records = await this.records();
+    const connection = storedNativeConnections(records).find(item => item.id === reference.id);
+    if (!connection || connection.revision !== reference.revision || connection.fingerprint !== reference.fingerprint) throw new VaultError("CONFLICT");
+    this.nativeRuntime.close(connection.id);
+    if (remove) {
+      const owner = records.find(item => item.id === connection.pairingKeyId)!;
+      owner.nativeConnections = owner.nativeConnections!.filter(item => item.id !== connection.id);
+      if (!owner.nativeConnections.length) delete owner.nativeConnections;
+      await this.save(records);
+    }
+    return this.nativeConnections();
+  }
+
+  private async nativeWorkflowAuthority(value: NativeRuntimeReference,
+    selections: Pick<ApprovedNativeOperation, "operation" | "document">[], requireEnabled = true) {
+    const generation = this.generation, reference = validateNativeReference(value);
+    if (!Array.isArray(selections) || selections.length !== nativeAgentMethods.length) throw new VaultError("PERMISSION");
+    const descriptors: ApprovedNativeOperation[] = [];
+    for (let index = 0; index < nativeAgentMethods.length; index++) {
+      const descriptor = await approvedNativeOperation(selections[index]!.operation, selections[index]!.document);
+      if (descriptor.operation.id !== "codex:" + nativeAgentMethods[index] || descriptor.operation.rpc?.version !== nativeRuntimeVersion)
+        throw new VaultError("PERMISSION");
+      descriptors.push(descriptor);
+    }
+    const workflowFingerprint = await nativeHash(descriptors.map(descriptor => ({ method: descriptor.operation.rpc!.method, fingerprint: descriptor.fingerprint })));
+    const records = await this.records(), connection = storedNativeConnections(records).find(item => item.id === reference.id);
+    if (!connection || connection.revision !== reference.revision || connection.fingerprint !== reference.fingerprint) throw new VaultError("CONFLICT");
+    const record = records.find(item => item.id === connection.pairingKeyId), { fingerprint, ...config } = connection;
+    if (!record || record.oauthState !== undefined || connection.keyHash !== await nativeHash(record.value)
+      || connection.modelFingerprint !== descriptors.find(item => item.operation.rpc!.method === "account/read")!.fingerprint
+      || fingerprint !== await nativeHash(config) || requireEnabled && connection.workflowFingerprint !== workflowFingerprint) throw new VaultError("AUTHORIZATION");
+    const guard = async () => {
+      this.guard(generation); await this.assertCurrent();
+      for (const descriptor of descriptors) await this.assertSchema(descriptor);
+      this.guard(generation);
+    };
+    await guard(); return { connection, record, records, descriptors, workflowFingerprint, guard };
+  }
+
+  async enableNativeWorkflow(value: NativeRuntimeReference, selections: Pick<ApprovedNativeOperation, "operation" | "document">[]) {
+    const authority = await this.nativeWorkflowAuthority(value, selections, false);
+    const { fingerprint: _old, ...previous } = authority.connection;
+    const config = { ...previous, revision: previous.revision + 1, workflowFingerprint: authority.workflowFingerprint };
+    const connection = validateNativeConnection({ ...config, fingerprint: await nativeHash(config) });
+    authority.record.nativeConnections = authority.record.nativeConnections!.map(item => item.id === connection.id ? connection : item);
+    this.nativeRuntime.close(connection.id); await authority.guard(); await this.save(authority.records);
+    return { ...connection, connected: false };
+  }
+
+  private nativeProgress(records: VaultCredential[], progress?: NativeProgressCallback): NativeProgressCallback {
+    return value => {
+      this.assertActive();
+      const scrub = redactor(records.flatMap(record => [record.value, ...managedGitlabSecrets(record.oauthState ?? "")]).sort((a, b) => b.length - a.length));
+      const safe = scrub.value(value) as typeof value;
+      if (scrub.changed) throw new VaultError("REDACTED"); progress?.(safe);
+    };
+  }
+
+  async loginNativeRuntime(value: NativeRuntimeReference, selections: Pick<ApprovedNativeOperation, "operation" | "document">[],
+    input: { type: NativeLoginKind; credentialId?: string }, signal?: AbortSignal, progress?: NativeProgressCallback) {
+    const authority = await this.nativeWorkflowAuthority(value, selections);
+    nativeObject(input, input.type === "apiKey" ? ["type", "credentialId"] : ["type"]);
+    if (!["apiKey", "chatgpt", "chatgptDeviceCode"].includes(input.type)) throw new VaultError("PERMISSION");
+    let login: unknown = { type: input.type };
+    if (input.type === "apiKey") {
+      const credential = authority.records.find(item => item.id === input.credentialId);
+      if (!credential || credential.oauthState !== undefined || credential.id === authority.record.id) throw new VaultError("PERMISSION");
+      login = { type: "apiKey", apiKey: credential.value };
+    }
+    try {
+      const result = await this.nativeAgent.login(authority.connection, authority.record.value, authority.workflowFingerprint, login,
+        authority.guard, signal, this.nativeProgress(authority.records, progress));
+      await authority.guard();
+      if (signal?.aborted) throw new VaultError("CANCELLED");
+      const { fingerprint: _old, ...previous } = authority.connection;
+      const config = { ...previous, revision: previous.revision + 1, identity: result.identity, accountType: result.accountType };
+      const connection = validateNativeConnection({ ...config, fingerprint: await nativeHash(config) });
+      authority.record.nativeConnections = authority.record.nativeConnections!.map(item => item.id === connection.id ? connection : item);
+      await this.save(authority.records, undefined, undefined, undefined, signal); return { ...connection, connected: true };
+    } catch (error) { this.nativeRuntime.close(value.id); throw error; }
+  }
+
+  async executeNativeRuntime(value: NativeRuntimeReference, selections: Pick<ApprovedNativeOperation, "operation" | "document">[],
+    selection: Pick<ApprovedNativeOperation, "operation" | "document">, input: unknown, signal?: AbortSignal,
+    progress?: NativeProgressCallback): Promise<NativeExecutionResult> {
+    const authority = await this.nativeWorkflowAuthority(value, selections);
+    const descriptor = await approvedNativeOperation(selection.operation, selection.document), method = descriptor.operation.rpc!.method;
+    if (!isNativeWorkflowMethod(method) || !authority.descriptors.some(item => item.fingerprint === descriptor.fingerprint)) throw new VaultError("PERMISSION");
+    const inputScrub = redactor(authority.records.map(record => record.value)); inputScrub.value(input);
+    if (inputScrub.changed) throw new VaultError("REDACTED");
+    try {
+      const result = await this.nativeAgent.execute(authority.connection, authority.record.value, authority.workflowFingerprint,
+        method, input, authority.guard, signal, this.nativeProgress(authority.records, progress));
+      const scrub = redactor(authority.records.flatMap(record => [record.value, ...managedGitlabSecrets(record.oauthState ?? "")]).sort((a, b) => b.length - a.length));
+      const safe = scrub.value(result);
+      if (scrub.changed) throw new VaultError("REDACTED");
+      await authority.guard();
+      return { request: { protocol: "json-rpc", method, params: structuredClone(input) as Record<string, unknown> }, response: { protocol: "json-rpc", result: safe } };
+    } catch (error) { this.nativeRuntime.close(value.id); throw error; }
+  }
+
+  async replyNativeRuntime(connectionId: string, token: string, decision: NativeDecision) {
+    if (!nativeUuid(connectionId) || !nativeUuid(token)) throw new VaultError("INVALID");
+    await this.assertCurrent(); return this.nativeAgent.reply(connectionId, token, decision);
+  }
 
   async connectionBinding(reference: HttpConnectionReference, descriptor: ApprovedOperation): Promise<CredentialBinding> {
     const approved = await approvedOperation(descriptor.operation, descriptor.origin);
@@ -406,7 +577,7 @@ export class VaultSession {
   }
 
   private async save(values: VaultCredential[], envelopes = this.state!.snapshot!.envelopes,
-    key = this.key!, epoch = this.state!.snapshot!.epoch): Promise<void> {
+    key = this.key!, epoch = this.state!.snapshot!.epoch, signal?: AbortSignal): Promise<void> {
     await this.assertCurrent();
     if (values.length > vaultLimits.records) throw new VaultError("LIMIT");
     const generation = this.generation;
@@ -422,6 +593,7 @@ export class VaultSession {
     const snapshot = await sealSnapshot({ ...base, records }, key);
     await authenticateManifest(snapshot, key);
     this.guard(generation);
+    if (signal?.aborted) throw new VaultError("CANCELLED");
     const state = await this.storage.replace(expected, snapshot, values.map(({ id, label, kind }) => ({ id, label, kind })));
     this.guard(generation); this.uploadSessions.clear(); this.gitlabOAuth.invalidateTokenCache(); this.state = state; this.key = key;
   }
@@ -434,12 +606,16 @@ export class VaultSession {
     if (previous?.oauthState !== undefined) throw new VaultError("PERMISSION");
     const value = credential({ id: previous?.id ?? crypto.randomUUID(), label: input.label, kind: input.kind,
       value: input.value, grants: previous?.kind === input.kind ? previous.grants : [],
-      ...(previous?.connections ? { connections: previous.connections } : {}) });
+      ...(previous?.connections ? { connections: previous.connections } : {}),
+      ...(previous?.nativeConnections ? { nativeConnections: previous.nativeConnections } : {}) });
     const key = value.label.trim().normalize("NFC").toLowerCase();
     if (records.some(item => item.id !== value.id && item.label.trim().normalize("NFC").toLowerCase() === key))
       throw new VaultError("DUPLICATE_KEY");
     const next = [...records.filter(item => item.id !== value.id), value];
-    if (previous && (previous.value !== value.value || previous.kind !== value.kind)) await invalidateHttpConnections(next, value.id);
+    if (previous && (previous.value !== value.value || previous.kind !== value.kind)) {
+      for (const connection of previous.nativeConnections ?? []) this.nativeRuntime.close(connection.id);
+      delete value.nativeConnections; await invalidateHttpConnections(next, value.id);
+    }
     await this.save(next);
     return this.list();
   }
@@ -448,6 +624,7 @@ export class VaultSession {
     if (proof) await this.fresh(proof); else await this.assertCurrent();
     const values = await this.records();
     if (!values.some(item => item.id === id)) throw new VaultError("INVALID");
+    for (const connection of values.find(item => item.id === id)?.nativeConnections ?? []) this.nativeRuntime.close(connection.id);
     const next = values.filter(item => item.id !== id);
     for (const record of next) if (record.connections) {
       record.connections = record.connections.filter(item => !connectionCredentialIds(item).includes(id));
