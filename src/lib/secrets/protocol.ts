@@ -10,6 +10,7 @@ import type { NativeAgentProgress } from "../native-agent-contract.ts";
 export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate" | "keys" | "list" | "copyCredential" | "put" | "remove"
   | "grant" | "revoke" | "connections" | "connectionBinding" | "putConnection" | "removeConnection"
   | "beginJiraOAuth" | "pollJiraOAuth" | "completeJiraOAuth" | "cancelJiraOAuth"
+  | "beginAtprotoOAuth" | "completeAtprotoOAuth" | "cancelAtprotoOAuth"
   | "beginGitlabOAuth" | "completeGitlabOAuth" | "cancelGitlabOAuth"
   | "nativeConnections" | "pairNativeRuntime" | "checkNativeRuntime" | "disconnectNativeRuntime"
   | "enableNativeWorkflow" | "loginNativeRuntime" | "executeNativeRuntime"

@@ -59,3 +59,15 @@ BLAKE2 reference source code package - reference C implementations
   https://blake2.net.
 
   Modified for hash-wasm by Dani Biró
+
+## AT Protocol OAuth
+
+Upstream notices from `@atproto/oauth-client` 0.8.10 and `@atproto/jwk-webcrypto` 0.3.4, retained from their pinned package LICENSE.txt files. Source: https://github.com/bluesky-social/atproto/tree/main/packages/oauth
+
+Dual MIT/Apache-2.0 License
+
+Copyright (c) 2022-2026 Bluesky Social PBC, and Contributors
+
+Except as otherwise noted in individual files, this software is licensed under the MIT license (<http://opensource.org/licenses/MIT>), or the Apache License, Version 2.0 (<http://www.apache.org/licenses/LICENSE-2.0>).
+
+Downstream projects and end users may chose either license individually, or both together, at their discretion. The motivation for this dual-licensing is the additional software patent assurance provided by Apache 2.0.

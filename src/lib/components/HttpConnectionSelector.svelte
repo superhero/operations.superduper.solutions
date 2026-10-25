@@ -5,6 +5,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import BlueskyOAuthConnect from "./BlueskyOAuthConnect.svelte";
+  import { atprotoOAuthAlternative } from "../secrets/atproto-config.ts";
   import JiraOAuthConnect from "./JiraOAuthConnect.svelte";
   import { jiraOAuthAlternative } from "../secrets/jira-config.ts";
   import GitlabOAuthConnect from "./GitlabOAuthConnect.svelte";
@@ -116,6 +118,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <JiraOAuthConnect {descriptor} {status} {credentials} {portalZIndex} current={selected} disabled={disabled || busy}
       onConnected={async connection => { entries = [...entries.filter(item => item.id !== connection.id), connection]; await choose(connection.id); }} />
   {/if}
+  {#if atprotoOAuthAlternative(descriptor) !== undefined}
+    <BlueskyOAuthConnect {descriptor} {status} current={selected} disabled={disabled || busy}
+      onConnected={async connection => { entries = [...entries.filter(item => item.id !== connection.id), connection]; await choose(connection.id); }} />
+  {/if}
   {#if gitlabOAuthAlternative(descriptor) !== undefined}
     <GitlabOAuthConnect {descriptor} {status} current={selected} disabled={disabled || busy}
       onConnected={async connection => { entries = [...entries.filter(item => item.id !== connection.id), connection]; await choose(connection.id); }} />
@@ -130,8 +136,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else if authorizationState.kind === "failed" || status.unlocked && !selected}<p role="status">Connection changed or is unavailable. Select it again to continue.</p>{/if}
     <button type="button" disabled={disabled || busy || !selected || !status.unlocked} onclick={() => void choose(selectedId)}>Use connection</button>
   {/if}
-  {#if status.unlocked && (selected?.format === "gitlab-oauth" || selected?.format === "jira-companion")}
+  {#if status.unlocked && (selected?.format === "gitlab-oauth" || selected?.format === "jira-companion" || selected?.format === "atproto-oauth")}
     {#if selected?.format === "jira-companion" && selected.oauth?.profile === "atlassian-jira-3lo-v1"}<p>Jira tokens and refresh are managed by {selected.oauth.host}. Reconnect to renew access.</p>
+    {:else if selected?.format === "atproto-oauth"}<p>Bluesky OAuth manages this account’s proof keys and renewal. Reconnect if the account’s server changes.</p>
     {:else}<p>GitLab OAuth manages this connection's tokens and refresh. Reconnect to renew access.</p>{/if}
     <button type="button" disabled={disabled || busy} onclick={() => void remove()}>Remove connection</button>
   {:else if status.unlocked && (manual || selected)}

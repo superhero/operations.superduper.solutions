@@ -15,6 +15,7 @@ import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding
 import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
+import { managedAtprotoSecrets } from "./atproto-state.ts";
 import { managedGitlabSecrets, validateGitlabTokenState } from "./gitlab-oauth.ts";
 import { appendRequestQuery, encodeQueryComponent } from "../query-serialization.ts";
 import { CloudflareUploadSessions, type CloudflareUploadLease } from "./cloudflare-upload.ts";
@@ -97,7 +98,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       || ![Object.prototype, null].includes(Object.getPrototypeOf(inputSnapshot))
       || Object.values(inputSnapshot).some(value => value !== null && value !== undefined && typeof value !== "string"))
       throw new VaultError("INVALID");
-    secrets = [...new Set([...credentialSnapshot.flatMap(credential => typeof credential.value === "string" ? [credential.value, ...managedGitlabSecrets(credential.oauthState ?? "")] : []), ...(options.privateSecrets ?? [])]
+    secrets = [...new Set([...credentialSnapshot.flatMap(credential => typeof credential.value === "string" ? [credential.value, ...managedGitlabSecrets(credential.oauthState ?? ""), ...managedAtprotoSecrets(credential.oauthState ?? "")] : []), ...(options.privateSecrets ?? [])]
       .filter(value => typeof value === "string" && value.length > 0)
       .flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);

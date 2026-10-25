@@ -102,8 +102,9 @@
     "parakeet.js": "1.4.4",
     "onnxruntime-web": "1.30.0",
     "ws": "8.22.0",
-    "onnxruntime-web": "1.30.0",
-    "fast-xml-parser": "5.11.2"
+    "fast-xml-parser": "5.11.2",
+    "@atproto/oauth-client": "0.8.10",
+    "@atproto/jwk-webcrypto": "0.3.4"
   },
   "overrides": {
     "parakeet.js": {

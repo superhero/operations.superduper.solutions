@@ -123,7 +123,7 @@ function ensureWorker(): Worker {
   return created;
 }
 
-const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeJiraOAuth", "pairNativeRuntime", "pairDockerHost", "enableNativeWorkflow", "loginNativeRuntime", "restore", "addMethod", "removeMethod", "rotate"]);
+const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeAtprotoOAuth", "completeJiraOAuth", "pairNativeRuntime", "pairDockerHost", "enableNativeWorkflow", "loginNativeRuntime", "restore", "addMethod", "removeMethod", "rotate"]);
 export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArguments<M>, signal?: AbortSignal, onProgress?: ResponseProgressCallback,
   onNativeProgress?: NativeProgressCallback): Promise<VaultResult<M>> {
   if (signal?.aborted) throw new VaultError("CANCELLED");
