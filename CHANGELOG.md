@@ -480,6 +480,14 @@ fix(ui): remove redundant assistant load button
 
 ```
 
+<!-- changelog-commit:e6477c434af7b32bb513eb288b09f02ea69d84fb -->
+### Commit [`e6477c4`](https://github.com/superhero/operations.superduper.solutions/commit/e6477c434af7b32bb513eb288b09f02ea69d84fb)
+
+```text
+fix(ui): align composer model and attachment icons
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
