@@ -6,7 +6,7 @@
   import MenuButton from "./MenuButton.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { navigationOpen, onMenu, settingsOpen, onSettings, workflowSaveStatus }: { navigationOpen: boolean; onMenu: () => void; settingsOpen: boolean; onSettings: () => void; workflowSaveStatus?: WorkflowSaveStatus | undefined } = $props();
+  let { navigationOpen, onMenu, settingsOpen, assistantSelected, onSettings, onAssistant, workflowSaveStatus }: { navigationOpen: boolean; onMenu: () => void; settingsOpen: boolean; assistantSelected: boolean; onSettings: () => void; onAssistant: () => void; workflowSaveStatus?: WorkflowSaveStatus | undefined } = $props();
   const saveLabels = { loading: "Loading…", saving: "Saving…", saved: "Saved locally", unsaved: "Not saved", error: "Not saved" };
 </script>
 
@@ -20,9 +20,14 @@
         <strong class="brand">Operations</strong>
       </div>
     </div>
-    <HintButton class="menu-button" label="Settings" tooltipSide="left" aria-pressed={settingsOpen} aria-expanded={settingsOpen} aria-controls="settings-panel" onclick={onSettings}>
-      <MaterialIcon name="tune" />
-    </HintButton>
+    <div class="pane-buttons">
+      <HintButton class="menu-button" label="AI assistant" tooltipSide="left" aria-pressed={settingsOpen && assistantSelected} aria-expanded={settingsOpen && assistantSelected} aria-controls="settings-panel" onclick={onAssistant}>
+        <MaterialIcon name="robot" />
+      </HintButton>
+      <HintButton class="menu-button" label="Settings" tooltipSide="left" aria-pressed={settingsOpen && !assistantSelected} aria-expanded={settingsOpen && !assistantSelected} aria-controls="settings-panel" onclick={onSettings}>
+        <MaterialIcon name="tune" />
+      </HintButton>
+    </div>
   </div>
   {#if workflowSaveStatus}
     <div class="document-meta" role="status" class:unsaved={workflowSaveStatus === "saving" || workflowSaveStatus === "error"} class:fresh={workflowSaveStatus === "unsaved"}>
@@ -36,6 +41,7 @@
   .header-content { gap: 8px; }
   .header-content :global(.menu-button) { flex-shrink: 0; }
   .brand-controls { min-width: 0; }
+  .pane-buttons { display: flex; flex-shrink: 0; gap: 8px; }
   .brand-copy { min-width: 0; overflow: hidden; }
   .brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @container header-layout (max-width: 350px) {

@@ -77,7 +77,7 @@
   });
   const initialNavigationView = resumedPanes?.navigation ?? emptyNavigationState();
   let navigationView = $state<NavigationPaneState>(initialNavigationView);
-  let settingsSection = $state<SettingsSection>(resumedPanes?.settings.section ?? null);
+  let settingsSection = $state<SettingsSection>(resumedPanes ? resumedPanes.settings.section : "assistant");
   let settingsScroll = $state(resumedPanes?.settings.scrollTop ?? 0);
   let navigationOpen = $state(resumedPanes?.navigationOpen ?? !matchMedia("(max-width: 899px)").matches);
   let navigationModal = $state(false);
@@ -240,8 +240,19 @@
 
   async function toggleSettings() {
     const closing = mode === "settings";
+    const opener = document.querySelector<HTMLElement>(`.site-header button[aria-label="${settingsSection === "assistant" ? "AI assistant" : "Settings"}"]`);
     await setMode(closing ? "workflow" : "settings");
-    if (closing && mode === "workflow") document.querySelector<HTMLElement>('.site-header button[aria-pressed]')?.focus({ preventScroll: true });
+    if (closing && mode === "workflow") opener?.focus({ preventScroll: true });
+  }
+
+  async function togglePaneView(view: "assistant" | "settings") {
+    if (mode === "settings" && (settingsSection === "assistant") === (view === "assistant")) {
+      await toggleSettings();
+      return;
+    }
+    settingsWorkspace.showView(view);
+    await setMode("settings");
+    if (mode === "settings") await focusDestination();
   }
 
   async function toggleNavigation() {
@@ -496,7 +507,8 @@
   </div>
 {/if}
 <div class="page-content workflow-mode" class:compact-settings={compactSettings} class:resizing-settings={resizingSettings || resizingNavigation} inert={settingsPresent && compactSettings} class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
-  <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={toggleNavigation} />
+  <Header {navigationOpen} settingsOpen={mode === "settings"} assistantSelected={settingsSection === "assistant"}
+    onSettings={() => void togglePaneView("settings")} onAssistant={() => void togglePaneView("assistant")} {workflowSaveStatus} onMenu={toggleNavigation} />
   <div class="shell">
     <main>
       {#if settingsError && !import.meta.env.DEV}
