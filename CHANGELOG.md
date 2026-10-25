@@ -432,6 +432,14 @@ fix(ui): scale grouped header buttons outwards
 
 ```
 
+<!-- changelog-commit:7c7f34464fee1c94ae8e793ffd74b0fcc70d4bf2 -->
+### Commit [`7c7f344`](https://github.com/superhero/operations.superduper.solutions/commit/7c7f34464fee1c94ae8e793ffd74b0fcc70d4bf2)
+
+```text
+fix(ui): use a 2px assistant composer border
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
