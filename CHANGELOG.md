@@ -212,6 +212,14 @@ fix(ui): flatten transport prefixes in catalog navigation
 
 ```
 
+<!-- changelog-commit:049669e3fbc770c942fcb536362ad1ac8bdc74ec -->
+### Commit [`049669e`](https://github.com/superhero/operations.superduper.solutions/commit/049669e3fbc770c942fcb536362ad1ac8bdc74ec)
+
+```text
+fix(ui): continue catalog tree through operation rows
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
