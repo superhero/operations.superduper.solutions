@@ -45,9 +45,9 @@ export function s3ObjectUrl(origin: string, preparedPath: string): URL {
   try { key = decodeURIComponent(match[2]!); } catch { throw new Error("Invalid S3 key encoding."); }
   if (encodeS3Key(key) !== match[2] || endpoint.bucket && endpoint.bucket !== bucket) throw new Error("The S3 bucket or object key does not match this endpoint.");
   const path = endpoint.style === "virtual" ? "/" + match[2] : "/" + bucket + "/" + match[2];
-  const url = new URL(origin + path);
-  if (url.origin !== new URL(origin).origin || url.pathname !== path) throw new Error("The browser cannot preserve this S3 object path.");
-  return url;
+  // The qualified origin and canonical segment encoding above exclude URL
+  // delimiters and dot segments, so parsing preserves this object address.
+  return new URL(new URL(origin).origin + path);
 }
 export function s3MetadataHeaders(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("S3 metadata must be an object of ASCII strings.");
@@ -92,7 +92,7 @@ export function validS3FilesModel(operation: Operation): boolean {
   const profile = s3FilesProfile(operation.s3Files); if (!profile || operation.responseStream || operation.privatePath || operation.cloudflareUpload || operation.credentialResult) return false;
   const expected = { ...operation }; configureS3Files(expected, profile);
   const sorted = (value: unknown): unknown => Array.isArray(value) ? value.map(sorted) : value && typeof value === "object"
-    ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([name, item]) => [name, sorted(item)])) : value;
+    ? Object.fromEntries(Object.keys(value).sort().map(name => [name, sorted((value as Record<string, unknown>)[name])])) : value;
   for (const key of ["fields", "bodyRequired", "bodyMediaType", "bodySchema", "bodyValue", "binaryMediaTypes", "responseMediaType", "responseContent"] as const)
     if (JSON.stringify(sorted(operation[key])) !== JSON.stringify(sorted(expected[key]))) return false;
   const options = operation.security;

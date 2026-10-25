@@ -23,3 +23,7 @@ Feature: Private Telegram bot token paths
 
   Scenario: Workflows retain references while portable documents remove them
     Then Telegram connection previews schemas history and portable documents contain no token values
+
+  @coverage-gaps
+  Scenario: Private path approval rejects security and method drift
+    Then Telegram private path approval rejects method annotation and security drift

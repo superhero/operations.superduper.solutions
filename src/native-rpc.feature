@@ -11,6 +11,10 @@ Feature: Native RPC operation models
   Scenario: Invalid and excessive native contracts are rejected before publication
     Then native RPC scoping rejects ambiguous requests and invalid reference closures
 
+  @coverage-gaps
+  Scenario: Native wire schemas retain bounded reference closure and optional inputs
+    Then native RPC schemas reject excessive nesting and absent wire errors while preserving optional parameters
+
   Scenario: Native policy identity binds the exact method version and schema
     Then native model approvals reject altered schemas and HTTP authorization
 

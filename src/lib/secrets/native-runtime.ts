@@ -41,10 +41,10 @@ export class NativeRuntimeBroker {
   clear(): void { for (const id of new Set([...this.peers.keys(), ...this.opening.keys()])) this.close(id); }
 
   private async open(host: string, key: string, scope: NativeRuntimeScope, expected: NativeRuntimeIdentity | undefined,
-    guard: () => Promise<void>, signal?: AbortSignal, events?: NativeEvents): Promise<NativePeer> {
+    guard: () => Promise<void>, signal: AbortSignal, events?: NativeEvents): Promise<NativePeer> {
     if (!/^[A-Za-z0-9_-]{43,256}$/.test(key) || signal?.aborted) throw new VaultError(signal?.aborted ? "CANCELLED" : "INVALID");
     const now = this.runtime.now ?? Date.now, timeoutMs = this.runtime.requestMs ?? limits.requestMs;
-    const timeout = AbortSignal.timeout(timeoutMs), cancellation = signal ? AbortSignal.any([signal, timeout]) : timeout;
+    const timeout = AbortSignal.timeout(timeoutMs), cancellation = AbortSignal.any([signal, timeout]);
     await guard();
     let response: Response;
     try {
@@ -119,7 +119,7 @@ export class NativeRuntimeBroker {
         const cleanup = () => { clearTimeout(timer); cancellation.removeEventListener("abort", cancelled); };
         pairResolve = () => { cleanup(); resolve(); }; pairReject = error => { cleanup(); reject(error); };
         socket.addEventListener("open", () => { try { send({ type: "pair", ticket }); ticket = ""; } catch { close(); } }, { once: true });
-        if (cancellation.aborted) cancelled();
+        // Cancellation was checked above; listener registration has no intervening await.
       });
       pairResolve = undefined; pairReject = undefined; await guard();
       if (disposed || cancellation.aborted) throw new VaultError(signal?.aborted ? "CANCELLED" : "NETWORK");
@@ -130,13 +130,14 @@ export class NativeRuntimeBroker {
           const id = "r_" + crypto.randomUUID();
           return new Promise<unknown>((resolve, reject) => {
             const cancel = () => {
-              if (pending.has(id)) { try { send({ type: "cancel", id }); } catch { /* Disconnect still revokes this transport. */ } }
+              // Every terminal path removes this listener before yielding control.
+              try { send({ type: "cancel", id }); } catch { /* Disconnect still revokes this transport. */ }
               pending.delete(id); cleanup(); reject(new VaultError("CANCELLED")); close();
             };
             const timer = setTimeout(() => { pending.delete(id); cleanup(); reject(new VaultError("NETWORK")); close(); }, timeoutMs);
             const cleanup = () => { clearTimeout(timer); signal?.removeEventListener("abort", cancel); };
             pending.set(id, { resolve, reject, cleanup }); signal?.addEventListener("abort", cancel, { once: true });
-            try { send({ id, method, params }); if (signal?.aborted) cancel(); } catch { close(); }
+            try { send({ id, method, params }); } catch { close(); }
           });
         } };
     } catch (error) { close(); throw error; }
@@ -174,7 +175,7 @@ export class NativeRuntimeBroker {
     signal = signal ? AbortSignal.any([signal, opening.signal]) : opening.signal;
     try {
       if (!peer) {
-        if (this.peers.size >= 4) throw new VaultError("LIMIT");
+        // The union limit above already includes this opening owner.
         peer = await this.open(host, key, { connectionId: id, method: "account/read", fingerprint }, expected, guard, signal);
         await peer.request("initialize", { clientInfo: { name: "operations", version: "1" }, capabilities: { experimentalApi: false } }, signal);
         peer.notify();

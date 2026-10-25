@@ -7,19 +7,21 @@ import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Then } from '@cucumber/cucumber';
+import { vi } from 'vitest';
 import { jiraHostFixture, jiraCanaries, jiraSites, jiraAccountId } from '../tests/jira-companion.fixture.mjs';
 import { createJiraCompanion } from '../companions/jira/host.mjs';
 import { openJiraStore } from '../companions/jira/store.mjs';
 import { runJiraCompanion } from '../companions/jira/server.mjs';
 import { readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
-import { jiraOAuthAlternative, validateJiraMetadata, jiraHost } from './lib/secrets/jira-config.ts';
+import { jiraOAuthAlternative, validateJiraMetadata, validateJiraInput, jiraHost } from './lib/secrets/jira-config.ts';
+import { JiraCompanionBroker, validateJiraState, jiraAccessKeyHash } from './lib/secrets/jira-companion.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { VaultSession } from './lib/secrets/session.ts';
 import { VaultError } from './lib/secrets/types.ts';
 import { newVaultKey, recoveryKey, randomBase64, wrapVaultKey } from './lib/secrets/crypto.ts';
 import { sealSnapshot } from './lib/secrets/format.ts';
-import { httpConnectionReference } from './lib/secrets/http-connections.ts';
+import { httpConnectionReference, validateHttpConnection, createHttpConnection, httpConnectionLimit } from './lib/secrets/http-connections.ts';
 
 const applicationOrigin = 'https://operations.test';
 const ordinary = () => ({ id:'jira:getCurrentUser',name:'Get current user',description:'',group:'Myself',method:'GET',path:'/rest/api/3/myself',
@@ -224,4 +226,221 @@ Then('Jira unsupported routes forged metadata oversized responses and cancelled 
     const fetch=f.host.clientFetch;f.host.clientFetch=async(address,init)=>address.endsWith('/config')?new Response(JSON.stringify({padding:'x'.repeat(65537)}),{headers:{'Content-Type':'application/json','X-Operations-Companion':f.host.host.configuration.fingerprint}}):fetch(address,init);
     await assert.rejects(f.begin(),error=>error.code==='LIMIT');
   }finally{await f.close();}
+});
+
+Then('Jira saved capabilities reject malformed records missing keys and foreign application authority', async () => {
+  const f = await fixture();
+  try {
+    await f.connect(); const record = (await f.session.records()).find(item => item.oauthState), state = JSON.parse(record.oauthState);
+    for (const changed of [{ ...state, extra: true }, { ...state, capability: 'short' }, { ...state, disconnected: false },
+      { ...state, accessKeyHash: 'bad' }, { ...state, origin: applicationOrigin+'/' }])
+      assert.throws(() => validateJiraState(JSON.stringify(changed)), error => error.code === 'AUTHORIZATION');
+    assert.throws(() => validateJiraState(record.oauthState, { ...state.oauth, accountId: 'different' }), denied);
+    const broker = new JiraCompanionBroker({ applicationOrigin: () => applicationOrigin });
+    for (const changed of [{ ...state, origin: 'https://foreign.test' }, { ...state, disconnected: true }]) assert.throws(() => broker.assertState(changed), denied);
+    await assert.rejects(jiraAccessKeyHash('invalid'), error => error.code === 'INVALID');
+    assert.throws(() => jiraHost(undefined), denied); assert.throws(() => jiraHost('x'.repeat(2049)), denied);
+    assert.throws(() => jiraHost('http://localhost:8787', applicationOrigin), denied);
+    assert.throws(() => validateJiraInput({ ...f.input, label: '\u0000' }, applicationOrigin), denied);
+    assert.throws(() => validateHttpConnection({ ...f.connection, expiresAt: Date.now()+1000 }), denied);
+    await assert.rejects(f.session.beginJiraOAuth({ ...f.input, accessKeyId: randomUUID() }, f.approved), error => error.code === 'AUTHORIZATION');
+    await broker.cancel(randomUUID());
+    await assert.rejects(broker.execute(state, 'b'.repeat(43), undefined, async () => {}), error => error.code === 'AUTHORIZATION');
+    vi.stubGlobal('location', { origin: applicationOrigin }); vi.stubGlobal('fetch', (...args) => f.host.clientFetch(...args));
+    try {
+      const ambient = new JiraCompanionBroker(), task = await ambient.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {});
+      await ambient.cancel(task.id);
+    } finally { vi.unstubAllGlobals(); }
+    vi.stubGlobal('location', undefined);
+    try { assert.throws(() => new JiraCompanionBroker().assertState(state), denied); }
+    finally { vi.unstubAllGlobals(); }
+    for (const changed of [{ ...f.approved, origin: jiraSites[0].url+'/' }, { ...f.approved, operation: { ...f.operation, security: [] } },
+      { ...f.approved, operation: { ...f.operation, oauthScopes: [{ basicAuth: [] }, { OAuth2: ['read:jira-user', 'write:jira-work'] }] } }])
+      assert.equal(jiraOAuthAlternative(changed), undefined);
+  } finally { await f.close(); }
+});
+
+Then('Jira rejects malformed companion configuration consent sites and selected grants', async () => {
+  for (const mode of ['config', 'config-fingerprint', 'no-body', 'stream-error', 'start', 'authorize', 'authorize-missing-state', 'sites', 'site-name', 'duplicate-site', 'selected-shape', 'selected-authority']) {
+    const f = await fixture();
+    try {
+      const original = f.host.clientFetch;
+      f.host.clientFetch = async (url, init) => {
+        const response = await original(url, init), body = await response.clone().json();
+        const config = url.endsWith('/config'), start = url.endsWith('/authorizations'), select = url.endsWith('/select');
+        if (mode === 'no-body' && config) return new Response(null, { headers: response.headers });
+        if (mode === 'stream-error' && config) return new Response(new ReadableStream({ start(controller) { controller.error(new Error(jiraCanaries.accessKey)); } }), { headers: response.headers });
+        if (mode === 'config' && config) body.audience = 'foreign';
+        if (mode === 'config-fingerprint' && config) body.fingerprint = '0'.repeat(64);
+        if (mode === 'start' && start) body.expiresAt = f.host.now()+300001;
+        if (mode === 'authorize' && start) { const target = new URL(body.authorizationUrl); target.searchParams.set('state', 'bad'); body.authorizationUrl = target.href; }
+        if (mode === 'authorize-missing-state' && start) { const target = new URL(body.authorizationUrl); target.searchParams.delete('state'); target.searchParams.set('unknown', 'value'); body.authorizationUrl = target.href; }
+        if (!start && !config && !select && init.method !== 'DELETE' && body.phase === 'choose-site') {
+          if (mode === 'sites') body.sites = [];
+          if (mode === 'site-name') body.sites[0].name = '\u0000';
+          if (mode === 'duplicate-site') body.sites.push(body.sites[0]);
+        }
+        if (select && mode === 'selected-shape') body.capability = 'short';
+        if (select && mode === 'selected-authority') body.clientId = 'other-registration';
+        return Response.json(body, { status: response.status, headers: response.headers });
+      };
+      if (['config', 'config-fingerprint', 'no-body', 'stream-error', 'start', 'authorize', 'authorize-missing-state'].includes(mode)) await assert.rejects(f.begin(), denied);
+      else {
+        const task = await f.begin(); await f.host.callback(task);
+        if (['sites', 'site-name', 'duplicate-site'].includes(mode)) await assert.rejects(f.session.pollJiraOAuth(task.id), denied);
+        else { await f.session.pollJiraOAuth(task.id); await assert.rejects(f.session.completeJiraOAuth(task.id, jiraSites[0].id), denied); }
+      }
+      assert.deepEqual(await f.session.connections(), []); safe(f.storage.state, sensitive(f));
+    } finally { await f.close(); }
+  }
+});
+
+Then('Jira bounds pending consent and rejects cancelled streams or forged resource envelopes', async () => {
+  const f = await fixture();
+  try {
+    const broker = new JiraCompanionBroker({ applicationOrigin: () => applicationOrigin, now: f.host.now, fetchRequest: (...args) => f.host.clientFetch(...args) });
+    const tasks = []; for (let i = 0; i < 8; i++) tasks.push(await broker.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}));
+    await assert.rejects(broker.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}), error => error.code === 'LIMIT');
+    f.host.advance(300001); const renewed = await broker.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {});
+    assert.throws(() => broker.pendingInput(tasks[0].id), denied); await broker.cancel(renewed.id);
+    const controller = new AbortController(); controller.abort();
+    await assert.rejects(broker.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}, undefined, controller.signal), error => error.code === 'CANCELLED');
+    const afterConsent = new AbortController(); let guards = 0;
+    await assert.rejects(broker.begin(f.input, f.approved, jiraCanaries.accessKey, async () => { if (++guards === 2) afterConsent.abort(); }, undefined, afterConsent.signal), error => error.code === 'CANCELLED');
+    await broker.cancel(f.host.hostReplies.at(-1).body.id);
+    await f.connect(); const state = JSON.parse((await f.session.records()).find(item => item.oauthState).oauthState), original = f.host.clientFetch;
+    for (const mode of ['request-id', 'headers', 'status', 'redacted']) {
+      f.host.clientFetch = async (url, init) => {
+        const response = await original(url, init), body = await response.json();
+        if (mode === 'request-id') body.requestId = randomUUID();
+        if (mode === 'headers') body.response.headers['set-cookie'] = 'session=private';
+        if (mode === 'status') body.response.status = 199;
+        if (mode === 'redacted') body.response.redacted = false;
+        return Response.json(body, { headers: response.headers });
+      };
+      await assert.rejects(broker.execute(state, jiraCanaries.accessKey, undefined, async () => {}), denied);
+    }
+    const stream = new JiraCompanionBroker({ applicationOrigin: () => applicationOrigin, fetchRequest: async () => new Response('unfinished', { headers: { 'Content-Type': 'application/json' } }) });
+    const abort = new AbortController();
+    const duringRead = new JiraCompanionBroker({ applicationOrigin: () => applicationOrigin, fetchRequest: async () => {
+      abort.abort(); return new Response('{', { headers: { 'Content-Type': 'application/json' } });
+    } });
+    await assert.rejects(duringRead.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}, undefined, abort.signal), error => error.code === 'CANCELLED');
+    await assert.rejects(stream.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}), denied);
+  } finally { await f.close(); }
+});
+
+Then('Jira completion rejects duplicate names stale reconnect and private access key labels', async () => {
+  for (const mode of ['connection-name', 'record-name', 'stale-reconnect', 'private-label']) {
+    const f = await fixture();
+    try {
+      if (mode === 'connection-name' || mode === 'stale-reconnect') await f.connect();
+      if (mode === 'record-name') await f.session.put(null, { label: f.input.label+' reference', kind: 'secret', value: 'ordinary-key' });
+      if (mode === 'private-label') f.input.label = jiraCanaries.accessKey;
+      const task = await f.begin(mode === 'stale-reconnect' ? httpConnectionReference(f.connection) : undefined);
+      await f.host.callback(task); await f.session.pollJiraOAuth(task.id);
+      if (mode === 'stale-reconnect') await f.session.removeConnection(httpConnectionReference(f.connection));
+      await assert.rejects(f.session.completeJiraOAuth(task.id, jiraSites[0].id), error => error.code === (mode === 'connection-name' || mode === 'record-name' ? 'DUPLICATE_KEY' : 'AUTHORIZATION'));
+      safe(f.storage.state, sensitive(f));
+    } finally { await f.close(); }
+  }
+});
+
+Then('Jira clear abandons pending claims and active calls when the companion becomes unavailable', async () => {
+  const f = await fixture();
+  try {
+    let deletions = 0;
+    const broker = new JiraCompanionBroker({ applicationOrigin: () => applicationOrigin, now: f.host.now, fetchRequest: (url, init) => {
+      if (init.method === 'DELETE') { deletions++; throw new Error(jiraCanaries.accessKey); }
+      return f.host.clientFetch(url, init);
+    } });
+    const task = await broker.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}); broker.clear();
+    assert.throws(() => broker.pendingInput(task.id), denied);
+    await new Promise(resolve => setTimeout(resolve, 0)); assert.equal(deletions, 1);
+    const active = new JiraCompanionBroker({ applicationOrigin: () => applicationOrigin, fetchRequest: async (url, init) => { active.clear(); return f.host.clientFetch(url, init); } });
+    await assert.rejects(active.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}), error => error.code === 'CANCELLED');
+    let stalledSignal, aborts = 0;
+    const stalled = new JiraCompanionBroker({ applicationOrigin: () => applicationOrigin, now: f.host.now, fetchRequest: (url, init) => {
+      if (init.method !== 'DELETE') return f.host.clientFetch(url, init);
+      stalledSignal = init.signal;
+      return new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => { aborts++; reject(new Error(jiraCanaries.accessKey)); }, { once: true }));
+    } });
+    const waiting = await stalled.begin(f.input, f.approved, jiraCanaries.accessKey, async () => {}), unhandled = [];
+    const observeUnhandled = reason => unhandled.push(reason); process.on('unhandledRejection', observeUnhandled);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      stalled.clear(); assert.ok(stalledSignal); assert.equal(stalledSignal.aborted, false);
+      assert.throws(() => stalled.pendingInput(waiting.id), denied);
+      await vi.advanceTimersByTimeAsync(2999); assert.equal(stalledSignal.aborted, false); assert.equal(aborts, 0);
+      await vi.advanceTimersByTimeAsync(1); assert.equal(stalledSignal.aborted, true); assert.equal(aborts, 1);
+      assert.throws(() => stalled.pendingInput(waiting.id), denied); assert.deepEqual(unhandled, []);
+    } finally { vi.useRealTimers(); process.removeListener('unhandledRejection', observeUnhandled); }
+  } finally { await f.close(); }
+});
+
+Then('Jira selection retains capacity and rejects missing state or wrong reconnect authority', async () => {
+  const f = await fixture();
+  try {
+    const task = await f.begin(); await f.host.callback(task); await f.session.pollJiraOAuth(task.id);
+    const records = await f.session.records();
+    for (let group = 0; group < 4; group++) {
+      const id = randomUUID(), record = { id, kind: 'secret', value: 'CAPACITY_PRIVATE_'+group, label: 'Capacity key '+group, grants: [], connections: [] };
+      for (let i = 0; i < 32; i++) record.connections.push(await createHttpConnection({ label: 'Capacity '+group+' '+i, account: 'Account', format: 'schema' }, f.approved,
+        { alternative: 1, fingerprint: f.approved.fingerprint, credentials: { OAuth2: id } }, [record]));
+      records.push(record);
+    }
+    await f.session.save(records);
+    await assert.rejects(f.session.completeJiraOAuth(task.id, jiraSites[0].id), error => error.code === 'LIMIT');
+    assert.equal((await f.session.connections()).length, httpConnectionLimit);
+    const selected = (await f.session.connections())[0];
+    await assert.rejects(f.begin(httpConnectionReference(selected)), error => error.code === 'PERMISSION');
+    const wrong = await approvedOperation({ ...f.operation, path: '/rest/api/3/user' }, jiraSites[0].url);
+    await assert.rejects(f.session.beginJiraOAuth(f.input, wrong), error => error.code === 'PERMISSION');
+  } finally { await f.close(); }
+  const missing = await fixture();
+  try {
+    await missing.connect();
+    const reconnect = await missing.begin(httpConnectionReference(missing.connection)); await missing.host.callback(reconnect); await missing.session.pollJiraOAuth(reconnect.id);
+    const records = await missing.session.records(), record = records.find(item => item.oauthState), old = JSON.parse(record.oauthState);
+    delete record.oauthState; await missing.session.save(records);
+    const before = structuredClone(missing.storage.state);
+    await assert.rejects(missing.session.completeJiraOAuth(reconnect.id, jiraSites[0].id), error => error.code === 'AUTHORIZATION');
+    assert.deepEqual(missing.storage.state, before); assert.deepEqual(await missing.session.connections(), [missing.connection]);
+    assert.equal(missing.host.hostRequests.some(call => call.method === 'DELETE' && call.address.endsWith('/connections/'+old.connectionId)), false);
+    await assert.rejects(missing.session.connectionBinding(httpConnectionReference(missing.connection), missing.approved), denied);
+    await assert.rejects(missing.run(), denied); await assert.rejects(missing.session.removeConnection(httpConnectionReference(missing.connection)), denied);
+  } finally { await missing.close(); }
+});
+
+Then('Jira late selection or reconnect cancellation and nullable expand never publish a new result', async () => {
+  for (const phase of ['selection-return', 'selection-offline', 'cleanup-return', 'nullable-expand']) {
+    const f = await fixture(); let spy;
+    try {
+      const selection = phase.startsWith('selection'), previous = selection ? undefined : await f.connect();
+      if (phase === 'nullable-expand') {
+        const descriptor = await approvedOperation({ ...f.operation, fields: f.operation.fields.map(field => ({ ...field, nullable: true })) }, jiraSites[0].url);
+        const binding = await f.session.connectionBinding(httpConnectionReference(previous), descriptor), requests = f.host.hostRequests.length;
+        await assert.rejects(f.run({ 'query:expand': null }, f.session, binding, descriptor), error => error.code === 'INVALID');
+        assert.equal(f.host.hostRequests.length, requests); continue;
+      }
+      const task = await f.begin(previous && httpConnectionReference(previous)); await f.host.callback(task); await f.session.pollJiraOAuth(task.id);
+      const controller = new AbortController(), before = structuredClone(f.storage.state), providerCalls = f.host.providerCalls.length;
+      const selects = f.host.hostRequests.filter(call => call.address.endsWith('/select')).length;
+      const method = selection ? 'select' : 'remove', original = JiraCompanionBroker.prototype[method];
+      spy = vi.spyOn(JiraCompanionBroker.prototype, method).mockImplementation(async function (...args) {
+        const result = await original.apply(this, args); if (phase === 'selection-offline') f.host.clientFailure = true;
+        controller.abort(); return result;
+      });
+      await assert.rejects(f.session.completeJiraOAuth(task.id, jiraSites[0].id, controller.signal), error => error.code === 'CANCELLED');
+      assert.equal(spy.mock.calls.length, 1); spy.mockRestore(); spy = undefined;
+      assert.deepEqual(f.storage.state, before); assert.deepEqual(await f.session.connections(), previous ? [previous] : []);
+      assert.equal(f.host.providerCalls.length, providerCalls+1);
+      assert.equal(f.host.hostRequests.filter(call => call.address.endsWith('/select')).length, selects+1);
+      if (phase === 'selection-offline') assert.equal(f.host.hostRequests.filter(call => call.method === 'DELETE' && call.address.endsWith('/authorizations/'+task.id)).length, 1);
+      const requests = f.host.hostRequests.length;
+      await assert.rejects(f.session.completeJiraOAuth(task.id, jiraSites[0].id, controller.signal), denied);
+      assert.equal(f.host.hostRequests.length, requests); assert.equal(f.host.providerCalls.length, providerCalls+1);
+      safe(f.storage.state, sensitive(f));
+    } finally { spy?.mockRestore(); await f.close(); }
+  }
 });

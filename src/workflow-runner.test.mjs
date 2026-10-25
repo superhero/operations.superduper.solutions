@@ -5,13 +5,18 @@
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import demo from "./catalogs/demo.openapi.json" with { type: "json" };
-import { extractOperations, operations, updateCatalogs } from "./lib/catalog.ts";
+import { extractOperations, operations, operationSourceIdentity, publishPreparedCatalogs, updateCatalogs } from "./lib/catalog.ts";
 import { catalogs, catalogForOperation } from "./lib/catalog-registry.ts";
 import { addAdditionalProperty, createOperationGraph, createWorkflowGraph, removeGraphSelection, isWorkflowConnection } from "./lib/workflow-graph.ts";
 import { createWorkflowRunner as createRequestRunner } from "./lib/workflow-runner.ts";
 import { createWorkflowDemo } from "./lib/workflow-demo.ts";
 import { createWorkflowRequestExecution, WorkflowResponseError, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
 import { responseHeaderReader } from "./lib/workflow-response.ts";
+import { assertRequestDeadline } from "../tests/workflow-deadline.fixture.mjs";
+import { InputValidationError } from "./lib/operation-input.ts";
+import { nativeRpcOperation } from "./lib/native-rpc.ts";
+import { dockerNativeReadOperation } from "./lib/docker-native-model.ts";
+import { readServiceSchema } from "./lib/service-schema-packs.ts";
 
 const createWorkflowRunner = (value, startingNodeId) => createRequestRunner(value, startingNodeId, createWorkflowDemo());
 
@@ -40,6 +45,120 @@ const submit = async (runner, values = {}) => {
 };
 const project = { "path:projectId": "project-1" };
 const task = { ...project, "body:title": "A task created in the run", "body:priority": "high" };
+
+async function withRunnerTransportFixtures(action) {
+  const previous = catalogs.map(catalog => ({ catalog, operations: operations.filter(value => value.id.startsWith(catalog.id + ':')),
+    sourceIdentity: operationSourceIdentity(catalog.id + ':') ?? 'runner-original-source' }));
+  const [nativeSource, dockerSource] = await Promise.all([readServiceSchema('codex'), readServiceSchema('docker')]);
+  const native = nativeRpcOperation(nativeSource, 'runner-native:thread/start');
+  const docker = dockerNativeReadOperation(dockerSource, { id: 'docker:ContainerList', method: 'GET', path: '/containers/json' });
+  assert.ok(docker);
+  const reference = { id: crypto.randomUUID(), revision: 1, fingerprint: 'a'.repeat(64) };
+  const nativeBinding = { runtime: reference, fingerprint: 'b'.repeat(64) }, dockerBinding = { host: reference, fingerprint: 'c'.repeat(64) };
+  const graphFor = (model, source, binding) => {
+    const doc = document(createOperationGraph(model, { x: 0, y: 0 }, 'transport', source));
+    if (binding) doc.nodes.find(node => node.type === 'operation').data[model.protocol === 'json-rpc' ? 'nativeBinding' : 'dockerBinding'] = binding;
+    return doc;
+  };
+  publishPreparedCatalogs([...previous.filter(value => !['runner-native', 'docker'].includes(value.catalog.id)),
+    { catalog: { id: 'runner-native', name: 'Native runner fixture', file: 'native.json', document: nativeSource, groups: [], execution: { kind: 'json-rpc' } },
+      operations: [native], sourceIdentity: 'runner-native-fixture' },
+    { catalog: { id: 'docker', name: 'Docker runner fixture', file: 'docker.json', document: dockerSource, groups: [],
+      execution: { kind: 'http', origin: 'https://docker.example.test' } }, operations: [docker], sourceIdentity: 'runner-docker-fixture' }]);
+  try { await action({ native, docker, nativeBinding, dockerBinding,
+    nativeGraph: saved => graphFor(native, nativeSource, saved ? nativeBinding : undefined),
+    dockerGraph: () => graphFor(docker, dockerSource, dockerBinding) }); }
+  finally { publishPreparedCatalogs(previous); }
+}
+
+Then('native runner binding failures are terminal while rejected parameter values remain retryable', async () => {
+  await withRunnerTransportFixtures(async ({ native, nativeGraph, nativeBinding }) => {
+    assert.throws(() => workflowExecutionForOperation(native), /requires a paired runtime/);
+    let calls = 0;
+    const executeNative = async () => { calls++; assert.fail('A refused native binding reached the bridge.'); };
+    const ordinary = () => assert.fail('Native execution entered HTTP.');
+    for (const [saved, bridge, explicit, credentials] of [[false, executeNative, undefined, undefined],
+      [true, executeNative, null, undefined], [true, undefined, undefined, undefined],
+      [true, executeNative, undefined, { alternative: 0, credentials: {}, fingerprint: 'd'.repeat(64) }]]) {
+      const runner = createRequestRunner(nativeGraph(saved), 'transport', { execute: ordinary, ...(bridge ? { executeNative: bridge } : {}) });
+      runner.next();
+      await assert.rejects(() => runner.submit({}, credentials, undefined, explicit), error => error.code === 'PERMISSION');
+      assert.throws(() => runner.next());
+      await assert.rejects(() => runner.submit({}, undefined, undefined, nativeBinding), /no operation ready/);
+    }
+    assert.equal(calls, 0);
+    const runner = createRequestRunner(nativeGraph(true), 'transport', { execute: ordinary,
+      async executeNative(_operation, _values, selected) {
+        assert.deepEqual(selected, nativeBinding);
+        if (++calls === 1) throw new InputValidationError('params:model', 'Choose a supported model.');
+        return { request: { protocol: 'json-rpc', method: 'thread/start', params: {} }, response: { protocol: 'json-rpc', result: { thread: { id: 'thread_fixture' } } } };
+      } });
+    const visit = runner.next();
+    await assert.rejects(() => runner.submit({}), error => error instanceof InputValidationError && error.fieldKey === 'params:model');
+    assert.equal(runner.next(), visit);
+    assert.equal((await runner.submit({})).response.result.thread.id, 'thread_fixture');
+    assert.equal(runner.next().kind, 'complete');
+    const failed = createRequestRunner(nativeGraph(true), 'transport', { execute: ordinary,
+      async executeNative() { throw new Error('Native connection was lost.'); } });
+    failed.next();
+    await assert.rejects(() => failed.submit({}), /Native connection was lost/);
+    assert.throws(() => failed.next(), /Native connection was lost/);
+    await assert.rejects(() => failed.submit({}), /no operation ready/);
+  });
+});
+
+Then('the local demo refuses a source whose execution route changed away from HTTP', () => {
+  const previous = catalogs;
+  try {
+    updateCatalogs(previous.map(catalog => catalog.id === 'demo' ? { ...catalog, execution: { kind: 'json-rpc' } } : catalog));
+    assert.throws(() => createWorkflowDemo().execute(operations.find(value => value.id === 'demo:mockGet'), {}), /unavailable in the local demo/);
+  } finally { updateCatalogs(previous); }
+});
+
+Then('Docker runner selection requires its bridge and keeps an explicit clear on the HTTP route', async () => {
+  await withRunnerTransportFixtures(async ({ dockerGraph }) => {
+    let nativeCalls = 0, httpCalls = 0;
+    const result = { request: { method: 'GET', path: '/containers/json', query: {} },
+      response: { status: 200, statusText: 'OK', headers: {}, body: [] } };
+    const execute = async () => { httpCalls++; return result; };
+    const executeDocker = async () => { nativeCalls++; return result; };
+    for (const [bridge, credentials] of [[undefined, undefined], [executeDocker, { alternative: 0, credentials: {}, fingerprint: 'd'.repeat(64) }]]) {
+      const runner = createRequestRunner(dockerGraph(), 'transport', { execute, ...(bridge ? { executeDocker: bridge } : {}) });
+      const visit = runner.next();
+      await assert.rejects(() => runner.submit({}, credentials), error => error.code === 'PERMISSION');
+      assert.equal(runner.next(), visit, 'A refused Docker selection can be corrected before dispatch.');
+    }
+    assert.equal(nativeCalls, 0); assert.equal(httpCalls, 0);
+    const cleared = createRequestRunner(dockerGraph(), 'transport', { execute, executeDocker });
+    cleared.next();
+    assert.deepEqual((await cleared.submit({}, null, undefined, undefined, undefined, null)).response.body, []);
+    assert.equal(httpCalls, 1); assert.equal(nativeCalls, 0);
+    assert.equal(cleared.next().kind, 'complete');
+  });
+});
+
+Then('cancelled and ended workflow requests suppress late progress and keep cancelled HTTP work retryable', async () => {
+  let settle, progress;
+  const received = [];
+  const result = { request: { method: 'GET', path: '/projects/project-1', query: {} },
+    response: { status: 200, statusText: 'OK', headers: {}, body: { id: 'project-1' } } };
+  const runner = createRequestRunner(document(graph('getProject')), undefined, {
+    execute(_operation, _values, _signal, _context, onProgress) {
+      progress = onProgress; return new Promise(resolve => { settle = resolve; });
+    } });
+  const visit = runner.next();
+  const pending = runner.submit(project, undefined, value => received.push(value));
+  progress({ bytes: 1, events: 0 });
+  runner.cancelPending(); progress({ bytes: 2, events: 0 }); settle(result);
+  await assert.rejects(pending, /request was cancelled/);
+  assert.deepEqual(received, [{ bytes: 1, events: 0 }]);
+  assert.equal(runner.next(), visit);
+  const ended = runner.submit(project, undefined, value => received.push(value));
+  runner.end(); progress({ bytes: 3, events: 0 }); settle(result);
+  await assert.rejects(ended, /run has ended/);
+  assert.deepEqual(received, [{ bytes: 1, events: 0 }]);
+  assert.equal(runner.next().message, 'Run ended.');
+});
 
 Then("the injectable HTTP executor sends catalog requests and maps actual responses", async function () {
   const previous = globalThis.fetch;
@@ -83,10 +202,8 @@ Then("workflow request failures explain network server and response problems and
   const failed = createWorkflowRequestExecution(async () => { throw new TypeError("Failed to fetch"); });
   await assert.rejects(() => failed.execute(operation("getProject"), project), /could not reach https:\/\/example.com/);
   await assert.rejects(() => failed.execute(operation("getProject"), project, AbortSignal.abort()), /cancelled/);
-  const timeout = AbortSignal.timeout;
-  AbortSignal.timeout = () => AbortSignal.abort();
-  try { await assert.rejects(() => failed.execute(operation("getProject"), project), /timed out/); }
-  finally { AbortSignal.timeout = timeout; }
+  await assertRequestDeadline(fetchRequest => createWorkflowRequestExecution(fetchRequest)
+    .execute(operation("getProject"), project), /timed out/);
   const withoutContentType = new Response("no media type", { status: 500 });
   withoutContentType.headers.delete("Content-Type");
   for (const [response, expected, body] of [
@@ -114,9 +231,8 @@ Then("workflow request failures explain network server and response problems and
   });
   await assert.rejects(() => streamingFailure.execute(operation("getProject"), project), /response could not be read/);
   await assert.rejects(() => streamingFailure.execute(operation("getProject"), project, AbortSignal.abort()), /cancelled/);
-  AbortSignal.timeout = () => AbortSignal.abort();
-  try { await assert.rejects(() => streamingFailure.execute(operation("getProject"), project), /timed out/); }
-  finally { AbortSignal.timeout = timeout; }
+  await assertRequestDeadline(fetchRequest => createWorkflowRequestExecution(fetchRequest)
+    .execute(operation("getProject"), project), /timed out/, { body: true });
   let calls = 0;
   const execution = createWorkflowRequestExecution(async () => {
     calls++;

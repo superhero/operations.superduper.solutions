@@ -95,3 +95,19 @@ Feature: Step through workflow requests with explicit test responses
 
   Scenario: One input schema supplies multiple compatible operations
     Then one input schema fans mapped values out to multiple operations after reload
+
+  @coverage-gaps
+  Scenario: Native selection and transport failures cannot replay an uncertain request
+    Then native runner binding failures are terminal while rejected parameter values remain retryable
+
+  @coverage-gaps
+  Scenario: Docker binding selection has a deliberate HTTP fallback
+    Then Docker runner selection requires its bridge and keeps an explicit clear on the HTTP route
+
+  @coverage-gaps
+  Scenario: Late request progress cannot revive a cancelled or ended run
+    Then cancelled and ended workflow requests suppress late progress and keep cancelled HTTP work retryable
+
+  @coverage-gaps
+  Scenario: The local demo cannot consume a replaced source route
+    Then the local demo refuses a source whose execution route changed away from HTTP

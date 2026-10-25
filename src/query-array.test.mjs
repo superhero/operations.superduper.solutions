@@ -119,3 +119,19 @@ Then('native GitLab checkpoints preserve source identity and prepare channel arr
   assert.equal(url.pathname, '/api/v4/ai/duo_workflows/workflows/42/checkpoints'); assert.equal(url.search, '?channels=one,two');
   assert.equal(JSON.stringify(source), original);
 });
+
+Then('mixed comma-separated and ordinary queries preserve their wire values and reject credential collisions', () => {
+  const url = new URL('https://arrays.example.test/items?api_key=old&base=kept');
+  const prepared = { query: { colors: ['a,b', ''], note: 'a b', tags: ['x+y', 'z'], omitted: undefined },
+    querySerialization: { colors: 'form-csv' } };
+  appendRequestQuery(url, prepared, new Map([['api_key', 'private & value']]));
+  assert.equal(url.search, '?base=kept&colors=a%2Cb,&note=a+b&tags=x%2By&tags=z&api_key=private+%26+value');
+  assert.equal(url.searchParams.get('api_key'), 'private & value');
+  assert.deepEqual(url.searchParams.getAll('tags'), ['x+y', 'z']);
+  assert.equal(url.searchParams.has('omitted'), false);
+  assert.throws(() => appendRequestQuery(new URL(url), { ...prepared, query: { ...prepared.query, api_key: 'public' } },
+    new Map([['api_key', 'private']])), /credential query parameter cannot be overwritten/);
+  assert.throws(() => appendRequestQuery(new URL(url), { query: {}, querySerialization: { missing: 'form-csv' } }), /Unsupported prepared/);
+  for (const colors of [[], [Infinity], [NaN]]) assert.throws(() => appendRequestQuery(new URL(url),
+    { query: { colors }, querySerialization: { colors: 'form-csv' } }), /Invalid comma-separated/);
+});

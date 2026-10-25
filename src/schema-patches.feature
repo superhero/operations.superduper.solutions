@@ -5,6 +5,14 @@
 Feature: Reviewable schema corrections and structured upstream merges
   Published changes and local edits retain their meaning when schemas are updated.
 
+  @coverage-gaps
+  Scenario: Qualified recipes retain their authority and wire contracts
+    Then qualified provider recipes refuse changed destinations response shapes and provenance
+
+  @coverage-gaps
+  Scenario: Authentication corrections tolerate non-operation metadata safely
+    Then authentication recipes preserve path metadata absent responses and malformed media without invented credentials
+
   Scenario: Independent upstream edits preserve local schema changes
     Then schema merges preserve unrelated edits deletions and identical changes
 

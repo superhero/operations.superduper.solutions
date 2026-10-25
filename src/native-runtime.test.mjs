@@ -11,10 +11,12 @@ import { Before, After, Then } from '@cucumber/cucumber';
 import { nativeHostFixture } from '../tests/native-runtime.fixture.mjs';
 import { nativeVaultFixture as vault } from '../tests/native-vault.fixture.mjs';
 import { NativeRuntimeBroker } from './lib/secrets/native-runtime.ts';
-import { nativeHost, nativeReference, validateNativeConnection } from './lib/secrets/native-runtime-config.ts';
+import { nativeHost, nativeReference, validateNativeConnection, validateNativeBinding, storedNativeConnections } from './lib/secrets/native-runtime-config.ts';
 import { NativeRuntimeBroker as Broker } from './lib/secrets/native-runtime.ts';
-import { nativeRuntimeProfile, nativeRuntimeLimits } from './lib/native-runtime-contract.ts';
+import { nativeRuntimeProfile, nativeRuntimeLimits, nativeScope } from './lib/native-runtime-contract.ts';
 import { VaultError } from './lib/secrets/types.ts';
+import { decryptJSON, encryptJSON, recoveryKey, unwrapVaultKey } from './lib/secrets/crypto.ts';
+import { sealSnapshot } from './lib/secrets/format.ts';
 import { openCodexRuntime } from '../companions/codex/runtime.mjs';
 
 Before({ tags: '@native-runtime' }, function () { this.nativeFixtures = []; this.nativeBrokers = []; });
@@ -209,4 +211,261 @@ Then('the native runtime isolates its home environment configuration and owned c
     if (previousKey === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = previousKey;
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+// A hostile companion can return frames the trusted host fixture will never emit.
+// Exercise the worker's public transport boundary without relaxing host validation.
+function scriptedRuntime(world, options = {}) {
+  const f = { key: 'K'.repeat(43), host: 'https://native.example.test', now: Date.now(), frames: [], sockets: [], calls: 0,
+    identity: { runtimeId: randomUUID(), generation: randomUUID(), accountEpoch: randomUUID(), version: '0.163.0',
+      configuration: 'a'.repeat(64), workspace: 'b'.repeat(64) } };
+  class Socket extends EventTarget {
+    readyState = 0; bufferedAmount = 0;
+    constructor() { super(); f.sockets.push(this); queueMicrotask(() => { this.readyState = 1; this.dispatchEvent(new Event('open')); }); }
+    receive(value) { this.dispatchEvent(new MessageEvent('message', { data: typeof value === 'string' ? value : JSON.stringify(value) })); }
+    send(text) {
+      const frame = JSON.parse(text); f.frames.push(frame);
+      if (options.send?.(frame, this, f) === true) return;
+      if (frame.type === 'pair') {
+        const paired = { type: 'paired', profile: nativeRuntimeProfile, identity: f.identity, scope: f.scope, expiresAt: f.now + 10000 };
+        const payload = options.paired ? options.paired(paired) : paired;
+        queueMicrotask(() => this.receive(payload));
+      } else if (frame.id && frame.method) queueMicrotask(() => this.receive({ id: frame.id,
+        result: frame.method === 'account/read' ? { account: null, requiresOpenaiAuth: true } : {} }));
+    }
+    close() { if (this.readyState !== 3) { this.readyState = 3; this.dispatchEvent(new Event('close')); } }
+  }
+  f.runtime = { now: () => f.now, requestMs: 80, WebSocket: Socket, fetch: async (_url, init) => {
+    f.calls++; f.scope = JSON.parse(init.body).scope;
+    if (options.fetch) return options.fetch(f, init);
+    return Response.json({ ticket: 'T'.repeat(43), expiresAt: f.now + 1000, identity: f.identity });
+  } };
+  f.broker = broker(world, f);
+  f.check = (id = randomUUID(), signal, guard = async () => {}) => f.broker.check(id, f.host, f.key, 'c'.repeat(64), undefined, guard, signal);
+  f.agent = (id = randomUUID(), events = { frame: () => false, closed() {} }, guard = async () => {}) =>
+    f.broker.agent(id, f.host, f.key, 'c'.repeat(64), f.identity, guard, events);
+  return f;
+}
+
+Then('native ticket parsing rejects malformed opaque and oversized responses before opening sockets', async function () {
+  const responses = [
+    () => new Response(null, { status: 403 }), () => new Response(null, { headers: { 'content-type': 'application/json' } }),
+    () => new Response('{}', { headers: { 'content-type': 'text/plain' } }),
+    () => new Response('{', { headers: { 'content-type': 'application/json' } }),
+    () => new Response(new Uint8Array([255]), { headers: { 'content-type': 'application/json' } }),
+    () => Response.json({ padding: 'x'.repeat(8192) }),
+    f => Response.json({ ticket: 'short', expiresAt: f.now + 1000, identity: f.identity }),
+    f => Response.json({ ticket: 'T'.repeat(43), expiresAt: f.now, identity: f.identity }),
+    f => Response.json({ ticket: 'T'.repeat(43), expiresAt: f.now + nativeRuntimeLimits.ticketMs + 1, identity: f.identity }),
+    f => Response.json({ ticket: 'T'.repeat(43), expiresAt: f.now + 1000, identity: { ...f.identity, version: '0.164.0' } }),
+  ];
+  for (const fetch of responses) {
+    const f = scriptedRuntime(this, { fetch }); await assert.rejects(f.check(), { code: 'AUTHORIZATION' }); assert.equal(f.sockets.length, 0);
+  }
+  const opaque = scriptedRuntime(this, { fetch() { throw new Error('private upstream detail'); } });
+  await assert.rejects(opaque.check(), error => error.code === 'NETWORK' && !error.message.includes('private upstream'));
+  const f = scriptedRuntime(this), cancel = new AbortController(); cancel.abort();
+  await assert.rejects(f.check(randomUUID(), cancel.signal), { code: 'CANCELLED' });
+  await assert.rejects(f.broker.check(randomUUID(), f.host, 'bad', 'c'.repeat(64), undefined, async () => {}), { code: 'INVALID' });
+  assert.equal(f.calls, 0);
+});
+
+Then('native pairing rejects forged scope expiry and malformed socket messages and closes the peer', async function () {
+  for (const paired of [
+    value => ({ ...value, profile: 'unreviewed' }), value => ({ ...value, type: 'result' }),
+    value => ({ ...value, identity: { ...value.identity, workspace: 'd'.repeat(64) } }),
+    value => ({ ...value, scope: { ...value.scope, connectionId: randomUUID() } }),
+    value => ({ ...value, scope: { ...value.scope, method: 'codex-workflow' } }),
+    value => ({ ...value, scope: { ...value.scope, fingerprint: 'd'.repeat(64) } }),
+    value => ({ ...value, expiresAt: 0 }), value => ({ ...value, expiresAt: Date.now() + nativeRuntimeLimits.sessionMs + 10000 }),
+    () => '{', () => 'K'.repeat(43), () => 'x'.repeat(nativeRuntimeLimits.frame + 1),
+  ]) {
+    const f = scriptedRuntime(this, { paired }); await assert.rejects(f.check(), { code: 'AUTHORIZATION' });
+    assert.equal(f.sockets[0].readyState, 3); assert.equal(f.frames.some(frame => frame.method === 'initialize'), false);
+  }
+  assert.throws(() => nativeScope({ connectionId: randomUUID(), method: 'account/read', fingerprint: 123 }));
+});
+
+Then('native broker limits concurrent owners and requests and revokes expired or disconnected work', async function () {
+  const f = scriptedRuntime(this), id = randomUUID();
+  const first = f.check(id); await assert.rejects(f.check(id), { code: 'CONFLICT' }); await first;
+  assert.equal((await f.check(id)).accountType, 'none'); assert.equal(f.calls, 1, 'A current owner reuses its transport.');
+  for (let index = 0; index < 3; index++) await f.check();
+  await assert.rejects(f.check(), { code: 'LIMIT' }); await assert.rejects(f.agent(), { code: 'LIMIT' });
+  f.broker.clear(); assert.ok(f.sockets.every(socket => socket.readyState === 3));
+  const pending = scriptedRuntime(this, { send: frame => frame.method === 'thread/start' }), owner = randomUUID(), peer = await pending.agent(owner);
+  assert.equal(await pending.agent(owner), peer, 'A workflow owner reuses matching authority.');
+  const requests = Array.from({ length: nativeRuntimeLimits.pending }, () => peer.request('thread/start', {}));
+  const failures = requests.map(request => assert.rejects(request, { code: 'NETWORK' }));
+  await assert.rejects(peer.request('thread/start', {}), { code: 'LIMIT' }); pending.broker.close(owner); await Promise.all(failures);
+  assert.equal(pending.broker.connected(owner), false);
+  const expired = scriptedRuntime(this), expiredPeer = await expired.agent(); expired.now = expiredPeer.expiresAt;
+  await assert.rejects(expiredPeer.request('thread/start', {}), { code: 'AUTHORIZATION' }); assert.equal(expiredPeer.socket.readyState, 3);
+  const cancelled = scriptedRuntime(this), cancelledPeer = await cancelled.agent(), cancel = new AbortController(); cancel.abort();
+  await assert.rejects(cancelledPeer.request('thread/start', {}, cancel.signal), { code: 'CANCELLED' });
+});
+
+Then('native broker rejects malformed account results and converts socket failures without leaking details', async function () {
+  for (const result of [null, [], {}, { requiresOpenaiAuth: 'yes', account: null }, { requiresOpenaiAuth: true },
+    { requiresOpenaiAuth: true, account: [] }, { requiresOpenaiAuth: true, account: { type: 'foreign' } }]) {
+    const f = scriptedRuntime(this, { send(frame, socket) { if (frame.method !== 'account/read') return false;
+      queueMicrotask(() => socket.receive({ id: frame.id, result })); return true; } });
+    await assert.rejects(f.check(), { code: 'AUTHORIZATION' }); assert.equal(f.sockets[0].readyState, 3);
+  }
+  const rpcError = scriptedRuntime(this, { send(frame, socket) { if (frame.method !== 'thread/start') return false;
+    queueMicrotask(() => socket.receive({ id: frame.id, error: { message: 'private upstream detail' } })); return true; } });
+  const peer = await rpcError.agent(); await assert.rejects(peer.request('thread/start', {}), error => error.code === 'NATIVE_FAILED' && !error.message.includes('private upstream'));
+  peer.socket.bufferedAmount = nativeRuntimeLimits.frame + 1;
+  await assert.rejects(peer.request('thread/start', {}), { code: 'NETWORK' });
+  const opaque = scriptedRuntime(this); let guards = 0;
+  await assert.rejects(opaque.check(randomUUID(), undefined, async () => { if (++guards === 4) throw new Error('private guard detail'); }),
+    error => error.code === 'NETWORK' && !error.message.includes('private guard'));
+});
+
+Then('native stalled pairing retries only tickets while malformed live frames revoke owned work', async function () {
+  const retry = scriptedRuntime(this, { fetch: f => f.calls === 1 ? new Response(null, { status: 409 })
+    : Response.json({ ticket: 'T'.repeat(43), expiresAt: f.now + 1000, identity: f.identity }) });
+  retry.runtime.requestMs = 500; await retry.agent(); assert.equal(retry.calls, 2);
+  assert.equal(retry.frames.filter(frame => frame.method === 'initialize').length, 1);
+  const stalled = scriptedRuntime(this, { send: frame => frame.type === 'pair' });
+  // The shared request deadline aborts the handshake before its socket timer.
+  await assert.rejects(stalled.check(), { code: 'CANCELLED' }); assert.equal(stalled.sockets[0].readyState, 3);
+  const cancel = new AbortController(), cancelled = scriptedRuntime(this, { send: frame => frame.type === 'pair' });
+  const opening = cancelled.check(randomUUID(), cancel.signal), rejected = assert.rejects(opening, { code: 'CANCELLED' });
+  await wait(() => cancelled.sockets.length); cancel.abort(); await rejected;
+  const fetching = scriptedRuntime(this, { fetch: (_f, init) => new Promise((_resolve, reject) => {
+    init.signal.addEventListener('abort', () => reject(new Error('closed while opening')), { once: true });
+  }) });
+  const work = fetching.check(), closed = assert.rejects(work, { code: 'CANCELLED' });
+  await wait(() => fetching.calls); fetching.broker.clear(); await closed; assert.deepEqual(fetching.sockets, []);
+  for (const payload of ['binary', 'ambiguous', 'foreign', 'notification', 'expired', 'huge']) {
+    const f = scriptedRuntime(this, { send: frame => frame.method === 'thread/start' }), peer = await f.agent();
+    const result = peer.request('thread/start', {}), failure = assert.rejects(result, { code: 'NETWORK' });
+    await wait(() => f.frames.some(frame => frame.method === 'thread/start'));
+    const id = f.frames.find(frame => frame.method === 'thread/start').id;
+    if (payload === 'binary') peer.socket.dispatchEvent(new MessageEvent('message', { data: new Uint8Array([1]) }));
+    else if (payload === 'ambiguous') peer.socket.receive({ id, result: {}, error: {} });
+    else if (payload === 'foreign') peer.socket.receive({ id: 'foreign', result: {} });
+    else if (payload === 'notification') peer.socket.receive({ method: 'foreign', params: {} });
+    else if (payload === 'huge') peer.socket.receive('x'.repeat(nativeRuntimeLimits.frame + 1));
+    else { f.now = peer.expiresAt; peer.socket.receive({ id, result: {} }); }
+    await failure; assert.equal(peer.socket.readyState, 3);
+  }
+  const failed = scriptedRuntime(this, { send(frame) { if (frame.type === 'pair') throw new Error('socket unavailable'); } });
+  await assert.rejects(failed.check(), { code: 'AUTHORIZATION' });
+});
+
+Then('native saved authority rejects malformed bindings duplicate owners and removed profiles', async function () {
+  const f = await fixture(this), v = await vault(f);
+  try {
+    await assert.rejects(v.session.pairNativeRuntime({ ...v.input, pairingKeyId: randomUUID() }, v.selection), { code: 'PERMISSION' });
+    const saved = await v.session.pairNativeRuntime(v.input, v.selection), { connected: _connected, ...connection } = saved;
+    for (const binding of [{ runtime: nativeReference(connection), fingerprint: 1 }, { runtime: nativeReference(connection), fingerprint: 'bad' },
+      { runtime: { ...nativeReference(connection), revision: 0 }, fingerprint: 'a'.repeat(64) }]) assert.throws(() => validateNativeBinding(binding), { code: 'INVALID' });
+    assert.deepEqual(validateNativeBinding({ runtime: nativeReference(connection), fingerprint: 'a'.repeat(64) }).runtime, nativeReference(connection));
+    assert.throws(() => storedNativeConnections([{ id: randomUUID(), nativeConnections: [connection] }]), { code: 'INVALID' });
+    assert.throws(() => storedNativeConnections([{ id: v.keyId, nativeConnections: [connection, connection] }]), { code: 'LIMIT' });
+    await assert.rejects(v.session.disconnectNativeRuntime(nativeReference(connection), 'yes'), { code: 'INVALID' });
+    await assert.rejects(v.session.disconnectNativeRuntime({ ...nativeReference(connection), revision: 2 }), { code: 'CONFLICT' });
+    f.account = { type: 'apiKey' }; await assert.rejects(v.session.checkNativeRuntime(nativeReference(connection), v.selection), { code: 'AUTHORIZATION' });
+    assert.deepEqual(await v.session.disconnectNativeRuntime(nativeReference(connection), true), []);
+    await assert.rejects(v.session.checkNativeRuntime(nativeReference(connection), v.selection), { code: 'CONFLICT' });
+  } finally { v.session.lock(); }
+});
+
+async function rewriteNativeRecord(v, snapshot, mutate) {
+  v.session.lock();
+  const context = item => ({ vaultId: snapshot.id, epoch: snapshot.epoch, kind: item.kind, id: item.id, revision: item.revision });
+  const envelope = snapshot.envelopes.find(item => item.id === v.proof.methodId);
+  const key = await unwrapVaultKey(envelope.wrappedKey, await recoveryKey(v.proof.secret, envelope.salt), context(envelope));
+  const values = await Promise.all(snapshot.records.map(record => decryptJSON(key, record.ciphertext, context(record))));
+  await mutate(values);
+  const records = await Promise.all(snapshot.records.map(async (record, index) => ({ ...record, ciphertext: await encryptJSON(key, values[index], context(record)) })));
+  v.storage.state.snapshot = await sealSnapshot({ id: snapshot.id, epoch: snapshot.epoch, revision: snapshot.revision, envelopes: snapshot.envelopes, records }, key);
+  v.storage.state.revision++; v.storage.state.lockEpoch++;
+  v.session = v.newSession(); await v.session.unlock(v.proof); return values;
+}
+
+Then('native encrypted records reject malformed collections altered fingerprints and excessive saved authority', async function () {
+  const f = await fixture(this), v = await vault(f);
+  try {
+    const paired = await v.session.pairNativeRuntime(v.input, v.selection), selections = await v.workflowSelections();
+    await v.session.enableNativeWorkflow(nativeReference(paired), selections);
+    const snapshot = structuredClone(v.storage.state.snapshot);
+    for (const mutate of [owner => owner.nativeConnections = {}, owner => owner.nativeConnections = Array(33).fill(owner.nativeConnections[0]),
+      owner => owner.nativeConnections.push(owner.nativeConnections[0])]) {
+      await rewriteNativeRecord(v, snapshot, values => mutate(values.find(value => value.id === v.keyId)));
+      await assert.rejects(v.session.nativeConnections(), { code: 'LIMIT' });
+    }
+    await rewriteNativeRecord(v, snapshot, values => values.find(value => value.id === v.keyId).nativeConnections[0].pairingKeyId = randomUUID());
+    await assert.rejects(v.session.nativeConnections(), { code: 'INVALID' });
+    for (const mutate of [owner => owner.value = 'R'.repeat(43), owner => owner.nativeConnections[0].keyHash = 'd'.repeat(64),
+      owner => owner.nativeConnections[0].modelFingerprint = 'd'.repeat(64), owner => owner.nativeConnections[0].fingerprint = 'd'.repeat(64)]) {
+      const values = await rewriteNativeRecord(v, snapshot, records => mutate(records.find(value => value.id === v.keyId)));
+      const connection = values.find(value => value.id === v.keyId).nativeConnections[0], reference = nativeReference(connection), before = f.requests.length;
+      await assert.rejects(v.session.checkNativeRuntime(reference, v.selection), { code: 'AUTHORIZATION' });
+      await assert.rejects(v.session.enableNativeWorkflow(reference, selections), { code: 'AUTHORIZATION' });
+      assert.equal(f.requests.length, before, 'Altered encrypted authority cannot create a ticket.');
+    }
+    await rewriteNativeRecord(v, snapshot, values => {
+      const owner = values.find(value => value.id === v.keyId), connection = owner.nativeConnections[0];
+      owner.nativeConnections = Array.from({ length: 32 }, () => ({ ...connection, id: randomUUID() }));
+    });
+    await assert.rejects(v.session.pairNativeRuntime(v.input, v.selection), { code: 'LIMIT' });
+    const other = await v.workflowSelections();
+    await assert.rejects(v.session.pairNativeRuntime(v.input, other.find(value => value.operation.rpc.method === 'thread/start')), { code: 'PERMISSION' });
+  } finally { v.session.lock(); }
+});
+
+Then('native runtime defaults retain TLS trust and changed peer authority forces a fresh check', async function () {
+  const host = await fixture(this), defaults = new NativeRuntimeBroker({ fetch: host.fetch, WebSocket: host.Socket }); this.nativeBrokers.push(defaults);
+  const id = randomUUID(); await defaults.check(id, host.publicOrigin, host.key, 'c'.repeat(64), undefined, async () => {});
+  assert.equal(defaults.connected(id), true); defaults.close(id); await wait(() => host.stops === host.starts);
+  const untrusted = new NativeRuntimeBroker({ fetch: host.fetch, requestMs: 300 }); this.nativeBrokers.push(untrusted);
+  const before = host.starts; await assert.rejects(untrusted.check(randomUUID(), host.publicOrigin, host.key, 'c'.repeat(64), undefined, async () => {}));
+  assert.equal(host.starts, before, 'Default browser sockets cannot bypass TLS and Origin checks.');
+  const f = scriptedRuntime(this), owner = randomUUID(); await f.check(owner);
+  await f.broker.check(owner, f.host, f.key, 'd'.repeat(64), undefined, async () => {});
+  assert.equal(f.calls, 2); assert.equal(f.sockets[0].readyState, 3);
+  f.key = 'Q'.repeat(43); await f.check(owner); assert.equal(f.calls, 3);
+  f.identity.workspace = 'd'.repeat(64);
+  await f.broker.check(owner, f.host, f.key, 'c'.repeat(64), f.identity, async () => {});
+  assert.equal(f.calls, 4); assert.equal(f.broker.connected(owner), true);
+  const foreign = scriptedRuntime(this);
+  await assert.rejects(foreign.broker.agent(randomUUID(), foreign.host, foreign.key, 'c'.repeat(64), { ...foreign.identity, workspace: 'd'.repeat(64) },
+    async () => {}, { frame: () => true, closed() {} }), { code: 'AUTHORIZATION' }); assert.deepEqual(foreign.sockets, []);
+  const authority = scriptedRuntime(this), peer = await authority.agent(randomUUID(), { frame: () => true, closed() {} });
+  peer.socket.receive({ type: 'authority', identity: { ...authority.identity, workspace: 'd'.repeat(64) } });
+  assert.equal(peer.socket.readyState, 3, 'A consumer cannot accept changes to pinned runtime authority.');
+});
+
+Then('native cancellation and disconnect during asynchronous guards cannot publish a paired peer', async function () {
+  for (const phase of [2, 3]) for (const mode of ['cancel', 'deadline', 'disconnect']) {
+    if (phase === 2 && mode === 'disconnect') continue;
+    const f = scriptedRuntime(this), cancel = new AbortController(); let calls = 0;
+    await assert.rejects(f.check(randomUUID(), cancel.signal, async () => {
+      if (++calls !== phase) return;
+      if (mode === 'cancel') cancel.abort();
+      else if (mode === 'disconnect') f.sockets[0].close();
+      else await new Promise(resolve => setTimeout(resolve, 100));
+    }), { code: mode === 'cancel' ? 'CANCELLED' : 'NETWORK' });
+    assert.ok(f.sockets.every(socket => socket.readyState === 3));
+  }
+  const error = scriptedRuntime(this, { send(frame, socket) { if (frame.method !== 'initialize') return false;
+    queueMicrotask(() => socket.receive({ id: frame.id, error: { message: 'private initialization detail' } })); return true; } });
+  await assert.rejects(error.agent(), { code: 'NATIVE_FAILED' }); assert.equal(error.sockets[0].readyState, 3);
+  const checking = scriptedRuntime(this, { send(frame, socket) { if (frame.method !== 'account/read') return false;
+    queueMicrotask(() => socket.receive({ id: frame.id, error: { message: 'private account detail' } })); return true; } });
+  await assert.rejects(checking.check(), { code: 'AUTHORIZATION' });
+  const opening = scriptedRuntime(this, { fetch: (_f, init) => new Promise((_resolve, reject) => {
+    init.signal.addEventListener('abort', () => reject(new Error('closed during initialization')), { once: true });
+  }) });
+  const run = opening.agent(), failed = assert.rejects(run, { code: 'CANCELLED' });
+  await wait(() => opening.calls); opening.broker.clear(); await failed; assert.deepEqual(opening.sockets, []);
+});
+
+Then('native handshake expiry closes an unacknowledged socket before the overall request deadline', { timeout: 10000 }, async function () {
+  const f = scriptedRuntime(this, { send: frame => frame.type === 'pair' }); f.runtime.requestMs = 10000;
+  await assert.rejects(f.check(), { code: 'NETWORK' }); assert.equal(f.sockets[0].readyState, 3);
+  assert.equal(f.frames.some(frame => frame.method === 'initialize'), false);
 });

@@ -41,3 +41,31 @@ Feature: Private GitLab public OAuth
 
   Scenario: Isolated popups keep waiting for an authenticated callback
     Then GitLab ignores foreign callback messages and a severed opener can return through its channel or cancel
+
+  @coverage-gaps
+  Scenario: Saved GitLab registrations reject malformed records
+    Then GitLab rejects malformed saved state registrations and noncanonical callback authority
+
+  @coverage-gaps
+  Scenario: Pending GitLab authorization is bounded and generation aware
+    Then GitLab bounds pending consent and cancels authorization when its generation changes
+
+  @coverage-gaps
+  Scenario: Provider failures and cancellation withhold exchanged GitLab credentials
+    Then GitLab malformed provider replies and cancellation never publish exchanged credentials
+
+  @coverage-gaps
+  Scenario: Reconnect preserves current authority and private identity boundaries
+    Then GitLab reconnect refuses removed authority duplicate labels and private identity echoes
+
+  @coverage-gaps
+  Scenario: Disconnect and malformed saved state remain authoritative during rotation
+    Then GitLab disconnect or missing managed state cannot be undone by a rotating grant
+
+  @coverage-gaps
+  Scenario: Renewal cache retention does not make stale grants reusable
+    Then GitLab bounds renewal cache retention and rejects evicted one use grant snapshots
+
+  @coverage-gaps
+  Scenario: Late cancellation cannot commit or replay GitLab consent
+    Then GitLab cancellation after exchange or authority reading cannot commit or replay consent

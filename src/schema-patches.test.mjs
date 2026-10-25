@@ -7,6 +7,49 @@ import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/sche
 import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
+import * as recipes from './lib/schema-patches.ts';
+import { readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
+import { cloudflareUploadContracts } from './lib/cloudflare-upload.ts';
+
+Then('qualified provider recipes refuse changed destinations response shapes and provenance', async () => {
+  for (const patch of [recipes.httpResponseStreaming, recipes.telegramPrivatePath, recipes.xOauth1Signing, recipes.cloudflarePrivateUpload, recipes.providerPathBindings, recipes.atlassianServerBindings, recipes.awsS3Files, recipes.awsWireProtocols]) assert.notEqual(schemaPatchName(patch), 'Unknown schema correction');
+  const check = (raw, patch, mutations) => {
+    for (const mutate of mutations) { const changed = structuredClone(raw); mutate(changed); const before = JSON.stringify(changed); assert.throws(() => applySchemaPatches(changed, [patch])); assert.equal(JSON.stringify(changed), before); }
+  };
+  const streaming = await readServiceSchemaUpstream('openai');
+  check(streaming, recipes.httpResponseStreaming, [d => d.paths['/responses'].post.operationId = 'other', d => delete d.paths['/responses'].post.responses['200'].content['application/json']]);
+  const telegram = await readServiceSchemaUpstream('telegram');
+  check(telegram, recipes.telegramPrivatePath, [d => d.paths['/invalid/path'] = d.paths['/getMe'], d => d.paths['/getMe'].servers = [{ url: 'https://other.example.test' }]]);
+  telegram.paths['/getMe'].summary = 'Method metadata';
+  assert.equal(applySchemaPatches(telegram, [recipes.telegramPrivatePath]).paths['/getMe'].summary, 'Method metadata');
+  const x = await readServiceSchemaUpstream('x');
+  check(x, recipes.xOauth1Signing, [d => Object.values(d.paths)[0].servers = [{ url: 'https://other.example.test' }]]);
+  const cloudflare = await readServiceSchemaUpstream('cloudflare'), [method, path] = Object.values(cloudflareUploadContracts)[0];
+  check(cloudflare, recipes.cloudflarePrivateUpload, [d => d.components.securitySchemes = null, d => d.components.securitySchemes.assets_jwt = { type: 'http', scheme: 'basic' }, d => d.paths[path][method.toLowerCase()].servers = [{ url: 'https://other.example.test' }]]);
+  const sparse = structuredClone(cloudflare); delete sparse.paths[path][method.toLowerCase()].responses;
+  assert.equal(applySchemaPatches(sparse, [recipes.cloudflarePrivateUpload]).paths[path][method.toLowerCase()]['x-operations-cloudflare-upload'], Object.keys(cloudflareUploadContracts)[0]);
+  const s3 = await readServiceSchemaUpstream('aws-s3');
+  check(s3, recipes.awsS3Files, [d => d.paths['/{Bucket}/{Key}'] = null]);
+  delete s3.paths['/{Bucket}/{Key}'].get.parameters;
+  assert.deepEqual(applySchemaPatches(s3, [recipes.awsS3Files]).paths['/{Bucket}/{Key}'].get['x-upstream-s3-object-contract'].parameters, []);
+  for (const pack of ['aws-dynamodb', 'aws-sts']) {
+    const raw = await readServiceSchemaUpstream(pack), path = pack === 'aws-dynamodb' ? '/#X-Amz-Target=DynamoDB_20120810.BatchGetItem' : '/#Action=GetCallerIdentity';
+    check(raw, recipes.awsWireProtocols, [d => d.paths[path] = null, d => d.paths[path].post.operationId = 'other', d => delete d.paths[path].post.responses['200'].content[pack === 'aws-dynamodb' ? 'application/json' : 'text/xml'].schema]);
+    delete raw.paths[path].post.parameters; delete raw.paths[path].parameters;
+    const fixed = applySchemaPatches(raw, [recipes.awsWireProtocols]);
+    assert.deepEqual(fixed.paths[path].post['x-upstream-aws-wire-contract'].parameters, []);
+  }
+});
+
+Then('authentication recipes preserve path metadata absent responses and malformed media without invented credentials', () => {
+  const anthropic = anthropicFixture(); anthropic.paths['/'] = { get: structuredClone(anthropic.paths['/v1/models'].get) };
+  assert.throws(() => applySchemaPatches(anthropic, [anthropicAuthentication]), /unreviewed/);
+  const eleven = elevenLabsFixture(); eleven.paths['/v1/history'].summary = 'Metadata'; eleven.paths['/v1/history'].post = null;
+  delete eleven.paths['/v1/history'].get.responses;
+  eleven.paths['/v1/metadata'] = { get: { security: [], responses: { '200': { content: { 'application/json': null, 'text/plain': {} } } } } };
+  const fixed = applySchemaPatches(eleven, [elevenLabsAuthentication]);
+  assert.equal(fixed.paths['/v1/history'].summary, 'Metadata'); assert.equal(fixed.paths['/v1/metadata'].get['x-operations-credential-result'], undefined);
+});
 
 Then('schema merges preserve unrelated edits deletions and identical changes', () => {
   const base = { info: { title: 'Published', version: '1', description: 'Old' }, paths: { '/items': {} }, obsolete: true };

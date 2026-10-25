@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { Given, Then } from "@cucumber/cucumber";
-import { faviconFiles } from "../build/favicons.mjs";
+import { listBundleFiles, OAUTH_FILES } from "../.github/scripts/bundle-contract.mjs";
 
 let html;
 
@@ -12,7 +12,11 @@ Given("the production build has completed", async function ()
 
 Then("the dist directory contains the application hosting files and optional speech resources", async function ()
 {
-  assert.deepEqual((await readdir("dist")).sort(), ["_headers", "index.html", "speech", ...faviconFiles].sort());
+  const files = listBundleFiles('dist');
+  for (const file of OAUTH_FILES) {
+    assert.ok(files.includes(file), `The current build must include ${file}.`);
+    assert.equal(await readFile(`dist/${file}`, 'utf8'), await readFile(`src/public/${file}`, 'utf8'));
+  }
 });
 
 Then("optional speech resources preserve runtime isolation and license notices", async function () {

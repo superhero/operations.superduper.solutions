@@ -11,7 +11,8 @@ import { awsSyntheticValues as credentials, verifyAwsSignature } from '../tests/
 import { applySchemaPatches, awsS3Files } from './lib/schema-patches.ts';
 import { readServiceSchema, readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
-import { configureS3Files, encodeS3Key, s3SigningEndpoint, s3ObjectUrl, s3SourceSha256, s3MetadataHeaders } from './lib/s3-files.ts';
+import { configureS3Files, encodeS3Key, s3SigningEndpoint, s3ObjectUrl, s3SourceSha256, s3MetadataHeaders, s3FilesProfile, validateS3Bucket, validS3FilesModel } from './lib/s3-files.ts';
+import { s3PayloadChecksum } from './lib/secrets/s3-files.ts';
 import { prepareRequest } from './lib/operation-input.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { VaultSession } from './lib/secrets/session.ts';
@@ -33,6 +34,38 @@ const checksumHeaders=bytes=>({'ETag':'"'+hash(bytes,'md5','hex')+'"','x-amz-che
 const ordinary=profile=>({id:'aws-s3:'+ (profile==='put-object'?'PutObject':'GetObject'),name:profile,description:'',group:'S3',method:profile==='put-object'?'PUT':'GET',path:'/{Bucket}/{Key}',fields:[],bodyRequired:false,
   security:[[{name:'hmac',kind:'aws-sigv4',header:'Authorization',profile:'s3-object'}]]});
 const decoded=file=>Uint8Array.from(Buffer.from(file.base64,'base64'));
+Then('S3 rejects a nonstandard success without releasing object bytes', async () => {
+  const f = await fixture(); f.stored.set(bucket + '/' + key, { bytes: rawBytes, media: 'application/octet-stream' });
+  const provider = f.provider; f.provider = async (...args) => { const response = await provider(...args); await response.body.cancel(); return new Response(null, { status: 204, headers: response.headers }); };
+  await assert.rejects(f.run('get-object'), { code: 'S3_INTEGRITY' }); assert.equal(f.calls.length, 1);
+});
+Then('S3 rejects malformed addressing metadata and stale logical contracts at their public boundaries', async () => {
+  assert.equal(s3FilesProfile(undefined), undefined);
+  assert.throws(() => s3FilesProfile('list-objects'));
+  assert.equal(encodeS3Key("folder/!'()*"), 'folder/%21%27%28%29%2A');
+  for (const suffix of ['/', '?', '#']) for (const style of ['path', 'virtual']) {
+    const origin = 'https://' + (style === 'virtual' ? bucket + '.' : '') + 's3.us-east-1.amazonaws.com';
+    const url = s3ObjectUrl(origin + suffix, '/' + bucket + '/' + encodeS3Key('/key'));
+    assert.equal(url.origin, origin); assert.equal(url.pathname, style === 'virtual' ? '//key' : '/' + bucket + '//key');
+    assert.equal(url.search, ''); assert.equal(url.hash, '');
+  }
+  for (const value of ['a..b', 'a.-b', '192.168.1.1', 'xn--bucket', 'bucket--x-s3', 'Aaa', 'ab']) assert.throws(() => validateS3Bucket(value), value);
+  for (const value of ['', 'x'.repeat(1025), 'a/../b', '\u0000']) assert.throws(() => encodeS3Key(value));
+  for (const value of ['not a URL', 'https://xn--bucket.s3.us-east-1.amazonaws.com', 'https://s3.unknown-1.amazonaws.com', 'https://s3.us-east-1.amazonaws.com?x=1']) assert.equal(s3SigningEndpoint(value), undefined);
+  for (const [origin, path] of [['https://s3.us-east-1.amazonaws.com', '/missing-key'], ['https://s3.us-east-1.amazonaws.com', '/bucket/%XX'], ['https://s3.us-east-1.amazonaws.com', '/bucket/%41'], ['http://s3.us-east-1.amazonaws.com', '/bucket/key']]) assert.throws(() => s3ObjectUrl(origin, path));
+  for (const value of [null, [], { a: 1 }, { A: 'one', a: 'two' }, { key: 'x'.repeat(2049) }, Object.fromEntries(Array.from({ length: 33 }, (_, i) => ['key' + i, 'v']))]) assert.throws(() => s3MetadataHeaders(value));
+  assert.deepEqual({ ...s3MetadataHeaders({ Note: 'safe' }) }, { 'x-amz-meta-note': 'safe' });
+  assert.throws(() => configureS3Files({ ...ordinary('get-object'), method: 'POST' }, 'get-object'));
+  assert.equal(validS3FilesModel(ordinary('get-object')), false);
+  const model = ordinary('put-object'); configureS3Files(model, 'put-object');
+  await assert.rejects(approvedOperation({ ...model, security: undefined }, 'https://s3.us-east-1.amazonaws.com'), { code: 'PERMISSION' });
+  for (const mutate of [m => m.responseStream = 'ollama-chat', m => m.fields.pop(), m => m.security = [], m => m.security[0].push(m.security[0][0]), m => m.security[0][0].profile = 'lambda-list-functions']) {
+    const changed = structuredClone(model); mutate(changed); assert.equal(validS3FilesModel(changed), false);
+  }
+  const reordered = structuredClone(model); reordered.fields = reordered.fields.map(f => Object.fromEntries(Object.entries(f).reverse()));
+  assert.equal(validS3FilesModel(reordered), true);
+  for (const body of [null, 'bytes', new Blob([new Uint8Array(500001)])]) await assert.rejects(s3PayloadChecksum(body), { code: 'LIMIT' });
+});
 function safe(value){for(const secret of Object.values(credentials))for(const form of [secret,encodeURIComponent(secret),new URLSearchParams({v:secret}).toString().slice(2)])assert.ok(!JSON.stringify(value).includes(form));}
 async function fixture(style='path') {
   const origin='https://'+(style==='virtual'?bucket+'.':'')+'s3.'+region+'.amazonaws.com';

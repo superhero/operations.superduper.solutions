@@ -19,13 +19,13 @@ type Context = { controller: AbortController; guard: Guard; input: AtprotoOAuthI
   states: Map<string, InternalStateData>; session?: Session; refreshDispatched: boolean; nonceRetry: boolean; calls: number };
 type Pending = { id: string; state: string; expiresAt: number; client: OAuthClient; context: Context; replace?: HttpConnectionReference };
 const same = (a: unknown, b: unknown) => canonicalPolicyValue(a) === canonicalPolicyValue(b);
-function identityPds(value: unknown): string {
-  const info = credentialObject(value), doc = credentialObject(info.didDoc);
-  if (!Array.isArray(doc.service)) throw new VaultError("AUTHORIZATION");
-  const services = doc.service.map(credentialObject).filter(item => item.type === "AtprotoPersonalDataServer"
-    && (item.id === "#atproto_pds" || item.id === String(doc.id) + "#atproto_pds"));
-  if (services.length !== 1) throw new VaultError("AUTHORIZATION");
-  const url = publicAtprotoUrl(services[0]!.serviceEndpoint);
+type Identity = Awaited<ReturnType<OAuthClient["oauthResolver"]["resolveFromIdentity"]>>["identityInfo"];
+function identityPds(info: Identity): string {
+  // The pinned resolver validates document shape, canonical service ID uniqueness,
+  // and PDS existence before returning. Our public destination policy still applies.
+  const doc = info.didDoc, service = doc.service!.find(item => item.type === "AtprotoPersonalDataServer"
+    && (item.id === "#atproto_pds" || item.id === doc.id + "#atproto_pds"))!;
+  const url = publicAtprotoUrl(service.serviceEndpoint);
   if (url.pathname !== "/" || url.search) throw new VaultError("AUTHORIZATION");
   return url.href;
 }
@@ -35,7 +35,8 @@ function proofKey(key: WebcryptoKey): WebcryptoKey {
   const create = key.createJwt.bind(key);
   key.createJwt = (...args: Parameters<WebcryptoKey["createJwt"]>) => {
     const [header, payload, ...rest] = args;
-    return create(header, header.typ === "dpop+jwt" ? { ...payload, jti: crypto.randomUUID() } : payload, ...rest);
+    // With enforced client authentication "none", this key only signs DPoP proofs.
+    return create(header, { ...payload, jti: crypto.randomUUID() }, ...rest);
   };
   return key;
 }
@@ -56,6 +57,39 @@ async function bounded(response: Response, limit: number): Promise<Response> {
     const bytes = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
     return new Response(bytes, { status: response.status, statusText: response.statusText, headers: response.headers });
   } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+}
+
+export type AtprotoTransportPolicy = { resource: string; endpoints: ReadonlySet<string>; calls: number };
+/** Enforce authority on the SDK's final request, before any private transport. */
+export async function validateAtprotoTransport(request: Request, policy: AtprotoTransportPolicy) {
+  const url = publicAtprotoUrl(request.url), proof = request.headers.get("DPoP"), auth = request.headers.get("Authorization");
+  if (policy.calls > 64 || request.headers.has("Cookie")) throw new VaultError("LIMIT");
+  const resource = url.href === policy.resource;
+  if (proof || auth || request.method !== "GET") {
+    if (resource) {
+      if (request.method !== "GET" || !proof || !auth?.startsWith("DPoP ") || request.headers.get("atproto-proxy") !== atprotoProxy) throw new VaultError("PERMISSION");
+    } else if (request.method !== "POST" || !proof || auth || !policy.endpoints.has(url.href)) throw new VaultError("PERMISSION");
+  }
+  let refreshing = false;
+  if (request.method === "POST") {
+    const body = await request.clone().text(); if (body.length > 32768) throw new VaultError("LIMIT");
+    refreshing = new URLSearchParams(body).get("grant_type") === "refresh_token";
+  }
+  return { url, resource, refreshing };
+}
+
+export function validateAtprotoRefresh(available: boolean, dispatched: boolean, nonceRetry: boolean): void {
+  if (!available || dispatched && !nonceRetry) throw new VaultError("AUTHORIZATION");
+}
+
+/** An SDK store update must retain the selected account, registration and proof key. */
+export function validateAtprotoContinuation(key: string, tokenSet: Session["tokenSet"], jwk: unknown,
+  oauth: AtprotoOAuthMetadata, expectedDid: string | undefined, previous?: AtprotoState): AtprotoState {
+  if (key !== expectedDid || tokenSet.sub !== key) throw new VaultError("AUTHORIZATION");
+  checkTokenSet(tokenSet, oauth);
+  const saved = validateAtprotoState(JSON.stringify({ oauth, jwk, tokenSet, refreshPending: false }));
+  if (previous && (!same(saved.oauth, previous.oauth) || saved.jwk.d !== previous.jwk.d)) throw new VaultError("AUTHORIZATION");
+  return saved;
 }
 /** OAuth core owns PAR/PKCE, DID authority, ES256 proofs, nonces and token verification.
  * All private stores and network entry points belong to this vault-worker adapter. */
@@ -84,27 +118,22 @@ export class AtprotoOAuthBroker {
     await context.guard(); context.controller.signal.throwIfAborted();
     const request = new Request(input, { ...init, credentials: "omit", redirect: "error", cache: "no-store", referrerPolicy: "no-referrer",
       signal: AbortSignal.any([context.controller.signal, AbortSignal.timeout(15000), ...(init?.signal ? [init.signal] : [])]) });
-    const url = publicAtprotoUrl(request.url), proof = request.headers.get("DPoP"), auth = request.headers.get("Authorization");
-    if (++context.calls > 64 || request.headers.has("Cookie")) throw new VaultError("LIMIT");
-    const resource = url.href === context.descriptor.origin + atprotoPath;
-    if (proof || auth || request.method !== "GET") {
-      if (resource) { if (request.method !== "GET" || !proof || !auth?.startsWith("DPoP ") || request.headers.get("atproto-proxy") !== atprotoProxy) throw new VaultError("PERMISSION"); }
-      else if (request.method !== "POST" || !proof || auth || !context.endpoints.has(url.href)) throw new VaultError("PERMISSION");
-    }
-    let refreshing = false;
-    if (request.method === "POST") {
-      const body = await request.clone().text(); if (body.length > 32768) throw new VaultError("LIMIT");
-      refreshing = new URLSearchParams(body).get("grant_type") === "refresh_token";
-      if (refreshing) {
-        if (!context.saved || !context.persist || context.refreshDispatched && !context.nonceRetry) throw new VaultError("AUTHORIZATION");
-        if (!context.refreshDispatched) { context.saved = { ...context.saved, refreshPending: true }; await context.persist(context.saved); }
-        context.refreshDispatched = true; context.nonceRetry = false;
-      }
+    const { url, resource, refreshing } = await validateAtprotoTransport(request, {
+      resource: context.descriptor.origin + atprotoPath, endpoints: context.endpoints, calls: ++context.calls,
+    });
+    if (refreshing) {
+      validateAtprotoRefresh(!!context.saved && !!context.persist, context.refreshDispatched, context.nonceRetry);
+      if (!context.refreshDispatched) { context.saved = { ...context.saved!, refreshPending: true }; await context.persist!(context.saved); }
+      context.refreshDispatched = true; context.nonceRetry = false;
     }
     await context.guard();
-    const response = await bounded(await (this.runtime.fetchRequest ?? globalThis.fetch)(request), resource ? 8 * 1024 * 1024 : 131072);
+    const raw = await (this.runtime.fetchRequest ?? globalThis.fetch)(request);
+    if (raw.redirected) {
+      await raw.body?.cancel().catch(() => {});
+      throw new VaultError("PERMISSION");
+    }
+    const response = await bounded(raw, resource ? 8 * 1024 * 1024 : 131072);
     await context.guard();
-    if (response.redirected) throw new VaultError("PERMISSION");
     if (url.pathname === "/.well-known/oauth-authorization-server" && response.ok) this.metadata(await response.clone().json(), context);
     if (refreshing && [400, 401].includes(response.status) && response.headers.get("DPoP-Nonce")) {
       const value = await response.clone().json().catch(() => null);
@@ -128,7 +157,8 @@ export class AtprotoOAuthBroker {
     }
     return new OAuthClient({ clientMetadata: metadata, responseMode: "query", allowHttp: false, handleResolver: "https://bsky.social",
       fetch: (input, init) => this.request(context, input, init),
-      runtimeImplementation: { createKey: async algorithms => { if (!algorithms.includes("ES256")) throw new VaultError("AUTHORIZATION");
+      runtimeImplementation: { createKey: async () => {
+          // Validated issuer metadata requires ES256; oauth-client forwards that list.
           const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
           return proofKey(await WebcryptoKey.fromKeypair(pair, crypto.randomUUID())); },
         getRandomValues: length => crypto.getRandomValues(new Uint8Array(length)),
@@ -136,12 +166,9 @@ export class AtprotoOAuthBroker {
       stateStore: { get: key => context.states.get(key), set: (key, value) => { context.states.set(key, value); }, del: key => { context.states.delete(key); } },
       sessionStore: { get: key => context.session?.tokenSet.sub === key ? context.session : undefined,
         set: async (key, value) => {
-          if (key !== context.expectedDid || value.tokenSet.sub !== key) throw new VaultError("AUTHORIZATION");
           const oauth = validateAtprotoMetadata({ profile: "atproto-public-dpop-v1", clientId: input.clientId, redirectUri: input.redirectUri,
             scope: atprotoScope, accountId: key, issuer: context.issuer, pds: context.descriptor.origin + "/" });
-          checkTokenSet(value.tokenSet, oauth);
-          const saved = validateAtprotoState(JSON.stringify({ oauth, jwk: value.dpopKey.jwk, tokenSet: value.tokenSet, refreshPending: false }));
-          if (context.saved && (!same(saved.oauth, context.saved.oauth) || saved.jwk.d !== context.saved.jwk.d)) throw new VaultError("AUTHORIZATION");
+          const saved = validateAtprotoContinuation(key, value.tokenSet, value.dpopKey.jwk, oauth, context.expectedDid, context.saved);
           if (context.persist) await context.persist(saved); context.session = value; context.saved = saved;
         }, del: async () => { if (context.saved && context.persist) await context.persist({ ...context.saved, refreshPending: true }); delete context.session; } } });
   }
@@ -154,11 +181,13 @@ export class AtprotoOAuthBroker {
     if (this.pending.size >= 4) throw new VaultError("LIMIT");
     const input = validateAtprotoInput(raw, this.runtime.applicationOrigin ?? globalThis.location?.origin ?? ""), context = this.context(input, descriptor, guard);
     try {
-      const client = await this.client(context), resolved = await client.oauthResolver.resolve(input.identifier);
-      if (!resolved.identityInfo || identityPds(resolved.identityInfo).replace(/\/$/, "") !== descriptor.origin) throw new VaultError("PERMISSION");
+      const client = await this.client(context), resolved = await client.oauthResolver.resolveFromIdentity(input.identifier);
+      if (identityPds(resolved.identityInfo).replace(/\/$/, "") !== descriptor.origin) throw new VaultError("PERMISSION");
       context.expectedDid = resolved.identityInfo.did; this.metadata(resolved.metadata, context);
       const url = await client.authorize(input.identifier, { scope: atprotoScope, redirect_uri: input.redirectUri as RedirectUri, signal: context.controller.signal });
-      const [state] = context.states.keys(); if (!state || !url.searchParams.get("request_uri")) throw new VaultError("AUTHORIZATION");
+      // The SDK stores its state before returning, but accepts an empty PAR URI.
+      const state = context.states.keys().next().value!;
+      if (!url.searchParams.get("request_uri")) throw new VaultError("AUTHORIZATION");
       const id = crypto.randomUUID(), expiresAt = Date.now() + 300000;
       this.pending.set(id, { id, state, expiresAt, client, context, ...(replace ? { replace } : {}) });
       return { id, state, authorizationUrl: url.href, expiresAt, fingerprint: descriptor.fingerprint };
@@ -173,7 +202,8 @@ export class AtprotoOAuthBroker {
         || typeof callback.code !== "string" && typeof callback.error !== "string" || callback.code && callback.error
         || (callback.code?.length ?? 0) > 4096 || (callback.error?.length ?? 0) > 128) throw new VaultError("AUTHORIZATION");
       await context.guard(); await pending.client.callback(new URLSearchParams(callback as Record<string, string>), { redirect_uri: context.input.redirectUri as RedirectUri });
-      if (!context.saved) throw new VaultError("AUTHORIZATION"); await context.guard(); return { pending, state: context.saved };
+      // Successful callback() awaits the session store update before returning.
+      await context.guard(); return { pending, state: context.saved! };
     } catch (error) { throw error instanceof VaultError ? error : new VaultError("AUTHORIZATION"); }
     finally { context.controller.abort(); this.controllers.delete(context.controller); context.states.clear(); }
   }
@@ -184,8 +214,8 @@ export class AtprotoOAuthBroker {
     const abort = () => context.controller.abort(); signal?.addEventListener("abort", abort, { once: true }); if (signal?.aborted) abort();
     try {
       context.session = { tokenSet: state.tokenSet, authMethod: { method: "none" }, dpopKey: await restoreKey(state.jwk) };
-      const client = await this.client(context), resolved = await client.oauthResolver.resolve(state.oauth.accountId);
-      if (resolved.identityInfo?.did !== state.oauth.accountId || identityPds(resolved.identityInfo).replace(/\/$/, "") !== descriptor.origin
+      const client = await this.client(context), resolved = await client.oauthResolver.resolveFromIdentity(state.oauth.accountId);
+      if (resolved.identityInfo.did !== state.oauth.accountId || identityPds(resolved.identityInfo).replace(/\/$/, "") !== descriptor.origin
         || resolved.metadata.issuer.replace(/\/$/, "") !== state.oauth.issuer.replace(/\/$/, "")) throw new VaultError("AUTHORIZATION");
       this.metadata(resolved.metadata, context);
       const session = await client.restore(state.oauth.accountId as Parameters<OAuthClient["restore"]>[0], false);

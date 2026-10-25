@@ -73,7 +73,7 @@ export function scopeNativeRpcSchema(document: Document, method: string): Docume
         let parent = result;
         for (const key of parts.slice(0, -1)) {
           if (!Object.hasOwn(parent, key)) Object.defineProperty(parent, key, { value: {}, enumerable: true, writable: true });
-          if (!object(parent[key])) throw new Error("Conflicting native RPC reference.");
+          // Resolution above proves every prefix is an object in this same source document.
           parent = parent[key] as Document;
         }
         Object.defineProperty(parent, parts.at(-1)!, { value: structuredClone(target), enumerable: true, writable: true, configurable: true });

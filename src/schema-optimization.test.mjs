@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Before, After, Then } from '@cucumber/cucumber';
 import { createSchemaCache } from './lib/schema-cache.ts';
-import { createSchemaDiscovery, validateSchemaDiscovery } from './lib/schema-index.ts';
+import { createSchemaDiscovery, operationDescriptor, validateSchemaDiscovery } from './lib/schema-index.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { readServiceSchema, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { readServiceSchemaIndex, serviceIndexDescriptors } from './lib/service-schema-indexes.ts';
@@ -212,14 +212,40 @@ Then('every service discovery index matches its source and targeted operation mo
     assert.deepEqual(index, createSchemaDiscovery(full, source.effectiveSha256 ?? source.sha256), source.id);
     for (const operation of full.operations) {
       const model = inspectServiceSchema(document, source.id, new Set([operation.id]), operation).operations[0];
-      assert.deepEqual(model, operation, operation.id);
+      assertHydratedModel(source, operation, model);
       targeted++;
     }
-    assert.deepEqual(inspectServiceSchema(document, source.id, new Set([full.operations[0].id])).operations, [full.operations[0]]);
+    const first = inspectServiceSchema(document, source.id, new Set([full.operations[0].id])).operations[0];
+    assertHydratedModel(source, full.operations[0], first);
     operations += full.operations.length;
   }
   assert.equal(targeted, operations);
   await assert.rejects(readServiceSchemaIndex('missing'), /unavailable/);
   await assert.rejects(readServiceSchemaIndex(serviceIndexDescriptors[0].id, { descriptors: serviceIndexDescriptors, packs: {} }), /unavailable/);
   await this.attach(JSON.stringify({ schemas: serviceSchemaDescriptors.length, operations, targeted }), 'application/json');
+});
+
+function assertHydratedModel(source, operation, model) {
+  if (source.protocol !== 'json-rpc') { assert.deepEqual(model, operation, operation.id); return; }
+  assert.equal(model.protocol, 'json-rpc');
+  assert.equal(model.rpc.method, operation.path); assert.equal(model.rpc.version, source.version);
+  assert.deepEqual(operationDescriptor(model), operationDescriptor(operation), operation.id);
+}
+
+Then('native discovery entries match hydrated methods without embedding RPC payload schemas', async () => {
+  const source = serviceSchemaDescriptors.find(source => source.id === 'codex');
+  const document = await readServiceSchema(source.id), full = inspectServiceSchema(document, source.id);
+  const index = await readServiceSchemaIndex(source.id);
+  assert.deepEqual(index, createSchemaDiscovery(full, source.sha256));
+  for (const method of ['initialize', 'thread/start', 'thread/resume', 'turn/start']) {
+    const operation = full.operations.find(operation => operation.path === method);
+    const model = inspectServiceSchema(document, source.id, new Set([operation.id])).operations[0];
+    assertHydratedModel(source, operation, model);
+    assert.deepEqual(operationDescriptor(model), index.operations.find(value => value.id === operation.id));
+    const request = document.definitions.ClientRequest.oneOf.find(value => value.properties.method.enum.includes(method));
+    assert.deepEqual(model.rpc.params, request.properties.params);
+    assert.equal(model.rpc.paramsRequired, request.required.includes('params'));
+    assert.deepEqual(model.rpc.result, document.definitions.JSONRPCResponse.properties.result);
+    assert.deepEqual(model.rpc.error, document.definitions.JSONRPCError.properties.error);
+  }
 });

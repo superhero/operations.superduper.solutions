@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Qualified provider path bindings
+  @coverage-gaps
   Scenario: GitLab separates scan and issue identities without replacing neighboring methods
     Then GitLab path corrections retain native IDs source bytes and peer methods
 

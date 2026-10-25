@@ -56,6 +56,10 @@ Then('GitLab path corrections retain native IDs source bytes and peer methods', 
   assert.deepEqual(corrected.paths[scanNew].get['x-upstream-security'], raw.security);
   assert.equal(corrected.paths[epicNew].post.deprecated, true); assert.equal(JSON.stringify(raw), before);
   assert.equal(schemaPatchName(providerPathBindings), 'Qualified provider path bindings');
+  const withoutPeers = structuredClone(raw); delete withoutPeers.paths[scanOld].post;
+  for (const method of ['put', 'delete']) delete withoutPeers.paths[epicOld][method];
+  const moved = applySchemaPatches(withoutPeers, [providerPathBindings]);
+  assert.equal(moved.paths[scanOld], undefined); assert.equal(moved.paths[epicOld], undefined);
 });
 Then('the pinned JSM Ops correction declares missing cloud IDs without inventing other parameters', async () => {
   const raw = await readServiceSchemaUpstream(jsm), corrected = await readServiceSchema(jsm), original = entries(raw), current = entries(corrected);
