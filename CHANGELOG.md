@@ -320,6 +320,21 @@ fix(ui): reduce vertical padding on catalog operation buttons
 
 ```
 
+<!-- changelog-commit:edd18fac9c54243b52ba59f77ab4502527bb67ba -->
+### Commit [`edd18fa`](https://github.com/superhero/operations.superduper.solutions/commit/edd18fac9c54243b52ba59f77ab4502527bb67ba)
+
+```text
+fix(ui): reduce vertical padding on assistant buttons
+
+```
+
+<!-- changelog-commit:7710c0f7568872df30e0f7a62861d6e0c0ae052b -->
+### Commit [`7710c0f`](https://github.com/superhero/operations.superduper.solutions/commit/7710c0f7568872df30e0f7a62861d6e0c0ae052b)
+
+```text
+Merge branch 'develop' into bugfix/compact-assistant-buttons
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

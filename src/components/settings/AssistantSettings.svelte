@@ -321,7 +321,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .switch-control:has(:checked) { background: var(--color-catalog-active); }
   .switch-control:has(:checked) > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
   .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  button { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
+  button { min-height: 36px; padding: 6px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button.secondary { background: var(--color-muted); color: var(--color-foreground); }
   button:disabled { opacity: 0.5; cursor: default; }
   .error { margin: 0; padding: 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); }
