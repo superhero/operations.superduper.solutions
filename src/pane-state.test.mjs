@@ -39,6 +39,10 @@ Then('pane storage retains visibility navigation settings and reading positions'
   const original = state(); savePaneState(original); flushPaneState();
   assert.deepEqual(readPaneState(), original);
   assert.deepEqual(writes.map(([key]) => key), [paneStateKey]);
+  const legacy = { ...original, settings: { ...original.settings, section: 'toolbar' } };
+  store(legacy);
+  assert.deepEqual(readPaneState(), { ...original, settings: { ...original.settings, section: 'workflow' } },
+    'A previously open Toolbar section restores the combined Application section.');
 });
 Then('pane state recovers nested {word} values', kind => {
   const nested = { null: null, array: [], scalar: 7 }[kind];

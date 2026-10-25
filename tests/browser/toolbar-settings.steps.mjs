@@ -10,9 +10,11 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   const page = this.page;
   const toolbar = workflow(page).locator('.workflow-toolbar');
   await setMode(page, 'settings');
-  if (await page.locator('summary[aria-label="Toolbar"]').getAttribute('aria-expanded') !== 'true')
-    await page.locator('summary[aria-label="Toolbar"]').click();
+  if (await page.locator('summary[aria-label="Application"]').getAttribute('aria-expanded') !== 'true')
+    await page.locator('summary[aria-label="Application"]').click();
   let preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
+  await expect(page.locator('summary[aria-label="Toolbar"]')).toHaveCount(0);
+  await expect(page.locator('summary[aria-label="Application"]').locator('..').getByRole('group', { name: 'Toolbar button preferences', exact: true })).toBeVisible();
   const labels = toolbarButtonGroups.flatMap(group => group.buttons.map(key => toolbarButtonLabels[key]));
   await expect(preferences.getByRole('switch')).toHaveText(labels);
   await expect.poll(() => preferences.locator('.groups').evaluate(element => Number(getComputedStyle(element).columnCount))).toBe(3);
@@ -25,7 +27,7 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
     await expect(preferences.getByRole('group', { name: group.label, exact: true }).getByRole('switch')).toHaveCount(group.buttons.length);
   }
   for (const [key, label] of Object.entries(toolbarButtonLabels)) {
-    const toggle = preferences.getByRole('switch', { name: label, exact: true });
+    const toggle = preferences.getByRole('switch', { name: `Show ${label} toolbar button`, exact: true });
     await expect(toggle).toHaveAttribute('aria-checked', String(defaultToolbarButtons[key]));
     if (defaultToolbarButtons[key]) await toggle.click();
     await expect(toggle).toHaveAttribute('aria-checked', 'false');
@@ -44,12 +46,12 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   await setMode(page, 'workflow');
   await expect(toolbar).toHaveCount(0);
   await setMode(page, 'settings');
-  if (await page.locator('summary[aria-label="Toolbar"]').getAttribute('aria-expanded') !== 'true')
-    await page.locator('summary[aria-label="Toolbar"]').click();
+  if (await page.locator('summary[aria-label="Application"]').getAttribute('aria-expanded') !== 'true')
+    await page.locator('summary[aria-label="Application"]').click();
   preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
   await expect(preferences.getByRole('switch', { checked: false })).toHaveCount(labels.length);
   await expect(preferences.getByRole('button', { name: 'Show all', exact: true })).toHaveCount(0);
-  for (const label of labels) await preferences.getByRole('switch', { name: label, exact: true }).click();
+  for (const label of labels) await preferences.getByRole('switch', { name: `Show ${label} toolbar button`, exact: true }).click();
   await expect(toolbar).toBeVisible();
   await expect(toolbar.locator('button')).toHaveCount(labels.length);
   await expect(toolbar.locator('.workflow-control-group')).toHaveCount(7);

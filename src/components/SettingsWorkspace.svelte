@@ -366,6 +366,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>
         {/if}
       </fieldset>
+      <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
     {#if assistantHost}
       <Disclosure class="catalog-group settings-section" label="Assistant" tooltipEnabled={false} open={active && openSection === "assistant"} onToggle={next => openSection = next ? "assistant" : null}>
@@ -497,13 +498,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           {/each}
         </div>
       </fieldset>
-    </Disclosure>
-    <Disclosure lazy class="catalog-group settings-section" label="Toolbar" tooltipEnabled={false} open={active && openSection === "toolbar"} onToggle={next => openSection = next ? "toolbar" : null}>
-      {#snippet summary()}
-        <div class="section-heading"><h2>Toolbar</h2><span class="section-subtitle">Show or hide workflow toolbar buttons</span></div>
-        <MaterialIcon name="chevron_forward" size={17} />
-      {/snippet}
-      <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
   </div>
 </section>
