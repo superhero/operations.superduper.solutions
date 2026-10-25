@@ -58,10 +58,12 @@ Then('a Docker host pairs reloads and runs its scoped container listing', { time
   await repository(page, 'save', await document(), null); await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' }); await setMode(page, 'workflow'); await workflowAction(page, 'Run');
   const run = page.getByRole('dialog', { name: 'Run workflow: Docker native browser', exact: true });
+  await expect(run.locator('[data-requirement="docker-destination"]')).toContainText('Required');
   await run.getByLabel('Authenticate password', { exact: true }).fill('browser-VAULT-password-9182');
   await run.getByRole('button', { name: 'Unlock Docker hosts', exact: true }).click();
   await run.getByRole('combobox', { name: 'Docker destination', exact: true }).click();
   await page.getByRole('option', { name: 'Docker', exact: true }).click();
+  await expect(run.locator('[data-requirement="docker-destination"]')).toContainText('Selected');
   await expect(run.getByRole('button', { name: 'Start workflow', exact: true })).toBeEnabled();
   await run.getByRole('button', { name: 'Start workflow', exact: true }).click();
   await expect(run.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();

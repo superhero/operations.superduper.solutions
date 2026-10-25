@@ -5,7 +5,7 @@ import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
-import { extractCredentialPermissions, extractOperationSecurity, inspectOperationSecurity } from "./operation-security.ts";
+import { extractCredentialPermissions, extractOperationSecurity, inspectSecurityAlternatives, supportedSecurityAlternative } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
@@ -13,6 +13,7 @@ import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
+import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } from "./operation-capabilities.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -134,7 +135,7 @@ function security(document: Value, source: Value, operation: Operation): Operati
     }));
   });
   if (oauth) operation.oauthScopes = declaration.map(raw => Object.fromEntries(Object.entries(raw).map(([name, scopes]) => [name, [...scopes as string[]]])));
-  const result = inspectOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
+  const result = inspectSecurityAlternatives({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
   const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
   if (permissions) operation.credentialPermissions = permissions;
   return result;
@@ -168,107 +169,132 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
       const group = Array.isArray(source.tags) ? text(source.tags[0], "Operations") : "Operations";
       const operation: Operation = { id: identity, name: text(source.summary, text(source.operationId, `${method.toUpperCase()} ${path}`)),
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
-      try
-      {
-        const docker = dockerNativeReadOperation(document, operation);
-        if (docker) {
-          Object.assign(operation, docker);
-          try { serverUrl ||= operationServerUrl(document, operation); } catch { /* The paired socket route has no implicit HTTP server. */ }
-        } else {
-        const privatePath = privatePathProfile(source["x-operations-private-path"]);
-        if (privatePath) operation.privatePath = privatePath;
-        if (source["x-operations-credential-result"] !== undefined) {
-          if (source["x-operations-credential-result"] !== true) throw new Error("Credential result metadata must be true when present.");
-          operation.credentialResult = true;
-        }
-        const url = operationServerUrl(document, operation);
-        serverUrl ||= url;
-        if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
-        if (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path)) throw new Error("This endpoint uses a path or transport that is not supported.");
-        const upload = cloudflareUploadProfile(source["x-operations-cloudflare-upload"]);
-        if (upload) configureCloudflareUpload(operation, upload);
-        else {
-        const fields = new Map<string, InputField>();
-        for (const parameters of [item.parameters, source.parameters])
-        {
-          if (parameters === undefined) continue;
-          if (!Array.isArray(parameters)) throw new Error("Parameters must be an array.");
-          for (const raw of parameters)
-          {
-            const parameter = resolve(raw, document);
-            const location = text(parameter.in);
-            if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string") throw new Error("Cookie or content-encoded parameters are not supported.");
-            const input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description);
-            const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
-            if (parameter.content || parameter.style !== undefined && parameter.style !== style
-              || parameter.explode !== undefined && parameter.explode !== (location === "query")
-              || location !== "query" && ["object", "array"].includes(input.type)) throw new Error("This parameter serialization is not supported.");
-            fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
+      const issues: CapabilityIssue[] = [];
+      const inspect = (area: CapabilityArea, code: string, check: () => void): boolean => {
+        try { check(); return true; }
+        catch (error) { issues.push({ area, code, message: error instanceof Error ? error.message : String(error) }); return false; }
+      };
+      const docker = dockerNativeReadOperation(document, operation);
+      if (docker) {
+        Object.assign(operation, docker);
+        try { serverUrl ||= operationServerUrl(document, operation); } catch { /* Native route has no implicit HTTP server. */ }
+      } else {
+        inspect("endpoint", "invalid-contract", () => {
+          const profile = privatePathProfile(source["x-operations-private-path"]);
+          if (profile) operation.privatePath = profile;
+        });
+        inspect("response", "invalid-contract", () => {
+          if (source["x-operations-credential-result"] !== undefined) {
+            if (source["x-operations-credential-result"] !== true) throw new Error("Credential result metadata must be true when present.");
+            operation.credentialResult = true;
           }
-        }
-        operation.fields = [...fields.values()];
-        if (source.requestBody !== undefined)
-        {
-          const body = resolve(source.requestBody, document);
-          const content = value(body.content);
-          const binaryMediaTypes = Object.keys(content).filter(type => {
-            const schema = resolve(value(content[type]).schema, document);
-            return isBinaryMediaType(type) && schema.type === "string" && schema.format === "binary";
-          });
-          const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type]) ?? binaryMediaTypes[0];
-          if (!mediaType) throw new Error("This request requires an unsupported binary or streaming media type.");
-          const schema = resolve(value(content[mediaType]).schema, document);
-          const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
-          const parsed = inputSchema(schema, document, 0, new Set(), binary);
-          operation.bodyRequired = body.required === true;
-          operation.bodyMediaType = mediaType as BodyMediaType;
-          operation.bodySchema = parsed;
-          if (binaryMediaTypes.includes(mediaType)) {
-            if (parsed.format !== "binary" || binaryMediaTypes.some(type => value(content[type]).encoding !== undefined))
-              throw new Error("This binary body requires an unsupported schema or custom encoding.");
-            if (binaryMediaTypes.some(type => JSON.stringify(inputSchema(value(content[type]).schema, document, 0, new Set(), true)) !== JSON.stringify(parsed)))
-              throw new Error("Binary media alternatives must use the same file schema.");
-            operation.binaryMediaTypes = binaryMediaTypes;
-          }
-          else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
-          if (mediaType === "text/plain" && parsed.type !== "string") throw new Error("This text body requires an unsupported schema.");
-          if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
-            if (parsed.type !== "object" || parsed.nullable || value(content[mediaType]).encoding !== undefined
-              || Object.values(parsed.properties!).some(property => !supportsFormField(property, mediaType === "multipart/form-data")))
-              throw new Error("This form uses unsupported structured fields or custom part encodings.");
-          if (parsed.type === "object" && !parsed.nullable)
-            for (const [name, property] of Object.entries(value(schema.properties)))
+        });
+        inspect("endpoint", "configuration-required", () => {
+          const url = operationServerUrl(document, operation);
+          serverUrl ||= url;
+          if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
+        });
+        inspect("endpoint", "unsupported-contract", () => {
+          if (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path)) throw new Error("This endpoint uses a path or transport that is not supported.");
+        });
+        let upload: ReturnType<typeof cloudflareUploadProfile>;
+        inspect("request", "invalid-contract", () => {
+          upload = cloudflareUploadProfile(source["x-operations-cloudflare-upload"]);
+          if (upload) configureCloudflareUpload(operation, upload);
+        });
+        if (!upload) {
+          const parametersValid = inspect("request", "unsupported-contract", () => {
+            const fields = new Map<string, InputField>();
+            for (const parameters of [item.parameters, source.parameters])
             {
-              if (resolve(property, document).readOnly === true) continue;
-              operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined, binary));
+              if (parameters === undefined) continue;
+              if (!Array.isArray(parameters)) throw new Error("Parameters must be an array.");
+              for (const raw of parameters)
+              {
+                const parameter = resolve(raw, document);
+                const location = text(parameter.in);
+                if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string") throw new Error("Cookie or content-encoded parameters are not supported.");
+                const input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description);
+                const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
+                if (parameter.content || parameter.style !== undefined && parameter.style !== style
+                  || parameter.explode !== undefined && parameter.explode !== (location === "query")
+                  || location !== "query" && ["object", "array"].includes(input.type)) throw new Error("This parameter serialization is not supported.");
+                fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
+              }
             }
-          else
-          {
-            operation.bodyValue = true;
-            operation.fields.push(field("$", "body", schema, true, document, body.description, binary));
-          }
+            operation.fields = [...fields.values()];
+          });
+          inspect("request", "unsupported-contract", () => {
+            if (source.requestBody !== undefined)
+            {
+              const body = resolve(source.requestBody, document);
+              const content = value(body.content);
+              const binaryMediaTypes = Object.keys(content).filter(type => {
+                const schema = resolve(value(content[type]).schema, document);
+                return isBinaryMediaType(type) && schema.type === "string" && schema.format === "binary";
+              });
+              const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type]) ?? binaryMediaTypes[0];
+              if (!mediaType) throw new Error("This request requires an unsupported binary or streaming media type.");
+              const schema = resolve(value(content[mediaType]).schema, document);
+              const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
+              const parsed = inputSchema(schema, document, 0, new Set(), binary);
+              operation.bodyRequired = body.required === true;
+              operation.bodyMediaType = mediaType as BodyMediaType;
+              operation.bodySchema = parsed;
+              if (binaryMediaTypes.includes(mediaType)) {
+                if (parsed.format !== "binary" || binaryMediaTypes.some(type => value(content[type]).encoding !== undefined))
+                  throw new Error("This binary body requires an unsupported schema or custom encoding.");
+                if (binaryMediaTypes.some(type => JSON.stringify(inputSchema(value(content[type]).schema, document, 0, new Set(), true)) !== JSON.stringify(parsed)))
+                  throw new Error("Binary media alternatives must use the same file schema.");
+                operation.binaryMediaTypes = binaryMediaTypes;
+              }
+              else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
+              if (mediaType === "text/plain" && parsed.type !== "string") throw new Error("This text body requires an unsupported schema.");
+              if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
+                if (parsed.type !== "object" || parsed.nullable || value(content[mediaType]).encoding !== undefined
+                  || Object.values(parsed.properties!).some(property => !supportsFormField(property, mediaType === "multipart/form-data")))
+                  throw new Error("This form uses unsupported structured fields or custom part encodings.");
+              if (parsed.type === "object" && !parsed.nullable)
+                for (const [name, property] of Object.entries(value(schema.properties)))
+                {
+                  if (resolve(property, document).readOnly === true) continue;
+                  operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined, binary));
+                }
+              else
+              {
+                operation.bodyValue = true;
+                operation.fields.push(field("$", "body", schema, true, document, body.description, binary));
+              }
+            }
+          });
+          if (parametersValid) inspect("endpoint", "unsupported-contract", () => {
+            const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
+            if (placeholders.some(name => !operation.fields.some(field => field.location === "path" && field.name === name)))
+              throw new Error("This endpoint uses unsupported URI template expansion.");
+          });
         }
-        const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
-        if (placeholders.some(name => !operation.fields.some(field => field.location === "path" && field.name === name)))
-          throw new Error("This endpoint uses unsupported URI template expansion.");
-        }
-        const authorization = security(document, source, operation);
-        if (authorization !== undefined) operation.security = authorization;
-        const responses = value(source.responses);
-        const stream = responseStreamProfile(source["x-operations-response-stream"]);
-        if (stream) operation.responseStream = stream;
-        const responseContent = inspectResponseContent(responses, document, stream);
-        if (responseContent) operation.responseContent = responseContent;
-        const response = resolve(responses[Object.keys(responses).find(status => /^2\d\d$/.test(status)) ?? "default"], document);
-        const content = value(response.content);
-        const mediaType = content["application/json"] ? "application/json" : Object.keys(content)[0];
-        if (mediaType) operation.responseMediaType = mediaType;
-        const media = value(content[mediaType!]);
-        if (media.example !== undefined) operation.responseExample = media.example;
-        if (operation.credentialResult) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
-        }
+        inspect("authentication", "invalid-contract", () => {
+          const authorization = security(document, source, operation);
+          if (authorization !== undefined) operation.security = authorization;
+          if (authorization?.length && !authorization.some(supportedSecurityAlternative)) issues.push({ area: "authentication", code: "unsupported-authentication",
+            message: authorization.flat().find(scheme => scheme.kind === "unsupported")!.reason });
+        });
+        inspect("response", "unsupported-contract", () => {
+          const responses = value(source.responses);
+          const stream = responseStreamProfile(source["x-operations-response-stream"]);
+          if (stream) operation.responseStream = stream;
+          const responseContent = inspectResponseContent(responses, document, stream);
+          if (responseContent) operation.responseContent = responseContent;
+          const response = resolve(responses[Object.keys(responses).find(status => /^2\d\d$/.test(status)) ?? "default"], document);
+          const content = value(response.content);
+          const mediaType = content["application/json"] ? "application/json" : Object.keys(content)[0];
+          if (mediaType) operation.responseMediaType = mediaType;
+          const media = value(content[mediaType!]);
+          if (media.example !== undefined) operation.responseExample = media.example;
+        });
+        if (operation.credentialResult) issues.push({ area: "response", code: "unsupported-contract", message: "This operation returns credentials. Private credential acquisition is not supported yet." });
       }
-      catch (error) { operation.unavailableReason = error instanceof Error ? error.message : String(error); }
+      withOperationCapabilities(operation, issues);
       operations.push(operation);
       if (!groups.has(group)) groups.set(group, { id: `${id}:tag:${encodeURIComponent(group)}`, name: group, description: "", operationIds: [] });
       groups.get(group)!.operationIds!.push(identity);

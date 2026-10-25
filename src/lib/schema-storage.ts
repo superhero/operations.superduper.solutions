@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { operationBlockReason } from "./operation-capabilities.ts";
 import LightningFS from "@isomorphic-git/lightning-fs";
 import { Buffer } from "buffer";
 import * as git from "isomorphic-git";
@@ -356,7 +357,7 @@ export function readSchemaOperations(id: string, expectedIdentity: string, opera
       }
       const operation = inspect ? inspect(record.document, id, descriptor) : canonical!.get(operationId);
       if (!operation) throw new Error("This operation is not available in the registered schemas.");
-      if (operation.unavailableReason) throw new Error(operation.unavailableReason);
+      if (operationBlockReason(operation)) throw new Error(operationBlockReason(operation));
       const { schema } = scopeOperationSchema(record.document, operation.path, operation.method, true);
       let origin = "";
       try {
@@ -407,7 +408,7 @@ async function credentialPolicy(record: SchemaDocumentRecord, revision: string):
   if (record.enabled)
     for (const operation of validated.operations)
     {
-      if (operation.unavailableReason) continue;
+      if (operationBlockReason(operation)) continue;
       if (operation.dockerNative) {
         const scoped = scopeOperationSchema(validated.document, operation.path, operation.method, true).schema;
         fingerprints.push((await approvedDockerOperation(operation, scoped)).fingerprint);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { operationBlockReason } from "./operation-capabilities.ts";
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
 import { validateWorkflowBinary, binaryRequestMediaType } from "./workflow-binary.ts";
 import { supportsFormField } from "./form-input.ts";
@@ -155,7 +156,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if (operation.deferred) throw new Error("Load this operation's schema before preparing a request.");
   if (operation.protocol === "json-rpc" || operation.rpc !== undefined || operation.method === "RPC")
     throw new Error(operation.unavailableReason ?? "Native RPC execution requires a paired runtime.");
-  if (operation.unavailableReason) throw new Error(operation.unavailableReason);
+  if (operationBlockReason(operation)) throw new Error(operationBlockReason(operation));
   if (operation.credentialResult !== undefined) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
   responseStreamProfile(operation.responseStream);
   if (operation.privatePath !== undefined && operation.privatePath !== "telegram-bot") throw new Error("This private token path is not supported.");

@@ -23,6 +23,19 @@ const adapterRevision = "a".repeat(64);
 export const counters = () => ({ reads: { ...reads }, indexes: { ...indexReads } });
 export const failRead = (id: string) => failures.add(id);
 
+export async function setupCapabilities(document: Record<string, unknown>) {
+  const id = "capability-fixture", bytes = new TextEncoder().encode(JSON.stringify(document));
+  const revision = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
+  const discovery = createSchemaDiscovery(inspectServiceSchema(document, id), revision);
+  configureSchemaDefaults({ adapterRevision, catalogs: [{ id, name: "Capability fixture", file: "capabilities.json", revision,
+    bytes: bytes.length, summary: discovery.summary }],
+    read: async () => { reads[id] = (reads[id] ?? 0) + 1; return structuredClone(document); },
+    readIndex: async () => { indexReads[id] = (indexReads[id] ?? 0) + 1; return structuredClone(discovery); }, validate: inspectServiceSchema,
+    inspectOperation: (source, id, operation) => inspectServiceSchema(source, id, new Set([operation.id]), operation).operations[0]!,
+  });
+  return (await listSchemaMetadata()).find(record => record.id === id)!;
+}
+
 export async function setupNative(version = 0) {
   const id = "native-fixture", protocolVersion = `0.163.${version}`;
   const document = { $schema: "http://json-schema.org/draft-07/schema#", info: { title: "Native fixture", version: protocolVersion },

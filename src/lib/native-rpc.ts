@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { withOperationCapabilities, nativeCapabilityIssues } from "./operation-capabilities.ts";
 import type { Operation, InputSchema } from "./catalog.ts";
 import { isNativeWorkflowMethod, nativeWorkflowInputSchema, nativeWorkflowResultTypes } from "./native-agent-contract.ts";
 import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
@@ -107,7 +108,7 @@ export function nativeRpcOperation(document: Document, operationId: string): Ope
   const errorProperties = object(error) && object(error.properties) ? error.properties : {};
   if (!schema(errorProperties.error)) throw new Error("The native RPC error schema is unavailable.");
   const workflow = scoped["x-operations-native-workflow"] as { params: ReturnType<typeof nativeWorkflowInputSchema>; result: Document } | undefined;
-  return { id: operationId, name: method, description: typeof request.description === "string" ? request.description : "",
+  return withOperationCapabilities({ id: operationId, name: method, description: typeof request.description === "string" ? request.description : "",
     group: "Client requests", method: "RPC", path: method, protocol: "json-rpc",
     rpc: { version: (scoped.info as { version: string }).version, method,
       paramsRequired: (request.required as string[]).includes("params"),
@@ -117,5 +118,5 @@ export function nativeRpcOperation(document: Document, operationId: string): Ope
       key: "params:" + name, name, label: name === "threadId" ? "Thread ID" : name === "input" ? "Input" : "Model",
       description: name === "input" ? 'Text input, for example [{"type":"text","text":"Hello"}].' : name === "model" ? "Optional model name supported by the connected account." : "A thread created by this paired runtime.",
       location: "params", required: workflow.params.required.includes(name), type: name === "input" ? "array" : "string", schema: value as InputSchema
-    })) : [], bodyRequired: false, ...(!workflow ? { unavailableReason: codexExecutionLimitation } : {}) };
+    })) : [], bodyRequired: false, ...(!workflow ? { unavailableReason: codexExecutionLimitation } : {}) }, nativeCapabilityIssues(isNativeWorkflowMethod(method), (scoped.info as { version: string }).version, codexExecutionLimitation));
 }

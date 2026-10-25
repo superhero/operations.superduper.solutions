@@ -6,6 +6,9 @@
 Feature: Targeted schema storage and independent history
   Disabled content stays unloaded while canonical content and Git history remain authoritative.
 
+  Scenario: Capability discovery cannot override blocked canonical contracts
+    Then canonical capability diagnostics survive discovery refresh and cannot publish private authority
+
   Scenario: Native RPC models publish bounded canonical policies and survive reload
     Then native RPC schema storage preserves model identity and publishes complete batches only
 
