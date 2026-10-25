@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 const completeLibrary = new Set([
+  'tests/browser/capability-diagnostics.feature',
   'tests/browser/service-defaults.feature',
   'tests/browser/catalog-hierarchy.feature',
+  'tests/browser/docker-native.feature',
+  'tests/browser/native-agent.feature',
+  'tests/browser/native-runtime.feature',
   'tests/browser/schema-history.feature',
   'tests/browser/operation-versions.feature',
 ]);
