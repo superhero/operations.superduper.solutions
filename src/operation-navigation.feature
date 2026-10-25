@@ -9,6 +9,12 @@ Feature: Operation resources and API versions
   Scenario: Resource categories omit versions and path parameters without changing endpoint identity
     Then URL resource categories preserve templates queries and non-version resource names
 
+  Scenario: Transport path segments omit API REST and numeric categories
+    Then transport path categories skip generic segments without changing endpoint identity
+
+  Scenario: Transport path flattening preserves operations and meaningful descendants
+    Then flattened transport paths retain every operation and distinct endpoint family
+
   Scenario: Resource trees retain authored headings and every concrete operation
     Then operation resource groups are stable nested trees without mutating their sources
 

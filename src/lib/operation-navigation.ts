@@ -7,6 +7,7 @@ import { categoryLabel } from "./category-label.ts";
 
 const versionSegment = /^(?:v|ver|version)[._-]?\d+(?:[._-]\d+)*(?:[._-]?(?:alpha|beta|rc)\d*)?$/i;
 const parameter = /^\{[^{}]+\}$/;
+const transportSegment = /^(?:api|rest|\d+)$/i;
 
 export function operationResourcePath(path: string): { resources: string[]; endpoint: string; version: string }
 {
@@ -14,7 +15,8 @@ export function operationResourcePath(path: string): { resources: string[]; endp
   const parts = (query < 0 ? path : path.slice(0, query)).split("/");
   const versions = parts.filter(part => versionSegment.test(part));
   const resourceParts = parts.filter(part => !versionSegment.test(part));
-  return { resources: resourceParts.filter(part => part && !parameter.test(part)),
+  // Transport prefixes only affect headings; retain endpoint identity for version families.
+  return { resources: resourceParts.filter(part => part && !parameter.test(part) && !transportSegment.test(part)),
     endpoint: `${resourceParts.join("/") || "/"}${query < 0 ? "" : path.slice(query)}`,
     version: versions.join(" / ") || "Default" };
 }
