@@ -38,7 +38,7 @@ Then('the saved {string} form selects its last optional pair without rendering e
   }
   await expect(run.locator('.operation-field')).toHaveCount(9);
   assert.ok(await run.evaluate(element => element.scrollWidth <= element.clientWidth + 1));
-  await page.screenshot({ path: `tmp/flat-form-${page.viewportSize().width}.png` });
+  await page.screenshot({ path: `${this.artifactDirectory}/flat-form-${page.viewportSize().width}.png` });
   const requests = [];
   await page.route(`${origin}/**`, async route => {
     const request = route.request(), form = new URLSearchParams(request.postData());
