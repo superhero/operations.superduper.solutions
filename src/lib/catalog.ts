@@ -14,6 +14,7 @@ import { codexExecutionLimitation, type NativeRpcContract } from "./native-rpc.t
 import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
 import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 import { withOperationCapabilities, type OperationCapabilities, type CapabilitySummary } from "./operation-capabilities.ts";
+import { configureQueryArray, type QuerySerialization } from "./query-serialization.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -41,6 +42,7 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
   description: string;
   location: "path" | "query" | "header" | "body" | "params";
   required: boolean;
+  querySerialization?: QuerySerialization;
   schema?: InputSchema;
 };
 export type BodyMediaType = `${string}/${string}`;
@@ -282,7 +284,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
         for (const raw of parameters)
         {
           const parameter = resolve(raw, document, id);
-          supported(parameter, ["name", "in", "required", "schema", "description", "deprecated", "style", "explode"], id);
+          supported(parameter, ["name", "in", "required", "schema", "description", "deprecated", "style", "explode", "allowReserved", "allowEmptyValue"], id);
           if (!["path", "query", "header"].includes(String(parameter.in)) || typeof parameter.name !== "string" || !parameter.name
             || parameter.required !== undefined && typeof parameter.required !== "boolean"
             || parameter.in === "path" && parameter.required !== true)
@@ -290,9 +292,12 @@ export function extractOperations(value: unknown, source: string): Operation[]
           const input = field(parameter.schema, document, parameter.in as InputField["location"], parameter.name, parameter.required === true);
           const query = input.location === "query";
           const style = query ? input.type === "object" ? "deepObject" : "form" : "simple";
+          const csv = configureQueryArray(input, parameter);
           if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
             || parameter.style !== undefined && parameter.style !== style
-            || parameter.explode !== undefined && parameter.explode !== query
+            || parameter.explode !== undefined && parameter.explode !== query && !csv
+            || parameter.allowReserved !== undefined && parameter.allowReserved !== false
+            || parameter.allowEmptyValue !== undefined && parameter.allowEmptyValue !== false
             || !query && !primitiveTypes.includes(input.type)
             || input.type === "array" && !primitiveTypes.includes(input.schema!.items!.type)
             || input.type === "object" && objectSchemas(input.schema!).some(property => !primitiveTypes.includes(property.type)))

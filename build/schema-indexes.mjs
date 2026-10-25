@@ -15,7 +15,7 @@ const output = resolve(directory, 'indexes');
 const check = process.argv.includes('--check');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const adapter = createHash('sha256');
-for (const file of ['catalog.ts', 'service-catalog.ts', 'form-input.ts', 'cloudflare-upload.ts', 'codex-schema.ts', 'native-rpc.ts', 'docker-native-model.ts', 'docker-native-contract.ts', 'native-agent-contract.ts', 'native-runtime-contract.ts', 'operation-security.ts', 'operation-capabilities.ts', 'schema-documents.ts', 'schema-index.ts', 'server-url.ts', 'workflow-binary.ts', 'workflow-response-body.ts', 'workflow-response-stream.ts', 'workflow-body-error.ts', 'schema-patches.ts', 'github-authentication.ts', 'github-authentication-data.ts'])
+for (const file of ['catalog.ts', 'service-catalog.ts', 'query-serialization.ts', 'form-input.ts', 'cloudflare-upload.ts', 'codex-schema.ts', 'native-rpc.ts', 'docker-native-model.ts', 'docker-native-contract.ts', 'native-agent-contract.ts', 'native-runtime-contract.ts', 'operation-security.ts', 'operation-capabilities.ts', 'schema-documents.ts', 'schema-index.ts', 'server-url.ts', 'workflow-binary.ts', 'workflow-response-body.ts', 'workflow-response-stream.ts', 'workflow-body-error.ts', 'schema-patches.ts', 'github-authentication.ts', 'github-authentication-data.ts'])
   adapter.update(file).update(await readFile(resolve(root, 'src/lib', file)));
 const adapterRevision = adapter.digest('hex');
 if (!check) await mkdir(output, { recursive: true });

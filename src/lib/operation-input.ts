@@ -7,6 +7,7 @@ import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } fro
 import { validateWorkflowBinary, binaryRequestMediaType } from "./workflow-binary.ts";
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
+import type { QuerySerialization } from "./query-serialization.ts";
 
 export type InputValue = string | null | undefined;
 export type InputValues = Record<string, InputValue>;
@@ -21,6 +22,7 @@ export type PreparedRequest = {
   method: string;
   path: string;
   query: Record<string, JsonValue>;
+  querySerialization?: Record<string, QuerySerialization>;
   body?: JsonValue;
   headers?: Record<string, string>;
   contentType?: Exclude<BodyMediaType, "application/json">;
@@ -183,12 +185,24 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
       continue;
     }
     const value = convert(input, raw!);
+    if (input.querySerialization !== undefined && (input.querySerialization !== "form-csv" || input.location !== "query" || input.type !== "array"))
+      fail(input, "this query serialization is not supported.");
     if (input.location === "path") {
       if (value !== null && typeof value === "object") fail(input, "path values must be primitive values.");
       request.path = request.path.replaceAll(`{${input.name}}`, encodeURIComponent(String(value)));
     }
     else if (input.location === "query")
     {
+      if (input.querySerialization === "form-csv") {
+        if (!Array.isArray(value) || value.some(item => item === null || typeof item === "object"))
+          fail(input, "comma-separated query arrays require non-null primitive items; omit a nullable array instead of sending null.");
+        if (!value.length) {
+          if (input.required) fail(input, "an empty array cannot supply a required query parameter.");
+          continue;
+        }
+        request.querySerialization ??= {};
+        set(request.querySerialization, input.name, "form-csv");
+      }
       if (input.type === "json" && value !== null && typeof value === "object" && !Array.isArray(value)
         || Array.isArray(value) && value.some(item => item !== null && typeof item === "object"))
         fail(input, "this structured query serialization is not supported.");

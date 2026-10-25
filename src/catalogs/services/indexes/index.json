@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "c3fd14bca935b2da9c00334d4a5b22c55046f65068102d34d6acd5f9d9d76114",
+  "adapterRevision": "6e95f5407c5f10e2ed9d7c91f3307e7c62cc4873897fe4277916ad6f1b04bb20",
   "indexes": [
     {
       "id": "anthropic",
@@ -262,9 +262,9 @@
     {
       "id": "atlassian-confluence-v1",
       "sourceRevision": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
-      "bytes": 94847,
-      "compressedBytes": 5394,
-      "sha256": "49f968f060600ce8289acade6b5ddce60a84b34c015fa89d3db39e75a9b47f12",
+      "bytes": 92159,
+      "compressedBytes": 5314,
+      "sha256": "f0483508edfd7ea972e0940f515fd6f80858d13a23a79a9aa21598f0673aba25",
       "summary": {
         "name": "The Confluence Cloud REST API",
         "serverUrl": "",
@@ -470,14 +470,14 @@
     {
       "id": "atlassian-marketplace",
       "sourceRevision": "7489e7bda44df7b659db8a8b448f1e918afab0ec8164370bac021ae5aed30f0a",
-      "bytes": 61562,
-      "compressedBytes": 4242,
-      "sha256": "2b994b8ddc9c4dfd43c00869ad483442fc3539b93c2e0c2d0d8ce8ceb18f8604",
+      "bytes": 58886,
+      "compressedBytes": 4141,
+      "sha256": "21d63d26f812ac6044d14d70a2bbb101df6f6db302589bfd50064f9c3eeccb7f",
       "summary": {
         "name": "Atlassian Marketplace API",
         "serverUrl": "https://marketplace.atlassian.com/rest/2",
         "operationCount": 143,
-        "unavailableCount": 29
+        "unavailableCount": 5
       }
     },
     {
@@ -523,15 +523,15 @@
     {
       "id": "opsgenie",
       "sourceRevision": "b692deb7459813317d9586497bd16e72e12b30be3622d227f6c0b8eec84434b4",
-      "bytes": 62773,
-      "compressedBytes": 4370,
-      "sha256": "b91b1d97871467e107f2e8c91e6fead64546df7a8a89a660a5dcc561551e7f64",
+      "bytes": 62258,
+      "compressedBytes": 4285,
+      "sha256": "c1bb47879e3200b5c1a9287d7a8102c98494ce2ef40e7fa3f9d57eeeed7baf68",
       "summary": {
         "name": "Opsgenie REST API",
         "serverUrl": "https://api.opsgenie.com",
         "description": "Opsgenie OpenAPI Specification",
         "operationCount": 170,
-        "unavailableCount": 5
+        "unavailableCount": 0
       }
     },
     {
@@ -593,14 +593,14 @@
     {
       "id": "trello",
       "sourceRevision": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
-      "bytes": 92995,
-      "compressedBytes": 6841,
-      "sha256": "37d38999cb892d4b4a73bd7aaa9e5d39191fa0c712aedc9f1adbd4fec78ba2e5",
+      "bytes": 92953,
+      "compressedBytes": 6911,
+      "sha256": "d7528a2e5b913bbb6d8323d45a2ea60086c5ae7cd1ee037ef2c115e3fa890bd6",
       "summary": {
         "name": "Trello REST API",
         "serverUrl": "https://api.trello.com/1",
         "operationCount": 261,
-        "unavailableCount": 28
+        "unavailableCount": 27
       }
     },
     {
@@ -1418,15 +1418,15 @@
     {
       "id": "cloudflare",
       "sourceRevision": "ca3f09b346bba9872f2aee6b4f243dbaf19da995f896b9d1de846994250e226a",
-      "bytes": 1632313,
-      "compressedBytes": 120451,
-      "sha256": "ed3a1bf9025a54ce918a55f99e08b9d81f6963f6628cd1c90676d23d2f687e23",
+      "bytes": 1631180,
+      "compressedBytes": 120249,
+      "sha256": "6e60ba2352ee72e6d4e39054ea8bae03b38af39d4c7af4ab6bc6114d61de3eae",
       "summary": {
         "name": "Cloudflare API",
         "serverUrl": "https://api.cloudflare.com/client/v4",
         "description": "Welcome to Cloudflare's API documentation site. We are experimenting with an updated version of our API documentation - check out [developers.cloudflare.com/api-next/](https://developers.cloudflare.com/api-next/) to test out the new experience.\n\nTo get started using Cloudflare's products and services via the API, refer to [how to interact with Cloudflare](https://developers.cloudflare.com/fundamentals/basic-tasks/interact-with-cloudflare/), which covers using tools like [Terraform](https://developers.cloudflare.com/terraform/#cloudflare-terraform) and the [official SDKs](https://developers.cloudflare.com/fundamentals/api/reference/sdks/) to maintain your Cloudflare resources.\n\nUsing the Cloudflare API requires authentication so that Cloudflare knows who is making requests and what permissions you have. Create an API token to grant access to the API to perform actions. You can also authenticate with [API keys](https://developers.cloudflare.com/fundamentals/api/get-started/keys/), but these keys have [several limitations](https://developers.cloudflare.com/fundamentals/api/get-started/keys/#limitations) that make them less secure than API tokens. Whenever possible, use API tokens to interact with the Cloudflare API.\n\nTo create an API token, from the Cloudflare dashboard, go to My Profile > API Tokens and select Create Token. For more information on how to create and troubleshoot API tokens, refer to\nour [API fundamentals](https://developers.cloudflare.com/fundamentals/api/).\n\nFor information regarding rate limits, refer to our [API Rate Limits](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/platform/limits/#api-rate-limits).\n\nTotally new to Cloudflare? [Start here](https://developers.cloudflare.com/fundamentals/get-started/).",
         "operationCount": 3761,
-        "unavailableCount": 57
+        "unavailableCount": 46
       }
     },
     {
@@ -1612,15 +1612,15 @@
     {
       "id": "gitlab",
       "sourceRevision": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
-      "bytes": 823285,
-      "compressedBytes": 56006,
-      "sha256": "1b6b182be7742c160171b566b7253ea3b4e1fe9be37622d5ccfef3ffa9686c9a",
+      "bytes": 818031,
+      "compressedBytes": 55683,
+      "sha256": "883cbe4fd15961ef7cf1e0edfd96c6e1b05ba0406dca41b5a4a8c4af9db95b58",
       "summary": {
         "name": "GitLab REST API",
         "serverUrl": "https://gitlab.com",
         "description": "GitLab REST API used to interact with a GitLab installation.",
         "operationCount": 1869,
-        "unavailableCount": 107
+        "unavailableCount": 56
       }
     },
     {
@@ -2981,29 +2981,29 @@
     {
       "id": "openrouter",
       "sourceRevision": "8e9803815de386067a20d33b094c08a67c10db451178e7cf2f970a6b78ae9960",
-      "bytes": 51331,
-      "compressedBytes": 5180,
-      "sha256": "2f897a9cc680193cea8960cc46d9adada8565c3b59d56e208e532887dcbcc13f",
+      "bytes": 51228,
+      "compressedBytes": 5120,
+      "sha256": "9d5e70425e2eb1ba64b6a0745fa5eb263a2b70fef08bd7d9886bcf367dc4be44",
       "summary": {
         "name": "OpenRouter API",
         "serverUrl": "https://openrouter.ai/api/v1",
         "description": "OpenAI-compatible API with additional OpenRouter features",
         "operationCount": 152,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
       "id": "render",
       "sourceRevision": "97a86252d35cbe6b66c141483ad2cc52a323d8dfb0ecd5d73e11ac8cfc7dc3e3",
-      "bytes": 77502,
-      "compressedBytes": 6497,
-      "sha256": "4f3cc1e9ad90446c85c6f16dff6f3c1a3fc604472148506835d3823117207fe5",
+      "bytes": 75132,
+      "compressedBytes": 6389,
+      "sha256": "a16e74fa5582e9fa11a4ffc2555585a247d35318f15ef9b4fe10ef2b456080ff",
       "summary": {
         "name": "Render Public API",
         "serverUrl": "https://api.render.com/v1",
         "description": "Manage everything about your Render services",
         "operationCount": 228,
-        "unavailableCount": 24
+        "unavailableCount": 1
       }
     },
     {
@@ -3023,15 +3023,15 @@
     {
       "id": "resend",
       "sourceRevision": "951d4cd61d760bfb79e85adf5bb5bec22299eab434ab3b4e87c8d71095a10d5e",
-      "bytes": 46712,
-      "compressedBytes": 3853,
-      "sha256": "4f672eba988144032ac637088e67a76bff5e419f6329e3547a1e2ebdfedaf2cf",
+      "bytes": 46403,
+      "compressedBytes": 3772,
+      "sha256": "8326c1de800b9d29391b61b7c71ac118bb665c886bb8c0a5068a01ea36c2fec7",
       "summary": {
         "name": "Resend",
         "serverUrl": "https://api.resend.com",
         "description": "Resend is the email platform for developers.",
         "operationCount": 142,
-        "unavailableCount": 3
+        "unavailableCount": 0
       }
     },
     {
