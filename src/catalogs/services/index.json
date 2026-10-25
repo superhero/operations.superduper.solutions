@@ -509,6 +509,7 @@
     "url": "https://dac-static.atlassian.com/cloud/jira/service-desk-ops/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/cloud/jira/service-desk-ops/rest/v2/",
     "operationIds": "method-path",
+    "profile": "provider-paths",
     "version": "1",
     "openapi": "3.0.1",
     "operations": 240,
@@ -516,7 +517,15 @@
     "sha256": "c0fb62c243a89256567fdfb82d3667cd779f9a99dff9a9efe5b3a99b375b0d1d",
     "sourceSha256": "ed65f017bcb8eb65477e845e272a30ee6d3e0f7a1d422c6ff104941aa11f21d1",
     "bytes": 634314,
-    "compressedBytes": 60716
+    "compressedBytes": 60716,
+    "patches": [
+      {
+        "id": "provider-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4880376e16d4f795bb1f759e50d4c383829d5c4a6a1065f027f480c5ca693d7d",
+    "effectiveBytes": 695938
   },
   {
     "id": "jira-software",
@@ -2073,6 +2082,7 @@
     "id": "gitlab",
     "name": "GitLab",
     "url": "https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml",
+    "profile": "provider-paths",
     "version": "19.5",
     "openapi": "3.0.0",
     "operations": 1869,
@@ -2084,7 +2094,15 @@
     "sha256": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
     "sourceSha256": "063dbe2caa8480cbe85a8f9a40071a281c8b63c835f2aaf35b167a57f08e8bed",
     "bytes": 3412595,
-    "compressedBytes": 323749
+    "compressedBytes": 323749,
+    "patches": [
+      {
+        "id": "provider-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "6292ee3a934391007c0e45878929a2243fab0739685c7138a72f1c95636451cf",
+    "effectiveBytes": 3413129
   },
   {
     "id": "google-analytics-admin",

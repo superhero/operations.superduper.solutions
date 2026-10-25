@@ -12,7 +12,8 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256 } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings } from '../src/lib/schema-patches.ts';
+import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
 import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
@@ -93,7 +94,8 @@ for (const source of sources) {
   else if (!fromBundled) document = await RefParser.bundle(source.url ?? resolve(root, source.file), document,
     { resolve: { file: false, http: resolver } });
   if (source.profile === 'fred' || source.profile === 'alfred') document = adaptFredSchema(document, source.profile);
-  if (source.operationIds === 'method-path') document = useMethodPathOperationIds(document);
+  // Bundled packs already retain the upstream IDs beside their stable IDs.
+  if (!fromBundled && source.operationIds === 'method-path') document = useMethodPathOperationIds(document);
   if ((typeof document.info?.version !== 'string' || !document.info.version) && source.version) document.info.version = source.version;
   if (typeof document.info?.version !== 'string' || !document.info.version) throw new Error(`${source.id}: missing schema version; specify a documented source snapshot version.`);
   if (source.format !== 'codex-app-server' && (!/^3\.(0|1)\./.test(document?.openapi) || !document.info || !document.paths))
@@ -125,6 +127,8 @@ for (const source of sources) {
     throw new Error('X OAuth1 signing requires requalification before updating the pinned native source.');
   if (source.profile === 'cloudflare-upload' && (source.id !== 'cloudflare' || sha(json) !== cloudflarePrivateUploadSourceSha256))
     throw new Error('Cloudflare uploads require requalification before updating the pinned native source.');
+  if (source.profile === 'provider-paths' && sha(json) !== providerPathBindingSources[source.id])
+    throw new Error('Provider path bindings require requalification before updating the pinned native source.');
   const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
@@ -135,7 +139,8 @@ for (const source of sources) {
     : source.profile === 'http-streaming' ? [httpResponseStreaming]
     : source.profile === 'telegram-private-path' ? [telegramPrivatePath]
     : source.profile === 'x-oauth1' ? [xOauth1Signing]
-    : source.profile === 'cloudflare-upload' ? [cloudflarePrivateUpload] : [];
+    : source.profile === 'cloudflare-upload' ? [cloudflarePrivateUpload]
+    : source.profile === 'provider-paths' ? [providerPathBindings] : [];
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

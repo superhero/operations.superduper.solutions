@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "620256959bfa4570f4fdb589a91c0fa1b6780e582a0bddf65f502a49bb37e75b",
+  "adapterRevision": "78e3f53f7dee2c9d02e405af8003ce5dbdc6deb660915057798925e0788945df",
   "indexes": [
     {
       "id": "anthropic",
@@ -427,16 +427,16 @@
     },
     {
       "id": "jira-service-management-ops",
-      "sourceRevision": "c0fb62c243a89256567fdfb82d3667cd779f9a99dff9a9efe5b3a99b375b0d1d",
-      "bytes": 143766,
-      "compressedBytes": 7086,
-      "sha256": "b2db26e7b191d53dc0c7a803372d680a8a8beefe6ee77bc5eff89b7884e71605",
+      "sourceRevision": "4880376e16d4f795bb1f759e50d4c383829d5c4a6a1065f027f480c5ca693d7d",
+      "bytes": 156356,
+      "compressedBytes": 7299,
+      "sha256": "1a6487deccfa6beb26553280b3dedec3e47949b184c1847fa9467151d26815bf",
       "summary": {
         "name": "JSM Operations API",
         "serverUrl": "https://api.atlassian.com/jsm/ops",
         "description": "Operations APIs for Jira Service Management",
         "operationCount": 240,
-        "unavailableCount": 236
+        "unavailableCount": 10
       }
     },
     {
@@ -1611,16 +1611,16 @@
     },
     {
       "id": "gitlab",
-      "sourceRevision": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
-      "bytes": 812472,
-      "compressedBytes": 55189,
-      "sha256": "91329c611eb222423fdfc8d38ca1b93a8115ebb584f483338422b9c2f4848f95",
+      "sourceRevision": "6292ee3a934391007c0e45878929a2243fab0739685c7138a72f1c95636451cf",
+      "bytes": 812213,
+      "compressedBytes": 55135,
+      "sha256": "dc247c9038a5ad2536384c2335afe06f675aa53d0ad17a6e7302536524188654",
       "summary": {
         "name": "GitLab REST API",
         "serverUrl": "https://gitlab.com",
         "description": "GitLab REST API used to interact with a GitLab installation.",
         "operationCount": 1869,
-        "unavailableCount": 11
+        "unavailableCount": 9
       }
     },
     {
