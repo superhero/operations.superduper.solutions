@@ -408,6 +408,14 @@ feat(ui): compact the assistant prompt and controls
 
 ```
 
+<!-- changelog-commit:158b20163c6cfc477120ac45160daaca1bdf35a0 -->
+### Commit [`158b201`](https://github.com/superhero/operations.superduper.solutions/commit/158b20163c6cfc477120ac45160daaca1bdf35a0)
+
+```text
+fix(ui): align assistant composer with pane controls
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
