@@ -299,6 +299,22 @@ feat(auth): connect GitLab accounts with public PKCE OAuth
 Merge branch 'develop' into feature/gitlab-public-oauth
 ```
 
+<!-- changelog-commit:ffadfe84465d078b8eb866117b5d3614d19ef9ec -->
+### Commit [`ffadfe8`](https://github.com/superhero/operations.superduper.solutions/commit/ffadfe84465d078b8eb866117b5d3614d19ef9ec)
+
+```text
+feat(auth): connect Jira with a private OAuth companion
+
+Keep confidential Jira exchange and rotating provider tokens on an optional
+paired host with encrypted storage. Bind opaque vault references to its
+configuration, discovered Jira site and account through consent and reload.
+
+Forward only the reviewed current-user route, commit refresh intent before
+rotation, and reject stale authority without automatic replay. Reuse the
+existing connection UI and preserve native Jira authentication alternatives.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
