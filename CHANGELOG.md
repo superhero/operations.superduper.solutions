@@ -431,6 +431,16 @@ Preserve all 99 explicit parameter pairs in the two reviewed native models witho
 
 ```
 
+<!-- changelog-commit:daa6bd69cf2e94a310589e031f3ed96cf907707b -->
+### Commit [`daa6bd6`](https://github.com/superhero/operations.superduper.solutions/commit/daa6bd69cf2e94a310589e031f3ed96cf907707b)
+
+```text
+feat(schemas): correct provider path bindings
+
+Separate GitLab scan and issue routes while preserving native identities and peer methods. Declare explicit JSM cloud inputs, retain source provenance during bundled rebuilds, and guard the distinct OAuth gateway route.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
