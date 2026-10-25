@@ -158,6 +158,14 @@ fix(ui): strengthen catalog guides and operation labels
 Merge branch 'develop' into bugfix/catalog-row-separators
 ```
 
+<!-- changelog-commit:bf233b4bda895e9bb85629a6ddd1ceeb415e7a35 -->
+### Commit [`bf233b4`](https://github.com/superhero/operations.superduper.solutions/commit/bf233b4bda895e9bb85629a6ddd1ceeb415e7a35)
+
+```text
+fix(ui): join catalog separators within the shared guide edge
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
