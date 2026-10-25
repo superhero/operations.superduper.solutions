@@ -180,6 +180,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try { deadline(20000); startWorker().postMessage({ type: "check" }); }
     catch (problem) { failure(problem, "check"); }
   }
+  function selectModel(value: string) {
+    if (locked) return;
+    preferences.model = value;
+    load();
+  }
   function load() {
     if (locked) return;
     try {
@@ -248,7 +253,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <div class="model-picker">
         <MaterialIcon name="robot" size={16} />
         <FieldSelect id="assistant-model" label="Local model" options={modelOptions} includePlaceholder={false} value={preferences.model} disabled={locked} active={visible}
-          onValueChange={value => { preferences.model = value; savePreferences(); }} />
+          onValueChange={selectModel} onReselect={selectModel} />
       </div>
       <span class="context-window" aria-label={`Context window: ${preferences.context} tokens`}>{new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(preferences.context)} context</span>
       <div class="model-actions" role="group" aria-label="Model controls">
