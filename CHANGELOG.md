@@ -34,6 +34,14 @@ chore(gcp): carry metadata and media contracts onto released develop
 
 ```
 
+<!-- changelog-commit:003286a6cc39330dd496279292e4954fbfc11270 -->
+### Commit [`003286a`](https://github.com/superhero/operations.superduper.solutions/commit/003286a6cc39330dd496279292e4954fbfc11270)
+
+```text
+chore(ci): reconcile BigQuery squash integration
+
+```
+
 <!-- changelog-commit:e3325d6b7d3df527112ae734dc40aae423f3511a -->
 ### Commit [`e3325d6`](https://github.com/superhero/operations.superduper.solutions/commit/e3325d6b7d3df527112ae734dc40aae423f3511a)
 
@@ -47,14 +55,6 @@ feat(github): qualify Notifications classic PAT access
 
 ```text
 chore(github): align notification access with completed service contracts
-
-```
-
-<!-- changelog-commit:003286a6cc39330dd496279292e4954fbfc11270 -->
-### Commit [`003286a`](https://github.com/superhero/operations.superduper.solutions/commit/003286a6cc39330dd496279292e4954fbfc11270)
-
-```text
-chore(ci): reconcile BigQuery squash integration
 
 ```
 
