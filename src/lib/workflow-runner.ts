@@ -6,7 +6,10 @@ import { operationForId, type InputField, type InputSchema, type JsonValue, type
 import { additionalBodyField, inputAllowsNull, InputValidationError, validateInputValue, type InputValues } from "./operation-input.ts";
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { castValue, isFileRowConnection, isFileBinaryConnection, matchingSwitchGates } from "./workflow-utilities.ts";
-import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
+import { createWorkflowExecution, type AnyWorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
+import { prepareNativeRequest } from "./native-operation-input.ts";
+import type { NativeResponse, NativeProgressCallback } from "./native-agent-contract.ts";
+import type { NativeWorkflowBinding } from "./secrets/native-runtime-config.ts";
 import { expandInputLinks } from "./workflow-input-links.ts";
 import { linkedResponseGroups } from "./workflow-response-links.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
@@ -39,12 +42,13 @@ export type WorkflowVisit = {
   kind: "operation"; id: string; nodeId: string; workflowName: string; operation: Operation;
   values: InputValues; mappedFields: string[]; step: number;
   credentialBinding?: CredentialBinding;
+  nativeBinding?: NativeWorkflowBinding;
   vaultVariables?: VaultVariableInput[];
   bindingPath: string[];
 };
 export type WorkflowStep = WorkflowVisit | { kind: "choice"; workflowName: string; choices: { id: string; label: string }[] }
   | { kind: "complete"; message: string };
-export type WorkflowExecution = WorkflowExecutionResult & { operation: Operation; step: number; workflowName: string };
+export type WorkflowExecution = AnyWorkflowExecutionResult & { operation: Operation; step: number; workflowName: string };
 const port = (node: string, handle: string) => JSON.stringify([node, handle]);
 const inactive = Symbol("inactive branch");
 const unsupplied = Symbol("manual input");
@@ -324,12 +328,13 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     }
   }
 
-  function outputs(frame: Frame, node: Owner, response?: WorkflowResponse, child?: Frame)
+  function outputs(frame: Frame, node: Owner, response?: WorkflowResponse | NativeResponse, child?: Frame)
   {
-    const selectedStatus = response && selectedResponseStatus(frame, node.id, response.status);
-    const headers = response && node.type !== "workflow" ? responseHeaderReader(node.data.operationId, response.status, response.headers) : undefined;
+    const http = response && !("protocol" in response) ? response : undefined;
+    const selectedStatus = http && selectedResponseStatus(frame, node.id, http.status);
+    const headers = http && node.type !== "workflow" ? responseHeaderReader(node.data.operationId, http.status, http.headers) : undefined;
     const content = node.type !== "workflow" ? operationForId(node.data.operationId)?.responseContent : undefined;
-    const representations = response && (content?.[String(response.status)] ?? content?.[`${Math.floor(response.status / 100)}XX`] ?? content?.DEFAULT);
+    const representations = http && (content?.[String(http.status)] ?? content?.[`${Math.floor(http.status / 100)}XX`] ?? content?.DEFAULT);
     for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
     {
       if (stopped) return;
@@ -339,17 +344,21 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         const key = port(field.endpoint.nodeId, field.endpoint.fieldId);
         if (child.values.has(key)) value = child.values.get(key);
       }
-      else if (response && field.connectable)
+      else if (response && "protocol" in response && field.connectable) {
+        const [group, path] = identity(field);
+        if (group === "rpc:result") value = read(response, path);
+      }
+      else if (http && field.connectable)
       {
         const [group, path] = identity(field);
         const matches = (group: string) => {
           const media = /^(?:response|output):[^:]+:(.+)$/.exec(group)?.[1]?.toLowerCase();
-          return responseStatus(group) === selectedStatus && (!media || !response.mediaType || media === response.mediaType
-            || media === "application/octet-stream" && response.bodyType === "binary" && !representations?.[response.mediaType!]);
+          return responseStatus(group) === selectedStatus && (!media || !http.mediaType || media === http.mediaType
+            || media === "application/octet-stream" && http.bodyType === "binary" && !representations?.[http.mediaType!]);
         };
         if (matches(group) || linkedResponseGroups(panel.id, node.id, frame.document.edges, frame.document.nodes).some(matches))
-          value = group.startsWith("response:") ? readResponse(response, path, mappedOutput(frame, panel.id, field.id) ? headers : undefined)
-            : read(response.body, path);
+          value = group.startsWith("response:") ? readResponse(http, path, mappedOutput(frame, panel.id, field.id) ? headers : undefined)
+            : read(http.body, path);
       }
       emit(frame, panel.id, field.id, value);
     }
@@ -556,6 +565,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     return { kind: "operation", id: `${++step}:${node.id}`, nodeId: node.id, workflowName: frame.document.name, bindingPath,
       operation, values, mappedFields, step,
       ...(vaultVariables.length ? { vaultVariables } : {}),
+      ...(node.data.nativeBinding ? { nativeBinding: structuredClone(node.data.nativeBinding) } : {}),
       ...(node.data.credentialBinding ? { credentialBinding: structuredClone(node.data.credentialBinding) } : {}) };
   }
 
@@ -682,19 +692,27 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       return advancing;
     },
     get processingResults() { return structuredClone(processingResults); },
-    async submit(values: InputValues, binding?: CredentialBinding | null, onProgress?: ResponseProgressCallback): Promise<WorkflowExecution>
+    async submit(values: InputValues, binding?: CredentialBinding | null, onProgress?: ResponseProgressCallback,
+      nativeBinding?: NativeWorkflowBinding | null, nativeProgress?: NativeProgressCallback): Promise<WorkflowExecution>
     {
       if (!current || stopped || terminalError) throw new Error("There is no operation ready to run.");
       if (pending) throw new Error("This operation already has a request in progress.");
       for (const key of current.visit.mappedFields)
         if (values[key] !== current.visit.values[key]) throw new InputValidationError(key, "Connected values cannot be changed during a run. Update the workflow connection first.");
       const completed = current;
+      const native = completed.visit.operation.protocol === "json-rpc";
+      if (native) prepareNativeRequest(completed.visit.operation, values);
       const controller = new AbortController();
       pending = controller;
-      let result: WorkflowExecutionResult;
+      let result: AnyWorkflowExecutionResult;
       // An explicit UI clear must not fall back to a previously saved credential.
       const selectedBinding = binding === null ? undefined : binding ?? completed.visit.credentialBinding;
       try {
+        if (native) {
+          const selectedNative = nativeBinding === null ? undefined : nativeBinding ?? completed.visit.nativeBinding;
+          if (!selectedNative || !execution.executeNative || completed.visit.vaultVariables?.length || selectedBinding) throw new VaultError("PERMISSION");
+          result = await execution.executeNative(completed.visit.operation, values, selectedNative, controller.signal, nativeProgress);
+        } else {
         const variables = completed.visit.vaultVariables;
         const connected = binding !== null && !selectedBinding ? credentialSelectionForVariables(completed.visit.operation.security, variables) : undefined;
         const selection = connected ?? (variables?.length && !completed.visit.operation.security?.length ? { alternative: 0, credentials: {} } : undefined);
@@ -703,7 +721,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         result = await execution.execute(completed.visit.operation, values, controller.signal,
           executionBinding ? { binding: executionBinding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined,
           progress => { if (!stopped && current === completed && !controller.signal.aborted) onProgress?.(progress); });
+        }
       }
+      catch (error) { if (native && !(error instanceof InputValidationError)) { terminalError = (error as Error).message; current = undefined; } throw error; }
       finally { pending = undefined; }
       if (stopped || current !== completed) throw new Error("This run has ended.");
       if (controller.signal.aborted) throw new Error("The request was cancelled.");
@@ -712,7 +732,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       // Output routing happens after a successful response. A routing error
       // must never make the completed operation available for an accidental retry.
       try {
-        if (result.response.redacted) throw new VaultError("REDACTED");
+        if (!("protocol" in result.response) && result.response.redacted) throw new VaultError("REDACTED");
         outputs(completed.frame, completed.node, result.response);
       }
       catch (error) { terminalError = (error as Error).message; }

@@ -5,12 +5,14 @@ import { nativeIdentity, nativeObject, nativeScope, sameNativeIdentity, nativeRu
   nativeRuntimeVersion as version, nativeRuntimeLimits as limits, type NativeRuntimeIdentity, type NativeRuntimeScope } from "../native-runtime-contract.ts";
 import { nativeHost, type NativeRuntimeConnection } from "./native-runtime-config.ts";
 import { VaultError } from "./types.ts";
+import type { NativeAgentMethod, NativeRpcId } from "../native-agent-contract.ts";
 
 export type NativeRuntimeRuntime = { fetch?: typeof fetch; WebSocket?: typeof WebSocket; now?: () => number; requestMs?: number };
 type Summary = { accountType: NativeRuntimeConnection["accountType"]; requiresOpenaiAuth: boolean };
-type Peer = { identity: NativeRuntimeIdentity; expiresAt: number; socket: WebSocket;
-  request: (method: "initialize" | "account/read", params: unknown, signal?: AbortSignal) => Promise<unknown>;
-  notify: () => void; close: () => void };
+export type NativePeer = { identity: NativeRuntimeIdentity; expiresAt: number; socket: WebSocket; scope: NativeRuntimeScope;
+  request: (method: NativeAgentMethod, params: unknown, signal?: AbortSignal) => Promise<unknown>;
+  reply: (id: NativeRpcId, result: unknown) => void; notify: () => void; close: () => void };
+type NativeEvents = { frame: (frame: Record<string, unknown>, identity: NativeRuntimeIdentity) => boolean; closed: () => void };
 async function readJson(response: Response): Promise<unknown> {
   if (!response.ok || !response.body || response.headers.get("content-type")?.split(";")[0] !== "application/json") throw new VaultError("AUTHORIZATION");
   const reader = response.body.getReader(), parts: Uint8Array[] = []; let length = 0;
@@ -28,7 +30,7 @@ async function readJson(response: Response): Promise<unknown> {
 /** Owns tickets, private sockets and native responses. No raw frame reaches page state. */
 export class NativeRuntimeBroker {
   private readonly runtime: NativeRuntimeRuntime;
-  private readonly peers = new Map<string, { peer: Peer; key: string; fingerprint: string }>();
+  private readonly peers = new Map<string, { peer: NativePeer; key: string; fingerprint: string }>();
   private readonly opening = new Map<string, AbortController>();
   constructor(runtime: NativeRuntimeRuntime = {}) { this.runtime = runtime; }
   connected(id: string): boolean { const peer = this.peers.get(id)?.peer; return !!peer && peer.socket.readyState === 1 && peer.expiresAt > (this.runtime.now ?? Date.now)(); }
@@ -39,15 +41,21 @@ export class NativeRuntimeBroker {
   clear(): void { for (const id of new Set([...this.peers.keys(), ...this.opening.keys()])) this.close(id); }
 
   private async open(host: string, key: string, scope: NativeRuntimeScope, expected: NativeRuntimeIdentity | undefined,
-    guard: () => Promise<void>, signal?: AbortSignal): Promise<Peer> {
+    guard: () => Promise<void>, signal?: AbortSignal, events?: NativeEvents): Promise<NativePeer> {
     if (!/^[A-Za-z0-9_-]{43,256}$/.test(key) || signal?.aborted) throw new VaultError(signal?.aborted ? "CANCELLED" : "INVALID");
     const now = this.runtime.now ?? Date.now, timeoutMs = this.runtime.requestMs ?? limits.requestMs;
     const timeout = AbortSignal.timeout(timeoutMs), cancellation = signal ? AbortSignal.any([signal, timeout]) : timeout;
     await guard();
     let response: Response;
     try {
-      response = await (this.runtime.fetch ?? fetch)(nativeHost(host) + "/v1/codex/tickets", { method: "POST", redirect: "error", credentials: "omit",
-        headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" }, body: JSON.stringify({ profile, version, scope }), signal: cancellation });
+      const deadline = now() + 1800;
+      do {
+        response = await (this.runtime.fetch ?? fetch)(nativeHost(host) + "/v1/codex/tickets", { method: "POST", redirect: "error", credentials: "omit",
+          headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" }, body: JSON.stringify({ profile, version, scope }), signal: cancellation });
+        if (response.status !== 409 || !events || now() >= deadline || cancellation.aborted) break;
+        await response.body?.cancel();
+        await new Promise(resolve => setTimeout(resolve, 100)); await guard();
+      } while (!cancellation.aborted);
     } catch { throw new VaultError(signal?.aborted ? "CANCELLED" : "NETWORK"); }
     let ticket: string, identity: NativeRuntimeIdentity;
     try {
@@ -66,6 +74,7 @@ export class NativeRuntimeBroker {
       if (disposed) return; disposed = true; clearTimeout(expiry);
       for (const item of pending.values()) { item.cleanup(); item.reject(new VaultError("NETWORK")); } pending.clear();
       pairReject?.(new VaultError("AUTHORIZATION"));
+      events?.closed();
       try { socket.close(1000, "Connection closed"); } catch { /* Connecting/closed sockets can already be unavailable. */ }
     };
     const send = (frame: unknown) => {
@@ -86,10 +95,19 @@ export class NativeRuntimeBroker {
             || frame.expiresAt <= now() || frame.expiresAt > now() + limits.sessionMs) throw new Error();
           expiresAt = frame.expiresAt; expiry = setTimeout(close, expiresAt - now()); pairResolve?.(); return;
         }
-        if (now() >= expiresAt || frame.method !== undefined || typeof frame.id !== "string" || !pending.has(frame.id)
+        if (now() >= expiresAt) throw new Error();
+        if (events && (frame.method !== undefined || frame.type === "authority") && events.frame(frame, identity)) {
+          if (frame.type === "authority") {
+            const next = nativeIdentity(frame.identity);
+            if (!sameNativeIdentity(identity, { ...next, accountEpoch: identity.accountEpoch })) throw new Error();
+            Object.assign(identity, next);
+          }
+          return;
+        }
+        if (frame.method !== undefined || typeof frame.id !== "string" || !pending.has(frame.id)
           || Object.hasOwn(frame, "result") === Object.hasOwn(frame, "error")) throw new Error();
         const item = pending.get(frame.id)!; pending.delete(frame.id); item.cleanup();
-        if (Object.hasOwn(frame, "error")) item.reject(new VaultError("AUTHORIZATION")); else item.resolve(frame.result);
+        if (Object.hasOwn(frame, "error")) item.reject(new VaultError(events ? "NATIVE_FAILED" : "AUTHORIZATION")); else item.resolve(frame.result);
       } catch { close(); }
     });
     try {
@@ -105,7 +123,7 @@ export class NativeRuntimeBroker {
       });
       pairResolve = undefined; pairReject = undefined; await guard();
       if (disposed || cancellation.aborted) throw new VaultError(signal?.aborted ? "CANCELLED" : "NETWORK");
-      return { identity, expiresAt, socket, close, notify: () => send({ method: "initialized" }),
+      return { identity, expiresAt, socket, scope, close, notify: () => send({ method: "initialized" }), reply: (id, result) => send({ id, result }),
         request: async (method, params, signal) => {
           await guard(); if (disposed || now() >= expiresAt || signal?.aborted) { close(); throw new VaultError(signal?.aborted ? "CANCELLED" : "AUTHORIZATION"); }
           if (pending.size >= limits.pending) throw new VaultError("LIMIT");
@@ -122,6 +140,26 @@ export class NativeRuntimeBroker {
           });
         } };
     } catch (error) { close(); throw error; }
+  }
+
+  /** Upgrade only the selected owner; ticket retries never replay native calls. */
+  async agent(id: string, host: string, key: string, fingerprint: string, expected: NativeRuntimeIdentity,
+    guard: () => Promise<void>, events: NativeEvents, signal?: AbortSignal): Promise<NativePeer> {
+    const current = this.peers.get(id);
+    if (current?.peer.scope.method === "codex-workflow" && current.key === key && current.fingerprint === fingerprint
+      && this.connected(id) && sameNativeIdentity(expected, current.peer.identity)) { await guard(); return current.peer; }
+    this.close(id);
+    if (new Set([...this.peers.keys(), ...this.opening.keys(), id]).size > 4) throw new VaultError("LIMIT");
+    const opening = new AbortController(); this.opening.set(id, opening);
+    signal = signal ? AbortSignal.any([signal, opening.signal]) : opening.signal;
+    let peer: NativePeer | undefined;
+    try {
+      peer = await this.open(host, key, { connectionId: id, method: "codex-workflow", fingerprint }, expected, guard, signal, events);
+      await peer.request("initialize", { clientInfo: { name: "operations", version: "1" }, capabilities: { experimentalApi: false } }, signal);
+      peer.notify(); await guard();
+      this.peers.set(id, { peer, key, fingerprint }); return peer;
+    } catch (error) { peer?.close(); this.peers.delete(id); throw error; }
+    finally { if (this.opening.get(id) === opening) this.opening.delete(id); }
   }
 
   async check(id: string, host: string, key: string, fingerprint: string, expected: NativeRuntimeIdentity | undefined,

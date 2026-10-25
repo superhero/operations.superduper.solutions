@@ -10,6 +10,7 @@ import { validateWorkflowFileData, type WorkflowFileData } from "./workflow-file
 import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
+import { validateNativeBinding, type NativeWorkflowBinding } from "./secrets/native-runtime-config.ts";
 import { nativeRpcMethod } from "./native-rpc.ts";
 import { processingDefinition, validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
 import { isWorkflowLineStyle, type WorkflowLineStyle } from "./workflow-line-style.ts";
@@ -25,6 +26,7 @@ export type OperationData = {
   path: string;
   /** Optional local references in supported versions; portable documents omit them. No authorization is stored here. */
   credentialBinding?: CredentialBinding;
+  nativeBinding?: NativeWorkflowBinding;
 };
 
 export type ArrayBounds = { min: number; max?: number };
@@ -139,7 +141,8 @@ function operationData(value: Record<string, unknown>): OperationData
       throw new Error("Invalid native RPC operation identity.");
     return { operationId, name: text(value.name, "Operation name", 200),
       description: text(value.description, "Operation description", 4000, true), method, path,
-      protocol: "json-rpc", rpc: { version, method: nativeMethod } };
+      protocol: "json-rpc", rpc: { version, method: nativeMethod },
+      ...(value.nativeBinding === undefined ? {} : { nativeBinding: validateNativeBinding(value.nativeBinding) }) };
   }
   if (value.protocol !== undefined || value.rpc !== undefined) throw new Error("Unsupported operation protocol.");
   if (!["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE"].includes(method))
@@ -475,7 +478,7 @@ export function portableWorkflowDocument(value: WorkflowDocument): WorkflowDocum
   for (const node of document.nodes) {
     if (node.type === "workflow") node.data.snapshot = portableWorkflowDocument(node.data.snapshot);
     else if (node.type === "vault") delete node.data.credentialId;
-    else if (node.type === "operation" || node.type === undefined) delete node.data.credentialBinding;
+    else if (node.type === "operation" || node.type === undefined) { delete node.data.credentialBinding; delete node.data.nativeBinding; }
   }
   return document;
 }

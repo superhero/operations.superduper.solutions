@@ -7,7 +7,7 @@ export const nativeRuntimeLimits = { frame: 65536, pending: 8, tickets: 16, unpa
   pairingMs: 5000, ticketMs: 30000, requestMs: 10000, sessionMs: 15 * 60 * 1000 } as const;
 export type NativeRuntimeIdentity = { runtimeId: string; generation: string; version: typeof nativeRuntimeVersion;
   configuration: string; workspace: string; accountEpoch: string };
-export type NativeRuntimeScope = { connectionId: string; method: "account/read"; fingerprint: string };
+export type NativeRuntimeScope = { connectionId: string; method: "account/read" | "codex-workflow"; fingerprint: string };
 export const nativeUuid = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value);
 export function nativeObject(value: unknown, keys: readonly string[]): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value) || ![Object.prototype, null].includes(Object.getPrototypeOf(value))
@@ -24,7 +24,7 @@ export function nativeIdentity(value: unknown): NativeRuntimeIdentity {
 }
 export function nativeScope(value: unknown): NativeRuntimeScope {
   const item = nativeObject(value, ["connectionId", "method", "fingerprint"]);
-  if (!nativeUuid(item.connectionId) || item.method !== "account/read" || typeof item.fingerprint !== "string"
+  if (!nativeUuid(item.connectionId) || !["account/read", "codex-workflow"].includes(String(item.method)) || typeof item.fingerprint !== "string"
     || !/^[a-f0-9]{64}$/.test(item.fingerprint)) throw new Error("Invalid native runtime scope.");
   return { ...item } as NativeRuntimeScope;
 }

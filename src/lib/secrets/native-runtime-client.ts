@@ -4,8 +4,13 @@
 import { hydrateOperation } from "../schema-library.ts";
 import { catalogForOperation } from "../catalog-registry.ts";
 import { VaultError } from "./types.ts";
-export async function nativeRuntimeSelection() {
-  const operation = await hydrateOperation("codex:account/read"), document = catalogForOperation(operation.id)?.document;
+import { nativeAgentMethods } from "../native-agent-contract.ts";
+export async function nativeOperationSelection(method: string) {
+  const operation = await hydrateOperation("codex:" + method), document = catalogForOperation(operation.id)?.document;
   if (operation.protocol !== "json-rpc" || !document) throw new VaultError("PERMISSION");
   return { operation, document };
 }
+export async function nativeRuntimeSelection() {
+  return nativeOperationSelection("account/read");
+}
+export const nativeWorkflowSelection = () => Promise.all(nativeAgentMethods.map(method => nativeOperationSelection(method)));

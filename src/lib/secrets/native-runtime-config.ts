@@ -5,8 +5,17 @@ import { nativeIdentity, nativeObject, nativeRuntimeProfile, nativeUuid, type Na
 import { VaultError, type VaultCredential } from "./types.ts";
 import { canonicalPolicyValue } from "./policy.ts";
 export type NativeRuntimeReference = { id: string; revision: number; fingerprint: string };
+export type NativeWorkflowBinding = { runtime: NativeRuntimeReference; fingerprint: string };
+export function validateNativeBinding(value: unknown): NativeWorkflowBinding {
+  try {
+    const item = nativeObject(value, ["runtime", "fingerprint"]);
+    if (typeof item.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(item.fingerprint)) throw new Error();
+    return { runtime: validateNativeReference(item.runtime), fingerprint: item.fingerprint };
+  } catch { throw new VaultError("INVALID"); }
+}
 export type NativeRuntimeConnection = NativeRuntimeReference & { profile: typeof nativeRuntimeProfile; label: string; host: string;
-  pairingKeyId: string; keyHash: string; identity: NativeRuntimeIdentity; modelFingerprint: string; accountType: "none" | "apiKey" | "chatgpt" };
+  pairingKeyId: string; keyHash: string; identity: NativeRuntimeIdentity; modelFingerprint: string; accountType: "none" | "apiKey" | "chatgpt";
+  workflowFingerprint?: string };
 export type NativeRuntimeInput = { label: string; host: string; pairingKeyId: string };
 export function nativeHost(value: unknown): string {
   try {
@@ -35,11 +44,13 @@ export function validateNativeInput(value: unknown): NativeRuntimeInput {
 }
 export function validateNativeConnection(value: unknown): NativeRuntimeConnection {
   try {
-    const item = nativeObject(value, ["id", "revision", "fingerprint", "profile", "label", "host", "pairingKeyId", "keyHash", "identity", "modelFingerprint", "accountType"]);
+    const item = nativeObject(value, ["id", "revision", "fingerprint", "profile", "label", "host", "pairingKeyId", "keyHash", "identity", "modelFingerprint", "accountType",
+      ...(value && typeof value === "object" && Object.hasOwn(value, "workflowFingerprint") ? ["workflowFingerprint"] : [])]);
     validateNativeReference({ id: item.id, revision: item.revision, fingerprint: item.fingerprint });
     validateNativeInput({ label: item.label, host: item.host, pairingKeyId: item.pairingKeyId });
     if (item.profile !== nativeRuntimeProfile || item.host !== nativeHost(item.host) || !["none", "apiKey", "chatgpt"].includes(String(item.accountType))
-      || ![item.keyHash, item.modelFingerprint].every(value => typeof value === "string" && /^[a-f0-9]{64}$/.test(value))) throw new Error();
+      || ![item.keyHash, item.modelFingerprint, ...(item.workflowFingerprint !== undefined ? [item.workflowFingerprint] : [])]
+        .every(value => typeof value === "string" && /^[a-f0-9]{64}$/.test(value))) throw new Error();
     return { ...item, identity: nativeIdentity(item.identity) } as NativeRuntimeConnection;
   } catch { throw new VaultError("INVALID"); }
 }

@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
+import { createCodexAgentSession } from './agent.mjs';
 import { nativeIdentity, nativeObject, nativeScope, sameNativeIdentity, nativeRuntimeProfile as profile,
   nativeRuntimeVersion as version, nativeRuntimeLimits as limits } from '../../src/lib/native-runtime-contract.ts';
 
@@ -18,7 +19,7 @@ export function createCodexCompanion(config, runtime) {
     })) throw new Error('Invalid native companion configuration.');
   const now = runtime.now ?? Date.now, tickets = new Map(), unpaired = new Set();
   const sockets = new WebSocketServer({ noServer: true, maxPayload: limits.frame, perMessageDeflate: false });
-  const stopping = new Set();
+  const stopping = new Set(), threads = new Map();
   let active, closed = false;
   const headers = origin => ({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Vary': 'Origin',
     'Cross-Origin-Resource-Policy': 'cross-origin', ...(config.allowedOrigins.includes(origin)
@@ -46,6 +47,7 @@ export function createCodexCompanion(config, runtime) {
       const input = nativeObject(JSON.parse(Buffer.concat(parts).toString('utf8')), ['profile', 'version', 'scope']);
       if (input.profile !== profile || input.version !== version) throw new Error();
       const scope = nativeScope(input.scope), identity = nativeIdentity(await runtime.authority());
+      if (scope.method === 'codex-workflow' && config.allowAgent !== true) throw new Error();
       const ticket = randomBytes(32).toString('base64url'), expiresAt = now() + limits.ticketMs;
       tickets.set(ticket, { scope, identity, expiresAt, origin });
       return answer(200, { ticket, expiresAt, identity });
@@ -59,8 +61,9 @@ export function createCodexCompanion(config, runtime) {
     sockets.handleUpgrade(request, socket, head, ws => attach(ws, request.headers.origin));
   }
   function attach(ws, origin) {
-    unpaired.add(ws); let child, ticket, expiry, heartbeat, initializing = false, initialized = false, accepting = false, expiresAt = 0;
+    unpaired.add(ws); let child, ticket, agent, expiry, heartbeat, initializing = false, initialized = false, accepting = false, expiresAt = 0;
     let queued = 0, sequence = Promise.resolve();
+    let nativeQueued = 0, nativeSequence = Promise.resolve();
     const pending = new Map();
     let pairingTimer = setTimeout(() => ws.close(1008, 'Pairing required'), limits.pairingMs);
     const send = frame => {
@@ -71,6 +74,7 @@ export function createCodexCompanion(config, runtime) {
     let stopped;
     const stop = () => stopped ??= (async () => {
       clearTimeout(pairingTimer); clearTimeout(expiry); clearInterval(heartbeat); unpaired.delete(ws); pending.clear();
+      agent?.close();
       try { await child?.close(); } finally { if (active?.ws === ws) active = undefined; }
     })();
     ws.once('close', () => {
@@ -79,9 +83,14 @@ export function createCodexCompanion(config, runtime) {
     }); ws.on('error', () => { ws.terminate(); });
     ws.on('pong', () => { if (active?.ws === ws) active.alive = true; });
     const receive = frame => {
+      if (++nativeQueued > 32) { ws.close(1008, 'Native queue limit'); return; }
+      nativeSequence = nativeSequence.then(() => receiveFrame(frame)).finally(() => { nativeQueued--; });
+    };
+    async function receiveFrame(frame) {
       try {
         if (!frame || typeof frame !== 'object' || Array.isArray(frame)) throw new Error();
         if (Object.hasOwn(frame, 'method')) {
+          if (agent) { await agent.receive(frame); return; }
           // Pairing has no interactive approval or login surface. Never expose a
           // server-initiated request as a client operation or auto-approve it.
           if (Object.hasOwn(frame, 'id')) child.send({ id: frame.id, error: { code: -32601, message: 'Interaction unavailable in this profile.' } });
@@ -91,9 +100,10 @@ export function createCodexCompanion(config, runtime) {
         if (!pending.has(frame.id) || (Object.hasOwn(frame, 'result') === Object.hasOwn(frame, 'error'))) throw new Error();
         const method = pending.get(frame.id); pending.delete(frame.id);
         if (method === 'initialize' && Object.hasOwn(frame, 'result')) initializing = true;
+        if (agent && await agent.receive(frame)) return;
         send(frame);
       } catch { ws.close(1008, 'Native protocol unavailable'); }
-    };
+    }
     ws.on('message', (bytes, binary) => {
       if (binary || bytes.length > limits.frame || ++queued > limits.pending + 2) { ws.close(1008, 'Native protocol unavailable'); return; }
       sequence = sequence.then(() => handleFrame(bytes)).finally(() => { queued--; });
@@ -101,13 +111,15 @@ export function createCodexCompanion(config, runtime) {
     async function handleFrame(bytes) {
       if (ws.readyState !== 1) return;
       try {
-        const frame = JSON.parse(bytes.toString('utf8'));
+        let frame = JSON.parse(bytes.toString('utf8'));
         if (!ticket) {
           nativeObject(frame, ['type', 'ticket']); prune(); const selected = tickets.get(frame.ticket); tickets.delete(frame.ticket);
           if (frame.type !== 'pair' || !selected || selected.origin !== origin || selected.expiresAt <= now() || active
             || !sameNativeIdentity(selected.identity, await runtime.authority())) throw new Error();
           if (active) throw new Error();
           ticket = selected; active = { ws, alive: true }; unpaired.delete(ws); clearTimeout(pairingTimer);
+          if (ticket.scope.method === 'codex-workflow') agent = createCodexAgentSession({ identity: ticket.identity,
+            authority: runtime.authority, send, write: value => child.send(value), threads });
           child = await runtime.start(receive, () => ws.close(1011, 'Native runtime stopped'));
           if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) { await child.close(); throw new Error(); }
           expiresAt = now() + limits.sessionMs;
@@ -116,11 +128,13 @@ export function createCodexCompanion(config, runtime) {
           heartbeat = setInterval(() => {
             if (active?.ws !== ws || !active.alive) { ws.terminate(); return; }
             active.alive = false; ws.ping();
-            void runtime.authority().then(identity => { if (!sameNativeIdentity(ticket.identity, identity)) ws.close(1008, 'Runtime authority changed'); }, () => ws.close(1008, 'Runtime authority unavailable'));
+            void (agent ? agent.check() : runtime.authority().then(identity => { if (!sameNativeIdentity(ticket.identity, identity)) throw new Error(); }))
+              .catch(() => ws.close(1008, 'Runtime authority unavailable'));
           }, 15000);
           return;
         }
-        if (!accepting || now() >= expiresAt || !sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
+        if (!accepting || now() >= expiresAt) throw new Error();
+        if (agent) await agent.check(); else if (!sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
         if (frame.type === 'cancel') {
           nativeObject(frame, ['type', 'id']); if (!pending.has(frame.id)) throw new Error();
           ws.close(1000, 'Owned request cancelled'); return;
@@ -128,6 +142,9 @@ export function createCodexCompanion(config, runtime) {
         if (frame.method === 'initialized') {
           nativeObject(frame, ['method']); if (!initializing || initialized) throw new Error();
           initialized = true; child.send({ method: 'initialized' }); return;
+        }
+        if (agent && initialized && (Object.hasOwn(frame, 'result') || Object.hasOwn(frame, 'error'))) {
+          agent.request(frame); return;
         }
         nativeObject(frame, ['id', 'method', 'params']);
         if (!(Number.isSafeInteger(frame.id) && frame.id >= 0 || typeof frame.id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(frame.id))
@@ -138,8 +155,12 @@ export function createCodexCompanion(config, runtime) {
           nativeObject(frame.params.capabilities, ['experimentalApi']);
           if (frame.params.clientInfo.name !== 'operations' || frame.params.clientInfo.version !== '1' || frame.params.capabilities.experimentalApi !== false) throw new Error();
         } else {
-          if (!initialized || frame.method !== ticket.scope.method) throw new Error();
-          nativeObject(frame.params, ['refreshToken']); if (frame.params.refreshToken !== false) throw new Error();
+          if (!initialized) throw new Error();
+          if (agent) frame = agent.request(frame);
+          else {
+            if (frame.method !== ticket.scope.method) throw new Error();
+            nativeObject(frame.params, ['refreshToken']); if (frame.params.refreshToken !== false) throw new Error();
+          }
         }
         pending.set(frame.id, frame.method); child.send(frame);
       } catch { ws.close(1008, 'Native access denied'); }

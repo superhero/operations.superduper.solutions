@@ -23,18 +23,19 @@ export async function nativeTlsFixture() {
 export async function nativeHostFixture(options = {}) {
   const tls = await nativeTlsFixture(), applicationOrigin = options.applicationOrigin ?? 'https://operations.test';
   const key = randomBytes(32).toString('base64url'); let offset = 0, host;
-  const f = { key, applicationOrigin, starts: 0, stops: 0, frames: [], requests: [], sockets: [], hold: false, echo: false,
+  const f = { key, applicationOrigin, starts: 0, stops: 0, frames: [], requests: [], sockets: [], hold: false, echo: false, account: options.account ?? null,
     identity: { runtimeId: randomUUID(), generation: randomUUID(), version: nativeRuntimeVersion,
       configuration: 'a'.repeat(64), workspace: 'b'.repeat(64), accountEpoch: randomUUID() }, now: () => Date.now() + offset,
     advance: ms => offset += ms, release: [] };
   const runtime = options.runtime ?? { now: f.now, authority: async () => structuredClone(f.identity),
     async start(receive, exited) {
-      f.starts++; f.emit = receive; let stopped = false;
+      f.starts++; f.emit = receive; f.exit = exited; let stopped = false;
       return { send(frame) {
         f.frames.push(structuredClone(frame));
+        if (options.onFrame?.(frame, f, receive) === true) return;
         if (!Object.hasOwn(frame, 'id')) return;
         const result = frame.method === 'initialize' ? { userAgent: 'codex/0.163.0' }
-          : { account: options.account ?? null, requiresOpenaiAuth: true, ...(f.echo ? { echo: key } : {}) };
+          : { account: f.account, requiresOpenaiAuth: true, ...(f.echo ? { echo: key } : {}) };
         const reply = () => { if (!stopped) receive({ id: frame.id, result }); };
         if (f.hold && frame.method === 'account/read') f.release.push(reply); else queueMicrotask(reply);
       }, async close() { if (!stopped) { stopped = true; f.stops++; exited(); } } };
@@ -46,7 +47,7 @@ export async function nativeHostFixture(options = {}) {
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const publicOrigin = 'https://127.0.0.1:' + server.address().port;
-  host = createCodexCompanion({ publicOrigin, pairingKey: key, allowedOrigins: options.allowedOrigins ?? [applicationOrigin] }, runtime);
+  host = createCodexCompanion({ publicOrigin, pairingKey: key, allowedOrigins: options.allowedOrigins ?? [applicationOrigin], allowAgent: options.allowAgent === true }, runtime);
   server.on('upgrade', (req, socket, head) => {
     f.sockets.push({ path: req.url, origin: req.headers.origin, protocol: req.headers['sec-websocket-protocol'], cookie: !!req.headers.cookie });
     host.upgrade(req, socket, head);

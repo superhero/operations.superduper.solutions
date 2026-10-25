@@ -9,9 +9,10 @@ import { setMode } from './workspace.fixture.mjs';
 
 const settings = page => page.getByRole('region', { name: 'Secrets vault', exact: true });
 const pane = page => page.getByRole('region', { name: 'Native runtimes', exact: true });
-const observations = async world => (await world.context.request.get(`${world.baseURL}/native-companion-fixture/${world.nativeId}/observations`)).json();
+export const observations = async world => (await world.context.request.get(`${world.baseURL}/native-companion-fixture/${world.nativeId}/observations`)).json();
 Before({ tags: '@native-runtime-ui' }, async function ({ pickle }) {
   this.nativeReal = pickle.tags.some(tag => tag.name === '@native-real-runtime');
+  this.nativeAgent = pickle.tags.some(tag => tag.name === '@native-agent-profile' || tag.name === '@native-agent-ui');
   // Interception bypasses native CORS preflight. These cases use only the
   // application and an owned loopback TLS endpoint; unexpected access still fails.
   await this.context.unrouteAll({ behavior: 'wait' });
@@ -24,9 +25,9 @@ Before({ tags: '@native-runtime-ui' }, async function ({ pickle }) {
 After({ tags: '@native-runtime-ui' }, async function () {
   if (this.nativeId) await this.context.request.delete(`${this.baseURL}/native-companion-fixture/${this.nativeId}/close`);
 });
-async function prepare(world, wrongOrigin = false) {
+export async function prepare(world, wrongOrigin = false) {
   world.nativeId = randomUUID();
-  const response = await world.context.request.post(`${world.baseURL}/native-companion-fixture/${world.nativeId}/create`, { data: { real: world.nativeReal, wrongOrigin } });
+  const response = await world.context.request.post(`${world.baseURL}/native-companion-fixture/${world.nativeId}/create`, { data: { real: world.nativeReal, wrongOrigin, agent: world.nativeAgent === true } });
   assert.equal(response.status(), 200); world.native = await response.json();
   const page = world.page;
   await settings(page).getByLabel('Credential label', { exact: true }).fill('Native pairing key');
@@ -42,7 +43,7 @@ async function prepare(world, wrongOrigin = false) {
     };
   });
 }
-async function pair(world) {
+export async function pair(world) {
   const page = world.page;
   await pane(page).getByLabel('Companion URL', { exact: true }).fill(world.native.host);
   await pane(page).getByRole('combobox', { name: 'Pairing key', exact: true }).click();

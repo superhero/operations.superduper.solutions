@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/native-agent.test.mjs",
     "src/native-runtime.test.mjs",
     "src/native-rpc.test.mjs",
     "src/jira-confidential-oauth.test.mjs",
@@ -79,6 +80,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/native-agent.feature",
     "src/native-runtime.feature",
     "src/native-rpc.feature",
     "src/jira-confidential-oauth.feature",

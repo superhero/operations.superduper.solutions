@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { nativeHostFixture } from '../native-runtime.fixture.mjs';
+import { nativeAgentFixture } from '../native-agent.fixture.mjs';
 import { openCodexRuntime } from '../../companions/codex/runtime.mjs';
 
 /** Test control stays on the isolated harness origin. HTTPS, CORS, WSS and the
@@ -28,7 +29,7 @@ export function createNativeBrowserEndpoint() {
         const home = join(directory, 'home'), workspace = join(directory, 'workspace');
         await mkdir(home, { mode: 0o700 }); await mkdir(workspace, { mode: 0o700 });
         const real = await openCodexRuntime({ runtimeId: randomUUID(), executable: process.env.OPERATIONS_CODEX_QUALIFICATION_BINARY,
-          binarySha256: process.env.OPERATIONS_CODEX_QUALIFICATION_SHA256, home, workspace });
+          binarySha256: process.env.OPERATIONS_CODEX_QUALIFICATION_SHA256, home, workspace, allowAgent: input.agent === true });
         runtime = { authority: real.authority, async start(receive, exited) {
           observation.starts++; const child = await real.start(receive, exited); let closed = false;
           return { send(frame) { observation.methods.push(frame.method); child.send(frame); }, async close() {
@@ -36,7 +37,8 @@ export function createNativeBrowserEndpoint() {
           } };
         } };
       }
-      const fixture = await nativeHostFixture({ applicationOrigin, ...(input.wrongOrigin ? { allowedOrigins: ['https://foreign.test'] } : {}), ...(runtime ? { runtime } : {}) });
+      const fixture = await (input.agent === true && !runtime ? nativeAgentFixture : nativeHostFixture)({ applicationOrigin,
+        ...(input.wrongOrigin ? { allowedOrigins: ['https://foreign.test'] } : {}), ...(runtime ? { runtime } : {}), allowAgent: input.agent === true });
       entries.set(id, { fixture, directory, observation, real: !!runtime });
       return answer({ host: fixture.publicOrigin, pairingKey: fixture.key, real: !!runtime });
     }
@@ -44,12 +46,14 @@ export function createNativeBrowserEndpoint() {
     if (action === 'observations' && request.method === 'GET') return answer({ requests: entry.fixture.requests, sockets: entry.fixture.sockets,
       starts: entry.real ? entry.observation.starts : entry.fixture.starts, stops: entry.real ? entry.observation.stops : entry.fixture.stops,
       methods: entry.real ? entry.observation.methods : entry.fixture.frames.map(frame => frame.method), real: entry.real });
+    if (action === 'finish-login' && request.method === 'POST' && !entry.real && entry.fixture.finishLogin) { entry.fixture.finishLogin(); return answer({ completed: true }); }
+    if (action === 'cut' && request.method === 'POST' && !entry.real) { entry.fixture.exit(); return answer({ closed: true }); }
     if (action === 'change-account' && request.method === 'POST' && !entry.real) { entry.fixture.identity.accountEpoch = randomUUID(); return answer({ changed: true }); }
     if (action === 'close' && request.method === 'DELETE') { await remove(entry); entries.delete(id); return answer({ closed: true }); }
     throw new Error();
   }
   return { handle(request, response) {
-    const match = /^\/native-companion-fixture\/([a-f0-9-]{36})\/(create|observations|change-account|close)$/.exec(new URL(request.url, 'http://localhost').pathname);
+    const match = /^\/native-companion-fixture\/([a-f0-9-]{36})\/(create|observations|change-account|finish-login|cut|close)$/.exec(new URL(request.url, 'http://localhost').pathname);
     if (!match) return false;
     void handle(request, response, match).catch(() => { response.writeHead(500, { 'Content-Type': 'application/json' }); response.end('{"error":"native_fixture_unavailable"}'); });
     return true;

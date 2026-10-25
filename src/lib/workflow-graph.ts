@@ -240,11 +240,11 @@ export function createOperationGraph(operation: Operation, position: { x: number
   const edges: WorkflowDocumentEdge[] = [];
   const budget = { fields: 0, panels: 0 };
   const inputs = operation.protocol === "json-rpc" ? operation.rpc?.params === undefined ? []
-    : [{ id: "input:params", label: "Parameters", schema: operation.rpc.params }]
+    : [{ id: "input:params", label: "Parameters", schema: operation.rpc.workflowParams ?? operation.rpc.params }]
     : inputGroups(operation, source, pathItem, schemaDocument);
   const outputs: { id: string; label: string; schema: unknown }[] = [];
   if (operation.protocol === "json-rpc" && operation.rpc) {
-    for (const [name, value] of [["result", operation.rpc.result], ["error", operation.rpc.error]] as const)
+    for (const [name, value] of [["result", operation.rpc.workflowResult ?? operation.rpc.result], ["error", operation.rpc.error]] as const)
       outputs.push({ id: `rpc:${name}`, label: name === "result" ? "Result" : "Error",
         schema: { type: "object", additionalProperties: false, properties: { [name]: value }, required: [name] } });
   }
@@ -424,10 +424,10 @@ function objectPanel(nodes: WorkflowDocumentNode[], nodeId: string, document: Sc
   if (owner.data.protocol === "json-rpc") {
     let rpc;
     try { rpc = nativeRpcOperation(document, owner.data.operationId).rpc!; } catch { return; }
-    if (node.data.direction === "inputs" && group === "input:params") value = rpc.params;
+    if (node.data.direction === "inputs" && group === "input:params") value = rpc.workflowParams ?? rpc.params;
     else if (node.data.direction === "outputs" && (group === "rpc:result" || group === "rpc:error")) {
       const name = group === "rpc:result" ? "result" : "error";
-      value = { type: "object", additionalProperties: false, properties: { [name]: rpc[name] }, required: [name] };
+      value = { type: "object", additionalProperties: false, properties: { [name]: name === "result" ? rpc.workflowResult ?? rpc.result : rpc.error }, required: [name] };
     } else return;
   } else {
     const paths = object(document.paths) ? document.paths : {};

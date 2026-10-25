@@ -17,6 +17,7 @@ export async function openCodexRuntime(config) {
   if (requestedHome === desktopHome || requestedHome.startsWith(desktopHome + '/') || requestedHome === homedir() || requestedHome === '/') throw new Error('A dedicated private runtime home is required.');
   await mkdir(requestedHome, { recursive: true, mode: 0o700 });
   const home = await realpath(requestedHome), workspace = await realpath(config.workspace), executable = await realpath(config.executable);
+  if (config.allowAgent === true && /[*?\[\]{}]/.test(home)) throw new Error('The agent home must be an exact filesystem permission path.');
   const privateHome = await lstat(requestedHome);
   if (privateHome.isSymbolicLink() || home !== requestedHome || !privateHome.isDirectory() || privateHome.mode & 0o077
     || privateHome.uid !== process.getuid?.() || home === workspace || workspace.startsWith(home + '/')) throw new Error('Invalid private runtime home.');
@@ -42,14 +43,19 @@ export async function openCodexRuntime(config) {
     if (lastAccount !== undefined && lastAccount !== auth) accountEpoch = randomUUID();
     lastAccount = auth;
     const configuration = hash(JSON.stringify([config.binarySha256, executable, home, workspace, directory.dev, directory.ino,
-      await fileHash(join(home, 'config.toml')), await fileHash(join(workspace, '.codex/config.toml')), 'file', 'read-only', false]));
+      await fileHash(join(home, 'config.toml')), await fileHash(join(workspace, '.codex/config.toml')), 'file', 'read-only', false, config.allowAgent === true]));
     return { runtimeId: config.runtimeId, generation, version, configuration, workspace: hash(workspace), accountEpoch };
   }
   await authority();
   async function start(receive, exited) {
     if (owned) throw new Error('The runtime is already owned by a connection.');
+    // The named profile keeps the provider credential store outside agent tool
+    // reads. Never replace it with the legacy per-thread sandbox override.
+    const permissions = config.allowAgent === true ? ['-c', 'default_permissions="operations"', '-c',
+      'permissions.operations={filesystem={":root"="read",' + JSON.stringify(home) + '="deny"},network={enabled=false}}']
+      : ['-c', 'sandbox_mode="read-only"'];
     const child = spawn(executable, ['-c', 'cli_auth_credentials_store="file"', '-c', 'analytics.enabled=false',
-      '-c', 'sandbox_mode="read-only"', 'app-server', '--listen', 'stdio://'], { cwd: workspace, env: environment, stdio: ['pipe', 'pipe', 'pipe'] });
+      ...permissions, 'app-server', '--listen', 'stdio://'], { cwd: workspace, env: environment, stdio: ['pipe', 'pipe', 'pipe'] });
     owned = child;
     let buffer = Buffer.alloc(0), stopped = false;
     const finished = new Promise(resolve => { child.once('close', () => { if (owned === child) owned = undefined; exited(); resolve(); }); });

@@ -9,16 +9,12 @@ import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
 import { Before, After, Then } from '@cucumber/cucumber';
 import { nativeHostFixture } from '../tests/native-runtime.fixture.mjs';
+import { nativeVaultFixture as vault } from '../tests/native-vault.fixture.mjs';
 import { NativeRuntimeBroker } from './lib/secrets/native-runtime.ts';
 import { nativeHost, nativeReference, validateNativeConnection } from './lib/secrets/native-runtime-config.ts';
 import { NativeRuntimeBroker as Broker } from './lib/secrets/native-runtime.ts';
 import { nativeRuntimeProfile, nativeRuntimeLimits } from './lib/native-runtime-contract.ts';
-import { readServiceSchema } from './lib/service-schema-packs.ts';
-import { scopeNativeRpcSchema, nativeRpcOperation } from './lib/native-rpc.ts';
-import { VaultSession } from './lib/secrets/session.ts';
 import { VaultError } from './lib/secrets/types.ts';
-import { newVaultKey, recoveryKey, randomBase64, wrapVaultKey } from './lib/secrets/crypto.ts';
-import { sealSnapshot } from './lib/secrets/format.ts';
 import { openCodexRuntime } from '../companions/codex/runtime.mjs';
 
 Before({ tags: '@native-runtime' }, function () { this.nativeFixtures = []; this.nativeBrokers = []; });
@@ -38,29 +34,6 @@ async function raw(f) {
   assert.equal((await socket.next()).type, 'paired');
   socket.ws.send(JSON.stringify(initialize)); assert.equal((await socket.next()).id, 'init');
   socket.ws.send(JSON.stringify({ method: 'initialized' })); return socket;
-}
-async function vault(f) {
-  const key = await newVaultKey(), id = randomUUID(), methodId = randomUUID(), recovery = randomBase64(128), salt = randomBase64(16);
-  const envelope = { id: methodId, kind: 'recovery', revision: 1, salt, wrappedKey: await wrapVaultKey(key, await recoveryKey(recovery, salt),
-    { vaultId: id, epoch: 1, kind: 'recovery', id: methodId, revision: 1 }) };
-  const storage = { state: { revision: 1, lockEpoch: 1, snapshot: await sealSnapshot({ id, epoch: 1, revision: 1, envelopes: [envelope], records: [] }, key) },
-    async read() { return structuredClone(this.state); },
-    async replace(expected, snapshot, keys) {
-      if (expected.revision !== this.state.revision || expected.lockEpoch !== this.state.lockEpoch) throw new VaultError('CONFLICT');
-      this.state = { revision: this.state.revision + 1, lockEpoch: this.state.lockEpoch + 1, snapshot: structuredClone(snapshot), keys: structuredClone(keys) }; return this.read();
-    }, async indexKeys(expected, keys) { assert.equal(expected.revision, this.state.revision); this.state.keys = structuredClone(keys); return this.read(); },
-    async lock() { this.state.revision++; this.state.lockEpoch++; return this.read(); } };
-  const v = { storage, enabled: true, proof: { methodId, secret: recovery } };
-  const document = scopeNativeRpcSchema(await readServiceSchema('codex'), 'account/read');
-  v.selection = { operation: nativeRpcOperation(document, 'codex:account/read'), document };
-  v.newSession = () => new VaultSession(storage, undefined, async descriptor => {
-    assert.equal(descriptor.operation.protocol, 'json-rpc'); if (!v.enabled) throw new VaultError('PERMISSION');
-  }, {}, {}, f.runtime);
-  v.session = v.newSession(); await v.session.unlock(v.proof);
-  const entries = await v.session.put(null, { label: 'Native pairing key', kind: 'secret', value: f.key });
-  v.keyId = entries.find(entry => entry.label === 'Native pairing key').id;
-  v.input = { label: 'Codex fixture', host: f.publicOrigin, pairingKeyId: v.keyId };
-  return v;
 }
 
 Then('native pairing rejects unsafe hosts origins and missing authorization before a child starts', async function () {

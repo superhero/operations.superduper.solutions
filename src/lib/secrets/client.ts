@@ -13,6 +13,8 @@ import { defaultVaultPreferences, VaultError } from "./types.ts";
 import type { VaultPreferences, VaultStatus } from "./types.ts";
 import type { VaultArguments, VaultMethod, VaultReply, VaultResult } from "./protocol.ts";
 import { isResponseProgress, isResponseStreamProfile, streamLimits, type ResponseProgressCallback } from "../workflow-response-stream.ts";
+import type { NativeProgressCallback, NativeDecision } from "../native-agent-contract.ts";
+import { nativeRuntimeLimits } from "../native-runtime-contract.ts";
 
 let worker: Worker | undefined;
 let release: (() => void) | undefined;
@@ -23,7 +25,7 @@ let preferences: VaultPreferences = { ...defaultVaultPreferences };
 let ceremony: AbortController | undefined;
 const listeners = new Set<() => void>();
 const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void;
-  cleanup: () => void; generation: number; progress: ResponseProgressCallback | undefined }>();
+  cleanup: () => void; generation: number; method: VaultMethod; nativeProgress: NativeProgressCallback | undefined; progress: ResponseProgressCallback | undefined }>();
 const channel = typeof BroadcastChannel === "undefined" ? undefined : new BroadcastChannel("operations-secret-vault");
 const lifecycle = createVaultLifecycle({ now: () => Date.now(), onLock: () => lockVaultLocally(),
   onDeadline: expires => worker?.postMessage({ kind: "policy", expires }), preferences });
@@ -96,6 +98,13 @@ function ensureWorker(): Worker {
           item.progress?.({ bytes: data.progress.bytes, events: data.progress.events });
         }
       }
+      else if (data.event === "native-progress") {
+        const item = pending.get(data.id);
+        if (item && item.generation === generation && ["loginNativeRuntime", "executeNativeRuntime"].includes(item.method)) {
+          if (accessActive && !lifecycle.check()) { lockVaultLocally(); return; }
+          item.nativeProgress?.(data.progress);
+        }
+      }
       return;
     }
     const item = pending.get(data.id);
@@ -113,8 +122,9 @@ function ensureWorker(): Worker {
   return created;
 }
 
-const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeJiraOAuth", "restore", "addMethod", "removeMethod", "rotate"]);
-export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArguments<M>, signal?: AbortSignal, onProgress?: ResponseProgressCallback): Promise<VaultResult<M>> {
+const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeJiraOAuth", "pairNativeRuntime", "enableNativeWorkflow", "loginNativeRuntime", "restore", "addMethod", "removeMethod", "rotate"]);
+export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArguments<M>, signal?: AbortSignal, onProgress?: ResponseProgressCallback,
+  onNativeProgress?: NativeProgressCallback): Promise<VaultResult<M>> {
   if (signal?.aborted) throw new VaultError("CANCELLED");
   const requestGeneration = generation;
   configureVaultIdle(await loadVaultPreferences());
@@ -123,14 +133,20 @@ export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArg
   if (pending.size) throw new VaultError("CONFLICT");
   const id = ++sequence;
   const result = await new Promise<unknown>((resolve, reject) => {
+    const native = method === "loginNativeRuntime" || method === "executeNativeRuntime";
+    let cancellationTimer: ReturnType<typeof setTimeout> | undefined;
     const cancel = () => {
+      if (native) {
+        const item = pending.get(id); if (item) item.nativeProgress = undefined;
+        target.postMessage({ kind: "cancel", id }); cancellationTimer = setTimeout(lockVaultLocally, 2500); return;
+      }
       // Termination also interrupts a KDF that cannot process a queued abort message.
       lockVaultLocally();
     };
     const stream = method === "execute" && isResponseStreamProfile((args[0] as { operation?: { responseStream?: unknown } })?.operation?.responseStream);
-    const timer = setTimeout(() => lockVaultLocally(), stream ? streamLimits.runMs + 30_000 : 30_000);
-    const cleanup = () => { clearTimeout(timer); signal?.removeEventListener("abort", cancel); };
-    pending.set(id, { resolve, reject, cleanup, generation, progress: method === "execute" ? onProgress : undefined });
+    const timer = setTimeout(() => lockVaultLocally(), native ? nativeRuntimeLimits.sessionMs + 10_000 : stream ? streamLimits.runMs + 30_000 : 30_000);
+    const cleanup = () => { clearTimeout(timer); clearTimeout(cancellationTimer); signal?.removeEventListener("abort", cancel); };
+    pending.set(id, { resolve, reject, cleanup, generation, method, nativeProgress: native ? onNativeProgress : undefined, progress: method === "execute" ? onProgress : undefined });
     signal?.addEventListener("abort", cancel, { once: true });
     try { target.postMessage({ id, method, args }); }
     catch { pending.delete(id); cleanup(); reject(new VaultError("UNAVAILABLE")); lockVaultLocally(); }
@@ -138,6 +154,12 @@ export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArg
   if (["unlock", "prepareCreate", "confirmCreate", "restore"].includes(method)) { accessActive = true; lifecycle.activate(); }
   if (mutations.has(method)) channel?.postMessage({ kind: "lock" });
   return result as VaultResult<M>;
+}
+
+export function replyNativeInteraction(connectionId: string, token: string, decision: NativeDecision): void {
+  const item = [...pending].find(([, value]) => value.method === "executeNativeRuntime" && value.generation === generation);
+  if (!item || !worker || !accessActive || !lifecycle.check()) throw new VaultError("PERMISSION");
+  worker.postMessage({ kind: "native-reply", id: item[0], connectionId, token, decision });
 }
 
 /** The caller gets PRF material only for immediate transfer to the worker; never a reusable store. */

@@ -63,7 +63,7 @@ BeforeAll(async function () {
     })));
   if (typeof this.parameters.fixtureBundlesFile !== 'string')
     throw new Error('Start browser scenarios with npm run test:browser or node tests/browser/run.mjs.');
-  const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture } =
+  const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture, fixtureChunks = {} } =
     JSON.parse(await readFile(this.parameters.fixtureBundlesFile, 'utf8'));
   const vaultEndpoint = createVaultEndpoint();
   jiraEndpoint = createJiraBrowserEndpoint();
@@ -79,6 +79,9 @@ BeforeAll(async function () {
     } else if (request.url === '/workflow-repository-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(repositoryFixture);
+    } else if (Object.hasOwn(fixtureChunks, request.url.slice(1))) {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(fixtureChunks[request.url.slice(1)]);
     } else if (request.url === '/error-history-storage-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(errorHistoryFixture);

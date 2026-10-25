@@ -3,8 +3,9 @@
 Operations can pair with an optional companion that you control. The production
 vault worker owns its HTTPS ticket request, WSS connection, native initialization
 and read-only account check. Pairing does not enable agent turns or ordinary
-workflow execution. The 105 native methods remain discoverable with their
-execution guard; account controls and the bounded workflow adapter are separate.
+workflow execution by itself. All 105 native methods remain discoverable.
+The optional [bounded workflow adapter](codex-native-workflows.md) separately
+enables three reviewed operations after host and encrypted-profile opt-in.
 
 The initial profile is `codex-stdio-paired-v1`, pinned to Codex **0.163.0** and
 Node **26.7.0**. The [qualified transport contract](codex-native-connector.md) and
@@ -33,6 +34,7 @@ variables before `npm run companion:codex`:
 | `OPERATIONS_CODEX_BINARY_SHA256` | SHA-256 of that executable. |
 | `OPERATIONS_CODEX_HOME` | Dedicated canonical directory with mode 0700, owned by the companion user. The desktop/default Codex home and symlinked home are rejected. |
 | `OPERATIONS_CODEX_WORKSPACE` | Existing approved workspace; browser requests cannot replace it. |
+| `OPERATIONS_CODEX_ALLOW_AGENT` | Optional `1` to permit the separately approved bounded workflow scope. Omit for read-only pairing. |
 | `OPERATIONS_CODEX_TLS_KEY_FILE`, `OPERATIONS_CODEX_TLS_CERT_FILE` | TLS key and device-trusted certificate files. |
 | `OPERATIONS_CODEX_LISTEN_HOST`, `OPERATIONS_CODEX_PORT` | Default `127.0.0.1` and 8446. Bind a reachable interface only under the operator's access policy. |
 
@@ -75,6 +77,8 @@ workspace and host-owned account epoch. Reload locks the vault and releases the
 socket. After unlocking, reconnect is explicit. Changed runtime/account authority
 requires removing the old pairing and explicitly pairing again. Replacing or
 removing its vault key invalidates the saved pairing.
+The workflow adapter handles its own explicitly initiated public sign-in as a
+managed account transition, then saves a new encrypted profile revision.
 
 Disconnect, cancellation and vault lock revoke the owned transport and stop only
 its child. Closing attempts are tracked before pairing completes as well. The

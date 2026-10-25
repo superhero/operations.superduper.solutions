@@ -13,9 +13,11 @@ export async function runCodexCompanion(environment = process.env) {
   const publicOrigin = environment.OPERATIONS_CODEX_PUBLIC_ORIGIN;
   const runtime = await openCodexRuntime({ runtimeId: environment.OPERATIONS_CODEX_RUNTIME_ID,
     executable: environment.OPERATIONS_CODEX_EXECUTABLE, binarySha256: environment.OPERATIONS_CODEX_BINARY_SHA256,
-    home: environment.OPERATIONS_CODEX_HOME, workspace: environment.OPERATIONS_CODEX_WORKSPACE });
+    home: environment.OPERATIONS_CODEX_HOME, workspace: environment.OPERATIONS_CODEX_WORKSPACE,
+    allowAgent: environment.OPERATIONS_CODEX_ALLOW_AGENT === '1' });
   const companion = createCodexCompanion({ publicOrigin, pairingKey,
-    allowedOrigins: JSON.parse(environment.OPERATIONS_CODEX_ALLOWED_ORIGINS ?? '[]') }, runtime);
+    allowedOrigins: JSON.parse(environment.OPERATIONS_CODEX_ALLOWED_ORIGINS ?? '[]'),
+    allowAgent: environment.OPERATIONS_CODEX_ALLOW_AGENT === '1' }, runtime);
   const tls = environment.OPERATIONS_CODEX_TLS_KEY_FILE && environment.OPERATIONS_CODEX_TLS_CERT_FILE
     ? { key: await readFile(environment.OPERATIONS_CODEX_TLS_KEY_FILE), cert: await readFile(environment.OPERATIONS_CODEX_TLS_CERT_FILE) } : undefined;
   const hostname = environment.OPERATIONS_CODEX_LISTEN_HOST ?? '127.0.0.1';

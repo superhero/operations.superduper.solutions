@@ -14,9 +14,12 @@ import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.t
 import { validateApprovedOperation, approvedOperation } from "./policy.ts";
 import { approvedNativeOperation, type ApprovedNativeOperation } from "./native-rpc-policy.ts";
 import { NativeRuntimeBroker, type NativeRuntimeRuntime } from "./native-runtime.ts";
+import { NativeAgentBroker } from "./native-agent.ts";
+import { nativeAgentMethods, isNativeWorkflowMethod, type NativeDecision, type NativeLoginKind, type NativeProgressCallback,
+  type NativeExecutionResult } from "../native-agent-contract.ts";
 import { nativeHash, storedNativeConnections, validateNativeConnection, validateNativeInput, validateNativeReference,
   type NativeRuntimeInput, type NativeRuntimeReference } from "./native-runtime-config.ts";
-import { nativeRuntimeProfile, nativeRuntimeVersion } from "../native-runtime-contract.ts";
+import { nativeRuntimeProfile, nativeRuntimeVersion, nativeObject, nativeUuid } from "../native-runtime-contract.ts";
 import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed, CredentialResponseError, redactor } from "./execution.ts";
 import { connectionCredentialIds, createHttpConnection, createGitlabHttpConnection, createJiraHttpConnection, httpConnectionLimit, httpConnectionReference, resolveHttpConnection,
@@ -90,11 +93,13 @@ export class VaultSession {
   private readonly gitlabOAuth: GitlabOAuthBroker;
   private readonly jiraCompanion: JiraCompanionBroker;
   private readonly nativeRuntime: NativeRuntimeBroker;
+  private readonly nativeAgent: NativeAgentBroker;
   private pending: Pending | undefined;
 
   constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: Pick<ApprovedOperation, "fingerprint" | "operation">) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}, nativeRuntime: NativeRuntimeRuntime = {}) {
     this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime); this.jiraCompanion = new JiraCompanionBroker(jiraRuntime);
     this.nativeRuntime = new NativeRuntimeBroker(nativeRuntime);
+    this.nativeAgent = new NativeAgentBroker(this.nativeRuntime);
   }
 
   lock(): void { this.nativeRuntime.clear(); this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
@@ -307,6 +312,99 @@ export class VaultSession {
     return this.nativeConnections();
   }
 
+  private async nativeWorkflowAuthority(value: NativeRuntimeReference,
+    selections: Pick<ApprovedNativeOperation, "operation" | "document">[], requireEnabled = true) {
+    const generation = this.generation, reference = validateNativeReference(value);
+    if (!Array.isArray(selections) || selections.length !== nativeAgentMethods.length) throw new VaultError("PERMISSION");
+    const descriptors: ApprovedNativeOperation[] = [];
+    for (let index = 0; index < nativeAgentMethods.length; index++) {
+      const descriptor = await approvedNativeOperation(selections[index]!.operation, selections[index]!.document);
+      if (descriptor.operation.id !== "codex:" + nativeAgentMethods[index] || descriptor.operation.rpc?.version !== nativeRuntimeVersion)
+        throw new VaultError("PERMISSION");
+      descriptors.push(descriptor);
+    }
+    const workflowFingerprint = await nativeHash(descriptors.map(descriptor => ({ method: descriptor.operation.rpc!.method, fingerprint: descriptor.fingerprint })));
+    const records = await this.records(), connection = storedNativeConnections(records).find(item => item.id === reference.id);
+    if (!connection || connection.revision !== reference.revision || connection.fingerprint !== reference.fingerprint) throw new VaultError("CONFLICT");
+    const record = records.find(item => item.id === connection.pairingKeyId), { fingerprint, ...config } = connection;
+    if (!record || record.oauthState !== undefined || connection.keyHash !== await nativeHash(record.value)
+      || connection.modelFingerprint !== descriptors.find(item => item.operation.rpc!.method === "account/read")!.fingerprint
+      || fingerprint !== await nativeHash(config) || requireEnabled && connection.workflowFingerprint !== workflowFingerprint) throw new VaultError("AUTHORIZATION");
+    const guard = async () => {
+      this.guard(generation); await this.assertCurrent();
+      for (const descriptor of descriptors) await this.assertSchema(descriptor);
+      this.guard(generation);
+    };
+    await guard(); return { connection, record, records, descriptors, workflowFingerprint, guard };
+  }
+
+  async enableNativeWorkflow(value: NativeRuntimeReference, selections: Pick<ApprovedNativeOperation, "operation" | "document">[]) {
+    const authority = await this.nativeWorkflowAuthority(value, selections, false);
+    const { fingerprint: _old, ...previous } = authority.connection;
+    const config = { ...previous, revision: previous.revision + 1, workflowFingerprint: authority.workflowFingerprint };
+    const connection = validateNativeConnection({ ...config, fingerprint: await nativeHash(config) });
+    authority.record.nativeConnections = authority.record.nativeConnections!.map(item => item.id === connection.id ? connection : item);
+    this.nativeRuntime.close(connection.id); await authority.guard(); await this.save(authority.records);
+    return { ...connection, connected: false };
+  }
+
+  private nativeProgress(records: VaultCredential[], progress?: NativeProgressCallback): NativeProgressCallback {
+    return value => {
+      this.assertActive();
+      const scrub = redactor(records.flatMap(record => [record.value, ...managedGitlabSecrets(record.oauthState ?? "")]).sort((a, b) => b.length - a.length));
+      const safe = scrub.value(value) as typeof value;
+      if (scrub.changed) throw new VaultError("REDACTED"); progress?.(safe);
+    };
+  }
+
+  async loginNativeRuntime(value: NativeRuntimeReference, selections: Pick<ApprovedNativeOperation, "operation" | "document">[],
+    input: { type: NativeLoginKind; credentialId?: string }, signal?: AbortSignal, progress?: NativeProgressCallback) {
+    const authority = await this.nativeWorkflowAuthority(value, selections);
+    nativeObject(input, input.type === "apiKey" ? ["type", "credentialId"] : ["type"]);
+    if (!["apiKey", "chatgpt", "chatgptDeviceCode"].includes(input.type)) throw new VaultError("PERMISSION");
+    let login: unknown = { type: input.type };
+    if (input.type === "apiKey") {
+      const credential = authority.records.find(item => item.id === input.credentialId);
+      if (!credential || credential.oauthState !== undefined || credential.id === authority.record.id) throw new VaultError("PERMISSION");
+      login = { type: "apiKey", apiKey: credential.value };
+    }
+    try {
+      const result = await this.nativeAgent.login(authority.connection, authority.record.value, authority.workflowFingerprint, login,
+        authority.guard, signal, this.nativeProgress(authority.records, progress));
+      await authority.guard();
+      if (signal?.aborted) throw new VaultError("CANCELLED");
+      const { fingerprint: _old, ...previous } = authority.connection;
+      const config = { ...previous, revision: previous.revision + 1, identity: result.identity, accountType: result.accountType };
+      const connection = validateNativeConnection({ ...config, fingerprint: await nativeHash(config) });
+      authority.record.nativeConnections = authority.record.nativeConnections!.map(item => item.id === connection.id ? connection : item);
+      await this.save(authority.records, undefined, undefined, undefined, signal); return { ...connection, connected: true };
+    } catch (error) { this.nativeRuntime.close(value.id); throw error; }
+  }
+
+  async executeNativeRuntime(value: NativeRuntimeReference, selections: Pick<ApprovedNativeOperation, "operation" | "document">[],
+    selection: Pick<ApprovedNativeOperation, "operation" | "document">, input: unknown, signal?: AbortSignal,
+    progress?: NativeProgressCallback): Promise<NativeExecutionResult> {
+    const authority = await this.nativeWorkflowAuthority(value, selections);
+    const descriptor = await approvedNativeOperation(selection.operation, selection.document), method = descriptor.operation.rpc!.method;
+    if (!isNativeWorkflowMethod(method) || !authority.descriptors.some(item => item.fingerprint === descriptor.fingerprint)) throw new VaultError("PERMISSION");
+    const inputScrub = redactor(authority.records.map(record => record.value)); inputScrub.value(input);
+    if (inputScrub.changed) throw new VaultError("REDACTED");
+    try {
+      const result = await this.nativeAgent.execute(authority.connection, authority.record.value, authority.workflowFingerprint,
+        method, input, authority.guard, signal, this.nativeProgress(authority.records, progress));
+      const scrub = redactor(authority.records.flatMap(record => [record.value, ...managedGitlabSecrets(record.oauthState ?? "")]).sort((a, b) => b.length - a.length));
+      const safe = scrub.value(result);
+      if (scrub.changed) throw new VaultError("REDACTED");
+      await authority.guard();
+      return { request: { protocol: "json-rpc", method, params: structuredClone(input) as Record<string, unknown> }, response: { protocol: "json-rpc", result: safe } };
+    } catch (error) { this.nativeRuntime.close(value.id); throw error; }
+  }
+
+  async replyNativeRuntime(connectionId: string, token: string, decision: NativeDecision) {
+    if (!nativeUuid(connectionId) || !nativeUuid(token)) throw new VaultError("INVALID");
+    await this.assertCurrent(); return this.nativeAgent.reply(connectionId, token, decision);
+  }
+
   async connectionBinding(reference: HttpConnectionReference, descriptor: ApprovedOperation): Promise<CredentialBinding> {
     const approved = await approvedOperation(descriptor.operation, descriptor.origin);
     if (approved.fingerprint !== descriptor.fingerprint) throw new VaultError("PERMISSION");
@@ -479,7 +577,7 @@ export class VaultSession {
   }
 
   private async save(values: VaultCredential[], envelopes = this.state!.snapshot!.envelopes,
-    key = this.key!, epoch = this.state!.snapshot!.epoch): Promise<void> {
+    key = this.key!, epoch = this.state!.snapshot!.epoch, signal?: AbortSignal): Promise<void> {
     await this.assertCurrent();
     if (values.length > vaultLimits.records) throw new VaultError("LIMIT");
     const generation = this.generation;
@@ -495,6 +593,7 @@ export class VaultSession {
     const snapshot = await sealSnapshot({ ...base, records }, key);
     await authenticateManifest(snapshot, key);
     this.guard(generation);
+    if (signal?.aborted) throw new VaultError("CANCELLED");
     const state = await this.storage.replace(expected, snapshot, values.map(({ id, label, kind }) => ({ id, label, kind })));
     this.guard(generation); this.uploadSessions.clear(); this.gitlabOAuth.invalidateTokenCache(); this.state = state; this.key = key;
   }

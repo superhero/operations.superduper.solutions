@@ -4,6 +4,8 @@
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { nativeRpcOperation, codexExecutionLimitation } from "./native-rpc.ts";
+import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
+import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 export { codexExecutionLimitation } from "./native-rpc.ts";
 
 type Value = Record<string, unknown>;
@@ -43,7 +45,7 @@ export function inspectCodexSchema(document: Value, id: string, selected?: Reado
     if (selected && !selected.has(identity)) continue;
     operations.push(selected ? nativeRpcOperation(document, identity) : { id: identity, name: method, description: typeof source.description === "string" ? source.description : "",
       group: "Client requests", method: "RPC", path: method, fields: [], bodyRequired: false,
-      unavailableReason: codexExecutionLimitation });
+      ...(!(isNativeWorkflowMethod(method) && info.version === nativeRuntimeVersion) ? { unavailableReason: codexExecutionLimitation } : {}) });
   }
   return { document, operations, name: info.title.trim(), serverUrl: "",
     groups: [{ id, name: info.title.trim(), description: typeof info.description === "string" ? info.description : "",

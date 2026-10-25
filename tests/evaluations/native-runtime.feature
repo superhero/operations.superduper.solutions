@@ -7,3 +7,8 @@ Feature: Qualify the production paired runtime with the pinned Codex binary
   Scenario: A real isolated Codex child initializes through the production worker
     Given I create a vault in the Secrets settings and save a synthetic credential
     Then native runtime settings pair reconnect and disconnect through the production worker
+
+  @native-agent-profile
+  Scenario: The real pinned runtime accepts the isolated agent permission profile
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then native runtime settings pair reconnect and disconnect through the production worker

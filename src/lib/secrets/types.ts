@@ -71,8 +71,10 @@ export const defaultVaultPreferences: Readonly<VaultPreferences> = { idleLockEna
 export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number; epoch: number;
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
-  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION";
+  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN";
 const messages: Record<VaultErrorCode, string> = {
+  NATIVE_FAILED: "The native operation failed. Check the thread before starting another turn.",
+  NATIVE_UNKNOWN: "The native connection ended without a confirmed result. A dispatched turn may have taken effect; it will not be retried automatically.",
   LOCKED: "Unlock the secrets vault to continue.",
   AUTHORIZATION: "Connect this account again to continue.",
   AUTHENTICATION: "The vault could not be unlocked. Check the unlock method and saved data.",

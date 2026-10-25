@@ -15,6 +15,7 @@ const methods = new Set<VaultMethod>(["status", "unlock", "prepareCreate", "conf
   "beginJiraOAuth", "pollJiraOAuth", "completeJiraOAuth", "cancelJiraOAuth",
   "beginGitlabOAuth", "completeGitlabOAuth", "cancelGitlabOAuth",
   "nativeConnections", "pairNativeRuntime", "checkNativeRuntime", "disconnectNativeRuntime",
+  "enableNativeWorkflow", "loginNativeRuntime", "executeNativeRuntime",
   "execute", "checkAssertion", "backup", "restore", "addMethod", "removeMethod", "rotate"]);
 let busy = false;
 let controller: AbortController | undefined;
@@ -53,6 +54,12 @@ function failure(error: unknown): VaultFailure {
 
 self.onmessage = async ({ data }) => {
   if (data?.kind === "cancel") { if (data.id === activeId) controller?.abort(); return; }
+  if (data?.kind === "native-reply") {
+    if (data.id !== activeId || !busy) return;
+    try { assertActive(); await session.replyNativeRuntime(data.connectionId, data.token, data.decision); }
+    catch { controller?.abort(); }
+    return;
+  }
   if (data?.kind === "policy") {
     try {
       assertActive();
@@ -82,6 +89,13 @@ self.onmessage = async ({ data }) => {
     if (method === "completeJiraOAuth") args[2] = controller.signal;
     if (method === "completeGitlabOAuth") args[2] = controller.signal;
     if (method === "pairNativeRuntime" || method === "checkNativeRuntime") args[2] = controller.signal;
+    if (method === "loginNativeRuntime" || method === "executeNativeRuntime") {
+      const offset = method === "loginNativeRuntime" ? 3 : 4;
+      args[offset] = controller.signal;
+      args[offset + 1] = (progress: import("../native-agent-contract.ts").NativeAgentProgress) => {
+        assertActive(); send({ event: "native-progress", id, progress });
+      };
+    }
     // Only named, reviewed management and execution methods are dispatchable.
     const call = session[method].bind(session) as (...args: unknown[]) => Promise<unknown>;
     const value = await call(...args);
