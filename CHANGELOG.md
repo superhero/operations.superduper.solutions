@@ -10,6 +10,14 @@ fix(gcp): enable JSON BigQuery job metadata
 
 ```
 
+<!-- changelog-commit:3d20faf2830260a28a2e94fc5805816f61da063a -->
+### Commit [`3d20faf`](https://github.com/superhero/operations.superduper.solutions/commit/3d20faf2830260a28a2e94fc5805816f61da063a)
+
+```text
+chore(gcp): align BigQuery with released develop
+
+```
+
 <!-- changelog-commit:6218c0b775a90cab0d79c63b0cc24c3710ace4f4 -->
 ### Commit [`6218c0b`](https://github.com/superhero/operations.superduper.solutions/commit/6218c0b775a90cab0d79c63b0cc24c3710ace4f4)
 
@@ -18,11 +26,27 @@ feat(gcp): qualify Storage media uploads
 
 ```
 
+<!-- changelog-commit:57dfdeae4edb21534e6a42ca23a65e3bfbbd8aa5 -->
+### Commit [`57dfdea`](https://github.com/superhero/operations.superduper.solutions/commit/57dfdeae4edb21534e6a42ca23a65e3bfbbd8aa5)
+
+```text
+chore(gcp): carry metadata and media contracts onto released develop
+
+```
+
 <!-- changelog-commit:e3325d6b7d3df527112ae734dc40aae423f3511a -->
 ### Commit [`e3325d6`](https://github.com/superhero/operations.superduper.solutions/commit/e3325d6b7d3df527112ae734dc40aae423f3511a)
 
 ```text
 feat(github): qualify Notifications classic PAT access
+
+```
+
+<!-- changelog-commit:fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2 -->
+### Commit [`fe0f6a2`](https://github.com/superhero/operations.superduper.solutions/commit/fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2)
+
+```text
+chore(github): align notification access with completed service contracts
 
 ```
 
