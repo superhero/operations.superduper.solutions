@@ -7,7 +7,7 @@ import { mkdirSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from 
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, get, OTHER_SHA, REPOSITORY, SHA } from "./support.mjs";
-import { BUNDLE_FILES, SPEECH_FILES } from '../scripts/bundle-contract.mjs';
+import { BUNDLE_FILES, OAUTH_FILES, SPEECH_FILES } from '../scripts/bundle-contract.mjs';
 import { validateArtifactContract, REPORT_FILES } from '../scripts/validation-artifacts.mjs';
 
 const PROJECT = "operations-superduper-solutions";
@@ -36,6 +36,35 @@ Given("a tested Pages bundle for {string}", function (branch)
 Given("the Pages destination is {string}", function (state)
 {
   this.pages.state = state;
+});
+
+Given('the Pages bundle includes reviewed public OAuth metadata', function () {
+  this.pages.oauthFiles = { 'oauth/bluesky-client-metadata.json': '{"client_name":"Operations"}\n' };
+  for (const [path, bytes] of Object.entries(this.pages.oauthFiles)) {
+    const target = join(this.pages.bundle, path); mkdirSync(join(target, '..'), { recursive: true }); writeFileSync(target, bytes);
+  }
+  this.pages.initialHash = bundleHash({ ...FILES, ...this.pages.oauthFiles });
+});
+
+Given('the Pages OAuth metadata {string} is {string}', function (name, state) {
+  const path = join(this.pages.bundle, name);
+  if (state === 'changed') { writeFileSync(path, '{"client_name":"Updated Operations"}\n'); return; }
+  if (state === 'empty') writeFileSync(path, '');
+  else if (state === 'extra') writeFileSync(path, '{}\n');
+  else {
+    assert.equal(state, 'a symlink'); unlinkSync(path);
+    const target = join(this.automation.root, 'metadata-target'); writeFileSync(target, '{}\n'); symlinkSync(target, path);
+  }
+  this.pages.invalidInput = true;
+});
+
+Then('validation manifests accept reviewed public OAuth metadata alongside speech', () => {
+  const files = { bundle: Object.fromEntries([...BUNDLE_FILES, ...OAUTH_FILES, ...Object.keys(SPEECH)].map(path => [path, 'a'.repeat(64)])),
+    coverage: { 'coverage-summary.json': 'hash', 'index.html': 'hash' },
+    'test-report': Object.fromEntries([...REPORT_FILES, 'ui/assets/app.js', 'ui/assets/app.css'].map(path => [path, 'hash'])) };
+  validateArtifactContract(files);
+  files.bundle['oauth/unreviewed.json'] = 'a'.repeat(64);
+  assert.throws(() => validateArtifactContract(files), /complete bundle/);
 });
 
 Given('the Pages bundle includes complete optional speech resources', function () {
@@ -224,7 +253,7 @@ Then("the Pages decision is deploy {string} and skipped {string}", function (dep
   const output = Object.fromEntries(readFileSync(this.automation.output, "utf8").trim().split("\n")
     .map(line => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
   assert.deepEqual(output, {
-    deploy, skipped, bundle_hash: bundleHash(Object.fromEntries(Object.keys({ ...FILES, ...this.pages.speechFiles })
+    deploy, skipped, bundle_hash: bundleHash(Object.fromEntries(Object.keys({ ...FILES, ...this.pages.speechFiles, ...this.pages.oauthFiles })
       .map(filename => [filename, readFileSync(join(this.pages.bundle, filename))]))), alias_url: this.pages.alias,
     deployment_id: deploy === "false" && skipped === "false" ? ID : "",
     deployment_url: deploy === "false" && skipped === "false" ? `https://12345678.${PROJECT}.pages.dev` : ""

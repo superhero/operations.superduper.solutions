@@ -63,7 +63,7 @@ trap 'rm -rf -- "$temporary"' EXIT
 # The same path contract governs deployment and verified artifact reuse. NUL
 # separation preserves filenames; a failed inventory never reaches publication.
 node "$(dirname "${BASH_SOURCE[0]}")/bundle-contract.mjs" "$bundle" > "$temporary/bundle-files" ||
-  fail 'Expected the eleven nonempty regular application, hosting, and favicon files with optional complete speech resources; unsupported files, directories, and symlinks are not allowed.'
+  fail 'Expected the eleven nonempty regular application, hosting, and favicon files with optional reviewed OAuth metadata and complete speech resources; unsupported files, directories, and symlinks are not allowed.'
 mapfile -d '' -t bundle_files < "$temporary/bundle-files"
 # Include every file's bytes and fixed filename, independent of build directory.
 bundle_hash="$(cd -- "$bundle" && sha256sum -- "${bundle_files[@]}" | sha256sum)" || fail 'Could not hash the application bundle.'
