@@ -196,6 +196,14 @@ fix(ui): shorten catalog guide below the final operation
 Merge branch 'develop' into bugfix/catalog-guide-bottom
 ```
 
+<!-- changelog-commit:e06692a44282974444f99f45c43be9f30fa942d6 -->
+### Commit [`e06692a`](https://github.com/superhero/operations.superduper.solutions/commit/e06692a44282974444f99f45c43be9f30fa942d6)
+
+```text
+fix(ui): extend horizontal catalog separators
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
