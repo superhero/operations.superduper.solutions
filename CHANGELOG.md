@@ -304,6 +304,14 @@ fix(dev): allow dismissing import and build error overlays
 
 ```
 
+<!-- changelog-commit:d1b4ba9bfa51adff27a9a399eb8d10e820792350 -->
+### Commit [`d1b4ba9`](https://github.com/superhero/operations.superduper.solutions/commit/d1b4ba9bfa51adff27a9a399eb8d10e820792350)
+
+```text
+fix(ui): match catalog operation and category row sizing
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

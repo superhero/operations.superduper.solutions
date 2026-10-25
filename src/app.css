@@ -229,17 +229,19 @@ h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px;
 summary::-webkit-details-marker { display: none; }
 .catalog-group summary > .material-symbols-rounded { width: 32px; margin-left: auto; text-align: center; transition: transform 180ms ease-in; }
 .catalog-group summary[aria-expanded="true"] > .material-symbols-rounded { transform: rotate(90deg); }
-.catalog-group > summary { min-height: var(--navigation-control-size); padding: 10px 8px 10px 16px; border-radius: 4px; background: var(--color-muted); font-size: 12px; font-weight: 650; }
+.catalog-group > summary, .catalog-operation > summary, .catalog-operation-action { min-height: var(--navigation-control-size); padding: 10px 8px 10px 16px; border-radius: 4px; font-size: 12px; line-height: 1.5; }
+.catalog-group > summary { background: var(--color-muted); font-weight: 650; }
 .catalog-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .catalog-count { display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 4px; background: var(--color-badge-background); font-family: Rationale, sans-serif; font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1; font-weight: 400; color: var(--color-badge-foreground); }
 .catalog-count-value { display: block; text-box-trim: trim-both; text-box-edge: cap alphabetic; }
 /* Reuse the category tree elbows; the final row ends at its rounded branch. */
-.catalog-operations { list-style: none; padding: 6px 0 4px; margin: 0; }
-.catalog-operations.tree-children > .tree-branch { --tree-branch-gap: 0px; padding: 4px 0; }
-.catalog-operations.tree-children > .tree-branch:first-child { --tree-branch-gap: 6px; }
+.catalog-operations { list-style: none; padding: 12px 0 4px; margin: 0; }
+.catalog-children + .catalog-operations { padding-top: 8px; }
+.catalog-operations.tree-children > .tree-branch { padding: 0; }
+.catalog-operations.tree-children > .tree-branch + .tree-branch { margin-top: 12px; }
 .catalog-operations.tree-children > .tree-branch::after { top: calc(50% - 7px); }
 .catalog-operations.tree-children > .tree-branch:last-child::before { bottom: calc(50% + 4px); height: auto; }
-.catalog-operation > summary, .catalog-operation-action { min-height: var(--navigation-control-size); padding: 9px 8px 9px 16px; border-radius: 4px; font-size: 12px; font-weight: 700; line-height: 1.45; }
+.catalog-operation > summary, .catalog-operation-action { font-weight: 700; }
 .catalog-operation-action { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: var(--color-primary); color: var(--color-primary-foreground); text-align: left; }
 .catalog-action-icon { display: grid; place-items: center; flex: 0 0 32px; margin-left: auto; color: inherit; }
 .catalog-operation > summary > span:first-child { min-width: 0; overflow-wrap: anywhere; }
