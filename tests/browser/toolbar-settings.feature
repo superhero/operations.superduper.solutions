@@ -6,6 +6,6 @@ Feature: Toolbar button visibility
   Scenario: Every toolbar button can be hidden and restored
     Given nested workflow input and output branches mapped to another operation
     Then toolbar visibility choices persist and leave keyboard shortcuts available
-  Scenario: Application settings use three independent lanes
+  Scenario: Application settings balance cards at the available pane width
     Given nested workflow input and output branches mapped to another operation
-    Then application preferences use three independent lanes
+    Then application preferences adapt and balance cards as the pane is resized
