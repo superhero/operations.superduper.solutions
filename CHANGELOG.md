@@ -105,6 +105,14 @@ fix(ui): join catalog guides and align child operation labels
 Merge branch 'develop' into bugfix/catalog-tree-continuity
 ```
 
+<!-- changelog-commit:9293ffd05200b07a62540c226c1b7879de826549 -->
+### Commit [`9293ffd`](https://github.com/superhero/operations.superduper.solutions/commit/9293ffd05200b07a62540c226c1b7879de826549)
+
+```text
+fix(ui): preserve the final rounded catalog elbow
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

@@ -222,7 +222,12 @@ h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px;
 .tree-children > .tree-branch::before, .tree-children > .tree-branch::after { content: ''; position: absolute; left: calc(-1 * var(--tree-line-inset, 12px)); pointer-events: none; }
 .tree-children > .tree-branch::before { top: calc(-1 * var(--tree-branch-gap)); bottom: 0; width: 2px; background: var(--color-tree-line); }
 .tree-children > .tree-branch:last-child::before { bottom: auto; height: calc(var(--tree-hook-top, 15px) + 3px + var(--tree-branch-gap)); }
-.catalog-children:has(+ .catalog-operations) > .tree-branch:last-child::before { bottom: -4px; height: auto; }
+/* Preserve the solid rounded elbow; only its downward continuation is dashed. */
+.catalog-children:has(+ .catalog-operations) > .tree-branch:last-child::before {
+  bottom: -4px; height: auto;
+  background: linear-gradient(var(--color-tree-line), var(--color-tree-line)) left top / 2px calc(var(--tree-hook-top, 15px) + 3px + var(--tree-branch-gap)) no-repeat,
+    repeating-linear-gradient(to bottom, transparent 0 4px, var(--color-background) 4px 9px, transparent 9px 13px) left bottom / 1px calc(100% - var(--tree-hook-top, 15px) - 8px - var(--tree-branch-gap)) no-repeat;
+}
 .tree-children > .tree-branch::after { top: var(--tree-hook-top, 15px); width: var(--tree-line-inset, 12px); height: 8px; border-left: 2px solid var(--color-tree-line); border-bottom: 2px solid var(--color-tree-line); border-bottom-left-radius: 4px; }
 .catalog-group summary { display: flex; align-items: center; gap: 8px; list-style: none; color: var(--color-catalog-foreground); }
 summary::-webkit-details-marker { display: none; }
