@@ -166,6 +166,21 @@ fix(ui): join catalog separators within the shared guide edge
 
 ```
 
+<!-- changelog-commit:618d5eeb960f90efb5d93e132afd845544a818b8 -->
+### Commit [`618d5ee`](https://github.com/superhero/operations.superduper.solutions/commit/618d5eeb960f90efb5d93e132afd845544a818b8)
+
+```text
+fix(ui): keep branch action backgrounds transparent in every state
+
+```
+
+<!-- changelog-commit:555ee4714a03efd90c565d3e88a36b333ede2970 -->
+### Commit [`555ee47`](https://github.com/superhero/operations.superduper.solutions/commit/555ee4714a03efd90c565d3e88a36b333ede2970)
+
+```text
+Merge branch 'develop' into bugfix/branch-action-state-backgrounds
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
