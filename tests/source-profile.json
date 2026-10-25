@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/bigquery-jobs.test.mjs",
     "src/workflow-utilities.test.mjs",
     "src/atlassian-server-bindings.test.mjs",
     "src/provider-path-bindings.test.mjs",
@@ -92,6 +93,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/bigquery-jobs.feature",
     "src/workflow-utilities.feature",
     "src/atlassian-server-bindings.feature",
     "src/provider-path-bindings.feature",

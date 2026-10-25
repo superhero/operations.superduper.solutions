@@ -426,15 +426,16 @@ Then('Google Cloud corrections preserve published packs and enable both private 
   assert.equal(sources.length, 52);
   let available = 0, unavailable = 0;
   for (const source of sources) {
-    assert.deepEqual(source.patches, [{ id: 'google-oauth-alternatives', version: 1 }]);
+    assert.deepEqual(source.patches, [{ id: 'google-oauth-alternatives', version: 1 },
+      ...(source.id === 'gcp-bigquery' ? [{ id: 'bigquery-job-metadata', version: 1 }] : [])]);
     const document = await readServiceSchema(source.id);
     assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
     const inspection = inspectServiceSchema(document, source.id);
     available += inspection.operations.filter(operation => !operation.unavailableReason).length;
     unavailable += inspection.operations.filter(operation => operation.unavailableReason).length;
   }
-  assert.equal(available, 2121);
-  assert.equal(unavailable, 7, 'Separate request-media limitations remain explicit.');
+  assert.equal(available, 2122);
+  assert.equal(unavailable, 6, 'Separate request-media limitations remain explicit.');
   const original = await readServiceSchemaUpstream('gcp-speech');
   const corrected = await readServiceSchema('gcp-speech');
   const id = 'gcp-speech:speech.operations.list';
