@@ -51,6 +51,56 @@ Then('URL resource categories preserve templates queries and non-version resourc
   });
 });
 
+Then('transport path categories skip generic segments without changing endpoint identity', () => {
+  for (const segment of ['api', 'API', 'Api', 'rest', 'REST', 'rEsT', '0', '3', '003', '2026']) {
+    const path = `/projects/${segment}/issues/{id}/comments`;
+    assert.deepEqual(operationResourcePath(path), {
+      resources: ['projects', 'issues', 'comments'], endpoint: path, version: 'Default',
+    });
+  }
+  assert.deepEqual(operationResourcePath('/REST/aPi/3/issues/{id}/v2/007/comments?route=/api/9'), {
+    resources: ['issues', 'comments'], endpoint: '/REST/aPi/3/issues/{id}/007/comments?route=/api/9', version: 'v2',
+  });
+  assert.deepEqual(operationResourcePath('/rest/api/3'), {
+    resources: [], endpoint: '/rest/api/3', version: 'Default',
+  });
+  const meaningful = '/api_keys/restful/3d/2fa/2026-10-20';
+  assert.deepEqual(operationResourcePath(meaningful), {
+    resources: ['api_keys', 'restful', '3d', '2fa', '2026-10-20'], endpoint: meaningful, version: 'Default',
+  });
+});
+
+Then('flattened transport paths retain every operation and distinct endpoint family', () => {
+  const operations = [descriptor('jira:root3', '/rest/api/3'), descriptor('jira:root2', '/rest/api/2'),
+    descriptor('jira:read3', '/rest/api/3/issue/{key}'), descriptor('jira:read2', '/rest/api/2/issue/{key}'),
+    descriptor('jira:plain', '/issue/{key}'), descriptor('jira:comments1', '/rest/api/3/v1/issue/{key}/comments'),
+    descriptor('jira:comments2', '/rest/api/3/v2/issue/{key}/comments')];
+  const groups = [{ id: 'jira', name: 'Jira', description: '', children: [
+    { id: 'jira:tag:Issues', name: 'Issues', description: '', operationIds: operations.map(operation => operation.id) },
+  ] }];
+  const original = structuredClone({ groups, operations });
+  const navigation = operationNavigation(operations);
+  const tree = operationResourceGroups(groups, navigation);
+  const issues = tree[0].children[0];
+  assert.equal(issues.name, 'Issues');
+  assert.deepEqual(issues.operationIds, ['jira:root3', 'jira:root2'], 'Prefix-only operations appear at their parent.');
+  assert.deepEqual(issues.children.map(child => child.name), ['issue']);
+  const issue = issues.children[0];
+  assert.deepEqual(navigationOperations(issue.operationIds, navigation, null).map(operation => operation.id),
+    ['jira:read3', 'jira:read2', 'jira:plain'], 'Different concrete endpoints remain independently selectable.');
+  assert.deepEqual(issue.children.map(child => child.name), ['comments']);
+  const comments = issue.children[0];
+  assert.deepEqual(comments.operationIds, ['jira:comments1', 'jira:comments2']);
+  assert.deepEqual(navigationOperations(comments.operationIds, navigation, null).map(operation => operation.id), ['jira:comments1']);
+  assert.deepEqual(navigationOperations(comments.operationIds, navigation, new Map([['jira:comments2', 0]]))
+    .map(operation => operation.id), ['jira:comments2'], 'Search can still choose another API version.');
+  assert.deepEqual(tree.flatMap(ids).sort(), operations.map(operation => operation.id).sort(), 'Every operation remains reachable.');
+  const paths = operationCategoryPaths(tree);
+  assert.deepEqual(paths.get('jira:root3'), ['Jira', 'Issues']);
+  assert.deepEqual(paths.get('jira:comments1'), ['Jira', 'Issues', 'Issue', 'Comments']);
+  assert.deepEqual({ groups, operations }, original, 'Source URLs and catalog metadata stay intact.');
+});
+
 Then('operation resource groups are stable nested trees without mutating their sources', () => {
   const operations = [descriptor('api:foo', '/v1/foo'), descriptor('api:bar', '/v2/foo/{id}/bar'),
     descriptor('api:second', '/version-3/foo/{id}/bar'), descriptor('api:root', '/{id}'), descriptor('api:other', '/other')];
