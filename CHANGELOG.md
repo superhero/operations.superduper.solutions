@@ -312,6 +312,14 @@ fix(ui): match catalog operation and category row sizing
 
 ```
 
+<!-- changelog-commit:1624536a871ece767e0f3bf5dc0edf83bac14026 -->
+### Commit [`1624536`](https://github.com/superhero/operations.superduper.solutions/commit/1624536a871ece767e0f3bf5dc0edf83bac14026)
+
+```text
+fix(ui): reduce vertical padding on catalog operation buttons
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
