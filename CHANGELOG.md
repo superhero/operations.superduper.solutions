@@ -66,6 +66,14 @@ chore(ci): retain current develop ancestry for notification access
 
 ```
 
+<!-- changelog-commit:32e55db37a84b3104c773ec12d6e7c29903d5c99 -->
+### Commit [`32e55db`](https://github.com/superhero/operations.superduper.solutions/commit/32e55db37a84b3104c773ec12d6e7c29903d5c99)
+
+```text
+chore(ci): reconcile Storage squash integration for Notifications
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
