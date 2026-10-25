@@ -82,6 +82,14 @@ fix(ui): show parent guides beside catalog operations
 
 ```
 
+<!-- changelog-commit:1ed69b8178ae200920316f36a6b7d6a6247af7cb -->
+### Commit [`1ed69b8`](https://github.com/superhero/operations.superduper.solutions/commit/1ed69b8178ae200920316f36a6b7d6a6247af7cb)
+
+```text
+fix(settings): adapt and balance application preference cards
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

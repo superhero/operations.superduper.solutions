@@ -178,7 +178,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     { key: "tooltips", label: "Tooltips" }
   ] as const;
 
-  const applicationLanes = [0, 1, 2].map(lane => applicationOptions.filter((_, index) => index % 3 === lane));
+  function balanceApplicationCards(grid: HTMLDivElement) {
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const card = entry.target as HTMLElement;
+        // One-pixel grid rows keep the ten-pixel card gap independent of height.
+        card.style.setProperty("--application-rows", String(Math.ceil(card.offsetHeight + 10)));
+      }
+    });
+    for (const card of grid.children) observer.observe(card);
+    return { destroy: () => observer.disconnect() };
+  }
 
   $effect(() => { gridSizeDraft = String(savedGridSize); gridSizeInvalid = false; });
   $effect(() => { dashLengthDraft = String(savedDashLength); dashLengthInvalid = false; });
@@ -248,11 +258,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <fieldset class="workflow-settings" aria-label="UI defaults">
-        <div class="application-defaults">
-          {#each applicationLanes as lane}
-            <div class="application-lane">
-          {#each lane as option (option.key)}
-            <div class="workflow-default-pair">
+        <div class="application-defaults" use:balanceApplicationCards>
+          {#each applicationOptions as option (option.key)}
+            <div class="workflow-default-pair" data-application-setting={option.key}>
               {#if option.key === "curved"}
                 {@const selectedStyle = workflowLineStyle(workflowDefaults)}
                 <div class="line-style-setting">
@@ -351,8 +359,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   </div>
                 {/if}
               {/if}
-            </div>
-          {/each}
             </div>
           {/each}
         </div>
@@ -548,8 +554,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-default[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
   @container (max-width: 650px) { .workflow-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @container (max-width: 430px) { .workflow-defaults { grid-template-columns: 1fr; } }
-  .application-defaults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 10px; }
-  .application-lane { display: grid; align-content: start; gap: 10px; min-width: 0; }
+  .application-defaults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1px; align-items: start; column-gap: 10px; }
+  .application-defaults > .workflow-default-pair { grid-row: span var(--application-rows, 1); margin-bottom: 10px; }
+  @container (max-width: 650px) { .application-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @container (max-width: 360px) { .application-defaults { grid-template-columns: 1fr; } }
   .defaults-error { display: grid; justify-items: start; gap: 10px; margin-top: 12px; }
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
