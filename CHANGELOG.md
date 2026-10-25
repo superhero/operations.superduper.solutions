@@ -413,6 +413,14 @@ Verify 7 new and 10 related source scenarios, 2 saved-workflow browser paths, fi
 
 ```
 
+<!-- changelog-commit:f7f090394fecbfa1a04628dfd5a8c92428599467 -->
+### Commit [`f7f0903`](https://github.com/superhero/operations.superduper.solutions/commit/f7f090394fecbfa1a04628dfd5a8c92428599467)
+
+```text
+feat(http): preserve nullable multipart files
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
