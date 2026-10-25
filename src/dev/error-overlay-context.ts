@@ -50,6 +50,25 @@ export function initErrorOverlayContext(): () => void {
   function attach(overlay: Element): void {
     const root = overlay.shadowRoot;
     if (!root || overlays.has(root)) return;
+    function dismissBuildError(event: Event): void {
+      const payload: unknown = Reflect.get(overlay, "__v_oPayload");
+      if (!payload || typeof payload !== "object" || Reflect.get(payload, "errorType") === "client") return;
+      if (!root!.querySelector("#__v_o__root:not(.hidden)")) return;
+      const close: unknown = Reflect.get(overlay, "close");
+      if (typeof close !== "function") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      close.call(overlay);
+      syncPageScroll();
+    }
+    const onClose = (event: Event) => {
+      if (event.target instanceof Element && event.target.closest("#__v_o__close")) dismissBuildError(event);
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") dismissBuildError(event);
+    };
+    root.addEventListener("click", onClose);
+    document.addEventListener("keydown", onEscape, true);
     const caption = document.createElement("nav");
     caption.id = "operations-error-context";
     caption.setAttribute("aria-label", "Error cause chain");
@@ -203,6 +222,8 @@ export function initErrorOverlayContext(): () => void {
     observer.observe(root, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     overlays.set(root, () => {
       observer.disconnect();
+      root.removeEventListener("click", onClose);
+      document.removeEventListener("keydown", onEscape, true);
       caption.remove();
       emptyStack.remove();
       issueLink.remove();

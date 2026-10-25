@@ -145,11 +145,14 @@ async function setMode(page, mode) {
     }
     return;
   }
-  const button = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
-  if (await button.getAttribute('aria-pressed') !== String(mode === 'settings')) {
+  const header = page.getByRole('banner');
+  const button = header.getByRole('button', { name: 'Settings', exact: true });
+  const active = header.locator('button[aria-controls="settings-panel"][aria-pressed="true"]');
+  if (mode === 'workflow') {
+    if (await active.count()) await active.click();
+  } else if (await button.getAttribute('aria-pressed') !== 'true') {
     await button.click();
-    if (mode === 'settings')
-      await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeFocused();
+    await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeFocused();
   }
   const target = mode === "workflow" ? workflow(page) : mode === "settings" ? page.getByRole("region", { name: "Settings workspace", exact: true }) : workflow(page);
   await expect(target).toBeVisible();
@@ -246,9 +249,12 @@ async function searchOperations(page, prompt) {
 
 async function openThemeSettings(page) {
   await setMode(page, 'settings');
+  const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
+  if (await mode.getAttribute('aria-checked') === 'true') await mode.click();
   const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Theme"]');
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
-  await expect(page.getByRole('group', { name: 'Color palette', exact: true }).getByRole('switch', { name: 'Dark theme', exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Color palette', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Settings workspace', exact: true }).getByRole('switch', { name: 'Dark theme', exact: true })).toBeVisible();
   await expect(page.locator('#side-navigation').getByRole('switch', { name: 'Dark theme', exact: true })).toHaveCount(0);
 }
 

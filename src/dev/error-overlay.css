@@ -94,6 +94,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   box-shadow: none;
 }
 
+/* Build errors hide the native close control with an inline display value. */
+#__v_o__close { display: inline-flex !important; }
+
 #operations-error-issue {
   display: inline-flex;
   align-items: center;

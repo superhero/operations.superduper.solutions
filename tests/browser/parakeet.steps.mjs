@@ -8,11 +8,16 @@ import { wav } from '../../src/lib/speech/diagnostics.js';
 import { readFile } from 'node:fs/promises';
 import { installAssistantFixture } from './browser-assistant.fixture.mjs';
 
-async function open(page, fixture = true) {
+async function open(page, fixture = true, fromComposer = false) {
   if (fixture) await installSpeechFixture(page);
   await setMode(page, 'settings');
-  const summary = page.locator('summary[aria-label="Assistant"]');
-  if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
+  const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
+  if (await mode.getAttribute('aria-checked') !== 'true') await mode.click();
+  const configuration = page.getByRole('button', { name: 'Assistant configuration', exact: true });
+  if (await configuration.getAttribute('aria-expanded') !== 'true') {
+    if (fromComposer) await page.locator('.composer-toolbar').getByRole('button', { name: 'Dictate', exact: true }).click();
+    else await configuration.click();
+  }
   const speech = page.locator('.speech-settings');
   if (!(await speech.getAttribute('open') === '')) await speech.locator(':scope > summary').click();
   return speech;
@@ -20,8 +25,8 @@ async function open(page, fixture = true) {
 const draft = page => page.getByRole('textbox', { name: 'Message', exact: true });
 const button = (speech, name) => speech.getByRole('button', { name, exact: true });
 async function load(speech) { await button(speech, 'Load speech').click(); await expect(button(speech, 'Dictate')).toBeEnabled(); }
-async function start(page, speech) {
-  await button(speech, 'Dictate').click(); await expect(button(speech, 'Stop dictation')).toBeVisible();
+async function start(page, speech, fromComposer = false) {
+  await button(fromComposer ? page.locator('.composer-toolbar') : speech, 'Dictate').click(); await expect(button(speech, 'Stop dictation')).toBeVisible();
   const transport = await page.evaluate(async () => ({ url: window.speechFixture.featureUrl, status: (await fetch(window.speechFixture.featureUrl)).status, error: window.speechFixture.featureError }));
   expect(transport.status, JSON.stringify(transport)).toBe(200);
   expect(transport.error, JSON.stringify(transport)).toBeUndefined();
@@ -31,14 +36,15 @@ async function start(page, speech) {
 Then('Parakeet and Bonsai share the draft without sending during capture', async function() {
   const page = this.page;
   await installAssistantFixture(page); await installSpeechFixture(page);
-  const speech = await open(page, false), panel = page.getByRole('region', { name: 'Browser assistant', exact: true });
+  const speech = await open(page, false, true), panel = page.getByRole('region', { name: 'Browser assistant', exact: true });
+  expect(await page.evaluate(() => window.speechFixture.workers)).toBe(0);
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');
   await panel.getByRole('button', { name: 'Load model', exact: true }).click(); await load(speech);
-  await draft(page).fill('Typed introduction.'); await start(page, speech);
+  await draft(page).fill('Typed introduction.'); await start(page, speech, true);
   await page.evaluate(() => window.speechFixture.partial('First sentence.', 'Unconfirmed words'));
   await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
   await draft(page).press('Enter'); expect(await page.evaluate(() => window.assistantFixture.lastMessage)).toBeUndefined();
-  await button(speech, 'Stop dictation').click();
+  await button(page.locator('.composer-toolbar'), 'Stop dictation').click();
   await expect(draft(page)).toHaveValue('Typed introduction. First sentence. Second sentence.');
   expect(await page.evaluate(() => window.assistantFixture.lastMessage)).toBeUndefined();
   await panel.getByRole('button', { name: 'Send message', exact: true }).click();
@@ -74,9 +80,9 @@ Then('Parakeet dictation appends confirmed text and saves local audio across rec
 Then('Parakeet silence leaves the draft unchanged and pane closure stops capture', async function() {
   const page = this.page, speech = await open(page); await load(speech); await draft(page).fill('Keep my draft');
   await page.evaluate(() => window.speechFixture.finalText = ''); await start(page, speech);
-  await page.locator('summary[aria-label="Assistant"]').click();
+  await page.getByRole('switch', { name: 'AI assistant', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.speechFixture.stoppedTracks)).toBe(1);
-  await page.locator('summary[aria-label="Assistant"]').click(); await expect(draft(page)).toHaveValue('Keep my draft');
+  await page.getByRole('switch', { name: 'AI assistant', exact: true }).click(); await expect(draft(page)).toHaveValue('Keep my draft');
   await expect(speech.getByRole('status')).toContainText('No speech detected');
   await expect(button(speech, 'Dictate')).toBeEnabled(); expect(await page.evaluate(() => window.speechFixture.terminated)).toBe(0);
 });

@@ -104,6 +104,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let storageReady = $state(false);
   let storageDismissing = $state(false);
   let assistantBuilt = $state(false);
+  const assistantMode = $derived(Boolean(assistantHost) && openSection === "assistant");
+  let previousSettingsSection = $state<SettingsSection>(null);
+  export function showView(view: "assistant" | "settings"): void {
+    if (view === "settings" && openSection === "assistant") openSection = previousSettingsSection;
+    else if (view === "assistant" && openSection !== "assistant") {
+      previousSettingsSection = openSection;
+      openSection = "assistant";
+    }
+  }
+  function togglePaneView(): void {
+    showView(assistantMode ? "settings" : "assistant");
+  }
   $effect(() => { if (active && openSection === "assistant") assistantBuilt = true; });
   $effect(() => {
     if (!active || openSection !== "storage" || storageBuilt) return;
@@ -178,7 +190,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     { key: "tooltips", label: "Tooltips" }
   ] as const;
 
-  const applicationLanes = [0, 1, 2].map(lane => applicationOptions.filter((_, index) => index % 3 === lane));
+  function balanceApplicationCards(grid: HTMLDivElement) {
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const card = entry.target as HTMLElement;
+        // One-pixel grid rows keep the ten-pixel card gap independent of height.
+        card.style.setProperty("--application-rows", String(Math.ceil(card.offsetHeight + 10)));
+      }
+    });
+    for (const card of grid.children) observer.observe(card);
+    return { destroy: () => observer.disconnect() };
+  }
 
   $effect(() => { gridSizeDraft = String(savedGridSize); gridSizeInvalid = false; });
   $effect(() => { dashLengthDraft = String(savedDashLength); dashLengthInvalid = false; });
@@ -241,18 +263,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
-  <div class="settings-sections">
+  <div class="pane-controls">
+    {#if assistantHost}
+      <HintButton class="icon-switch assistant-switch" type="button" role="switch" label={assistantMode ? "Switch to settings" : "Switch to AI assistant"}
+        aria-label="AI assistant" aria-checked={assistantMode} onclick={togglePaneView}>
+        <span class="switch-thumb"></span><span><MaterialIcon name="tune" /></span><span><MaterialIcon name="robot" /></span>
+      </HintButton>
+    {/if}
+    <div class="theme-mode">
+      <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark} onclick={onTheme}>
+        <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
+      </HintButton>
+    </div>
+  </div>
+  <div class="settings-sections" hidden={assistantMode} inert={assistantMode}>
     <Disclosure lazy class="catalog-group settings-section" label="Application" tooltipEnabled={false} open={active && openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Application</h2><span class="section-subtitle">Configure UI defaults</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <fieldset class="workflow-settings" aria-label="UI defaults">
-        <div class="application-defaults">
-          {#each applicationLanes as lane}
-            <div class="application-lane">
-          {#each lane as option (option.key)}
-            <div class="workflow-default-pair">
+        <div class="application-defaults" use:balanceApplicationCards>
+          {#each applicationOptions as option (option.key)}
+            <div class="workflow-default-pair" data-application-setting={option.key}>
               {#if option.key === "curved"}
                 {@const selectedStyle = workflowLineStyle(workflowDefaults)}
                 <div class="line-style-setting">
@@ -353,23 +386,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               {/if}
             </div>
           {/each}
-            </div>
-          {/each}
         </div>
         {#if workflowDefaultsError}
           <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>
         {/if}
       </fieldset>
+      <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
-    {#if assistantHost}
-      <Disclosure class="catalog-group settings-section" label="Assistant" tooltipEnabled={false} open={active && openSection === "assistant"} onToggle={next => openSection = next ? "assistant" : null}>
-        {#snippet summary()}
-          <div class="section-heading"><h2>Assistant</h2><span class="section-subtitle">Chat with Bonsai and dictate with Parakeet in this browser</span></div>
-          <MaterialIcon name="chevron_forward" size={17} />
-        {/snippet}
-        {#if assistantBuilt}<AssistantSettings host={assistantHost} visible={active && openSection === "assistant"} />{/if}
-      </Disclosure>
-    {/if}
     <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; storageDismissing = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
@@ -470,11 +493,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <fieldset aria-label="Color palette">
-        <div class="theme-mode">
-          <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark} onclick={onTheme}>
-            <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
-          </HintButton>
-        </div>
         <div class="palette-options">
           {#each palettes as option (option.id)}
             <label class="palette-choice">
@@ -492,14 +510,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </div>
       </fieldset>
     </Disclosure>
-    <Disclosure lazy class="catalog-group settings-section" label="Toolbar" tooltipEnabled={false} open={active && openSection === "toolbar"} onToggle={next => openSection = next ? "toolbar" : null}>
-      {#snippet summary()}
-        <div class="section-heading"><h2>Toolbar</h2><span class="section-subtitle">Show or hide workflow toolbar buttons</span></div>
-        <MaterialIcon name="chevron_forward" size={17} />
-      {/snippet}
-      <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
-    </Disclosure>
   </div>
+  {#if assistantHost && assistantBuilt}
+    <div hidden={!assistantMode} inert={!assistantMode}>
+      <AssistantSettings host={assistantHost} visible={active && assistantMode} />
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -548,15 +564,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-default[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
   @container (max-width: 650px) { .workflow-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @container (max-width: 430px) { .workflow-defaults { grid-template-columns: 1fr; } }
-  .application-defaults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 10px; }
-  .application-lane { display: grid; align-content: start; gap: 10px; min-width: 0; }
+  .application-defaults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1px; align-items: start; column-gap: 10px; }
+  .application-defaults > .workflow-default-pair { grid-row: span var(--application-rows, 1); margin-bottom: 10px; }
+  @container (max-width: 650px) { .application-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @container (max-width: 360px) { .application-defaults { grid-template-columns: 1fr; } }
   .defaults-error { display: grid; justify-items: start; gap: 10px; margin-top: 12px; }
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .settings-retry { padding: 16px 16px 0; }
-  .theme-mode { display: flex; justify-content: flex-end; margin-bottom: 16px; }
-  .theme-mode :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
+  .pane-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .theme-mode { display: flex; justify-content: flex-end; margin-left: auto; }
+  .pane-controls :global(.assistant-switch) { flex-direction: row-reverse; }
+  .pane-controls :global(.assistant-switch .switch-thumb) { left: auto; right: 0; border-radius: 0 4px 4px 0; }
+  .pane-controls :global(.assistant-switch[aria-checked="true"] .switch-thumb) { transform: translateX(calc(-1 * var(--navigation-control-size))); border-radius: 4px 0 0 4px; }
+  .pane-controls :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }
   .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }

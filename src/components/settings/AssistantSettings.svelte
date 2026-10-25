@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
@@ -38,7 +39,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let messages = $state.raw<AssistantMessageView[]>([]);
   const messageFields = ["role", "text", "thinking", "tool", "failed", "imageCount"] as const;
   let prompt = $state("");
-  let speechReady = $state(false), speechBusy = $state(false);
+  let speechReady = $state(false), speechBusy = $state(false), speechRecording = $state(false);
+  let speechSettings: SpeechSettings;
+  let configurationOpen = $state(false);
+  async function toggleDictation() {
+    if (!speechReady) configurationOpen = true;
+    await tick();
+    await speechSettings.toggleDictation();
+  }
   let speechSession = "", confirmedSpeech = "";
   let dictationWarning = $state("");
   function dictate(value: Dictation) {
@@ -201,26 +209,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="assistant-settings" aria-label="Browser assistant">
-  <div class="model-card">
-    <label for="assistant-model">Local model</label>
-    <FieldSelect id="assistant-model" label="Local model" options={modelOptions} includePlaceholder={false} value={preferences.model} disabled={locked}
-      onValueChange={value => { preferences.model = value; savePreferences(); }} />
-    <p>{(model.bytes / 1e9).toFixed(2)} GB download · WebGPU · language and vision</p>
-    <div class="actions">
-      {#if locked}
-        <button type="button" class="secondary" onclick={stop}>{busy ? "Stop and unload" : "Unload model"}</button>
-      {:else}
-        <button type="button" onclick={load}>Load model</button>
-        <button type="button" class="secondary" onclick={check}>Check compatibility</button>
-      {/if}
-    </div>
-    <p class="status" role="status">{status}</p>
-  </div>
-  {#if preferenceError}<p class="error" role="alert">{preferenceError}</p>{/if}
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
+  <div class="assistant-chat">
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (The scrollable conversation needs keyboard focus.) -->
-  <div class="conversation" role="log" aria-label="Assistant conversation" aria-live="off" bind:this={conversation} tabindex="0">
-    {#if !messages.length}<p class="empty">Ask about an operation, explore a schema, or ask the assistant to arrange and connect your workspace.</p>{/if}
+  <div class="conversation" class:empty={!messages.length && phase !== "generating"} role="log" aria-label="Assistant conversation" aria-live="off" bind:this={conversation} tabindex={messages.length ? 0 : -1}>
     {#each messages as message, index}
       <article class:user={message.role === "user"} class:tool={message.role === "tool"} class:failed={message.failed}>
         {#if message.role === "tool"}
@@ -234,22 +225,47 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </article>
     {/each}
   </div>
-  <form onsubmit={event => { event.preventDefault(); send(); }}>
-    <label for="assistant-message">Message</label>
-    <textarea id="assistant-message" rows="3" maxlength="16000" bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Ask about your workspace…" aria-describedby="assistant-message-hint"
+  <form class="composer" onsubmit={event => { event.preventDefault(); send(); }}>
+    <div class="composer-header">
+      <div class="model-picker">
+        <MaterialIcon name="robot" size={16} />
+        <FieldSelect id="assistant-model" label="Local model" options={modelOptions} includePlaceholder={false} value={preferences.model} disabled={locked} active={visible}
+          onValueChange={value => { preferences.model = value; savePreferences(); }} />
+      </div>
+      <span class="context-window" aria-label={`Context window: ${preferences.context} tokens`}>{new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(preferences.context)} context</span>
+      <div class="model-actions" role="group" aria-label="Model controls">
+        {#if locked}
+          <HintButton type="button" class="composer-action" label="New conversation" disabled={phase !== "ready" || speechBusy} onclick={reset}><MaterialIcon name="add_comment" size={18} /></HintButton>
+          <HintButton type="button" class="composer-action" label={busy ? "Stop and unload" : "Unload model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
+        {:else}
+          <HintButton type="button" class="composer-action" label="Check compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
+          <HintButton type="button" class="composer-action" label="Load model" onclick={load}><MaterialIcon name="download" size={18} /></HintButton>
+        {/if}
+      </div>
+    </div>
+    <label for="assistant-message" class="sr-only">Message</label>
+    <textarea id="assistant-message" rows="3" maxlength="16000" bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Prompt" aria-describedby="assistant-message-hint"
       onkeydown={event => { if (phase === "ready" && event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); send(); } }}></textarea>
     {#if attachment}<div class="attachment"><img alt="Attachment ready to send" src={`data:${attachment.mimeType};base64,${attachment.data}`} /><button type="button" class="secondary" disabled={busy} onclick={clearAttachment}>Remove image</button></div>{/if}
-    {#if imagePreparing}<p role="status">Preparing image…</p>{/if}
-    <div class="actions">
-      <button type="submit" disabled={phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)}>Send message</button>
-      <button type="button" class="secondary" disabled={phase !== "ready" || speechBusy} onclick={reset}>New conversation</button>
-      <button type="button" class="secondary" disabled={phase !== "ready" || imagePreparing} onclick={() => imageInput.click()}>Attach image</button>
+    {#if imagePreparing}<p class="image-preparing" role="status">Preparing image…</p>{/if}
+    <div class="composer-toolbar" role="group" aria-label="Message actions">
+      <HintButton type="button" class="composer-action attach-action" label="Attach image" disabled={phase !== "ready" || imagePreparing} onclick={() => imageInput.click()}><MaterialIcon name="attach_file" size={16} /><span class="attach-label">Attach image</span></HintButton>
+      <div class="composer-tools">
+        <HintButton type="button" class={speechRecording ? "composer-action recording" : "composer-action"} label={speechRecording ? "Stop dictation" : "Dictate"} aria-pressed={speechRecording} disabled={speechBusy && !speechRecording} onclick={() => void toggleDictation()}><MaterialIcon name={speechRecording ? "stop" : "mic"} size={16} /><span>{speechRecording ? "Stop" : "Dictate"}</span></HintButton>
+        <HintButton type="button" class="composer-action" label="Assistant configuration" aria-expanded={configurationOpen} aria-controls="assistant-configuration-panel" onclick={() => configurationOpen = !configurationOpen}><MaterialIcon name="tune" size={18} /></HintButton>
+        <HintButton type="submit" class="composer-action send-action" label="Send message" disabled={phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)}><MaterialIcon name="send" size={18} /></HintButton>
+      </div>
       <input hidden aria-label="Attach assistant image" type="file" accept="image/png,image/jpeg,image/webp" disabled={phase !== "ready" || imagePreparing} bind:this={imageInput} onchange={event => void prepareImage(event.currentTarget.files?.[0])} />
     </div>
-    <p id="assistant-message-hint" class="composer-hint">Enter to send · Shift+Enter for a new line. {phase === "generating" ? "You can draft your next message while waiting." : ""}</p>
   </form>
+  </div>
+  <p class="status" role="status">{status}</p>
+  <p id="assistant-message-hint" class="composer-hint">Enter to send · Shift+Enter for a new line. {phase === "generating" ? "You can draft your next message while waiting." : ""}</p>
+  {#if preferenceError}<p class="error" role="alert">{preferenceError}</p>{/if}
+  {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if dictationWarning}<p class="error" role="status">{dictationWarning}</p>{/if}
-  <SpeechSettings {visible} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; }} />
+  <div id="assistant-configuration-panel" class="assistant-configuration" hidden={!configurationOpen} inert={!configurationOpen}>
+  <SpeechSettings bind:this={speechSettings} {visible} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
   <details class="assistant-details">
     <summary>Configuration<MaterialIcon name="chevron_forward" size={16} /></summary>
     <p>{locked ? "Unload the model to change configuration. " : ""}Preferences are saved on this browser.</p>
@@ -287,26 +303,45 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <details class="assistant-details">
     <summary>Compatibility and model details<MaterialIcon name="chevron_forward" size={16} /></summary>
     {#if compatibility}<p>{compatibility.summary} {compatibility.detail}</p><p>FP32: {compatibility.fp32 ? "verified" : "unavailable"} · FP16: {compatibility.fp16 ? "verified" : "unavailable"}</p><p>{compatibility.adapter}</p>{/if}
+    <p>{(model.bytes / 1e9).toFixed(2)} GB download · WebGPU · language and vision</p>
     <p>GPU only; no CPU fallback. Free RAM and VRAM are not exposed by browsers. Download size is not a measured memory requirement. Mobile and tablet inference are not qualified.</p>
     <p>These pinned Bonsai 2B, 4B and 9B profiles passed recorded text, tool and skill checks, but failed the OCR card checks. Image support does not imply reliable text extraction.</p>
     <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run}<br />Runtime: WebML · Pi 1.3.0</p>
     <p>Runtime and model files load from Hugging Face when requested. Inference and application tool data stay in this browser. Chat lasts for this tab; a new model load starts a new conversation.</p>
   </details>
 
+  </div>
 </section>
 
 <style>
-  .assistant-settings { padding: 16px; display: grid; gap: 12px; min-width: 0; container-type: inline-size; color: var(--color-foreground); font-size: 12px; }
-  .model-card, .assistant-details, form { padding: 12px; border-radius: 4px; background: var(--color-surface); min-width: 0; }
-  .model-card { display: grid; gap: 8px; --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
+  .assistant-settings { padding: 16px 0; display: grid; gap: 12px; min-width: 0; container-type: inline-size; color: var(--color-foreground); font-size: 12px; }
+  .assistant-details { padding: 12px; border-radius: 4px; background: var(--color-surface); min-width: 0; }
+  .assistant-configuration { display: grid; gap: 12px; min-width: 0; }
+  .assistant-configuration[hidden] { display: none; }
+  .assistant-chat { min-width: 0; }
+  .composer { padding: 0; border: 1px solid var(--color-muted); border-radius: 4px; background: var(--color-background); min-width: 0; overflow: clip; }
+  .composer-header, .composer-toolbar { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--color-surface); }
+  .composer-header { border-bottom: 1px solid var(--color-muted); }
+  .model-picker { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
+  .model-picker :global(.field-select-trigger) { width: auto; min-height: 32px; padding: 4px 0; gap: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; }
+  .model-picker :global(.field-select-value) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .context-window { color: var(--color-muted-foreground); font-size: 10px; white-space: nowrap; }
+  .model-actions, .composer-tools { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .composer-toolbar { justify-content: space-between; flex-wrap: wrap; border-top: 1px solid var(--color-muted); }
+  .composer-tools { margin-left: auto; }
+  .assistant-settings :global(.composer-action) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 30px; min-height: 32px; padding: 4px 6px; border: 0; border-radius: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; font-weight: 600; cursor: pointer; }
+  .assistant-settings :global(.composer-action:disabled) { color: var(--color-muted-foreground); cursor: default; }
+  .assistant-settings :global(.send-action:not(:disabled)) { background: var(--color-primary); color: var(--color-primary-foreground); }
+  .assistant-settings :global(.recording) { background: var(--color-error-background); color: var(--color-error-foreground); }
+  .composer :global(:focus-visible) { outline-offset: -2px; }
+  .image-preparing { padding: 0 10px; }
   label, summary { font-weight: 700; }
   summary { display: flex; align-items: center; gap: 8px; min-height: 24px; cursor: pointer; list-style: none; }
   summary::-webkit-details-marker { display: none; }
   summary :global(.material-symbols-rounded) { margin-left: auto; }
   details[open] > summary :global(.material-symbols-rounded) { transform: rotate(90deg); }
   p { margin: 8px 0; line-height: 1.6; overflow-wrap: anywhere; }
-  .model-card p { margin: 0; }
-  .status { color: var(--color-muted-foreground); }
+  .status { margin: 0; color: var(--color-muted-foreground); }
   fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
   .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
   .option { display: grid; gap: 8px; padding: 10px; border-radius: 4px; min-width: 0; background: var(--color-background); }
@@ -320,15 +355,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .switch-control > span { display: block; width: 18px; height: 18px; border-radius: 2px; pointer-events: none; background: var(--color-surface); }
   .switch-control:has(:checked) { background: var(--color-catalog-active); }
   .switch-control:has(:checked) > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
-  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  button { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
+  button { min-height: 36px; padding: 6px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button.secondary { background: var(--color-muted); color: var(--color-foreground); }
   button:disabled { opacity: 0.5; cursor: default; }
   .error { margin: 0; padding: 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); }
   ul { margin: 12px 0 0; padding-left: 18px; }
   li { margin: 6px 0; line-height: 1.5; overflow-wrap: anywhere; }
   .conversation { height: clamp(160px, 24dvh, 320px); overflow-y: auto; overscroll-behavior: contain; padding: 10px; border-radius: 4px; background: var(--color-background); }
-  .empty { color: var(--color-muted-foreground); padding: 12px; }
+  .conversation:not(.empty) { margin-bottom: 12px; }
+  .conversation.empty { height: 0; padding: 0; }
   article { margin: 0 0 10px; padding: 12px; border-radius: 4px; background: var(--color-surface); overflow-wrap: anywhere; }
   article > strong { display: block; color: var(--color-emphasis); margin-bottom: 8px; }
   article.user { background: var(--color-muted); }
@@ -342,11 +377,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   details > pre { margin-top: 10px; }
   .image-note { display: flex; align-items: center; gap: 6px; color: var(--color-muted-foreground); }
   pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; }
-  form { display: grid; gap: 10px; }
-  textarea { width: 100%; padding: 10px; resize: vertical; min-height: 80px; max-height: 400px; border-radius: 4px; background: var(--color-background); font: inherit; }
+  textarea { width: 100%; padding: 10px; resize: vertical; min-height: 80px; max-height: 400px; display: block; border: 0; border-radius: 0; background: var(--color-background); font: inherit; }
   .composer-hint { margin: 0; color: var(--color-muted-foreground); font-size: 11px; }
-  .attachment { display: flex; align-items: center; gap: 12px; }
+  .attachment { display: flex; align-items: center; gap: 12px; padding: 8px 10px; }
   .attachment img { max-width: 120px; max-height: 100px; }
+  @container (max-width: 280px) { .context-window, .attach-label { display: none; } }
   @container (max-width: 430px) { .options, .switches { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: no-preference) {
     summary :global(.material-symbols-rounded), .switch-control, .switch-control > span { transition: transform 180ms ease-in, background-color 180ms ease-in; }

@@ -2,6 +2,348 @@
 
 ## Latest
 
+<!-- changelog-commit:19897224abbdefe64d3c7f1ddeb37b3c6664ee96 -->
+### Commit [`1989722`](https://github.com/superhero/operations.superduper.solutions/commit/19897224abbdefe64d3c7f1ddeb37b3c6664ee96)
+
+```text
+fix(ui): show parent guides beside catalog operations
+
+```
+
+<!-- changelog-commit:1ed69b8178ae200920316f36a6b7d6a6247af7cb -->
+### Commit [`1ed69b8`](https://github.com/superhero/operations.superduper.solutions/commit/1ed69b8178ae200920316f36a6b7d6a6247af7cb)
+
+```text
+fix(settings): adapt and balance application preference cards
+
+```
+
+<!-- changelog-commit:d9561fcaf4633b90c2bb281682fc16ee97114f92 -->
+### Commit [`d9561fc`](https://github.com/superhero/operations.superduper.solutions/commit/d9561fcaf4633b90c2bb281682fc16ee97114f92)
+
+```text
+fix(ui): join catalog guides and align child operation labels
+
+```
+
+<!-- changelog-commit:dfc81fa5a0004b3df49a5e9f03ee76777fcad7be -->
+### Commit [`dfc81fa`](https://github.com/superhero/operations.superduper.solutions/commit/dfc81fa5a0004b3df49a5e9f03ee76777fcad7be)
+
+```text
+Merge branch 'develop' into bugfix/catalog-tree-continuity
+```
+
+<!-- changelog-commit:9293ffd05200b07a62540c226c1b7879de826549 -->
+### Commit [`9293ffd`](https://github.com/superhero/operations.superduper.solutions/commit/9293ffd05200b07a62540c226c1b7879de826549)
+
+```text
+fix(ui): preserve the final rounded catalog elbow
+
+```
+
+<!-- changelog-commit:73a4dddfdb504c526748c8650890efb919834248 -->
+### Commit [`73a4ddd`](https://github.com/superhero/operations.superduper.solutions/commit/73a4dddfdb504c526748c8650890efb919834248)
+
+```text
+fix(ui): use primary color for catalog add icons
+
+```
+
+<!-- changelog-commit:d2634e43acad056beb6caca23b252748ffa2b8e3 -->
+### Commit [`d2634e4`](https://github.com/superhero/operations.superduper.solutions/commit/d2634e43acad056beb6caca23b252748ffa2b8e3)
+
+```text
+Merge branch 'develop' into bugfix/catalog-add-icon-color
+```
+
+<!-- changelog-commit:d556ce0242ac036a59d1c0e92da6bd24afdd9d66 -->
+### Commit [`d556ce0`](https://github.com/superhero/operations.superduper.solutions/commit/d556ce0242ac036a59d1c0e92da6bd24afdd9d66)
+
+```text
+fix(ui): replace branch action circles with crisp icon shadows
+
+```
+
+<!-- changelog-commit:49f239942aef38bbe86732838a32cf4963362d19 -->
+### Commit [`49f2399`](https://github.com/superhero/operations.superduper.solutions/commit/49f239942aef38bbe86732838a32cf4963362d19)
+
+```text
+Merge branch 'develop' into bugfix/branch-action-icon-shadow
+```
+
+<!-- changelog-commit:43b11f202ca86321da2cd0959d6f428236253991 -->
+### Commit [`43b11f2`](https://github.com/superhero/operations.superduper.solutions/commit/43b11f202ca86321da2cd0959d6f428236253991)
+
+```text
+fix(ui): strengthen catalog guides and operation labels
+
+```
+
+<!-- changelog-commit:7fbddf223e2204fc0f17cef0c5cb2cdccf1275b8 -->
+### Commit [`7fbddf2`](https://github.com/superhero/operations.superduper.solutions/commit/7fbddf223e2204fc0f17cef0c5cb2cdccf1275b8)
+
+```text
+Merge branch 'develop' into bugfix/catalog-row-separators
+```
+
+<!-- changelog-commit:bf233b4bda895e9bb85629a6ddd1ceeb415e7a35 -->
+### Commit [`bf233b4`](https://github.com/superhero/operations.superduper.solutions/commit/bf233b4bda895e9bb85629a6ddd1ceeb415e7a35)
+
+```text
+fix(ui): join catalog separators within the shared guide edge
+
+```
+
+<!-- changelog-commit:618d5eeb960f90efb5d93e132afd845544a818b8 -->
+### Commit [`618d5ee`](https://github.com/superhero/operations.superduper.solutions/commit/618d5eeb960f90efb5d93e132afd845544a818b8)
+
+```text
+fix(ui): keep branch action backgrounds transparent in every state
+
+```
+
+<!-- changelog-commit:555ee4714a03efd90c565d3e88a36b333ede2970 -->
+### Commit [`555ee47`](https://github.com/superhero/operations.superduper.solutions/commit/555ee4714a03efd90c565d3e88a36b333ede2970)
+
+```text
+Merge branch 'develop' into bugfix/branch-action-state-backgrounds
+```
+
+<!-- changelog-commit:c76cbba8470e752f8257893dfecc7c1fed835c8b -->
+### Commit [`c76cbba`](https://github.com/superhero/operations.superduper.solutions/commit/c76cbba8470e752f8257893dfecc7c1fed835c8b)
+
+```text
+fix(ui): shorten catalog guide below the final operation
+
+```
+
+<!-- changelog-commit:aa790c065e94a7c5b0c93074b1fdc569a310c3aa -->
+### Commit [`aa790c0`](https://github.com/superhero/operations.superduper.solutions/commit/aa790c065e94a7c5b0c93074b1fdc569a310c3aa)
+
+```text
+Merge branch 'develop' into bugfix/catalog-guide-bottom
+```
+
+<!-- changelog-commit:e06692a44282974444f99f45c43be9f30fa942d6 -->
+### Commit [`e06692a`](https://github.com/superhero/operations.superduper.solutions/commit/e06692a44282974444f99f45c43be9f30fa942d6)
+
+```text
+fix(ui): extend horizontal catalog separators
+
+```
+
+<!-- changelog-commit:7b8affa54f64d033701e321d8b72a068cb86aefd -->
+### Commit [`7b8affa`](https://github.com/superhero/operations.superduper.solutions/commit/7b8affa54f64d033701e321d8b72a068cb86aefd)
+
+```text
+fix(ui): flatten transport prefixes in catalog navigation
+
+```
+
+<!-- changelog-commit:049669e3fbc770c942fcb536362ad1ac8bdc74ec -->
+### Commit [`049669e`](https://github.com/superhero/operations.superduper.solutions/commit/049669e3fbc770c942fcb536362ad1ac8bdc74ec)
+
+```text
+fix(ui): continue catalog tree through operation rows
+
+```
+
+<!-- changelog-commit:01f1287a19149290eeb9d8709f2a7fbc56b852f8 -->
+### Commit [`01f1287`](https://github.com/superhero/operations.superduper.solutions/commit/01f1287a19149290eeb9d8709f2a7fbc56b852f8)
+
+```text
+fix(ui): style catalog operations as primary buttons
+
+```
+
+<!-- changelog-commit:46744b7193a338a38f59abc36a2f37df8ca49a78 -->
+### Commit [`46744b7`](https://github.com/superhero/operations.superduper.solutions/commit/46744b7193a338a38f59abc36a2f37df8ca49a78)
+
+```text
+fix(ui): surround branch icons with crisp shadows
+
+```
+
+<!-- changelog-commit:98c8b7917871e6c403145f964d40323e04922a5e -->
+### Commit [`98c8b79`](https://github.com/superhero/operations.superduper.solutions/commit/98c8b7917871e6c403145f964d40323e04922a5e)
+
+```text
+Merge branch 'develop' into bugfix/branch-action-surround-shadow
+```
+
+<!-- changelog-commit:7305da0678a3cec7e64fd7b3945dc6dddc70a45d -->
+### Commit [`7305da0`](https://github.com/superhero/operations.superduper.solutions/commit/7305da0678a3cec7e64fd7b3945dc6dddc70a45d)
+
+```text
+fix(ui): scale branch icons on hover without recoloring
+
+```
+
+<!-- changelog-commit:4caa7b7430f7e3c5414b8ddbe397c984e120de57 -->
+### Commit [`4caa7b7`](https://github.com/superhero/operations.superduper.solutions/commit/4caa7b7430f7e3c5414b8ddbe397c984e120de57)
+
+```text
+fix(ui): place theme switch above application settings
+
+```
+
+<!-- changelog-commit:cfb4484be66d415c193b048b0bdbb0322bd03f44 -->
+### Commit [`cfb4484`](https://github.com/superhero/operations.superduper.solutions/commit/cfb4484be66d415c193b048b0bdbb0322bd03f44)
+
+```text
+Merge branch 'develop' into bugfix/settings-theme-switch-position
+```
+
+<!-- changelog-commit:ad73678e8caf13a18e388276037d4aa610c16d9a -->
+### Commit [`ad73678`](https://github.com/superhero/operations.superduper.solutions/commit/ad73678e8caf13a18e388276037d4aa610c16d9a)
+
+```text
+fix(ui): merge toolbar preferences into application settings
+
+```
+
+<!-- changelog-commit:b38805b927113d20fad2c31c2e877053072c0b96 -->
+### Commit [`b38805b`](https://github.com/superhero/operations.superduper.solutions/commit/b38805b927113d20fad2c31c2e877053072c0b96)
+
+```text
+Merge branch 'develop' into bugfix/application-toolbar-settings
+```
+
+<!-- changelog-commit:e436e16a65953026f431ed62a72de891eb11e0e3 -->
+### Commit [`e436e16`](https://github.com/superhero/operations.superduper.solutions/commit/e436e16a65953026f431ed62a72de891eb11e0e3)
+
+```text
+fix(ui): render logs pagination icons without overflow
+
+```
+
+<!-- changelog-commit:4b5b7650fd2c36e1d32315fae6cbba7c15946598 -->
+### Commit [`4b5b765`](https://github.com/superhero/operations.superduper.solutions/commit/4b5b7650fd2c36e1d32315fae6cbba7c15946598)
+
+```text
+Merge branch 'develop' into bugfix/logs-pagination-icons
+```
+
+<!-- changelog-commit:22abf15251f3ecf8798a3d6845d20b5374eff1a3 -->
+### Commit [`22abf15`](https://github.com/superhero/operations.superduper.solutions/commit/22abf15251f3ecf8798a3d6845d20b5374eff1a3)
+
+```text
+fix(dev): allow dismissing import and build error overlays
+
+```
+
+<!-- changelog-commit:d1b4ba9bfa51adff27a9a399eb8d10e820792350 -->
+### Commit [`d1b4ba9`](https://github.com/superhero/operations.superduper.solutions/commit/d1b4ba9bfa51adff27a9a399eb8d10e820792350)
+
+```text
+fix(ui): match catalog operation and category row sizing
+
+```
+
+<!-- changelog-commit:1624536a871ece767e0f3bf5dc0edf83bac14026 -->
+### Commit [`1624536`](https://github.com/superhero/operations.superduper.solutions/commit/1624536a871ece767e0f3bf5dc0edf83bac14026)
+
+```text
+fix(ui): reduce vertical padding on catalog operation buttons
+
+```
+
+<!-- changelog-commit:edd18fac9c54243b52ba59f77ab4502527bb67ba -->
+### Commit [`edd18fa`](https://github.com/superhero/operations.superduper.solutions/commit/edd18fac9c54243b52ba59f77ab4502527bb67ba)
+
+```text
+fix(ui): reduce vertical padding on assistant buttons
+
+```
+
+<!-- changelog-commit:7710c0f7568872df30e0f7a62861d6e0c0ae052b -->
+### Commit [`7710c0f`](https://github.com/superhero/operations.superduper.solutions/commit/7710c0f7568872df30e0f7a62861d6e0c0ae052b)
+
+```text
+Merge branch 'develop' into bugfix/compact-assistant-buttons
+```
+
+<!-- changelog-commit:970287e43ab665b47ba2eae3157d4462e4ba4c9a -->
+### Commit [`970287e`](https://github.com/superhero/operations.superduper.solutions/commit/970287e43ab665b47ba2eae3157d4462e4ba4c9a)
+
+```text
+fix(ui): make toolbar settings heading visible
+
+```
+
+<!-- changelog-commit:1febef710199a96334f958f6d3c767b325e3b493 -->
+### Commit [`1febef7`](https://github.com/superhero/operations.superduper.solutions/commit/1febef710199a96334f958f6d3c767b325e3b493)
+
+```text
+Merge branch 'develop' into bugfix/toolbar-settings-heading
+```
+
+<!-- changelog-commit:0f0b4509aba8cb28ba008596c834859e077eb4ab -->
+### Commit [`0f0b450`](https://github.com/superhero/operations.superduper.solutions/commit/0f0b4509aba8cb28ba008596c834859e077eb4ab)
+
+```text
+Merge commit '1d34426e270bd3a30367d33b2aeaf50ae2395dc0' into feature/settings-assistant-switch
+
+# Conflicts:
+#	CHANGELOG.md
+
+```
+
+<!-- changelog-commit:c54fbaa4de9c2a7fbabdfe4b4f8834fbff6a91e2 -->
+### Commit [`c54fbaa`](https://github.com/superhero/operations.superduper.solutions/commit/c54fbaa4de9c2a7fbabdfe4b4f8834fbff6a91e2)
+
+```text
+feat(ui): switch the settings pane between settings and assistant
+
+```
+
+<!-- changelog-commit:5c12f367e09d431fda3a78278c0e82f37281140a -->
+### Commit [`5c12f36`](https://github.com/superhero/operations.superduper.solutions/commit/5c12f367e09d431fda3a78278c0e82f37281140a)
+
+```text
+fix(ui): use Robot icon for the assistant switch
+
+```
+
+<!-- changelog-commit:511c4ec0194bdafbb4f88abd9aeb455239b05fcb -->
+### Commit [`511c4ec`](https://github.com/superhero/operations.superduper.solutions/commit/511c4ec0194bdafbb4f88abd9aeb455239b05fcb)
+
+```text
+feat(ui): open AI and settings from separate header buttons
+
+```
+
+<!-- changelog-commit:e10b006d9fbf4e7925deeab9f12cbeec55ec2de6 -->
+### Commit [`e10b006`](https://github.com/superhero/operations.superduper.solutions/commit/e10b006d9fbf4e7925deeab9f12cbeec55ec2de6)
+
+```text
+Merge branch 'develop' into feature/header-assistant-button
+```
+
+<!-- changelog-commit:9fb2aa2c2b341ec2d72e5d00e36ec39057d71fb4 -->
+### Commit [`9fb2aa2`](https://github.com/superhero/operations.superduper.solutions/commit/9fb2aa2c2b341ec2d72e5d00e36ec39057d71fb4)
+
+```text
+fix(ui): join assistant and settings header buttons
+
+```
+
+<!-- changelog-commit:3959024867f9b8e72a3f2db48026ba84fa4e179c -->
+### Commit [`3959024`](https://github.com/superhero/operations.superduper.solutions/commit/3959024867f9b8e72a3f2db48026ba84fa4e179c)
+
+```text
+feat(ui): compact the assistant prompt and controls
+
+```
+
+<!-- changelog-commit:158b20163c6cfc477120ac45160daaca1bdf35a0 -->
+### Commit [`158b201`](https://github.com/superhero/operations.superduper.solutions/commit/158b20163c6cfc477120ac45160daaca1bdf35a0)
+
+```text
+fix(ui): align assistant composer with pane controls
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.64

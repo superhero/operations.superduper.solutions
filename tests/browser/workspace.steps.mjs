@@ -597,12 +597,12 @@ Then('workflow toolbar frames follow their occupied rows at wrapping boundaries 
   await closeCatalog(page);
   assert.ok(['default', 'all'].includes(visibility));
   await setMode(page, 'settings');
-  const section = page.locator('summary[aria-label="Toolbar"]');
+  const section = page.locator('summary[aria-label="Application"]');
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   const preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
   for (const [key, label] of Object.entries(toolbarButtonLabels)) {
     const enabled = visibility === 'all' || defaultToolbarButtons[key];
-    const toggle = preferences.getByRole('switch', { name: label, exact: true });
+    const toggle = preferences.getByRole('switch', { name: `Show ${label} toolbar button`, exact: true });
     if (await toggle.getAttribute('aria-checked') !== String(enabled)) await toggle.click();
   }
   await setMode(page, 'workflow');

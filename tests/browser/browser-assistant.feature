@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Browser assistant in Settings
+  Scenario: The pane switch preserves settings and a live assistant session
+    Then the pane switches between settings and assistant without losing its session
   Scenario: Local model controls are lazy and preferences survive a reload
     Then the assistant settings expose only three Bonsai models and remember configuration
   Scenario: Application tools edit the real workspace without executing it
