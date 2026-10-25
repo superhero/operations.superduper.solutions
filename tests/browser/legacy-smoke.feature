@@ -159,6 +159,12 @@ Feature: Browser contracts migrated from standalone smoke scripts
     And every assertion in the browser journey has completed
 
   @dev-overlay
+  Scenario: Build error overlays close by button and Escape before application startup
+    Given the isolated browser fixture "dev-overlay-dismiss" uses "build-error"
+    Then build errors support button and keyboard dismissal before application startup
+    And every assertion in the browser journey has completed
+
+  @dev-overlay
   Scenario: Development tools preserve native diagnostics palettes and reporting recovery
     Given the isolated browser fixture "dev-overlay" uses "overlay"
     Then developer toolbar settings persist and disabled tools cannot receive pointer or keyboard input
