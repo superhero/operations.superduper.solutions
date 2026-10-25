@@ -342,6 +342,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .model-picker { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
   .model-picker :global(.field-select-trigger) { width: auto; min-height: 32px; padding: 4px 0; gap: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; }
   .model-picker :global(.field-select-value) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  :global(.field-select-content[aria-label="Local model"]) { width: max-content; min-width: var(--bits-select-anchor-width); max-width: calc(100vw - 24px); }
+  :global(.field-select-content[aria-label="Local model"] .field-select-option-label) { white-space: nowrap; }
   .context-window { color: var(--color-muted-foreground); font-size: 10px; white-space: nowrap; }
   .model-actions, .composer-tools { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
   .composer-toolbar { justify-content: space-between; flex-wrap: wrap; border-top: 1px solid var(--color-muted); }
