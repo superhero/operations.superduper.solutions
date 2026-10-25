@@ -399,6 +399,20 @@ Verify 6 new and 9 related source scenarios, 3 new and 5 related browser scenari
 
 ```
 
+<!-- changelog-commit:74b3c809e40056129a4c495cc6fd91d84b306f41 -->
+### Commit [`74b3c80`](https://github.com/superhero/operations.superduper.solutions/commit/74b3c809e40056129a4c495cc6fd91d84b306f41)
+
+```text
+feat(http): serialize comma-separated query arrays
+
+Preserve canonical form/explode:false primitive-array profiles and encode each item independently with literal comma separators. Share direct and private URL assembly so query-key injection cannot normalize delimiters, and redact strict percent-encoded secret echoes.
+
+Define omission, empty-array and null boundaries; retain unsupported-shape guards and existing scalar, repeated-array and deep-object behavior. Refresh discovery artifacts without changing provider sources, and update affected legacy array/form assertions.
+
+Verify 7 new and 10 related source scenarios, 2 saved-workflow browser paths, final types, production build and 224 discovery checks on bounded sds-01 Swarm jobs.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
