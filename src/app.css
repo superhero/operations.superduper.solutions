@@ -242,7 +242,7 @@ summary::-webkit-details-marker { display: none; }
 .catalog-operations.tree-children > .tree-branch::after { top: calc(50% - 7px); }
 .catalog-operations.tree-children > .tree-branch:last-child::before { bottom: calc(50% + 4px); height: auto; }
 .catalog-operation > summary, .catalog-operation-action { font-weight: 700; }
-.catalog-operation-action { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: var(--color-primary); color: var(--color-primary-foreground); text-align: left; }
+.catalog-operation-action { min-height: calc(var(--navigation-control-size) - 8px); padding-block: 6px; display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: var(--color-primary); color: var(--color-primary-foreground); text-align: left; }
 .catalog-action-icon { display: grid; place-items: center; flex: 0 0 32px; margin-left: auto; color: inherit; }
 .catalog-operation > summary > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .catalog-group > summary[aria-expanded="true"] { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
