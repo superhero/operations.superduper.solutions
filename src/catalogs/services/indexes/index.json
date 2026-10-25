@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "23fa850aac1d878e5031627dcc75896913de53c2b2d7bf2b33785056bab99f8b",
+  "adapterRevision": "600d9168550e7eedd9a10b30e6191234effe8021dd0a166c24a4a6778a52f972",
   "indexes": [
     {
       "id": "anthropic",
@@ -1708,16 +1708,16 @@
     },
     {
       "id": "gcp-bigquery",
-      "sourceRevision": "75b5c0076c3187454398758715c83ede652c1f5ebd316a0c4297f617f5c30fb1",
-      "bytes": 17200,
-      "compressedBytes": 1497,
-      "sha256": "9379a08b8831ac4aab1b3d2c2ee2436e421af66a14daac44a29bcc224f04d77e",
+      "sourceRevision": "5f44d6af036c8a1d6f1bb032aa78d57405adf6642f9ecc812a8f52ecbdfc6f18",
+      "bytes": 17075,
+      "compressedBytes": 1417,
+      "sha256": "559f37309433704b895db521c74429505d301d1ec00c53ef43a66592bad5e812",
       "summary": {
         "name": "BigQuery API",
         "serverUrl": "https://bigquery.googleapis.com/bigquery/v2",
         "description": "A data platform for customers to create, manage, share and query data.",
         "operationCount": 37,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {

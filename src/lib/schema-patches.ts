@@ -14,7 +14,9 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata"; version: 1 };
+export const bigqueryJobMetadata: SchemaPatch = { id: "bigquery-job-metadata", version: 1 };
+export const bigqueryJobSourceSha256 = "84a35e70565d01face776e9dddecb1fc1ffda5bdf60e15fe41b96728c71b2b44";
 export const atlassianServerBindings: SchemaPatch = { id: "atlassian-server-bindings", version: 1 };
 export const providerPathBindings: SchemaPatch = { id: "provider-path-bindings", version: 1 };
 export const awsWireProtocols: SchemaPatch = { id: "aws-wire-protocols", version: 1 };
@@ -38,7 +40,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
+  return patch.id === "bigquery-job-metadata" ? "BigQuery JSON job metadata"
+    : patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
     : patch.id === "gemini-auth-alternatives" ? "Gemini authentication alternatives"
     : patch.id === "azure-eventgrid-management-auth" ? "Azure Event Grid management authentication"
@@ -343,6 +346,24 @@ function elevenLabsAuth(document: Record<string, any>): void {
   }
 }
 
+function bigqueryMetadata(document: Record<string, any>): void {
+  const item = document.paths?.["/projects/{projectId}/jobs"], operation = item?.post;
+  if (document.openapi !== "3.0.0" || document.info?.title !== "BigQuery API" || document.info.version !== "v2"
+    || document.servers?.length !== 1 || document.servers[0]?.url !== "https://bigquery.googleapis.com/bigquery/v2"
+    || !object(item) || item.servers !== undefined || !object(operation) || operation.operationId !== "bigquery.jobs.insert" || operation.servers !== undefined)
+    throw new Error("BigQuery job metadata requires the reviewed native method and destination.");
+  const body = operation.requestBody, content = body?.content;
+  const media = content?.["application/octet-stream"] ?? content?.["application/json"];
+  if (!object(body) || !object(content) || Object.keys(content).length !== 1 || !object(media)
+    || JSON.stringify(media.schema) !== '{"$ref":"#/components/schemas/Job"}' || document.components?.schemas?.Job?.type !== "object"
+    || operation.responses?.["200"]?.content?.["application/json"]?.schema?.$ref !== "#/components/schemas/Job")
+    throw new Error("BigQuery job metadata requires the reviewed Job request and result contract.");
+  if (content["application/json"]) return;
+  if (Object.hasOwn(operation, "x-upstream-request-body")) throw new Error("BigQuery job metadata cannot overwrite request provenance.");
+  operation["x-upstream-request-body"] = structuredClone(body);
+  operation.requestBody = { ...body, content: { "application/json": media } };
+}
+
 function responseStreaming(document: Record<string, any>): void {
   const openai = document.info?.version === "2.3.0" && document.servers?.[0]?.url === "https://api.openai.com/v1";
   const ollama = document.info?.version === "0.1.0" && document.servers?.[0]?.url === "http://localhost:11434";
@@ -515,10 +536,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
+    if (patch.id === "bigquery-job-metadata") bigqueryMetadata(document);
+    else if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
     else if (patch.id === "digitalocean-bearer-permissions") digitalOceanPermissions(document);
     else if (patch.id === "gemini-auth-alternatives") geminiAlternatives(document);
     else if (patch.id === "azure-eventgrid-management-auth") azureEventGridAuthentication(document);
