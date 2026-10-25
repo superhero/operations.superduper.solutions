@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "2c223039c827789edd22dfd486d21e6205b9f71f971510328f2a720a8449db50",
+  "adapterRevision": "23fa850aac1d878e5031627dcc75896913de53c2b2d7bf2b33785056bab99f8b",
   "indexes": [
     {
       "id": "anthropic",
@@ -606,9 +606,9 @@
     {
       "id": "aws-apigatewayv2",
       "sourceRevision": "fec5b78bf48681187bd549d526da351d49a8e04d76e99a3248c37deb20c50f18",
-      "bytes": 34221,
-      "compressedBytes": 2104,
-      "sha256": "b744a249d99c26202deca7fbcf4bcc4fe5cb44a08ee6f1b2d1a0c59ddfc995d6",
+      "bytes": 38325,
+      "compressedBytes": 2149,
+      "sha256": "a3a67b030ff9787b4866a5a023812f5f34f1092777aec89eaee94fa777ece3d0",
       "summary": {
         "name": "AmazonApiGatewayV2",
         "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
@@ -620,9 +620,9 @@
     {
       "id": "aws-apigateway",
       "sourceRevision": "356f372e1b3a48d7a22aed61c7c0797dc8af5c4ed550ac8e8babab68d83b8917",
-      "bytes": 58027,
-      "compressedBytes": 3263,
-      "sha256": "c716dbc9a67dacf63819bf3e1bb843f13bd7213b36dec5d93f90d1a9e784f6f4",
+      "bytes": 64867,
+      "compressedBytes": 3343,
+      "sha256": "26aa91252a55a91413e1ffd0f71b02429b3eb0c8a94ef1a0706802029639531c",
       "summary": {
         "name": "Amazon API Gateway",
         "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
@@ -634,9 +634,9 @@
     {
       "id": "aws-athena",
       "sourceRevision": "1f4e7736ea3b962dd749aa5746575c4845f91a175d334c6974c505bfeee9c1ff",
-      "bytes": 42013,
-      "compressedBytes": 2550,
-      "sha256": "53906b902f1408db26c163ef0cd818e10cf3a64b6eba5b571e16472ca34ed5f0",
+      "bytes": 45889,
+      "compressedBytes": 2581,
+      "sha256": "8f711e13089b8e6337b3e0de862245bd635d7ea488f4273f4f00d3840e97740b",
       "summary": {
         "name": "Amazon Athena",
         "serverUrl": "http://athena.us-east-1.amazonaws.com",
@@ -648,9 +648,9 @@
     {
       "id": "aws-autoscaling",
       "sourceRevision": "3dfd2af80a4764189fc0d3ea5a28bc9479e45447b1aae5efddf26d60a919ae3f",
-      "bytes": 84660,
-      "compressedBytes": 3573,
-      "sha256": "d87d04846a42c17d92ecfaa5fc87b0967757fbdc2ac2bd66ea7749094f4ffed2",
+      "bytes": 92070,
+      "compressedBytes": 3617,
+      "sha256": "91be677e6660592199b8250a2157193f36cbb4e3e10384104078bbd55eeb1600",
       "summary": {
         "name": "Auto Scaling",
         "serverUrl": "http://autoscaling.us-east-1.amazonaws.com",
@@ -662,9 +662,9 @@
     {
       "id": "aws-backup",
       "sourceRevision": "421781af6fbb43cf42a8d55dfbe68431a0df8c08d47afdd9c52404281a5e5990",
-      "bytes": 34514,
-      "compressedBytes": 2422,
-      "sha256": "67def386496de3331fac6a06c2395b64e5bdffd395f36497a1b40e176f1ad042",
+      "bytes": 38618,
+      "compressedBytes": 2461,
+      "sha256": "e60d0113e5adcd73d79a1bec081888b25b0999883315567808c803f12e635167",
       "summary": {
         "name": "AWS Backup",
         "serverUrl": "http://backup.us-east-1.amazonaws.com",
@@ -676,9 +676,9 @@
     {
       "id": "aws-batch",
       "sourceRevision": "d3b0ea44f93b92609c9766312593952f9fb10b8cbbd0c294445e8538c6ff86e2",
-      "bytes": 13469,
-      "compressedBytes": 1653,
-      "sha256": "56fc0a67f83f76d477791f487b31c42cf0af603f22de1045ae6fdf237d9c27e5",
+      "bytes": 14837,
+      "compressedBytes": 1671,
+      "sha256": "2d1157d7db0f020c87f61551b342a029b60c8f7b1ad3c378314276695f25ff2c",
       "summary": {
         "name": "AWS Batch",
         "serverUrl": "http://batch.us-east-1.amazonaws.com",
@@ -690,9 +690,9 @@
     {
       "id": "aws-budgets",
       "sourceRevision": "53960528036628b78617ff8ed599d3b17b8fc0621acee9b2042d5daf222af954",
-      "bytes": 18255,
-      "compressedBytes": 1818,
-      "sha256": "5057b43677163d8a399d0c1b6d0886e85b662e2fed120b35dfaf697cd8e190eb",
+      "bytes": 19566,
+      "compressedBytes": 1836,
+      "sha256": "440e450a707e3c070cb4cd389b88cefcfb11a651155e0fda3e430f9377e79027",
       "summary": {
         "name": "AWS Budgets",
         "serverUrl": "https://budgets.amazonaws.com",
@@ -704,9 +704,9 @@
     {
       "id": "aws-cloudformation",
       "sourceRevision": "4a68c9cffa40499b55c50b970591ff86129e779b0ef9e8bdfcaef552ebc14e3f",
-      "bytes": 91980,
-      "compressedBytes": 3996,
-      "sha256": "442d47fac767f06a3b69c352b060b66764d2d43f245edaddbfe32a09677f268b",
+      "bytes": 99960,
+      "compressedBytes": 4026,
+      "sha256": "7ac79fdcaacf4bec687452f1908b8f74c94d29c68d43064c20c0381a0abf0857",
       "summary": {
         "name": "AWS CloudFormation",
         "serverUrl": "http://cloudformation.us-east-1.amazonaws.com",
@@ -718,9 +718,9 @@
     {
       "id": "aws-cloudfront",
       "sourceRevision": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
-      "bytes": 61625,
-      "compressedBytes": 3299,
-      "sha256": "781a353c6723c85e0b854375127a08dab78309b6915017f3a706d6329d810292",
+      "bytes": 67667,
+      "compressedBytes": 3331,
+      "sha256": "541f8d28de126a9d5f1a613f7e47b755ab3a87d096b115dcdb5225d0b52452e6",
       "summary": {
         "name": "Amazon CloudFront",
         "serverUrl": "https://cloudfront.amazonaws.com",
@@ -732,9 +732,9 @@
     {
       "id": "aws-cloudtrail",
       "sourceRevision": "8d2daf1667f87143c7310a436a53e35517a8679054cf84b3e295bddc497019d8",
-      "bytes": 31452,
-      "compressedBytes": 2236,
-      "sha256": "e872a97573c9e252747ad52b854564b2b7b01360c74ac82c91fe7ae963ee77f5",
+      "bytes": 34074,
+      "compressedBytes": 2264,
+      "sha256": "7f6ab0f9dd56a89d3944f18da099cbff09eca601a47fb7650f4e8764dea1f9c3",
       "summary": {
         "name": "AWS CloudTrail",
         "serverUrl": "http://cloudtrail.us-east-1.amazonaws.com",
@@ -746,9 +746,9 @@
     {
       "id": "aws-logs",
       "sourceRevision": "738f035ec0d944b378fa9f82c98c4f4af7689cbe4816aa07064b4831a88886b6",
-      "bytes": 33212,
-      "compressedBytes": 2476,
-      "sha256": "d28d1c5d65071172a6ef0c9be4800295ee06621e533d023e491846c6a8d55789",
+      "bytes": 36119,
+      "compressedBytes": 2501,
+      "sha256": "74c6e40b0c02574890367f7fc156076367959b4263930046f24c017cb3a64b00",
       "summary": {
         "name": "Amazon CloudWatch Logs",
         "serverUrl": "http://logs.us-east-1.amazonaws.com",
@@ -760,9 +760,9 @@
     {
       "id": "aws-monitoring",
       "sourceRevision": "85ff979bad127aab83a73b775f9905aac586238122296feb00b685d8deff936a",
-      "bytes": 49751,
-      "compressedBytes": 2573,
-      "sha256": "906f9dfbf3f1aecd81bf603f6089e9e306a9ced2d22546c05b63b57fcc1b980c",
+      "bytes": 54083,
+      "compressedBytes": 2617,
+      "sha256": "84907ea229ac028bf62eac368b7bb453dc12e0883dd2cd4683f0b19a5dce2a3e",
       "summary": {
         "name": "Amazon CloudWatch",
         "serverUrl": "http://monitoring.us-east-1.amazonaws.com",
@@ -774,9 +774,9 @@
     {
       "id": "aws-codebuild",
       "sourceRevision": "0e6b6a34f533bb23aef8395ee8b4b1c968dff7940c2e501672ce755ebb17553d",
-      "bytes": 28196,
-      "compressedBytes": 1918,
-      "sha256": "88002392cbb9bfa66353352a325470cb5406db675034dd78f1581440659f642b",
+      "bytes": 30761,
+      "compressedBytes": 1948,
+      "sha256": "074d95713712ee6d6ea7c98de355c243d2fd4bee00b1079b7cfac23e129bc44d",
       "summary": {
         "name": "AWS CodeBuild",
         "serverUrl": "http://codebuild.us-east-1.amazonaws.com",
@@ -788,9 +788,9 @@
     {
       "id": "aws-codepipeline",
       "sourceRevision": "5cc1dc46e043c2a4abdbb902cbff0a14e441bd3245ea93ac9695716caf6824b1",
-      "bytes": 35666,
-      "compressedBytes": 3227,
-      "sha256": "247541593feab8fb5c067524e9b86fed86dadb067e459a97caa772817f632de6",
+      "bytes": 37889,
+      "compressedBytes": 3251,
+      "sha256": "4bc8e9b255be30ddff3c2b4d18b9214fb2b46a69dc8d4e5143be8844004755c0",
       "summary": {
         "name": "AWS CodePipeline",
         "serverUrl": "http://codepipeline.us-east-1.amazonaws.com",
@@ -802,9 +802,9 @@
     {
       "id": "aws-cognito-idp",
       "sourceRevision": "ba12458942a09007e006e4406e4aa86577b23b7b14ef07618da8a9b277a57e98",
-      "bytes": 69716,
-      "compressedBytes": 3897,
-      "sha256": "ea65987791c847242a1cf7ee0347ec4ff41b4da9e511fe55fa1f56c9540e060e",
+      "bytes": 75587,
+      "compressedBytes": 3951,
+      "sha256": "e27196696ffca11a1a17157a34d3d56db25b7d2282b1e4e7e5381cf2c44e6146",
       "summary": {
         "name": "Amazon Cognito Identity Provider",
         "serverUrl": "http://cognito-idp.us-east-1.amazonaws.com",
@@ -816,9 +816,9 @@
     {
       "id": "aws-comprehend",
       "sourceRevision": "93f4ec0615f3af4ec36b57402ba5546693ebf41575fb61b334a38075be84905a",
-      "bytes": 52053,
-      "compressedBytes": 2436,
-      "sha256": "b08273edc3b8781b3b4aa364d4a8b7824c55975a5926e7e0806e86d25c83db59",
+      "bytes": 56841,
+      "compressedBytes": 2473,
+      "sha256": "89c8139a86f3ff09db191cfd8558337fb4fcaa23779d188222527d2f76f569ee",
       "summary": {
         "name": "Amazon Comprehend",
         "serverUrl": "http://comprehend.us-east-1.amazonaws.com",
@@ -830,9 +830,9 @@
     {
       "id": "aws-ce",
       "sourceRevision": "73470bd31bb69e4c637bd5e031c47906412bd2ec3e3c4f3ed067dd51adcc10b1",
-      "bytes": 24827,
-      "compressedBytes": 1837,
-      "sha256": "5044804f0349b068518aa87ca6285a5645a2077728d5c39ca739d5af011cb9a9",
+      "bytes": 26993,
+      "compressedBytes": 1857,
+      "sha256": "f7e0b0c63fa80c56a9d75b650759ce52c181a6013760007e5eaaa76d3ac289bb",
       "summary": {
         "name": "AWS Cost Explorer Service",
         "serverUrl": "http://ce.us-east-1.amazonaws.com",
@@ -844,9 +844,9 @@
     {
       "id": "aws-firehose",
       "sourceRevision": "d4ce44694309b05adfc13f5ff0304ef1a357340252c0aa8335df84d93c062522",
-      "bytes": 8329,
-      "compressedBytes": 1029,
-      "sha256": "c6110c7dfc791f054fe14de27e8b54161136d31df745ad145dc2b71e6578bd50",
+      "bytes": 9013,
+      "compressedBytes": 1051,
+      "sha256": "67567c1a124edbc0de8ab7f73fe5eb85d8f8aa176457062e78e2cb99d0858064",
       "summary": {
         "name": "Amazon Kinesis Firehose",
         "serverUrl": "http://firehose.us-east-1.amazonaws.com",
@@ -857,24 +857,24 @@
     },
     {
       "id": "aws-dynamodb",
-      "sourceRevision": "edf78af7371e27e8b8440b0587d04830d881d8681558787f406ffdfe713108e0",
-      "bytes": 33555,
-      "compressedBytes": 2331,
-      "sha256": "cd0464608b04f546f42442f7343501319c907dc16dd63b8ad3119db65737cecf",
+      "sourceRevision": "24a1381ac9a7039886253dc4b4ac9ff947cfbd85a15ba906054e0d91bd62038f",
+      "bytes": 35978,
+      "compressedBytes": 2382,
+      "sha256": "ab0fffbf6cf876e2fbe494120a8d3fc0011c7e85963181a079fe1c73b4bc9b2e",
       "summary": {
         "name": "Amazon DynamoDB",
         "serverUrl": "http://dynamodb.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon DynamoDB</fullname> <p>Amazon DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability. DynamoDB lets you offload the administrative burdens of operating and scaling a distributed database, so that you don't have to worry about hardware provisioning, setup and configuration, replication, software patching, or cluster scaling.</p> <p>With DynamoDB, you can create database tables that can store and retrieve any amount of data, and serve any level of request traffic. You can scale up or scale down your tables' throughput capacity without downtime or performance degradation, and use the Amazon Web Services Management Console to monitor resource utilization and performance metrics.</p> <p>DynamoDB automatically spreads the data and traffic for your tables over a sufficient number of servers to handle your throughput and storage requirements, while maintaining consistent and fast performance. All of your data is stored on solid state disks (SSDs) and automatically replicated across multiple Availability Zones in an Amazon Web Services Region, providing built-in high availability and data durability.</p>",
         "operationCount": 53,
-        "unavailableCount": 53
+        "unavailableCount": 51
       }
     },
     {
       "id": "aws-ec2",
       "sourceRevision": "ea5b1da045efed071bd26efab3b896f71282f662cc1e1683194d66023d3cfd04",
-      "bytes": 767730,
-      "compressedBytes": 25784,
-      "sha256": "d83e8098625691c4b1d73343cb2b0a2e141881fcbbdbcdf196d06c107565e514",
+      "bytes": 835446,
+      "compressedBytes": 26169,
+      "sha256": "c37e32d76ed6a351e1cd98beb54be64a4acef32805ce18f150ddc3a885c8cade",
       "summary": {
         "name": "Amazon Elastic Compute Cloud",
         "serverUrl": "http://ec2.us-east-1.amazonaws.com",
@@ -886,9 +886,9 @@
     {
       "id": "aws-ecr",
       "sourceRevision": "fbeab5c68abfe83723d66352c751edc87347a72204c1b68e6607c1043250d01b",
-      "bytes": 26788,
-      "compressedBytes": 1924,
-      "sha256": "1cd6a0d5308761803ffcce286d1c72c75c5dd04f7f8bbb365d805126ef3d4e8c",
+      "bytes": 29125,
+      "compressedBytes": 1947,
+      "sha256": "7c5d43df3411d49dd3990d876f0318d8da7b339a2a91d0c716f2cba503b90252",
       "summary": {
         "name": "Amazon EC2 Container Registry",
         "serverUrl": "http://api.ecr.us-east-1.amazonaws.com",
@@ -900,9 +900,9 @@
     {
       "id": "aws-ecs",
       "sourceRevision": "4bf57dddad6c0cc36532b5b8fa76f9c110f786db7172982f133f5b4e7171d314",
-      "bytes": 35756,
-      "compressedBytes": 2301,
-      "sha256": "78e956e0e14f4b1b66bf085b8b1f36d18a68e6153d632b0cfe9d95006feb1a69",
+      "bytes": 38948,
+      "compressedBytes": 2323,
+      "sha256": "4aa057833c9b68b4e0bf2ddbf296b0adc4ca10e132979a5fd8a9cd1daefd704c",
       "summary": {
         "name": "Amazon EC2 Container Service",
         "serverUrl": "http://ecs.us-east-1.amazonaws.com",
@@ -914,9 +914,9 @@
     {
       "id": "aws-elasticfilesystem",
       "sourceRevision": "dade2231707fbb8542eaecdf0215aa791cb409dd608c7ee8336c4f1dee408bf2",
-      "bytes": 16995,
-      "compressedBytes": 1642,
-      "sha256": "02e560dee6239298baa9ba2965269f2ab39bba78cce176f6e350ffcc460c9c75",
+      "bytes": 18705,
+      "compressedBytes": 1673,
+      "sha256": "eb51d92cb2a1801cce063158548679ed0da488901adaecab6dbbb73955dc6fc8",
       "summary": {
         "name": "Amazon Elastic File System",
         "serverUrl": "http://elasticfilesystem.us-east-1.amazonaws.com",
@@ -928,9 +928,9 @@
     {
       "id": "aws-eks",
       "sourceRevision": "476f3cff5ca1a16490dcf49ef5aee2c1041b9a1fa71289ae9ed5e5f7f643d302",
-      "bytes": 18323,
-      "compressedBytes": 1827,
-      "sha256": "9428ec4912d5f8802a7efb61d2bac79d83e085fb732985bc5b8af30acdf74355",
+      "bytes": 20318,
+      "compressedBytes": 1849,
+      "sha256": "d83b650b3d286fda2e74570f3a7bf444e8a7c3188ec0dc31df0d9e8420d3a5a4",
       "summary": {
         "name": "Amazon Elastic Kubernetes Service",
         "serverUrl": "http://eks.us-east-1.amazonaws.com",
@@ -942,9 +942,9 @@
     {
       "id": "aws-elasticloadbalancingv2",
       "sourceRevision": "9bb94556618707f774795169f97fedcdc28f89a69a39627c6c14500ed5d6ada5",
-      "bytes": 48028,
-      "compressedBytes": 2635,
-      "sha256": "bb4856342e5d26d19b3e03162625522921eb8d066dc6173a68a1093c78b4d206",
+      "bytes": 51904,
+      "compressedBytes": 2663,
+      "sha256": "8cf862758821ea7cdc74dcc7e39fda25084ae750ba02ae81027d8edaffd1961b",
       "summary": {
         "name": "Elastic Load Balancing",
         "serverUrl": "http://elasticloadbalancing.us-east-1.amazonaws.com",
@@ -956,9 +956,9 @@
     {
       "id": "aws-elasticache",
       "sourceRevision": "f73df542876aded5810cd60675f944fa512810eb4875ab4b05e9cca1a42d3f7e",
-      "bytes": 86260,
-      "compressedBytes": 3675,
-      "sha256": "c13f81e9c8446f699e7064970e655f357f93ba30082bc1a5638a0aa302294661",
+      "bytes": 93670,
+      "compressedBytes": 3712,
+      "sha256": "ca82f35646306ddadaaf731229784f453ab7e4d536c6ab34adbcb15294932622",
       "summary": {
         "name": "Amazon ElastiCache",
         "serverUrl": "http://elasticache.us-east-1.amazonaws.com",
@@ -970,9 +970,9 @@
     {
       "id": "aws-events",
       "sourceRevision": "f8db1a08e00a64700d8561f161bb4df554a848193db9e5128b00f7be72f895d9",
-      "bytes": 31186,
-      "compressedBytes": 2162,
-      "sha256": "c8f957a8ab1cb45445b5ba139513f2ef699cfdbbc583c95e834607b672e6fa39",
+      "bytes": 34093,
+      "compressedBytes": 2184,
+      "sha256": "ed40069272ae474a6cdb47e08a23ff887acbc27cf1999337dc77bf2a53d30d6f",
       "summary": {
         "name": "Amazon CloudWatch Events",
         "serverUrl": "http://events.us-east-1.amazonaws.com",
@@ -984,9 +984,9 @@
     {
       "id": "aws-fsx",
       "sourceRevision": "34700f933d923f7e41dd007eac9345e3ad706486bde3df7a1cf9bea6bd84aa85",
-      "bytes": 25013,
-      "compressedBytes": 1546,
-      "sha256": "7905b128b6f7a6dc6546c4ff1f1a0ce2aef842eb5753b065210dcb2f00c6c63e",
+      "bytes": 27350,
+      "compressedBytes": 1571,
+      "sha256": "6a686a0e7a60ef99ca77c7da4d089003c63e9d476ed5cb39626e35c1c02fca49",
       "summary": {
         "name": "Amazon FSx",
         "serverUrl": "http://fsx.us-east-1.amazonaws.com",
@@ -998,9 +998,9 @@
     {
       "id": "aws-glue",
       "sourceRevision": "27f1694cedeb25ce41ed5dc9b119ddd7953e18e4a96677498ca0ab7801ceceb6",
-      "bytes": 114028,
-      "compressedBytes": 4701,
-      "sha256": "88fcbd959d59ecb2a6a3059b8fc4ee768be6d28a11b5dd7e401bff35621a51d7",
+      "bytes": 125542,
+      "compressedBytes": 4736,
+      "sha256": "bcd333824b9e9a26caf9f9332cc9ed837f172cade295d03d3ec33bb2dd73e0c1",
       "summary": {
         "name": "AWS Glue",
         "serverUrl": "http://glue.us-east-1.amazonaws.com",
@@ -1012,9 +1012,9 @@
     {
       "id": "aws-iam",
       "sourceRevision": "75b86d2d22322f224d07485f0a74f0927ec4b6bb90d6f4108c6cf98f89132b3d",
-      "bytes": 197746,
-      "compressedBytes": 7038,
-      "sha256": "95c5a6348788be37f2b4f82d3159997fe2ad340ae5f20e8b04a55c41ee72c0b6",
+      "bytes": 215872,
+      "compressedBytes": 7159,
+      "sha256": "d01bf8e15532bbb8940d1027e1179bc9cbb658a7340a653be05c8982ad97dc93",
       "summary": {
         "name": "AWS Identity and Access Management",
         "serverUrl": "https://iam.amazonaws.com",
@@ -1026,9 +1026,9 @@
     {
       "id": "aws-kinesis",
       "sourceRevision": "bd4ea6c0e6f082d9b9fbbce188a623c034dee5ffa136b5d3aaa2325ead224ba5",
-      "bytes": 17048,
-      "compressedBytes": 1333,
-      "sha256": "0dc479f98f75ce3cc2ff93439dbc2b8da33d6c3454b4c0c378a25f535417ed3e",
+      "bytes": 18644,
+      "compressedBytes": 1353,
+      "sha256": "06ca52dc253fe804421ed8bf089b329a8de203ee99391cb86e1a02b06f5601fe",
       "summary": {
         "name": "Amazon Kinesis",
         "serverUrl": "http://kinesis.us-east-1.amazonaws.com",
@@ -1040,9 +1040,9 @@
     {
       "id": "aws-kms",
       "sourceRevision": "f0c9733d4dd7ce2c51e3a49dea35531a37711c1ef2fecc09aa12615cf0500cb4",
-      "bytes": 37556,
-      "compressedBytes": 3412,
-      "sha256": "73cd02e19ba0e1ea1e312f0a0ed19adba7d91d3cb52b3b4e146f7760d1fb04aa",
+      "bytes": 40406,
+      "compressedBytes": 3428,
+      "sha256": "461ca2b9f5eca6944960393112f0965c10eb67e46f919f251f72e7c3a793e317",
       "summary": {
         "name": "AWS Key Management Service",
         "serverUrl": "http://kms.us-east-1.amazonaws.com",
@@ -1054,23 +1054,23 @@
     {
       "id": "aws-lambda",
       "sourceRevision": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
-      "bytes": 40500,
-      "compressedBytes": 3701,
-      "sha256": "855da8479070703c9604e5ca4b440ec35ab5d0062ddc3d9a9812f6f03acfd2e0",
+      "bytes": 44063,
+      "compressedBytes": 3761,
+      "sha256": "908494c3057247f82870a8025fde4f31ba8c6237713839af5174e9fefe247843",
       "summary": {
         "name": "AWS Lambda",
         "serverUrl": "http://lambda.us-east-1.amazonaws.com",
         "description": "<fullname>Lambda</fullname> <p> <b>Overview</b> </p> <p>Lambda is a compute service that lets you run code without provisioning or managing servers. Lambda runs your code on a high-availability compute infrastructure and performs all of the administration of the compute resources, including server and operating system maintenance, capacity provisioning and automatic scaling, code monitoring and logging. With Lambda, you can run code for virtually any type of application or backend service. For more information about the Lambda service, see <a href=\"https://docs.aws.amazon.com/lambda/latest/dg/welcome.html\">What is Lambda</a> in the <b>Lambda Developer Guide</b>.</p> <p>The <i>Lambda API Reference</i> provides information about each of the API methods, including details about the parameters in each API request and response. </p> <p/> <p>You can use Software Development Kits (SDKs), Integrated Development Environment (IDE) Toolkits, and command line tools to access the API. For installation instructions, see <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>. </p> <p>For a list of Region-specific endpoints that Lambda supports, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/lambda-service.html/\">Lambda endpoints and quotas </a> in the <i>Amazon Web Services General Reference.</i>. </p> <p>When making the API calls, you will need to authenticate your request by providing a signature. Lambda supports signature version 4. For more information, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html\">Signature Version 4 signing process</a> in the <i>Amazon Web Services General Reference.</i>. </p> <p> <b>CA certificates</b> </p> <p>Because Amazon Web Services SDKs use the CA certificates from your computer, changes to the certificates on the Amazon Web Services servers can cause connection failures when you attempt to use an SDK. You can prevent these failures by keeping your computer's CA certificates and operating system up-to-date. If you encounter this issue in a corporate environment and do not manage your own computer, you might need to ask an administrator to assist with the update process. The following list shows minimum operating system and Java versions:</p> <ul> <li> <p>Microsoft Windows versions that have updates from January 2005 or later installed contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Mac OS X 10.4 with Java for Mac OS X 10.4 Release 5 (February 2007), Mac OS X 10.5 (October 2007), and later versions contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Red Hat Enterprise Linux 5 (March 2007), 6, and 7 and CentOS 5, 6, and 7 all contain at least one of the required CAs in their default trusted CA list. </p> </li> <li> <p>Java 1.4.2_12 (May 2006), 5 Update 2 (March 2005), and all later versions, including Java 6 (December 2006), 7, and 8, contain at least one of the required CAs in their default trusted CA list. </p> </li> </ul> <p>When accessing the Lambda management console or Lambda API endpoints, whether through browsers or programmatically, you will need to ensure your client machines support any of the following CAs: </p> <ul> <li> <p>Amazon Root CA 1</p> </li> <li> <p>Starfield Services Root Certificate Authority - G2</p> </li> <li> <p>Starfield Class 2 Certification Authority</p> </li> </ul> <p>Root certificates from the first two authorities are available from <a href=\"https://www.amazontrust.com/repository/\">Amazon trust services</a>, but keeping your computer up-to-date is the more straightforward solution. To learn more about ACM-provided certificates, see <a href=\"http://aws.amazon.com/certificate-manager/faqs/#certificates\">Amazon Web Services Certificate Manager FAQs.</a> </p>",
         "operationCount": 66,
-        "unavailableCount": 66
+        "unavailableCount": 65
       }
     },
     {
       "id": "aws-opensearch",
       "sourceRevision": "01d0ee509fc29cefc2403b8dff507be3bba690f3583710fe9b95bedb5a519d9e",
-      "bytes": 28611,
-      "compressedBytes": 2276,
-      "sha256": "e4f9b66c988319783a94610ca5b6c49cd20f4845560b08ad4b2c0f0dae87a586",
+      "bytes": 31689,
+      "compressedBytes": 2330,
+      "sha256": "6c19e95931712ab04e45e36cb43dea3234b98e7bd08eafabc5f59afe2efa0dc5",
       "summary": {
         "name": "Amazon OpenSearch Service",
         "serverUrl": "http://es.us-east-1.amazonaws.com",
@@ -1082,9 +1082,9 @@
     {
       "id": "aws-organizations",
       "sourceRevision": "a16e015497cbd98a09e67d6321e123d68bfb0fa916af5ccab77d815dfcb37f3c",
-      "bytes": 40567,
-      "compressedBytes": 2881,
-      "sha256": "4b239b1c515fc48fa287c1b3040a79d4ca7cbd8ec476c204fac8c323432a5bd3",
+      "bytes": 43702,
+      "compressedBytes": 2905,
+      "sha256": "e168f03c4a04f7e6bacf0730f0f53fd3f366778d4e6320a005bf8c486a5c03a1",
       "summary": {
         "name": "AWS Organizations",
         "serverUrl": "http://organizations.us-east-1.amazonaws.com",
@@ -1096,9 +1096,9 @@
     {
       "id": "aws-polly",
       "sourceRevision": "62fa911eba1d9141664783718fa74d34c1ba257025cd72df5a057e54d796ff55",
-      "bytes": 5213,
-      "compressedBytes": 928,
-      "sha256": "04b2e0531d7cb3928e7b694087662e75650384527ddd50617e690eddf5d55616",
+      "bytes": 5726,
+      "compressedBytes": 948,
+      "sha256": "bca13c039c82b03f9096910686cee672e435b6634719500ef246a924cd1cb051",
       "summary": {
         "name": "Amazon Polly",
         "serverUrl": "http://polly.us-east-1.amazonaws.com",
@@ -1110,9 +1110,9 @@
     {
       "id": "aws-rds",
       "sourceRevision": "c21871f272a1f369d3802e13d76f0625eac5dfc240c320f38c3a547da1901be5",
-      "bytes": 187266,
-      "compressedBytes": 7415,
-      "sha256": "593e28e3c5e5896e5eb89567f89cca6e51fabc680701ba608f0dd1dc93198c22",
+      "bytes": 203568,
+      "compressedBytes": 7522,
+      "sha256": "c04d7e1832b9906af972488eead6fad881de1ebe68b5f48fa6d315734e0f1036",
       "summary": {
         "name": "Amazon Relational Database Service",
         "serverUrl": "http://rds.us-east-1.amazonaws.com",
@@ -1124,9 +1124,9 @@
     {
       "id": "aws-redshift",
       "sourceRevision": "d6271729a44df045024d5dff64e01968f4d1def0470f8aec3eac648fc8ec8b28",
-      "bytes": 161513,
-      "compressedBytes": 6383,
-      "sha256": "dadce6ecb72946e67a85a82a3a90202a3f349bb754a6cd1acb6afb13025b8254",
+      "bytes": 175535,
+      "compressedBytes": 6470,
+      "sha256": "81420041dacc26e70a088cb3a120696560165654b673bd1c28c790713cbf2e67",
       "summary": {
         "name": "Amazon Redshift",
         "serverUrl": "http://redshift.us-east-1.amazonaws.com",
@@ -1138,9 +1138,9 @@
     {
       "id": "aws-rekognition",
       "sourceRevision": "eb61aa3f8f2f58f7890b06fd3af72bddddb454e7f372bcecadd2eb7fcbf2194f",
-      "bytes": 63180,
-      "compressedBytes": 2971,
-      "sha256": "99fd0708045e1f4619fdab19121628a63063bb01bdddb95b59e1a7ada2ed55c5",
+      "bytes": 67284,
+      "compressedBytes": 3006,
+      "sha256": "0acfa72ca35c6d535df274f374238abff17c149e0601077544ccdbd35bf0bd5b",
       "summary": {
         "name": "Amazon Rekognition",
         "serverUrl": "http://rekognition.us-east-1.amazonaws.com",
@@ -1152,9 +1152,9 @@
     {
       "id": "aws-route53",
       "sourceRevision": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
-      "bytes": 38123,
-      "compressedBytes": 2715,
-      "sha256": "9087bcc6a7d756a5193e9b4cd2cf22b1938267c98314cde572e0fe01d140b4cf",
+      "bytes": 42113,
+      "compressedBytes": 2741,
+      "sha256": "5d4e385d9e0344a9643ebe5f2e6b58fe83eab66ee7f1425c0329fb3de5531322",
       "summary": {
         "name": "Amazon Route 53",
         "serverUrl": "https://route53.amazonaws.com",
@@ -1165,24 +1165,24 @@
     },
     {
       "id": "aws-s3",
-      "sourceRevision": "2c1283af457c374eea21b36eda33edbebd1d331b8954dff16c332d22881d212d",
-      "bytes": 44935,
-      "compressedBytes": 2705,
-      "sha256": "c184e23b1f78c1b2a18a4c04836caa981ad9c82d5d432759ce194f15c5d750f3",
+      "sourceRevision": "1abeda3df1f4fc0835e5c91144542f89542e3d92e3bceab95e497b1393547586",
+      "bytes": 62005,
+      "compressedBytes": 2984,
+      "sha256": "08a351dcdf7846e0c5a1ce28d0266ea4d82f050ef58c24cca44d6fcf7bdcf78f",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "http://s3.us-east-1.amazonaws.com",
         "description": "<p/>",
         "operationCount": 97,
-        "unavailableCount": 91
+        "unavailableCount": 95
       }
     },
     {
       "id": "aws-s3control",
       "sourceRevision": "983b1815b0cd68eaf86d6cd316ba6177013be242600789992bf0d9cb83808e32",
-      "bytes": 41379,
-      "compressedBytes": 2161,
-      "sha256": "b10d825abd713f59a03f1734509db7b1858bce20f8dc457874a27a07c8d18f59",
+      "bytes": 45027,
+      "compressedBytes": 2194,
+      "sha256": "7261b25f15b6880ec04ad2ba2664cdb29d88bd6fdeb27c5bf77e63e0e4fd65de",
       "summary": {
         "name": "AWS S3 Control",
         "serverUrl": "http://s3-control.us-east-1.amazonaws.com",
@@ -1194,9 +1194,9 @@
     {
       "id": "aws-sagemaker",
       "sourceRevision": "2847fe69e459daa1eeafb95e2dffd5a52cee372709c718ff8f2e52ca6103ae09",
-      "bytes": 178166,
-      "compressedBytes": 7139,
-      "sha256": "2769e9f0f41452562784b21b6a64a3769523bc6030537b385c34de5231d5be3b",
+      "bytes": 195494,
+      "compressedBytes": 7256,
+      "sha256": "287459bce971c760ea66a8c17bbfdbbf3b03dbd07f5d4107d8ecda59d7240cff",
       "summary": {
         "name": "Amazon SageMaker Service",
         "serverUrl": "http://api.sagemaker.us-east-1.amazonaws.com",
@@ -1208,9 +1208,9 @@
     {
       "id": "aws-runtime-sagemaker",
       "sourceRevision": "d8a12efce47afa804033ea5428ae5168ebb8e100397672464aecc0ca6a16b7bf",
-      "bytes": 1828,
-      "compressedBytes": 659,
-      "sha256": "b9414df29d54743d7d728615e6a05a6dca33bd8d43474f5050c68a379ec5a69b",
+      "bytes": 1942,
+      "compressedBytes": 682,
+      "sha256": "e9e1bf124af3beacc77fa0300ceb86bbb731dfb5012930f622a7dba9c4d7d833",
       "summary": {
         "name": "Amazon SageMaker Runtime",
         "serverUrl": "http://runtime.sagemaker.us-east-1.amazonaws.com",
@@ -1222,9 +1222,9 @@
     {
       "id": "aws-secretsmanager",
       "sourceRevision": "1c7ad235b89a6ebf714a9116d5be5055aced880a9227adabfb76a43a0c06f795",
-      "bytes": 18205,
-      "compressedBytes": 1821,
-      "sha256": "53b427569cc22b2f3e8daf767e133382209ea46b01d5febad443e168ec387718",
+      "bytes": 19459,
+      "compressedBytes": 1843,
+      "sha256": "a731d9d41ae668ab8ad153fcfb8ac8351fb4849cb22de6c5e60779acbcaefaef",
       "summary": {
         "name": "AWS Secrets Manager",
         "serverUrl": "http://secretsmanager.us-east-1.amazonaws.com",
@@ -1236,9 +1236,9 @@
     {
       "id": "aws-sesv2",
       "sourceRevision": "d8193d3b10ba22cf265b0fe76ff4474dbe8eb052a8b407c96eeda4d20b564aa5",
-      "bytes": 44328,
-      "compressedBytes": 2993,
-      "sha256": "71ef73f13bbc765aaaf15aa283690f81cc7b428dda42d98bb721fa7a3faadddf",
+      "bytes": 49287,
+      "compressedBytes": 3059,
+      "sha256": "348c978093027e4219967b004670c46e1f18f5fbdf31bb6dad9150f799ba0ea3",
       "summary": {
         "name": "Amazon Simple Email Service",
         "serverUrl": "http://email.us-east-1.amazonaws.com",
@@ -1250,9 +1250,9 @@
     {
       "id": "aws-sns",
       "sourceRevision": "14a210cbd1167e49aeb461e4ba8bff533c7bb6473f7cb8ff91f83beaf932f195",
-      "bytes": 55286,
-      "compressedBytes": 2924,
-      "sha256": "67118919d123a37ea0790bf5ccef2cca39b331c7a9bd39506722b260cf7a2a9c",
+      "bytes": 60074,
+      "compressedBytes": 2972,
+      "sha256": "5bdd9243c60962e30d9250e14252c06be1391f31c82507bbf21c735df770ebe9",
       "summary": {
         "name": "Amazon Simple Notification Service",
         "serverUrl": "http://sns.us-east-1.amazonaws.com",
@@ -1264,9 +1264,9 @@
     {
       "id": "aws-sqs",
       "sourceRevision": "5ba8e13697b8c58dd867c87318478c346afe694fdf47ccecae7404474d6b890b",
-      "bytes": 32831,
-      "compressedBytes": 2308,
-      "sha256": "a16b3a5e4a4b6afac2dcd8b8cb0bd0c9b01a4e4c3e985450e417670468837827",
+      "bytes": 35453,
+      "compressedBytes": 2340,
+      "sha256": "7bbe98e7a8923357340bd12761497a321d4c717d8dd40e3aaa1f68715f13a83a",
       "summary": {
         "name": "Amazon Simple Queue Service",
         "serverUrl": "http://sqs.us-east-1.amazonaws.com",
@@ -1278,9 +1278,9 @@
     {
       "id": "aws-states",
       "sourceRevision": "015f7480d4276fe656b24c7dcd8880473ec534e0ea37445dc417cacfb830165e",
-      "bytes": 22702,
-      "compressedBytes": 1913,
-      "sha256": "296dd5df6fe6eb04f6f985f771eb0fb40508f396cd6f170c07c311471be213f4",
+      "bytes": 24640,
+      "compressedBytes": 1936,
+      "sha256": "fc3f32d3c5a0487309be9863b51c8e5a67c292288296d3db68cf89e9e442309a",
       "summary": {
         "name": "AWS Step Functions",
         "serverUrl": "http://states.us-east-1.amazonaws.com",
@@ -1291,24 +1291,24 @@
     },
     {
       "id": "aws-sts",
-      "sourceRevision": "57abe7038ef9b4425e87706ef402117db67fa6822947457f49ec1d1abb78b022",
-      "bytes": 11150,
-      "compressedBytes": 1177,
-      "sha256": "a60949a095d06eb8a34ba885fa8026856e4614e658e692617d727e27c722aed7",
+      "sourceRevision": "886ede5b183bd23c14cd512169cab958f68d53a849c6e62fd4e7e30e977cda65",
+      "bytes": 11358,
+      "compressedBytes": 1214,
+      "sha256": "f56bd89c78f4b95be9ed328173861e8e2a47c2a8d61617943380d88a1153bc28",
       "summary": {
         "name": "AWS Security Token Service",
         "serverUrl": "https://sts.amazonaws.com",
         "description": "<fullname>Security Token Service</fullname> <p>Security Token Service (STS) enables you to request temporary, limited-privilege credentials for users. This guide provides descriptions of the STS API. For more information about using this service, see <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html\">Temporary Security Credentials</a>.</p>",
         "operationCount": 16,
-        "unavailableCount": 16
+        "unavailableCount": 14
       }
     },
     {
       "id": "aws-ssm",
       "sourceRevision": "ea1da9646ab7a272056e2f0d41fb933a0efc86c777f8aaefd35c111678cc7628",
-      "bytes": 84653,
-      "compressedBytes": 4176,
-      "sha256": "df6e289e36f6390b869ae6f650c4a8df69dbec275413e731bbb96d8558a1cb6f",
+      "bytes": 92519,
+      "compressedBytes": 4210,
+      "sha256": "df7f7ca1b21f197d3fba0ae8dee9204320f1b33ee450c9bcc4346c9faf5211ca",
       "summary": {
         "name": "Amazon Simple Systems Manager (SSM)",
         "serverUrl": "http://ssm.us-east-1.amazonaws.com",
@@ -1320,9 +1320,9 @@
     {
       "id": "aws-textract",
       "sourceRevision": "d3c0dbdf67385e256a951ed8d08661a9168c2432820433a46c6d3caa3f8b58a3",
-      "bytes": 8396,
-      "compressedBytes": 926,
-      "sha256": "13db18b23224259604e5dd6568250d8449716de2ab3c0131d560ba0ade52be7d",
+      "bytes": 9137,
+      "compressedBytes": 948,
+      "sha256": "29c63cb2f639bd16cb321a8c5f9cfc58bf4330c2a8c62bbe36858258962ffbd1",
       "summary": {
         "name": "Amazon Textract",
         "serverUrl": "http://textract.us-east-1.amazonaws.com",
@@ -1334,9 +1334,9 @@
     {
       "id": "aws-transcribe",
       "sourceRevision": "b5cb42260d51188fefc2765402bd2e3fc1229467a15831d7972478268b6a3855",
-      "bytes": 25046,
-      "compressedBytes": 1662,
-      "sha256": "ee092f3ec3fcc9f88b8c50acaacec13725a130a6e0af3c613a612419a8b1657e",
+      "bytes": 27269,
+      "compressedBytes": 1684,
+      "sha256": "005972c1655e3713fc2db431e49dc7137e3f3bdcbce557a427f159a58e5baccb",
       "summary": {
         "name": "Amazon Transcribe Service",
         "serverUrl": "http://transcribe.us-east-1.amazonaws.com",
@@ -1348,9 +1348,9 @@
     {
       "id": "aws-transfer",
       "sourceRevision": "dd19a58db893773435f113141bcc8972b0d9373bac3f0f88eb5e07d0b4337efc",
-      "bytes": 35635,
-      "compressedBytes": 2199,
-      "sha256": "cc3949017931226f4b7f22cb0a15f220a09d17e28f95ad76826ac2ce26c79d3a",
+      "bytes": 38998,
+      "compressedBytes": 2227,
+      "sha256": "a6c9c584223fed04bbdd0ceeb7ebd325cf44c638a5a084d577f1834c292dc054",
       "summary": {
         "name": "AWS Transfer Family",
         "serverUrl": "http://transfer.us-east-1.amazonaws.com",
@@ -1362,9 +1362,9 @@
     {
       "id": "aws-translate",
       "sourceRevision": "1f9b0d20961033124575dd053bf84a7a63ba22d85816406cc7aaaf6cefa0e433",
-      "bytes": 12085,
-      "compressedBytes": 1076,
-      "sha256": "cf350c4258d2278d9d99ac10fd9e8a2334f3a8f9486bbc4da6e39e2bad176f58",
+      "bytes": 13168,
+      "compressedBytes": 1099,
+      "sha256": "e2c96d2d5dca78c248c5a9ac0ecab321b1f242884286a9c2942688213cac066f",
       "summary": {
         "name": "Amazon Translate",
         "serverUrl": "http://translate.us-east-1.amazonaws.com",
