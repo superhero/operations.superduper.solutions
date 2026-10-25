@@ -2,21 +2,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { writeFile, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Before, After, Then } from '@cucumber/cucumber';
 import { dockerNativeFixture } from '../tests/docker-native.fixture.mjs';
 import { DockerCompanionBroker } from './lib/secrets/docker-companion.ts';
-import { dockerNativeProfile, dockerReadParams } from './lib/docker-native-contract.ts';
+import { dockerNativeProfile, dockerReadParams, dockerIdentity, dockerScope, dockerReadPath, dockerNativeLimits } from './lib/docker-native-contract.ts';
+import { prepareDockerReadRequest } from './lib/docker-operation-input.ts';
+import { dockerNativeReadOperation } from './lib/docker-native-model.ts';
 import { openDockerSocket } from '../companions/docker/runtime.mjs';
 import { VaultError } from './lib/secrets/types.ts';
+import { decryptJSON, encryptJSON, recoveryKey, unwrapVaultKey } from './lib/secrets/crypto.ts';
+import { sealSnapshot } from './lib/secrets/format.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { scopeOperationSchema } from './lib/operation-report.ts';
 import { approvedDockerOperation } from './lib/secrets/docker-policy.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { dockerVaultFixture } from '../tests/docker-vault.fixture.mjs';
-import { dockerReference } from './lib/secrets/docker-config.ts';
+import { dockerReference, validateDockerBinding, validateDockerConnection, storedDockerConnections } from './lib/secrets/docker-config.ts';
 import { catalogs } from './lib/catalog-registry.ts';
 import { createSchemaDiscovery } from './lib/schema-index.ts';
 import { publishPreparedCatalogs, installOperationModel, updateCatalogs } from './lib/catalog.ts';
@@ -197,4 +202,241 @@ Then('Docker graph reads use private bindings while configured HTTP uses its own
   assert.equal((await http.execute(ordinary, { 'query:all': 'true' })).response.body[0].Id, 'ordinary-http-container');
   assert.equal(new URL(requests[0].url).origin, 'https://docker.example.test'); assert.equal(new URL(requests[0].url).pathname, '/v1.57/containers/json');
   assert.equal(requests[0].init.credentials, 'omit'); assert.equal(v.f.engineRequests.length, count);
+});
+
+function scriptedDocker(world, options = {}) {
+  const f = { host: 'https://docker.example.test', key: 'K'.repeat(43), now: Date.now(), calls: [],
+    identity: { hostId: randomUUID(), generation: randomUUID(), configuration: 'a'.repeat(64), socket: 'b'.repeat(64), daemonId: 'daemon-9182', apiVersion: '1.57' },
+    async close() {} };
+  f.runtime = { now: () => f.now, fetchRequest: async (url, init) => {
+    const request = JSON.parse(init.body); f.calls.push({ url, request });
+    const value = { profile: dockerNativeProfile, scope: request.scope, identity: { ...f.identity },
+      ...(url.endsWith('/pair') ? { expiresAt: f.now + 10000 } : { response: {
+        status: 200, statusText: 'OK', headers: { 'content-type': 'application/json' }, mediaType: 'application/json', body: [] } }) };
+    return options.fetch ? options.fetch(value, f, init) : Response.json(value);
+  } };
+  const broker = new DockerCompanionBroker(f.runtime), id = randomUUID();
+  world.dockerFixtures.push({ f, broker });
+  f.broker = broker; f.id = id;
+  f.check = (owner = id, signal, guard = async () => {}) => broker.check(owner, f.host, f.key, 'c'.repeat(64), undefined, guard, signal);
+  f.read = (input = {}, signal, expected = f.identity) => broker.read(id, f.host, f.key, 'c'.repeat(64), expected, input, async () => {}, signal);
+  return f;
+}
+
+Then('Docker contracts reject invalid identity scope filters and unsupported model input', async () => {
+  for (const input of [null, [], 1, { all: 'true' }, { size: 1 }, { limit: 1.5 }, { limit: 2147483648 }, { limit: -2147483649 },
+    { filters: 1 }, { filters: 'x'.repeat(16385) }, { filters: 'null' }, { filters: '[]' },
+    { filters: JSON.stringify(Object.fromEntries(Array.from({ length: 65 }, (_, i) => ['name' + i, []]))) },
+    { filters: '{"1invalid":[]}' }, { filters: '{"status":[1]}' }, { filters: JSON.stringify({ status: Array(65).fill('x') }) },
+    { filters: JSON.stringify({ status: ['x'.repeat(1025)] }) }]) assert.throws(() => dockerReadParams(input));
+  assert.equal(dockerReadPath({ all: undefined }), '/v1.57/containers/json');
+  const identity = { hostId: randomUUID(), generation: randomUUID(), configuration: 'a'.repeat(64), socket: 'b'.repeat(64), daemonId: 'daemon-9182', apiVersion: '1.57' };
+  for (const change of [{ hostId: 'bad' }, { generation: 'bad' }, { configuration: 1 }, { socket: 'bad' }, { daemonId: 1 }, { daemonId: 'short' }, { apiVersion: '1.56' }])
+    assert.throws(() => dockerIdentity({ ...identity, ...change }));
+  const scope = { connectionId: randomUUID(), operation: 'docker:ContainerList', apiVersion: '1.57', fingerprint: 'c'.repeat(64) };
+  for (const change of [{ connectionId: 'bad' }, { operation: 'docker:ContainerCreate' }, { apiVersion: '1.56' }, { fingerprint: 'bad' }]) assert.throws(() => dockerScope({ ...scope, ...change }));
+  const source = await readServiceSchema('docker'), base = { id: 'docker:ContainerList', method: 'GET', path: '/containers/json' };
+  const operation = dockerNativeReadOperation(source, base); assert.ok(operation);
+  for (const [values, fieldKey] of [[{ extra: 'x' }, 'extra'], [{ 'query:limit': '2147483648' }, 'query:limit'],
+    [{ 'query:filters': '{"status":true}' }, 'query:filters']]) assert.throws(() => prepareDockerReadRequest(operation, values), error => error.fieldKey === fieldKey);
+  assert.throws(() => prepareDockerReadRequest({ ...operation, method: 'POST' }, {}), /reviewed Docker/);
+  const header = { key: 'header:extra', name: 'extra', label: 'Extra', location: 'header', type: 'string', required: false, schema: { type: 'string' } };
+  assert.throws(() => prepareDockerReadRequest({ ...operation, fields: [...operation.fields, header] }, { 'header:extra': 'unreviewed' }), error => error.fieldKey === 'query:filters');
+  for (const mutate of [
+    document => document.paths['/containers/json'].get.parameters[0].name = 'unknown',
+    document => document.paths['/containers/json'].get.parameters[1].name = document.paths['/containers/json'].get.parameters[0].name,
+    document => document.paths['/containers/json'].get.parameters[0].in = 'header',
+    document => document.paths['/containers/json'].get.parameters[0].required = true,
+    document => document.paths['/containers/json'].get.parameters[0].content = {},
+    document => document.paths['/containers/json'].get.parameters[0].style = 'deepObject',
+    document => document.paths['/containers/json'].get.parameters[0].explode = false,
+    document => document.paths['/containers/json'].get.parameters[0].schema = { type: 'object' },
+    document => document.paths['/containers/json'].get.parameters[0].schema.oneOf = [],
+  ]) { const changed = structuredClone(source); mutate(changed); assert.equal(dockerNativeReadOperation(changed, base), undefined); }
+  const minimal = structuredClone(source), method = minimal.paths['/containers/json'].get;
+  delete method.tags; delete method.summary; delete method.description;
+  for (const parameter of method.parameters) delete parameter.description;
+  method.parameters.find(value => value.name === 'filters').schema.default = '{}';
+  const fallback = dockerNativeReadOperation(minimal, base); assert.equal(fallback.name, 'List containers'); assert.equal(fallback.group, 'Operations');
+  assert.equal(fallback.fields.find(value => value.name === 'filters').defaultValue, '{}');
+  for (const layer of ['document', 'path', 'method']) for (const security of [{}, [{ privateKey: [] }]]) {
+    const changed = structuredClone(source), target = layer === 'document' ? changed : layer === 'path' ? changed.paths[base.path] : changed.paths[base.path].get;
+    target.security = security; assert.equal(dockerNativeReadOperation(changed, base), undefined);
+  }
+  const publicRead = structuredClone(source); publicRead.security = []; publicRead.paths[base.path].security = []; publicRead.paths[base.path].get.security = [];
+  assert.ok(dockerNativeReadOperation(publicRead, base));
+});
+
+Then('Docker broker rejects malformed envelopes opaque errors and oversized private responses', async function () {
+  for (const fetch of [
+    () => new Response(null, { headers: { 'content-type': 'application/json' } }),
+    () => new Response('{}', { headers: { 'content-type': 'text/html' } }),
+    () => new Response('{', { headers: { 'content-type': 'application/json' } }),
+    () => new Response(new Uint8Array([255]), { headers: { 'content-type': 'application/json' } }),
+    () => Response.json([]), () => Response.json(null),
+    () => Response.json({ error: 'private upstream detail' }, { status: 500 }),
+    () => { throw new Error('private upstream detail'); },
+  ]) {
+    const f = scriptedDocker(this, { fetch }); await assert.rejects(f.check(), error => error.code === 'DOCKER_UNAVAILABLE' && !error.message.includes('private upstream'));
+    assert.equal(f.broker.connected(f.id), false);
+  }
+  for (const error of ['PERMISSION', 'LIMIT', 'DOCKER_UNAVAILABLE', 'DOCKER_VERSION', 'DOCKER_AUTHORITY', 'DOCKER_DUPLEX']) {
+    const f = scriptedDocker(this, { fetch: () => Response.json({ error }, { status: 403 }) }); await assert.rejects(f.check(), { code: error });
+  }
+  const echo = scriptedDocker(this, { fetch: (_value, f) => Response.json({ privateValue: f.key }) }); await assert.rejects(echo.check(), { code: 'REDACTED' });
+  const huge = scriptedDocker(this, { fetch: () => Response.json({ padding: 'x'.repeat(dockerNativeLimits.response + 65536) }) });
+  await assert.rejects(huge.check(), { code: 'LIMIT' });
+  const invalid = scriptedDocker(this); await assert.rejects(invalid.broker.check(invalid.id, invalid.host, 'bad', 'c'.repeat(64), undefined, async () => {}), { code: 'PERMISSION' });
+  assert.deepEqual(invalid.calls, []);
+});
+
+Then('Docker pairing and response metadata preserve exact daemon and source authority', async function () {
+  for (const mutate of [value => value.profile = 'unreviewed', value => value.scope.fingerprint = 'd'.repeat(64),
+    value => value.expiresAt = 0, value => value.expiresAt = Date.now() + dockerNativeLimits.sessionMs + 10000,
+    value => value.expiresAt = 1.5]) {
+    const f = scriptedDocker(this, { fetch: value => { mutate(value); return Response.json(value); } });
+    await assert.rejects(f.check(), { code: 'DOCKER_AUTHORITY' }); assert.equal(f.broker.connected(f.id), false);
+  }
+  for (const mutate of [value => value.profile = 'unreviewed', value => value.scope.fingerprint = 'd'.repeat(64),
+    value => value.identity.daemonId = 'foreign-daemon']) {
+    const f = scriptedDocker(this, { fetch: value => { if (value.response) mutate(value); return Response.json(value); } });
+    await f.check(); await assert.rejects(f.read(), { code: 'DOCKER_AUTHORITY' }); assert.equal(f.broker.connected(f.id), false);
+  }
+  for (const change of [{ status: 199 }, { status: 600 }, { status: 200.5 }, { statusText: 1 }, { statusText: 'x'.repeat(257) },
+    { mediaType: 'text/html' }, { headers: null }, { headers: [] }, { headers: { 'set-cookie': 'private' } },
+    { headers: { server: 1 } }, { headers: { server: 'x'.repeat(4097) } }, { body: {} }]) {
+    const f = scriptedDocker(this, { fetch: value => { if (value.response) Object.assign(value.response, change); return Response.json(value); } });
+    await assert.rejects(f.read(), { code: 'DOCKER_UNAVAILABLE' }); assert.equal(f.broker.connected(f.id), false);
+  }
+  const expired = scriptedDocker(this, { fetch: (value, f) => { if (value.response) f.now += 10000; return Response.json(value); } });
+  await assert.rejects(expired.read(), { code: 'DOCKER_AUTHORITY' });
+  const largeInput = scriptedDocker(this); await largeInput.check();
+  await assert.rejects(largeInput.read({}, undefined, { ...largeInput.identity, padding: 'x'.repeat(dockerNativeLimits.input) }), { code: 'LIMIT' });
+});
+
+Then('Docker request ownership limits cancellation and expiry release only their owned work', async function () {
+  const f = scriptedDocker(this);
+  for (let index = 0; index < 4; index++) await f.check(index ? randomUUID() : f.id);
+  await assert.rejects(f.check(randomUUID()), { code: 'LIMIT' }); f.now += 10001;
+  assert.equal(f.broker.connected(f.id), false); await f.check(); assert.equal(f.broker.connected(f.id), true);
+  const held = scriptedDocker(this, { fetch: (_value, _f, init) => new Promise((_resolve, reject) => {
+    init.signal.addEventListener('abort', () => reject(new Error('private cancellation detail')), { once: true });
+  }) });
+  const owners = Array.from({ length: 4 }, () => randomUUID()), runs = owners.map(id => held.check(id));
+  const failures = runs.map(run => assert.rejects(run, { code: 'CANCELLED' })); await wait(() => held.calls.length === 4);
+  await assert.rejects(held.check(owners[0]), { code: 'PERMISSION' });
+  held.broker.close(owners[1]); await failures[1]; assert.equal(held.calls.length, 4);
+  held.broker.clear(); await Promise.all(failures);
+  const cancel = new AbortController(); cancel.abort(); const before = scriptedDocker(this);
+  await assert.rejects(before.check(before.id, cancel.signal), { code: 'CANCELLED' }); assert.deepEqual(before.calls, []);
+  const after = new AbortController(), late = scriptedDocker(this);
+  await assert.rejects(late.check(late.id, after.signal, async () => { if (late.calls.length) after.abort(); }), { code: 'CANCELLED' });
+  assert.equal(late.calls.length, 1);
+});
+
+Then('Docker saved authority removal stale bindings and daemon errors preserve private ownership', async function () {
+  const v = await privateHost(this), { connected: _connected, ...connection } = v.connection, reference = dockerReference(connection);
+  for (const binding of [{ host: reference, fingerprint: 1 }, { host: reference, fingerprint: 'bad' }, { host: { ...reference, revision: 0 }, fingerprint: 'a'.repeat(64) }])
+    assert.throws(() => validateDockerBinding(binding), { code: 'INVALID' });
+  for (const change of [{ host: v.f.host + '/' }, { profile: 'unreviewed' }, { keyHash: 'bad' }, { modelFingerprint: 'bad' }])
+    assert.throws(() => validateDockerConnection({ ...connection, ...change }), { code: 'INVALID' });
+  assert.throws(() => storedDockerConnections([{ id: randomUUID(), dockerConnections: [connection] }]), { code: 'INVALID' });
+  assert.throws(() => storedDockerConnections([{ id: v.vault.keyId, dockerConnections: [connection, connection] }]), { code: 'LIMIT' });
+  await assert.rejects(v.vault.session.pairDockerHost({ ...v.vault.input, pairingKeyId: randomUUID() }, v.vault.selection), { code: 'PERMISSION' });
+  const before = v.f.engineRequests.length;
+  for (const binding of [{ ...v.binding, fingerprint: 'd'.repeat(64) }, v.binding]) {
+    await assert.rejects(v.vault.session.executeDockerRead(binding, v.vault.selection, binding === v.binding ? { extra: 'x' } : {}), { code: 'PERMISSION' });
+  }
+  await assert.rejects(v.vault.session.executeDockerRead(v.binding, v.vault.selection, { 'query:filters': JSON.stringify({ name: [v.f.key] }) }), { code: 'REDACTED' });
+  assert.equal(v.f.engineRequests.length, before);
+  v.f.status = 404; v.f.body = { message: 'Synthetic missing container' };
+  await assert.rejects(v.vault.session.executeDockerRead(v.binding, v.vault.selection, {}), error => error.response?.status === 404);
+  await assert.rejects(v.vault.session.checkDockerHost({ ...reference, revision: 2 }, v.vault.selection), { code: 'CONFLICT' });
+  await assert.rejects(v.vault.session.disconnectDockerHost(reference, 'yes'), { code: 'CONFLICT' });
+  assert.equal((await v.vault.session.disconnectDockerHost(reference))[0].connected, false);
+  assert.deepEqual(await v.vault.session.disconnectDockerHost(reference, true), []);
+  await assert.rejects(v.vault.session.disconnectDockerHost(reference), { code: 'CONFLICT' });
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(v.vault.session.pairDockerHost(v.vault.input, v.vault.selection, controller.signal), { code: 'CANCELLED' });
+});
+
+async function rewriteDockerRecord(v, snapshot, mutate) {
+  v.session.lock();
+  const context = item => ({ vaultId: snapshot.id, epoch: snapshot.epoch, kind: item.kind, id: item.id, revision: item.revision });
+  const envelope = snapshot.envelopes.find(item => item.id === v.proof.methodId);
+  const key = await unwrapVaultKey(envelope.wrappedKey, await recoveryKey(v.proof.secret, envelope.salt), context(envelope));
+  const values = await Promise.all(snapshot.records.map(record => decryptJSON(key, record.ciphertext, context(record))));
+  await mutate(values);
+  const records = await Promise.all(snapshot.records.map(async (record, index) => ({ ...record, ciphertext: await encryptJSON(key, values[index], context(record)) })));
+  v.storage.state.snapshot = await sealSnapshot({ id: snapshot.id, epoch: snapshot.epoch, revision: snapshot.revision, envelopes: snapshot.envelopes, records }, key);
+  v.storage.state.revision++; v.storage.state.lockEpoch++;
+  v.session = v.newSession(); await v.session.unlock(v.proof); return values;
+}
+
+Then('Docker encrypted records reject malformed collections altered fingerprints and excessive saved authority', async function () {
+  const value = await privateHost(this), v = value.vault, snapshot = structuredClone(v.storage.state.snapshot);
+  for (const mutate of [owner => owner.dockerConnections = {}, owner => owner.dockerConnections = Array(33).fill(owner.dockerConnections[0]),
+    owner => owner.dockerConnections.push(owner.dockerConnections[0])]) {
+    await rewriteDockerRecord(v, snapshot, values => mutate(values.find(value => value.id === v.keyId)));
+    await assert.rejects(v.session.dockerConnections(), { code: 'LIMIT' });
+  }
+  await rewriteDockerRecord(v, snapshot, values => values.find(value => value.id === v.keyId).dockerConnections[0].pairingKeyId = randomUUID());
+  await assert.rejects(v.session.dockerConnections(), { code: 'INVALID' });
+  for (const mutate of [owner => owner.value = 'R'.repeat(43), owner => owner.dockerConnections[0].keyHash = 'd'.repeat(64),
+    owner => owner.dockerConnections[0].modelFingerprint = 'd'.repeat(64), owner => owner.dockerConnections[0].fingerprint = 'd'.repeat(64)]) {
+    const values = await rewriteDockerRecord(v, snapshot, records => mutate(records.find(value => value.id === v.keyId)));
+    const connection = values.find(value => value.id === v.keyId).dockerConnections[0], before = value.f.requests.length;
+    await assert.rejects(v.session.checkDockerHost(dockerReference(connection), v.selection), { code: 'DOCKER_AUTHORITY' });
+    assert.equal(value.f.requests.length, before, 'Altered encrypted authority cannot reach the companion.');
+  }
+  await rewriteDockerRecord(v, snapshot, values => {
+    const owner = values.find(value => value.id === v.keyId), connection = owner.dockerConnections[0];
+    owner.dockerConnections = Array.from({ length: 32 }, () => ({ ...connection, id: randomUUID() }));
+  });
+  await assert.rejects(v.session.pairDockerHost(v.input, v.selection), { code: 'LIMIT' });
+});
+
+Then('Docker default transport clock and TLS trust preserve exact read authority', async function () {
+  const v = await setup(this), f = v.f, defaults = new DockerCompanionBroker({ fetchRequest: f.fetch });
+  this.dockerFixtures.push({ f: { async close() {} }, broker: defaults });
+  const pair = await defaults.check(f.scope.connectionId, f.host, f.key, f.scope.fingerprint, undefined, async () => {});
+  assert.equal(defaults.connected(f.scope.connectionId), true);
+  assert.equal((await defaults.read(f.scope.connectionId, f.host, f.key, f.scope.fingerprint, pair.identity, {}, async () => {})).status, 200);
+  const rechecked = await defaults.check(f.scope.connectionId, f.host, f.key, f.scope.fingerprint, pair.identity, async () => {});
+  assert.deepEqual(rechecked.identity, pair.identity, 'A default-clock health check retains the paired daemon authority.');
+  const untrusted = new DockerCompanionBroker(); this.dockerFixtures.push({ f: { async close() {} }, broker: untrusted });
+  const before = f.engineRequests.length;
+  await assert.rejects(untrusted.check(randomUUID(), f.host, f.key, f.scope.fingerprint, undefined, async () => {}), { code: 'DOCKER_UNAVAILABLE' });
+  assert.equal(f.engineRequests.length, before, 'Default fetch cannot bypass TLS trust.');
+});
+
+Then('Docker vault cancellation redaction and credential removal release the selected profiles', async function () {
+  const value = await privateHost(this), v = value.vault;
+  await v.session.put(null, { label: 'Private Docker value', kind: 'secret', value: 'docker-private-value-9182' });
+  value.f.body = [{ Id: 'docker-private-value-9182' }];
+  await assert.rejects(v.session.executeDockerRead(value.binding, v.selection, {}), { code: 'REDACTED' });
+  const cancel = new AbortController(); v.onSchema = () => cancel.abort(); const before = value.f.requests.length;
+  await assert.rejects(v.session.checkDockerHost(dockerReference(value.connection), v.selection, cancel.signal), { code: 'CANCELLED' });
+  assert.equal(value.f.requests.length, before); v.onSchema = undefined;
+  const sibling = await v.session.pairDockerHost({ ...v.input, label: 'Sibling Docker profile' }, v.selection);
+  assert.deepEqual((await v.session.disconnectDockerHost(dockerReference(sibling), true)).map(connection => connection.id), [value.connection.id]);
+  await v.session.remove(null, v.keyId); assert.deepEqual(await v.session.dockerConnections(), []);
+  await assert.rejects(v.session.checkDockerHost(dockerReference(value.connection), v.selection), { code: 'CONFLICT' });
+});
+
+Then('Docker pairing cancelled while encrypting its profile cannot replace encrypted storage', async function () {
+  const value = await setup(this), v = await dockerVaultFixture(value.f); this.dockerVaults.push(v);
+  const before = structuredClone(v.storage.state), cancel = new AbortController(), subtle = crypto.subtle;
+  const descriptor = Object.getOwnPropertyDescriptor(subtle, 'encrypt'), encrypt = subtle.encrypt; let encrypted = 0;
+  Object.defineProperty(subtle, 'encrypt', { configurable: true, writable: true, value: async (...args) => {
+    const result = await Reflect.apply(encrypt, subtle, args); encrypted++; cancel.abort(); return result;
+  } });
+  try {
+    await assert.rejects(v.session.pairDockerHost(v.input, v.selection, cancel.signal), { code: 'CANCELLED' });
+  } finally {
+    if (descriptor) Object.defineProperty(subtle, 'encrypt', descriptor); else delete subtle.encrypt;
+  }
+  assert.ok(encrypted > 0, 'Cancellation follows real encryption after the private pairing completes.');
+  assert.ok(value.f.engineRequests.some(request => request.path === '/v1.57/info'));
+  assert.deepEqual(v.storage.state, before); assert.deepEqual(await v.session.dockerConnections(), []);
 });

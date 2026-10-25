@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
+import { vi } from 'vitest';
 import { signOAuth1 } from './lib/secrets/oauth1.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { VaultError } from './lib/secrets/types.ts';
@@ -210,4 +211,20 @@ Then('repeated OAuth1 requests use fresh unpredictable nonces without exposing a
     } }); safe(result);
   }
   assert.notEqual(seen[0], seen[1]);
+});
+
+Then('OAuth1 rejects oversized ambiguous or unsupported signing inputs without leaking key material', async () => {
+  for (const [method, url] of [['get', endpoint+'/2/read'], ['GET', 'ftp://api.x.com/2/read'], ['GET', 'https://user:password@api.x.com/2/read'], ['GET', endpoint+'/2/read#fragment']])
+    await assert.rejects(signOAuth1(method, url, null, null, values, clock), permission);
+  for (const runtime of [{ ...clock, nonce: () => 'bad nonce' }, { ...clock, timestamp: () => 0 }, { ...clock, timestamp: () => 1.5 }])
+    await assert.rejects(signOAuth1('GET', endpoint+'/2/read', null, null, values, runtime), error => error.code === 'INVALID');
+  await assert.rejects(signOAuth1('POST', endpoint+'/2/read', 'application/x-www-form-urlencoded', new Blob(['a=1']), values, clock), permission);
+  for (const query of ['a='+'x'.repeat(1024*1024), Array.from({ length: 10001 }, () => 'a=1').join('&'), 'a='+'%26'.repeat(230000)])
+    await assert.rejects(signOAuth1('GET', endpoint+'/2/read?'+query, null, null, values, clock), error => error.code === 'LIMIT');
+  const empty = await signOAuth1('POST', endpoint+'/2/read', 'application/x-www-form-urlencoded', new URLSearchParams(), values, clock);
+  assert.ok(empty.authorization.startsWith('OAuth '));
+  const spy = vi.spyOn(crypto.subtle, 'importKey').mockRejectedValueOnce(new Error(values.consumerSecret));
+  try {
+    await assert.rejects(signOAuth1('GET', endpoint+'/2/read', null, null, values, clock), error => { safe({ message: error.message }); assert.equal(error.cause, undefined); return permission(error); });
+  } finally { spy.mockRestore(); }
 });

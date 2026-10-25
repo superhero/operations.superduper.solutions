@@ -161,7 +161,10 @@ export class CloudflareUploadSessions {
         if (missing.some(hash => !lease.hashes!.includes(hash))) throw new VaultError("INVALID");
         session.hashes = lease.hashes!; session.missing = missing;
       } else if (profile === "pages-upload") session.missing = session.missing!.filter(hash => !lease.files!.includes(hash));
-      else if (profile === "pages-complete") { this.sessions.delete(session.id); return { body: { success: true, result: { completed: true } }, secrets }; }
+      else {
+        // Validated profiles and authorize()'s lease leave only pages-complete here.
+        this.sessions.delete(session.id); return { body: { success: true, result: { completed: true } }, secrets };
+      }
     }
     return { body: { success: true, result: { session: session.id, expiresAt: session.expiresAt, phase: session.phase,
       ...(session.kind === "workers" ? { buckets: session.buckets } : session.missing ? { missing: session.missing } : {}) } }, secrets };

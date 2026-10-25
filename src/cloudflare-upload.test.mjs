@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
 import { CloudflareUploadSessions } from './lib/secrets/cloudflare-upload.ts';
-import { cloudflareOrigin, cloudflareUploadContracts, uploadSessionConsumer } from './lib/cloudflare-upload.ts';
+import { cloudflareOrigin, cloudflareUploadContracts, uploadSessionConsumer, cloudflareMultipart, configureCloudflareUpload, cloudflareUploadProfile } from './lib/cloudflare-upload.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { VaultError } from './lib/secrets/types.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
@@ -265,4 +265,99 @@ Then('a platform asset session completes only for its original Worker namespace 
   const other = fixture(), cached = await other.run('platform-session', initial, undefined, () => Response.json({ success: true, result: { jwt: other.completionToken, buckets: [] } }));
   await assert.rejects(other.run('platform-module', { ...complete(reference(cached)), 'path:dispatch_namespace': 'other-namespace' }), refused);
   assert.equal(other.calls.length, 1);
+});
+
+Then('Cloudflare acquisition rejects malformed manifests buckets and token validity claims', async () => {
+  const badManifest = [null, [], { '/a': null }, { '/a': { hash: hashA, size: 1 }, '/b': { hash: hashA, size: 2 } },
+    Object.fromEntries(Array.from({ length: 1001 }, (_, i) => ['/file'+i, { hash: hashA, size: 1 }]))];
+  for (const manifest of badManifest) {
+    const f = fixture(); await assert.rejects(f.run('workers-session', { ...initial, 'body:manifest': JSON.stringify(manifest) })); assert.equal(f.calls.length, 0);
+    const d = await f.descriptor('workers-session'), request = prepareRequest(f.model('workers-session'), initial);
+    assert.throws(() => f.manager.authorize(d, { ...request, body: { manifest } }, { alternative: 0, fingerprint: d.fingerprint, credentials: { api_token: f.record.id } }), refused);
+  }
+  for (const result of [{ jwt: 'not-a-jwt', buckets: [] }, { jwt: null, buckets: [] },
+    { jwt: b64url({ alg: 'HS256' })+'.'+b64url({ exp: Math.floor(Date.now()/1000)+3600, nbf: Math.floor(Date.now()/1000)+60 })+'.sig', buckets: [] },
+    { jwt: b64url({ alg: 'HS256' })+'.'+b64url({ exp: Math.floor(Date.now()/1000)+3600, nbf: 'later' })+'.sig', buckets: [] },
+    { jwt: jwt('private'), buckets: {} }, { jwt: jwt('private'), buckets: [[]] }, { jwt: jwt('private'), buckets: [[hashA], [hashA]] },
+    { jwt: jwt('private'), buckets: [['c'.repeat(32)]] }]) {
+    const f = fixture(); await assert.rejects(f.run('workers-session', initial, undefined, () => Response.json({ success: true, result })), refused);
+  }
+  const f = fixture(), d = await f.descriptor('workers-session'), request = prepareRequest(f.model('workers-session'), initial);
+  const binding = { alternative: 0, fingerprint: d.fingerprint, credentials: { api_token: f.record.id } };
+  const invalidScopes = [{ ...d, origin: 'https://evil.example.test' }, d, d, d, d];
+  const paths = [request.path, request.path+'/extra', request.path.replace('/accounts/', '/users/'), request.path.replace('test-worker', 'invalid!'), request.path.replace(account, 'wrong-account')];
+  invalidScopes.forEach((descriptor, i) => assert.throws(() => f.manager.authorize(descriptor, { ...request, path: paths[i] }, binding), refused));
+  for (let i = 0; i < 32; i++) f.manager.finish(d, request, binding, 200, { success: true, result: { jwt: f.uploadToken, buckets: [[hashA], [hashB]] } });
+  assert.throws(() => f.manager.finish(d, request, binding, 200, { success: true, result: { jwt: f.uploadToken, buckets: [] } }), error => error.code === 'LIMIT');
+  f.advance(3600001);
+  const next = f.manager.finish(d, request, binding, 200, { success: true, result: { jwt: jwt('renewed', Math.floor(Date.now()/1000)+7200), buckets: [] } });
+  assert.equal(next.body.result.phase, 'completion');
+});
+
+Then('Cloudflare Pages enforces missing hash state canonical file data and one use completion', async () => {
+  const setup = async () => {
+    const f = fixture(), started = await f.run('pages-session', pathValues), id = reference(started);
+    const d = await f.descriptor('pages-check'), binding = { alternative: 0, fingerprint: d.fingerprint, credentials: { pages_upload_token: id } };
+    const request = prepareRequest(f.model('pages-check'), { 'body:hashes': JSON.stringify([hashA]) });
+    const check = f.manager.authorize(d, request, binding, id);
+    f.manager.finish(d, request, binding, 200, { success: true, result: [hashA] }, check.lease);
+    return { f, id, binding };
+  };
+  for (const body of [[], [null], [{ key: hashA, value: btoa('a'), base64: false }], [{ key: hashB, value: btoa('a'), base64: true }],
+    [{ key: hashA, value: 'YQ', base64: true }], [{ key: hashA, value: btoa('a'.repeat(500001)), base64: true }],
+    [{ key: hashA, value: btoa('a'), base64: true }, { key: hashA, value: btoa('a'), base64: true }]]) {
+    const { f, id, binding } = await setup(), d = await f.descriptor('pages-upload');
+    const request = prepareRequest(f.model('pages-upload'), { 'body:$': JSON.stringify([{ key: hashA, value: btoa('a'), base64: true, metadata: { contentType: 'text/plain' } }]) });
+    assert.throws(() => f.manager.authorize(d, { ...request, body }, binding, id), refused);
+  }
+  const { f, id, binding } = await setup(), d = await f.descriptor('pages-complete');
+  const request = prepareRequest(f.model('pages-complete'), { 'body:hashes': JSON.stringify([hashA]) });
+  assert.throws(() => f.manager.authorize(d, request, binding, id), refused);
+  assert.throws(() => f.manager.authorize(d, { ...request, body: { hashes: [hashA, hashA] } }, binding, id), refused);
+  assert.throws(() => f.manager.authorize(d, request, binding), refused);
+  assert.throws(() => f.manager.finish(d, request, binding, 200, { success: true, result: {} }), refused);
+  const other = fixture(), started = await other.run('pages-session', pathValues), check = await other.descriptor('pages-check');
+  const checked = prepareRequest(other.model('pages-check'), { 'body:hashes': JSON.stringify([hashA]) });
+  const selected = other.manager.authorize(check, checked, binding, reference(started));
+  assert.throws(() => other.manager.finish(check, checked, binding, 200, { success: true, result: [hashB] }, selected.lease), refused);
+});
+
+Then('Cloudflare rejects inconsistent upload transitions and malformed multipart file names', async () => {
+  const guard = fixture(), uploadId = await oneFileSession(guard), descriptor = await guard.descriptor('workers-upload');
+  const request = prepareRequest(guard.model('workers-upload'), upload({ [hashA]: fileA }));
+  assert.throws(() => guard.manager.authorize(descriptor, { ...request, query: { base64: false } },
+    { alternative: 0, fingerprint: descriptor.fingerprint, credentials: { assets_jwt: uploadId } }, uploadId), error => error.code === 'PERMISSION');
+  assert.equal(guard.calls.length, 1);
+  for (const mode of ['early-completion', 'late-continue', 'wrong-status']) {
+    const f = fixture(), id = mode === 'early-completion' ? await acquire(f) : await oneFileSession(f);
+    await assert.rejects(f.run('workers-upload', upload({ [hashA]: fileA }), id, () => Response.json({ success: true, result: { jwt: f.completionToken } },
+      { status: mode === 'early-completion' ? 201 : mode === 'late-continue' ? 202 : 200 })), refused);
+    const calls = f.calls.length; await assert.rejects(f.run('workers-upload', upload({ [hashA]: fileA }), id), refused); assert.equal(f.calls.length, calls);
+  }
+  const f = fixture(), id = await acquire(f, true);
+  const result = await f.run('workers-version', complete(id), undefined, () => Response.json({ success: true, result: { id: 'x'.repeat(257) } }));
+  assert.deepEqual(result.response.body.result, { completed: true });
+  for (const files of [{}, { metadata: fileA }, { ['bad\nname']: fileA }, { ordinary: fileA }])
+    assert.throws(() => cloudflareMultipart({ bodyFormat: 'cloudflare-assets', body: { files } }));
+  assert.throws(() => configureCloudflareUpload({ method: 'GET', path: '/' }, 'workers-upload'));
+  assert.throws(() => cloudflareUploadProfile('unreviewed')); assert.equal(cloudflareUploadProfile(undefined), undefined);
+});
+
+Then('Cloudflare rejects upload buckets exceeding the private transport byte budget', async () => {
+  const f = fixture(), keys = Array.from({ length: 17 }, (_, i) => i.toString(16).padStart(32, '0'));
+  const file = encodeWorkflowBinary('large.bin', new Uint8Array(500000)), manifest = Object.fromEntries(keys.map(hash => ['/'+hash, { hash, size: 500000 }]));
+  const start = await f.descriptor('workers-session'), request = prepareRequest(f.model('workers-session'), { ...initial, 'body:manifest': JSON.stringify(manifest) });
+  const binding = { alternative: 0, fingerprint: start.fingerprint, credentials: { api_token: f.record.id } };
+  const started = f.manager.finish(start, request, binding, 200, { success: true, result: { jwt: f.uploadToken, buckets: [keys] } });
+  const upload = await f.descriptor('workers-upload');
+  const files = prepareRequest(f.model('workers-upload'), { 'path:account_id': account, 'query:base64': 'true', 'body:files': JSON.stringify({ [hashA]: fileA }) });
+  assert.throws(() => f.manager.authorize(upload, { ...files, body: { files: Object.fromEntries(keys.map(hash => [hash, file])) } }, binding, started.body.result.session), error => error.code === 'LIMIT');
+  const pages = await f.run('pages-session', pathValues), id = reference(pages), check = await f.descriptor('pages-check');
+  const hashes = prepareRequest(f.model('pages-check'), { 'body:hashes': JSON.stringify(keys) });
+  const lease = f.manager.authorize(check, hashes, binding, id).lease;
+  f.manager.finish(check, hashes, binding, 200, { success: true, result: keys }, lease);
+  const pagesUpload = await f.descriptor('pages-upload');
+  const wire = prepareRequest(f.model('pages-upload'), { 'body:$': JSON.stringify([{ key: hashA, value: fileA.base64, base64: true, metadata: { contentType: 'application/octet-stream' } }]) });
+  assert.throws(() => f.manager.authorize(pagesUpload, { ...wire, body: keys.map(key => ({ key, value: file.base64, base64: true })) }, binding, id), error => error.code === 'LIMIT');
+  assert.equal(f.calls.length, 1);
 });

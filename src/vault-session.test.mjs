@@ -11,6 +11,27 @@ import { sealSnapshot } from './lib/secrets/format.ts';
 import { VaultError, vaultLimits } from './lib/secrets/types.ts';
 
 const code = expected => error => error instanceof VaultError && error.code === expected && !Object.hasOwn(error, 'cause');
+Then('private session progress publishes only counts while preserving one terminal response', { timeout: 90_000 }, async () => {
+  const { session, proof } = await created();
+  const records = await session.put(null, { label: 'Private stream account', kind: 'bearer', value: 'SESSION-STREAM-SYNTHETIC-TOKEN' });
+  const approval = await approvedOperation({ id: 'session:stream', name: 'Read stream', description: '', group: 'Session', method: 'POST', path: '/stream',
+    fields: [{ key: 'body:stream', name: 'stream', label: 'Stream', description: '', location: 'body', required: false, type: 'boolean', schema: { type: 'boolean' } }], bodyRequired: false, bodyMediaType: 'application/json',
+    responseMediaType: 'application/json', responseStream: 'openai-responses', responseContent: { '200': { 'application/json': 'json', 'text/event-stream': 'stream' } },
+    security: [[{ name: 'service', kind: 'bearer', header: 'Authorization' }]] }, 'https://vault-test.example');
+  await session.grant(proof, records[0].id, 'service', approval);
+  const final = { id: 'resp_session', object: 'response', status: 'completed', error: null, output: [] }, progress = [], previous = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (_url, init) => {
+    calls++; assert.equal(init.headers.get('Authorization'), 'Bearer SESSION-STREAM-SYNTHETIC-TOKEN');
+    return new Response('event: response.completed\ndata: ' + JSON.stringify({ type: 'response.completed', response: final }) + '\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  try {
+    const result = await session.execute(approval, { 'body:stream': 'true' }, { alternative: 0, fingerprint: approval.fingerprint, credentials: { service: records[0].id } }, undefined, undefined, value => progress.push(value));
+    assert.deepEqual(result.response.body, final); assert.equal(calls, 1); assert.ok(progress.length > 0);
+    assert.ok(progress.every(value => Object.keys(value).sort().join(',') === 'bytes,events'));
+    assert.ok(!JSON.stringify(progress).includes('SESSION-STREAM-SYNTHETIC-TOKEN'));
+  } finally { globalThis.fetch = previous; session.lock(); }
+});
 // Lifecycle scenarios perform the production 64 MiB Argon2 profile repeatedly.
 // Allow bounded headroom for coverage instrumentation and concurrent browser checks.
 const kdfStep = { timeout: 90_000 };

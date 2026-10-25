@@ -11,8 +11,8 @@ import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { createWorkflowRequestExecution } from './lib/workflow-execution.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
-import { readWorkflowResponseBody } from './lib/workflow-response-body.ts';
-import { isResponseProgress, streamLimits, streamMediaType } from './lib/workflow-response-stream.ts';
+import { inspectResponseContent, readWorkflowResponseBody, responseFileName } from './lib/workflow-response-body.ts';
+import { isResponseProgress, readResponseStream, responseAccept, responseStreamProfile, streamLimits, streamMediaType } from './lib/workflow-response-stream.ts';
 import { createOperationGraph, isWorkflowConnection } from './lib/workflow-graph.ts';
 import { createWorkflowRunner } from './lib/workflow-runner.ts';
 import { readServiceSchema, readServiceSchemaUpstream, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
@@ -224,4 +224,125 @@ Then('pinned OpenAI and Ollama operations select reviewed stream profiles while 
   const unreviewed = document('openai-responses'); delete unreviewed.paths['/stream'].post['x-operations-response-stream'];
   const op = extractOperations(unreviewed, 'unreviewed')[0];
   await assert.rejects(() => readWorkflowResponseBody(reply('openai-responses', wire('openai-responses')), op, 'POST', new AbortController().signal));
+});
+
+Then('stream readers reject malformed identities envelopes and provider payloads before publishing a value', async () => {
+  const event = value => sse(value, '\n');
+  const cases = [
+    ['openai-responses', 'data: true\n\n', 'FRAME'],
+    ['openai-responses', 'data: {"type":"response.created","value":1e400}\n\n', 'FRAME'],
+    ['openai-responses', 'data: {"delta":"'+canary+'"}\n\n', 'FRAME'],
+    ['openai-responses', 'event: response.completed\ndata: {"type":"response.created"}\n\n', 'FRAME'],
+    ['openai-responses', event({ type: 'response.created', sequence_number: 0.5 }), 'FRAME'],
+    ...[1, ''].map(response_id => ['openai-responses', event({ type: 'response.created', response_id }), 'FRAME']),
+    ['openai-responses', event({ type: 'response.created', response_id: 'first' })+event({ type: 'response.created', response_id: 'other' }), 'FRAME'],
+    ['openai-responses', event({ type: 'response.completed', response: { id: 'resp_fixture', status: 'completed' } }), 'FRAME'],
+    ['openai-responses', event({ type: 'response.completed', response: { ...finalResponse('safe'), error: { message: canary } } }), 'PROVIDER'],
+    ['openai-responses', 'event: '+'x'.repeat(257)+'\n', 'LIMIT'],
+    ['openai-responses', ':'+'x'.repeat(streamLimits.frameCharacters)+'\n', 'LIMIT'],
+    ['openai-responses', ('data: '+'x'.repeat(streamLimits.frameCharacters / 2)+'\n').repeat(2)+'\n', 'LIMIT'],
+    ['openai-responses', Uint8Array.of(0xe2, 0x82), 'FRAME'],
+    ['openai-responses', 'data: '+JSON.stringify({ type: 'response.completed', response: finalResponse('safe') })+'\r', 'INCOMPLETE'],
+    ['openai-responses', event({ type: 'response.created', values: Array(streamLimits.nodes).fill(0) }), 'LIMIT'],
+    ...[[], { content: 1 }, { thinking: true }, { images: [canary] }, { role: 'user' },
+      { tool_calls: {} }, { tool_calls: [null] }].map(message => ['ollama-chat', JSON.stringify({ model: 'fixture', done: true, message })+'\n', 'FRAME']),
+    ...['', 42].map(model => ['ollama-chat', JSON.stringify({ model, done: true })+'\n', 'FRAME']),
+    ['ollama-chat', '{"model":"first","done":false}\n{"model":"other","done":true}\n', 'FRAME'],
+    ['ollama-chat', '{"done":true}\n', 'FRAME'],
+  ];
+  for (const [profile, source, code] of cases) {
+    const progress = [];
+    await assert.rejects(() => readResponseStream(reply(profile, source, 2 ** 20, true), profile, new AbortController().signal, value => progress.push(value)),
+      error => error.code === code && !JSON.stringify(error).includes(canary), profile+': '+String(source).slice(0, 80));
+    assert.ok(progress.every(isResponseProgress));
+  }
+});
+
+Then('stream negotiation and optional provider fields retain one complete terminal representation', async () => {
+  assert.throws(() => responseStreamProfile('unsupported'), /streaming profile is not supported/);
+  for (const [profile, fallback, body, expected] of [
+    ['openai-responses', undefined, undefined, 'application/json'], ['openai-responses', 'text/plain', null, 'text/plain'],
+    ['openai-responses', undefined, { stream: true }, 'text/event-stream'],
+    ['ollama-chat', 'application/json', null, 'application/x-ndjson'],
+    ['ollama-generate', 'application/json', { stream: false }, 'application/json'],
+    [undefined, 'text/plain', { stream: true }, 'text/plain'],
+  ]) assert.equal(responseAccept(profile, fallback, body), expected);
+  const source = '\uFEFF: alive\nignored\nid\nretry: 0\nevent: message\ndata: '
+    +JSON.stringify({ type: 'response.created', response_id: 'resp_fixture' })+'\n\n'
+    +sse({ type: 'response.completed', response_id: 'resp_fixture', response: finalResponse('safe') }, '\n');
+  assert.deepEqual((await readResponseStream(reply('openai-responses', source, 7), 'openai-responses', new AbortController().signal)).body, finalResponse('safe'));
+  for (const profile of ['ollama-chat', 'ollama-generate']) {
+    const result = await readResponseStream(reply(profile, '\n{"model":"fixture","done":false}\n{"done":true}\n', 7), profile, new AbortController().signal);
+    assert.deepEqual(result.body, profile === 'ollama-chat' ? { model: 'fixture', done: true, message: { role: 'assistant', content: '' } }
+      : { model: 'fixture', done: true, response: '' });
+  }
+  for (const value of [null, [], { bytes: 0, events: 0, extra: true }]) assert.equal(isResponseProgress(value), false);
+});
+
+Then('stream readers cancel early aborted raced and fragmented responses within their resource budget', async () => {
+  let cancelled = 0;
+  const aborted = reply('openai-responses', '', 1, false, () => { cancelled++; return Promise.reject(new Error(canary)); });
+  await assert.rejects(() => readResponseStream(aborted, 'openai-responses', AbortSignal.abort()), error => error.code === 'CANCELLED');
+  assert.equal(cancelled, 1);
+  await assert.rejects(() => readResponseStream(new Response(null), 'openai-responses', new AbortController().signal), error => error.code === 'INCOMPLETE');
+  const controller = new AbortController();
+  const raced = new Response(new ReadableStream({ pull(stream) {
+    stream.enqueue(encoder.encode(sse({ type: 'response.completed', response: finalResponse('too late') }, '\n')));
+    queueMicrotask(() => controller.abort());
+  }, cancel() { cancelled++; } }));
+  await assert.rejects(() => readResponseStream(raced, 'openai-responses', controller.signal), error => error.code === 'CANCELLED');
+  const waiting = new AbortController();
+  await assert.rejects(() => readResponseStream(new Response(new ReadableStream({ cancel() { cancelled++; } })),
+    'openai-responses', waiting.signal, () => waiting.abort()), error => error.code === 'CANCELLED');
+  for (const fragment of [new Uint8Array(), encoder.encode(':\n')]) {
+    let pulls = 0, stopped = false;
+    const response = new Response(new ReadableStream({ pull(stream) { pulls++; stream.enqueue(fragment); },
+      cancel() { stopped = true; return Promise.reject(new Error(canary)); } }));
+    await assert.rejects(() => readResponseStream(response, 'openai-responses', new AbortController().signal), error => error.code === 'LIMIT');
+    assert.equal(stopped, true);
+    assert.ok(pulls <= (fragment.length ? streamLimits.chunks : 1024) + 2);
+  }
+  const terminal = encoder.encode(sse({ type: 'response.completed', response: finalResponse('after empty chunk') }, '\n'));
+  const response = new Response(new ReadableStream({ start(stream) { stream.enqueue(new Uint8Array()); stream.enqueue(terminal); } }));
+  assert.deepEqual((await readResponseStream(response, 'openai-responses', new AbortController().signal)).body, finalResponse('after empty chunk'));
+});
+
+Then('the standalone stream reader enforces idle and total deadlines while cleaning up its producer', async () => {
+  for (const deadline of ['IDLE', 'TIMEOUT']) {
+    vi.useFakeTimers();
+    let interval, cancelled = false;
+    try {
+      const response = new Response(new ReadableStream({ start(stream) {
+        if (deadline === 'TIMEOUT') interval = setInterval(() => stream.enqueue(encoder.encode(': alive\n\n')), 1000);
+      }, cancel() { cancelled = true; clearInterval(interval); } }));
+      const outcome = readResponseStream(response, 'openai-responses', new AbortController().signal).then(value => ({ value }), error => ({ error }));
+      await vi.advanceTimersByTimeAsync((deadline === 'IDLE' ? streamLimits.idleMs : streamLimits.runMs) + 1);
+      assert.equal((await outcome).error?.code, deadline);
+      assert.equal(cancelled, true);
+    } finally { clearInterval(interval); vi.useRealTimers(); }
+  }
+});
+
+Then('response declarations and body cancellation preserve fail closed media and empty body behavior', async () => {
+  const binary = { content: { 'application/octet-stream': { schema: { type: 'string', format: 'binary' } } } };
+  assert.equal(inspectResponseContent({ invalid: {} }, {}), undefined);
+  for (const ref of [42, 'https://unreviewed.example.test/schema', '#/bad~3name', '#/missing', '#/loop']) {
+    const content = inspectResponseContent({ 200: binary, 201: { $ref: ref } }, { loop: { $ref: '#/loop' } });
+    assert.equal(content['200']['application/octet-stream'], 'binary');
+    assert.deepEqual(Object.keys(content['201']), []);
+  }
+  assert.throws(() => inspectResponseContent({ 200: { content: { 'text/event-stream': {} } } }, {}, 'openai-responses'), /final JSON/);
+  const operation = extractOperations(document('openai-responses'), 'stream-body')[0];
+  assert.deepEqual(await readWorkflowResponseBody(new Response(null), operation, 'OPTIONS', new AbortController().signal),
+    { body: null, mediaType: 'application/json' });
+  let cancelled = 0;
+  const response = media => new Response(new ReadableStream({ cancel() { cancelled++; return Promise.reject(new Error(canary)); } }),
+    { headers: { 'Content-Type': media } });
+  assert.deepEqual(await readWorkflowResponseBody(response('application/json'), operation, 'HEAD', new AbortController().signal), { body: null });
+  await assert.rejects(() => readWorkflowResponseBody(response('application/json'), operation, 'GET', AbortSignal.abort()), error => error.code === 'CANCELLED');
+  await assert.rejects(() => readWorkflowResponseBody(response('not-a-media-type'), operation, 'GET', new AbortController().signal), error => error.code === 'MEDIA');
+  await assert.rejects(() => readWorkflowResponseBody(response('not-a-media-type'), { ...operation, awsWire: 'sts-get-caller-identity' }, 'GET',
+    new AbortController().signal), error => error.code === 'MEDIA');
+  assert.equal(cancelled, 4);
+  assert.equal(responseFileName('attachment; filename='), 'response.bin');
 });

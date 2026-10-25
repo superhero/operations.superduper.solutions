@@ -55,7 +55,7 @@ function validate(input: InputField, schema: InputSchema, value: JsonValue, path
   const type = schema.type;
   if (schema.format === "binary") {
     try { validateBinarySchema(schema); }
-    catch (error) { fail(input, error instanceof Error ? error.message : "This file schema is not supported."); }
+    catch (error) { fail(input, (error as Error).message); }
     if (value === null) fail(input, "explicit null has no qualified file encoding; omit an optional field or upload a file.");
     let file;
     try { file = validateWorkflowBinary(value); }
@@ -200,7 +200,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
       if (value !== null && typeof value === "object") fail(input, "path values must be primitive values.");
       let encoded: string;
       try { encoded = operation.s3Files ? input.name === "Key" ? encodeS3Key(String(value)) : encodeURIComponent(validateS3Bucket(String(value))) : encodeURIComponent(String(value)); }
-      catch (cause) { fail(input, cause instanceof Error ? cause.message : "Invalid S3 path."); }
+      catch (cause) { fail(input, (cause as Error).message); }
       request.path = request.path.replaceAll(`{${input.name}}`, encoded!);
     }
     else if (input.location === "query")
@@ -229,7 +229,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     {
       if (operation.s3Files === "put-object" && input.name === "x-amz-meta-") {
         try { request.headers = { ...request.headers, ...s3MetadataHeaders(value) }; }
-        catch (cause) { fail(input, cause instanceof Error ? cause.message : "Invalid S3 metadata."); }
+        catch (cause) { fail(input, (cause as Error).message); }
         continue;
       }
       if (value !== null && typeof value === "object") fail(input, "header values must be primitive values.");

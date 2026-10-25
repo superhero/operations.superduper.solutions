@@ -8,6 +8,20 @@ import { gunzipSync } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import { vi } from 'vitest';
 import { signAwsRequest } from './lib/secrets/aws-sigv4.ts';
+import { configureAwsSigning } from './lib/aws-signing.ts';
+
+Then('AWS signer bounds every supported byte input and rejects invalid key material before signing', async () => {
+  const credentials = values;
+  const context = { service: 'lambda', region: 'us-east-1', now: () => 1700000000000 };
+  for (const input of [new URLSearchParams({ a: 'one two' }), new Uint8Array([1, 2]).buffer, new Blob(['data'])]) {
+    const signed = await signAwsRequest('POST', 'https://lambda.us-east-1.amazonaws.com:8443/', new Headers(), input, credentials, context);
+    assert.ok(signed.headers.get('Authorization').includes('SignedHeaders=')); assert.ok(signed.body.byteLength > 0);
+  }
+  for (const input of [new Blob([new Uint8Array(8 * 1024 * 1024 + 1)]), 'a'.repeat(8 * 1024 * 1024 + 1)]) await assert.rejects(signAwsRequest('POST', 'https://lambda.us-east-1.amazonaws.com/', new Headers(), input, credentials, context), { code: 'LIMIT' });
+  for (const values of [{ ...credentials, accessKeyId: '' }, { ...credentials, secretAccessKey: 'invalid space' }, { ...credentials, sessionToken: '' }]) await assert.rejects(signAwsRequest('GET', 'https://lambda.us-east-1.amazonaws.com/', new Headers(), null, values, context), { code: 'INVALID' });
+  await assert.rejects(signAwsRequest('GET', 'not a URL', new Headers(), null, credentials, context), { code: 'PERMISSION' });
+  assert.throws(() => configureAwsSigning({ method: 'POST', path: '/', fields: [] }), /AWS/);
+});
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { awsRestProfile, lambdaSigningRegion } from './lib/aws-signing.ts';

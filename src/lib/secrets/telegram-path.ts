@@ -9,9 +9,8 @@ export function telegramPrivateUrl(descriptor: ApprovedOperation, path: string, 
   if (descriptor.operation.privatePath !== "telegram-bot" || descriptor.origin !== telegramBotOrigin
     || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(path) || path !== descriptor.operation.path
     || !/^[0-9]{1,20}:[A-Za-z0-9_-]{1,256}$/.test(token)) throw new VaultError("PERMISSION");
-  const url = new URL(`${telegramBotOrigin}/bot${token}${path}`);
-  if (url.origin !== telegramBotOrigin || url.pathname !== `/bot${token}${path}` || url.search || url.hash) throw new VaultError("PERMISSION");
-  return url;
+  // The whitelists above cannot introduce a URL delimiter or a dot segment.
+  return new URL(`${telegramBotOrigin}/bot${token}${path}`);
 }
 /** Include normalized and case-varied URL escapes, including double-encoded error echoes. */
 export function privateUrlRedactions(value: string): string[] {

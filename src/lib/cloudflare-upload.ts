@@ -82,7 +82,7 @@ export function cloudflareMultipart(request: PreparedRequest): FormData {
     const file = validateWorkflowBinary(value);
     if (request.bodyFormat === "cloudflare-assets") {
       if (!/^[a-f0-9]{32}$/.test(name)) throw new Error("An asset part must use its manifest hash.");
-      form.append(name, new Blob([file.base64], { type: file.mediaType || "application/null" }), name);
+      form.append(name, new Blob([file.base64], { type: file.mediaType }), name);
     } else form.append(name, workflowBinaryBlob(file), name);
   }
   return form;

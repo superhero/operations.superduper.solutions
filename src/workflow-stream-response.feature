@@ -43,3 +43,23 @@ Feature: Bounded terminal HTTP stream results
 
   Scenario: Native OpenAI and Ollama streaming remains pinned and reviewable
     Then pinned OpenAI and Ollama operations select reviewed stream profiles while unrelated streams stay unavailable
+
+  @coverage-gaps
+  Scenario: Malformed provider envelopes cannot publish a partial value
+    Then stream readers reject malformed identities envelopes and provider payloads before publishing a value
+
+  @coverage-gaps
+  Scenario: Optional fields preserve the negotiated terminal representation
+    Then stream negotiation and optional provider fields retain one complete terminal representation
+
+  @coverage-gaps
+  Scenario: Cancellation and pathological fragmentation stay bounded
+    Then stream readers cancel early aborted raced and fragmented responses within their resource budget
+
+  @coverage-gaps
+  Scenario: The reader enforces deadlines independently of HTTP connection setup
+    Then the standalone stream reader enforces idle and total deadlines while cleaning up its producer
+
+  @coverage-gaps
+  Scenario: Invalid declarations and cancelled bodies remain closed
+    Then response declarations and body cancellation preserve fail closed media and empty body behavior

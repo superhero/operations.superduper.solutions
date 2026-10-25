@@ -143,7 +143,6 @@ export class GitlabOAuthBroker {
     if (state.refreshPending) throw new VaultError("AUTHORIZATION");
     if (state.expiresAt > this.now() + 30000) return state;
     const refresh = this.operation(signal, guard, async requestSignal => {
-      if (requestSignal.aborted) throw new VaultError("CANCELLED");
       // A durable lease prevents reusing a one-use refresh credential after an interrupted exchange.
       await persist({ ...state, refreshPending: true });
       if (requestSignal.aborted) throw new VaultError("CANCELLED");

@@ -18,6 +18,19 @@ const get = id => operations.find(operation => operation.id === `demo:${id}`);
 let failure;
 let matches;
 
+Then("request preparation rejects credential acquisition unknown private paths and malformed field encodings", () => {
+  const ordinary = get("listProjects");
+  assert.throws(() => prepareRequest({ ...ordinary, credentialResult: "session" }, {}), /returns credentials/);
+  assert.throws(() => prepareRequest({ ...ordinary, privatePath: "unreviewed-token-path" }, {}), /private token path is not supported/);
+  const query = extractOperations(withInput({ type: "array", items: { type: "string" } }), "encoding")[0];
+  const field = { ...query.fields[0], querySerialization: "pipe-delimited" };
+  assert.throws(() => prepareRequest({ ...query, fields: [field] }, { [field.key]: '["one"]' }),
+    error => error instanceof InputValidationError && error.fieldKey === field.key && /query serialization is not supported/.test(error.message));
+  const file = { key: "body:file", name: "file", label: "Upload", description: "", location: "body", required: true,
+    type: "string", format: "binary", schema: { type: "string", format: "binary", enum: ["file"] } };
+  assert.throws(() => validateInputValue(file, {}), error => error instanceof InputValidationError && error.fieldKey === file.key);
+});
+
 Then("the demo retains four legacy operation IDs with generic request and response groups", function ()
 {
   const demo = operations.filter(operation => operation.id.startsWith("demo:") && ["listProjects", "getProject", "createTask", "updateTask"].some(id => operation.id === `demo:${id}`));

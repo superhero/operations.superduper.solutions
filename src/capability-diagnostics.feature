@@ -20,3 +20,11 @@ Feature: Independent operation capabilities
 
   Scenario: Forged discovery and caller metadata cannot override canonical blockers
     Then current canonical capability failures stop graph HTTP and private approval dispatch
+
+  @coverage-gaps
+  Scenario: Persisted capability metadata cannot forge issue or account requirements
+    Then persisted capability records reject malformed issues alternatives and requirements
+
+  @coverage-gaps
+  Scenario: Compact capability metadata retains its bounded reason references
+    Then compact capability records preserve reason references and reject invalid wire shapes

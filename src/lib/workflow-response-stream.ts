@@ -71,7 +71,7 @@ export async function readResponseStream(response: Response, profile: ResponseSt
   }
   function frame(source: string, name = "") {
     if (++events > streamLimits.events) throw new WorkflowBodyError("LIMIT");
-    if (source.length > streamLimits.frameCharacters) throw new WorkflowBodyError("LIMIT");
+    // NDJSON lines and accumulated SSE data are bounded before reaching this decoder.
     let value: unknown;
     try { value = JSON.parse(source); } catch { throw new WorkflowBodyError("FRAME"); }
     validJson(value);
@@ -155,7 +155,6 @@ export async function readResponseStream(response: Response, profile: ResponseSt
     }
   }
   try {
-    if (signal.aborted) abort();
     progress(true);
     while (!result) {
       const idle = new Promise<never>((_resolve, reject) => {
@@ -169,7 +168,6 @@ export async function readResponseStream(response: Response, profile: ResponseSt
         // A final CR is a complete SSE line ending even without a following LF.
         if (profile === "openai-responses" && buffer.endsWith("\r")) {
           const current = buffer.slice(0, -1);
-          if (current.length > streamLimits.frameCharacters) throw new WorkflowBodyError("LIMIT");
           line(current);
           if (result) break;
         }

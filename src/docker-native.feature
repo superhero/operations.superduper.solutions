@@ -35,3 +35,39 @@ Feature: Explicit Docker Unix-socket reads
 
   Scenario: Docker graph execution and ordinary HTTP remain distinct
     Then Docker graph reads use private bindings while configured HTTP uses its own endpoint
+
+  @coverage-gaps
+  Scenario: Docker contract and model boundaries reject unsupported native inputs
+    Then Docker contracts reject invalid identity scope filters and unsupported model input
+
+  @coverage-gaps
+  Scenario: Docker broker parsing cannot publish malformed or private payloads
+    Then Docker broker rejects malformed envelopes opaque errors and oversized private responses
+
+  @coverage-gaps
+  Scenario: Docker pairing and response metadata bind the exact authority
+    Then Docker pairing and response metadata preserve exact daemon and source authority
+
+  @coverage-gaps
+  Scenario: Docker pending owners release work on cancellation and expiry
+    Then Docker request ownership limits cancellation and expiry release only their owned work
+
+  @coverage-gaps
+  Scenario: Private Docker lifecycle rejects stale bindings and removes saved authority
+    Then Docker saved authority removal stale bindings and daemon errors preserve private ownership
+
+  @coverage-gaps
+  Scenario: Authenticated encrypted Docker records cannot bypass saved authority checks
+    Then Docker encrypted records reject malformed collections altered fingerprints and excessive saved authority
+
+  @coverage-gaps
+  Scenario: Docker defaults retain clock authority and TLS trust
+    Then Docker default transport clock and TLS trust preserve exact read authority
+
+  @coverage-gaps
+  Scenario: Docker vault guards and credential removal revoke only selected profiles
+    Then Docker vault cancellation redaction and credential removal release the selected profiles
+
+  @coverage-gaps
+  Scenario: Cancellation while encrypting a Docker pairing cannot publish its profile
+    Then Docker pairing cancelled while encrypting its profile cannot replace encrypted storage

@@ -9,8 +9,10 @@ import { VaultError } from './lib/secrets/types.ts';
 import { newVaultKey, recoveryKey, randomBase64, wrapVaultKey } from './lib/secrets/crypto.ts';
 import { sealSnapshot } from './lib/secrets/format.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
-import { validateCredentialBinding, validateHttpConnectionReference } from './lib/secrets/bindings.ts';
-import { createHttpConnection, httpConnectionReference, connectionCredentialIds, resolveHttpConnection, formatHttpToken } from './lib/secrets/http-connections.ts';
+import { validateCredentialBinding, validateHttpConnectionReference, uploadSessionSelection } from './lib/secrets/bindings.ts';
+import { createHttpConnection, httpConnectionReference, connectionCredentialIds, resolveHttpConnection, formatHttpToken,
+  validateHttpConnection, storedHttpConnections, httpTokenFormats, invalidateHttpConnections,
+  createGitlabHttpConnection, createJiraHttpConnection, createAtprotoHttpConnection } from './lib/secrets/http-connections.ts';
 import { createConnectionAuthorization } from './lib/secrets/connection-lifecycle.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
@@ -158,6 +160,12 @@ Then('removed credentials and expired HTTP connections fail without exposing a r
     } }), code('PERMISSION'));
     await assert.rejects(f.session.connectionBinding(httpConnectionReference(next), a), code('PERMISSION'));
   } finally { vi.useRealTimers(); }
+  const basic = await fixture(), d = await descriptor('basic');
+  const profile = await basic.session.putConnection(input(), d, manual(d, basic.ids, 'basic'));
+  const stale = await basic.session.connectionBinding(httpConnectionReference(profile), d);
+  await basic.session.remove(null, basic.ids[1]); assert.deepEqual(await basic.session.connections(), []);
+  assert.deepEqual((await basic.session.list()).map(item => item.id), [basic.ids[0]]);
+  await fetched(async calls => { await assert.rejects(basic.session.execute(d, {}, stale), code('PERMISSION')); assert.equal(calls.length, 0); });
 });
 
 Then('a synthetic connection can wait authorize cancel expire and reject late account completions', async () => {
@@ -188,4 +196,109 @@ Then('a disabled connection initializes no SDK probe or native process', async (
   const reference = { id: crypto.randomUUID(), revision: 1, fingerprint: 'a'.repeat(64) };
   await lifecycle.start(reference, async () => { initialized++; return 'provider'; }, { enabled: false });
   assert.equal(initialized, 0); assert.equal(lifecycle.state.kind, 'needs-action');
+});
+
+Then('stored HTTP profiles reject malformed metadata ownership and security before selection', async () => {
+  const approved = await descriptor(), id = crypto.randomUUID(), record = { id, kind: 'secret', value: secretA, label: 'A', grants: [] };
+  const saved = await createHttpConnection(input(), approved, manual(approved, [id]), [record]);
+  const mutations = [
+    value => { delete value.label; }, value => { value.extra = true; }, value => { value.account = '\u0000'; },
+    value => { value.endpoint = 'not a URL'; }, value => { value.endpoint = 'ftp://connections.example.test'; },
+    value => { value.endpoint = 'https://user@connections.example.test'; }, value => { value.endpoint += '/'; },
+    value => { value.security = []; }, value => { value.security = [{ name: 'Service', kind: 'unsupported', header: 'Authorization' }]; },
+    value => { value.security[0] = { name: 'Service', kind: 'oauth1', header: 'Authorization', profile: 'unreviewed' }; },
+    value => { value.security[0] = { name: 'Service', kind: 'aws-sigv4', header: 'Authorization', profile: 'unreviewed' }; },
+    value => { value.security[0].name = 42; }, value => { value.security[0].header = 42; },
+    value => { value.credentials = {}; }, value => { value.credentials.Extra = crypto.randomUUID(); }, value => { value.oauth = {}; },
+  ];
+  for (const mutate of mutations) {
+    const changed = structuredClone(saved); mutate(changed); assert.throws(() => validateHttpConnection(changed), code('INVALID'));
+  }
+  assert.throws(() => storedHttpConnections([{ ...record, id: crypto.randomUUID(), connections: [saved] }]), code('INVALID'));
+  assert.throws(() => storedHttpConnections([{ ...record, connections: [saved, saved] }]), code('LIMIT'));
+  assert.throws(() => storedHttpConnections([{ ...record, connections: Array.from({ length: 129 }, () => ({ ...saved, id: crypto.randomUUID() })) }]), code('LIMIT'));
+  assert.deepEqual(httpTokenFormats({ ...approved, operation: { ...approved.operation, security: [] } }, 0), ['schema']);
+  assert.equal(uploadSessionSelection(undefined, crypto.randomUUID()), undefined);
+  assert.equal(uploadSessionSelection([[scheme('bearer')]], crypto.randomUUID()), undefined);
+  assert.equal(validateHttpConnection({ ...saved, security: [{ name: 'Service', kind: 'apiKey', query: 'api_key' }] }).security[0].query, 'api_key');
+});
+
+Then('HTTP profile edits reject stale capacity duplicate labels and incompatible credential parts', async () => {
+  const approved = await descriptor(), id = crypto.randomUUID(), record = { id, kind: 'secret', value: secretA, label: 'A', grants: [] };
+  const selected = manual(approved, [id]), saved = await createHttpConnection(input(), approved, selected, [record]); record.connections = [saved];
+  for (const reference of [{ ...httpConnectionReference(saved), revision: 2 }, { ...httpConnectionReference(saved), fingerprint: '0'.repeat(64) },
+    { ...httpConnectionReference(saved), id: crypto.randomUUID() }])
+    await assert.rejects(createHttpConnection({ ...input(), reference }, approved, selected, [record]), code('CONFLICT'));
+  await assert.rejects(createHttpConnection(input('  SAVED ACCOUNT  '), approved, selected, [record]), code('DUPLICATE_KEY'));
+  const exhausted = { ...saved, revision: Number.MAX_SAFE_INTEGER };
+  await assert.rejects(createHttpConnection({ ...input(), reference: httpConnectionReference(exhausted) }, approved, selected, [{ ...record, connections: [exhausted] }]), code('LIMIT'));
+  await assert.rejects(invalidateHttpConnections([{ ...record, connections: [exhausted] }], id), code('LIMIT'));
+  const full = [{ ...record, connections: Array.from({ length: 128 }, (_, n) => ({ ...saved, id: crypto.randomUUID(), label: 'Existing '+n })) }];
+  await assert.rejects(createHttpConnection(input('One more'), approved, selected, full), code('LIMIT'));
+  const untouched = [{ ...record, connections: [saved] }];
+  await invalidateHttpConnections(untouched, crypto.randomUUID()); assert.deepEqual(untouched[0].connections, [saved]);
+  await assert.rejects(createHttpConnection(input('Wrong credential type'), approved, selected, [{ ...record, kind: 'basic', connections: undefined }]), code('PERMISSION'));
+  for (const kind of ['basic', 'bearer']) {
+    const target = await descriptor(kind);
+    const wrong = kind === 'basic' ? manual(target, [id]) : manual(target, [id, crypto.randomUUID()], 'basic');
+    await assert.rejects(createHttpConnection(input('Wrong parts'), target, wrong, [record]), code('PERMISSION'));
+  }
+  await assert.rejects(createGitlabHttpConnection(approved, id, 'GitLab', 'user', {}), code('PERMISSION'));
+  await assert.rejects(createJiraHttpConnection(approved, id, 'Jira', {}), code('PERMISSION'));
+  await assert.rejects(createAtprotoHttpConnection(approved, id, 'Bluesky', {}), code('PERMISSION'));
+});
+
+Then('connection authorization rejects invalid deadlines and suppresses expired or abandoned completion', async () => {
+  vi.useFakeTimers();
+  try {
+    const states = [], reference = { id: crypto.randomUUID(), revision: 1, fingerprint: 'a'.repeat(64) };
+    let now = Date.now(), initialized = 0;
+    const lifecycle = createConnectionAuthorization(state => states.push(state), () => now);
+    for (const options of [{ waitMs: 0 }, { waitMs: 300001 }, { waitMs: 1.5 }, { expiresAt: NaN }]) {
+      await lifecycle.start(reference, async () => { initialized++; }, { enabled: true, ...options }); assert.equal(lifecycle.state.kind, 'failed');
+    }
+    await lifecycle.start(reference, async () => { initialized++; }, { enabled: true, expiresAt: now });
+    assert.equal(lifecycle.state.kind, 'expired'); assert.equal(initialized, 0);
+    assert.equal(await lifecycle.start(reference, async () => { now += 100; return secretA; }, { enabled: true, expiresAt: now+50 }), undefined);
+    assert.equal(lifecycle.state.kind, 'expired');
+    let rejectOld;
+    const old = lifecycle.start(reference, () => new Promise((_resolve, reject) => { rejectOld = reject; }), { enabled: true });
+    lifecycle.reset(); rejectOld(new Error(secretA)); assert.equal(await old, undefined); assert.equal(lifecycle.state.kind, 'needs-action');
+    const expiry = now + 2_147_483_648;
+    assert.equal(await lifecycle.start(reference, async () => 'ready', { enabled: true, expiresAt: expiry }), 'ready');
+    now += 2_147_483_647; await vi.advanceTimersByTimeAsync(2_147_483_647); assert.equal(lifecycle.state.kind, 'ready');
+    now++; await vi.advanceTimersByTimeAsync(1); assert.equal(lifecycle.state.kind, 'expired');
+    assert.ok(!JSON.stringify(states).includes(secretA));
+  } finally { vi.useRealTimers(); }
+});
+
+Then('authorization observers may cancel readiness without reviving expiry or failure state', async () => {
+  vi.useFakeTimers();
+  try {
+    const states = [], reference = { id: crypto.randomUUID(), revision: 1, fingerprint: 'a'.repeat(64) };
+    const lifecycle = createConnectionAuthorization(state => { states.push(state); if (state.kind === 'ready') lifecycle.cancel(); });
+    await lifecycle.start(reference, async () => 'account', { enabled: true, expiresAt: Date.now()+100 });
+    assert.equal(lifecycle.state.kind, 'cancelled'); await vi.advanceTimersByTimeAsync(101); assert.equal(lifecycle.state.kind, 'cancelled');
+    await lifecycle.start(reference, async () => { lifecycle.cancel(); throw new Error(secretA); }, { enabled: true });
+    assert.equal(lifecycle.state.kind, 'cancelled'); assert.equal(states.some(state => state.kind === 'failed'), false);
+    assert.ok(!JSON.stringify(states).includes(secretA));
+  } finally { vi.useRealTimers(); }
+});
+
+Then('malformed stored connection lists and OAuth payloads fail before vault state changes', async () => {
+  const f = await fixture(), records = await f.session.records(), before = structuredClone(f.storage.state);
+  for (const changed of [{ ...records[0], connections: {} }, { ...records[0], connections: Array(33).fill({}) },
+    { ...records[0], oauthState: {} }, { ...records[0], oauthState: 'a'.repeat(16385) }, { ...records[0], oauthState: '{}' }])
+    await assert.rejects(f.session.save([changed, records[1]]), error => error instanceof VaultError);
+  assert.deepEqual(f.storage.state, before);
+  const approved = await descriptor(), saved = await f.session.putConnection(input(), approved, manual(approved, f.ids));
+  await assert.rejects(f.session.connectionBinding(httpConnectionReference(saved), { ...approved, fingerprint: '0'.repeat(64) }), code('PERMISSION'));
+  await assert.rejects(f.session.removeConnection({ ...httpConnectionReference(saved), revision: 2 }), code('CONFLICT'));
+  await f.session.removeConnection(httpConnectionReference(saved));
+  const basic = await descriptor('basic'), connection = await f.session.putConnection(input('Basic account'), basic, manual(basic, f.ids, 'basic'));
+  const selected = await f.session.connectionBinding(httpConnectionReference(connection), basic), [owner, other] = connectionCredentialIds(connection);
+  await f.session.remove(null, other);
+  assert.equal((await f.session.list()).some(record => record.id === owner), true);
+  assert.deepEqual(await f.session.connections(), []);
+  await fetched(async calls => { await assert.rejects(f.session.execute(basic, {}, selected), code('PERMISSION')); assert.equal(calls.length, 0); });
 });

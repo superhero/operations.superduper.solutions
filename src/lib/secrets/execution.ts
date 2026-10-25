@@ -17,6 +17,7 @@ import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
 import { managedAtprotoSecrets } from "./atproto-state.ts";
 import { managedGitlabSecrets, validateGitlabTokenState } from "./gitlab-oauth.ts";
+import { validateGitlabMetadata } from "./gitlab-config.ts";
 import { appendRequestQuery, encodeQueryComponent } from "../query-serialization.ts";
 import { CloudflareUploadSessions, type CloudflareUploadLease } from "./cloudflare-upload.ts";
 import { cloudflareSessionField, uploadSessionConsumer } from "../cloudflare-upload.ts";
@@ -98,7 +99,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       || ![Object.prototype, null].includes(Object.getPrototypeOf(inputSnapshot))
       || Object.values(inputSnapshot).some(value => value !== null && value !== undefined && typeof value !== "string"))
       throw new VaultError("INVALID");
-    secrets = [...new Set([...credentialSnapshot.flatMap(credential => typeof credential.value === "string" ? [credential.value, ...managedGitlabSecrets(credential.oauthState ?? ""), ...managedAtprotoSecrets(credential.oauthState ?? "")] : []), ...(options.privateSecrets ?? [])]
+    secrets = [...new Set([...credentialSnapshot.flatMap(credential => [credential.value, ...managedGitlabSecrets(credential.oauthState ?? ""), ...managedAtprotoSecrets(credential.oauthState ?? "")]), ...(options.privateSecrets ?? [])]
       .filter(value => typeof value === "string" && value.length > 0)
       .flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
@@ -163,14 +164,12 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         const connected = credentialSelectionForVariables([[scheme]], variables);
         let value = credentialValue(reference, scheme.kind, connected?.credentials[scheme.name] === reference);
         if (connection.format === "gitlab-oauth") {
-          if (scheme.kind !== "bearer" || connection.oauth?.profile !== "gitlab-public-pkce-v1") throw new VaultError("PERMISSION");
-          const state = validateGitlabTokenState(credentialSnapshot.find(item => item.id === reference)?.oauthState ?? "", connection.oauth);
+          const state = validateGitlabTokenState(credentialSnapshot.find(item => item.id === reference)?.oauthState ?? "", validateGitlabMetadata(connection.oauth));
           managed = { expiresAt: state.expiresAt, accountId: state.oauth.accountId };
           if (state.refreshPending || managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");
           value = state.accessToken;
         }
         if (scheme.path !== undefined) {
-          if (scheme.path !== approved.operation.privatePath || !savedConnection) throw new VaultError("PERMISSION");
           pathToken = value;
           secrets.push(...privateUrlRedactions(value));
         }
@@ -235,7 +234,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     if (!approved.operation.s3Files) validateCredentialPath(request.path);
     const url = approved.operation.s3Files ? s3ObjectUrl(approved.origin, request.path)
-      : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken ?? "") : new URL(`${approved.origin}${request.path}`);
+      : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken!) : new URL(`${approved.origin}${request.path}`);
     if (approved.operation.s3Files) publicRequest = { ...publicRequest, path: url.pathname };
     if (approved.operation.privatePath) secrets.push(...privateUrlRedactions(url.href));
     const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));

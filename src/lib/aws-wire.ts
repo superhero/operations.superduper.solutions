@@ -72,7 +72,7 @@ export function validAwsWireModel(operation: Operation): boolean {
   const expected = { ...operation };
   try { configureAwsWire(expected, profile); } catch { return false; }
   const sorted = (value: unknown): unknown => Array.isArray(value) ? value.map(sorted) : value && typeof value === "object"
-    ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => [key, sorted(item)])) : value;
+    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, sorted((value as Record<string, unknown>)[key])])) : value;
   for (const key of ["fields", "bodyRequired", "bodyMediaType", "bodySchema", "bodyValue", "binaryMediaTypes", "responseContent", "responseMediaType"] as const)
     if (JSON.stringify(sorted(operation[key])) !== JSON.stringify(sorted(expected[key]))) return false;
   const options = operation.security;

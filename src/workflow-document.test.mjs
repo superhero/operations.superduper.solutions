@@ -8,6 +8,38 @@ import { maxWorkflowFileSize, validateWorkflowDocument, parseWorkflowDocument } 
 import { createOperationGraph, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch, createUtilityNode, createWorkflowGraph, addSwitchGate, updateSwitchGate, removeSwitchGate, getAdditionalPropertyTypes, addAdditionalProperty, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty } from "./lib/workflow-graph.ts";
 import { numericValue, castValue, matchesSwitchGate, matchingSwitchGates, routingInputTypes, operatorsForType, gateForType,
   adaptRoutingGates, switchGateInput, workflowInterface, isValueConnection } from "./lib/workflow-utilities.ts";
+import { nativeRpcOperation } from "./lib/native-rpc.ts";
+import { readServiceSchema } from "./lib/service-schema-packs.ts";
+
+Then('native graph panels preserve parameterless methods and refuse stale or mismatched property editors', async () => {
+  const source = await readServiceSchema('codex'), parameterless = structuredClone(source);
+  const request = parameterless.definitions.ClientRequest.oneOf.find(value => value.properties.method.enum[0] === 'account/read');
+  delete request.properties.params; request.required = request.required.filter(name => name !== 'params');
+  const operation = nativeRpcOperation(parameterless, 'native-fixture:account/read');
+  const empty = createOperationGraph(operation, { x: 0, y: 0 }, 'empty', parameterless);
+  assert.equal(empty.nodes.filter(node => node.type === 'data' && node.data.direction === 'inputs').every(node => node.data.fields.length === 0), true);
+  const graph = createOperationGraph(nativeRpcOperation(source, 'native-fixture:thread/start'), { x: 0, y: 0 }, 'native', source);
+  const root = group => graph.nodes.find(node => node.type === 'data' && node.id === 'native:'+encodeURIComponent(JSON.stringify([group, ''])));
+  const result = root('rpc:result'), error = root('rpc:error');
+  assert.ok(result && error);
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, result.id, source), []);
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, error.id, source), []);
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, result.id, {}), []);
+  const mismatched = { ...result, id: 'native:'+encodeURIComponent(JSON.stringify(['rpc:unknown', ''])) };
+  assert.deepEqual(getAdditionalPropertyTypes([...graph.nodes, mismatched], mismatched.id, source), []);
+});
+
+Then('workflow imports retain Docker bindings only on their reviewed operation identity', () => {
+  const binding = { host: { id: crypto.randomUUID(), revision: 1, fingerprint: 'a'.repeat(64) }, fingerprint: 'b'.repeat(64) };
+  const document = plan();
+  document.nodes[0].data = { operationId: 'docker:ContainerList', name: 'Containers', description: '', method: 'GET', path: '/containers/json', dockerBinding: binding };
+  assert.deepEqual(validateWorkflowDocument(document).nodes[0].data.dockerBinding, binding);
+  for (const change of [{ operationId: 'docker:ContainerDelete' }, { method: 'DELETE' }, { path: '/other' },
+    { credentialBinding: { fingerprint: 'c'.repeat(64), alternative: 0, credentials: {} } }]) {
+    const invalid = structuredClone(document); Object.assign(invalid.nodes[0].data, change);
+    assert.throws(() => validateWorkflowDocument(invalid), /Invalid Docker native operation binding/);
+  }
+});
 
 function plan() {
   const data = { operationId: "demo:listProjects", name: "List projects", description: "", method: "GET", path: "/projects" };

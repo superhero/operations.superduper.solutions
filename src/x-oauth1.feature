@@ -29,3 +29,7 @@ Feature: Private X OAuth 1.0a signing
 
   Scenario: Normal execution creates a fresh nonce and current timestamp
     Then repeated OAuth1 requests use fresh unpredictable nonces without exposing authorization
+
+  @coverage-gaps
+  Scenario: Signing rejects bounded malformed input and private crypto failures
+    Then OAuth1 rejects oversized ambiguous or unsupported signing inputs without leaking key material

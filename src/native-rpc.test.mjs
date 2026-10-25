@@ -106,6 +106,28 @@ Then('native RPC scoping rejects ambiguous requests and invalid reference closur
   assert.throws(() => nativeRpcOperation(original, 'read/0'));
 });
 
+Then('native RPC schemas reject excessive nesting and absent wire errors while preserving optional parameters', () => {
+  const deep = fixture(); let nested = { type: 'string' };
+  for (let depth = 0; depth < 130; depth++) nested = { type: 'array', items: nested };
+  deep.definitions.Params = nested;
+  assert.throws(() => scopeNativeRpcSchema(deep, 'read/0'), /complexity limit/);
+  const wide = fixture(); wide.definitions.Params = { allOf: Array(100001).fill(true) };
+  assert.throws(() => scopeNativeRpcSchema(wide, 'read/0'), /complexity limit/);
+  for (const invalid of [false, { type: 'object' }, { properties: { error: undefined } }]) {
+    const document = fixture(); document.definitions.JSONRPCError = invalid;
+    assert.throws(() => nativeRpcOperation(document, 'native:read/0'), /error schema/);
+  }
+  const noResult = fixture(); noResult.definitions.JSONRPCResponse = true;
+  assert.throws(() => nativeRpcOperation(noResult, 'native:read/0'), /result schema/);
+  const optional = fixture(); const request = optional.definitions.ClientRequest.oneOf[0];
+  request.description = 'A request with no parameters'; request.required = ['id', 'method']; delete request.properties.params;
+  const operation = nativeRpcOperation(optional, 'native:read/0');
+  assert.equal(operation.rpc.paramsRequired, false); assert.equal(Object.hasOwn(operation.rpc, 'params'), false);
+  assert.equal(operation.description, request.description);
+  const escaped = fixture(); escaped.definitions.Params = { $ref: '#/definitions/A~1B~0C' }; escaped.definitions['A/B~C'] = true;
+  assert.equal(scopeNativeRpcSchema(escaped, 'read/0').definitions['A/B~C'], true);
+});
+
 Then('native model approvals reject altered schemas and HTTP authorization', async () => {
   const original = model(), approved = await approvedNativeOperation(original.operation, original.document);
   assert.equal(Object.hasOwn(approved, 'origin'), false); assert.equal(Object.isFrozen(approved.document.definitions), true);
