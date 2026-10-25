@@ -633,6 +633,14 @@ file, symlink and complete speech-resource restrictions.
 
 ```
 
+<!-- changelog-commit:52cd20d50c01a8f488757e702accc40e47a23da9 -->
+### Commit [`52cd20d`](https://github.com/superhero/operations.superduper.solutions/commit/52cd20d50c01a8f488757e702accc40e47a23da9)
+
+```text
+fix(gcp): enable JSON BigQuery job metadata
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
