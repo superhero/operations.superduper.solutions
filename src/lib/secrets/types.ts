@@ -42,11 +42,13 @@ export type OAuth1CredentialReference = { consumerKey: string; consumerSecret: s
 export type CredentialReference = string | BasicCredentialReference | OAuth1CredentialReference;
 export type HttpConnectionReference = { id: string; revision: number; fingerprint: string };
 export type GitlabOAuthMetadata = { profile: "gitlab-public-pkce-v1"; clientId: string; redirectUri: string; scope: "read_user"; accountId: string };
-export type HttpTokenFormat = "schema" | "discord-bot" | "opsgenie-key" | "gitlab-oauth";
+export type JiraOAuthMetadata = { profile: "atlassian-jira-3lo-v1"; host: string; hostId: string; configuration: string; clientId: string;
+  redirectUri: string; scope: "read:jira-user offline_access"; cloudId: string; siteUrl: string; accountId: string };
+export type HttpTokenFormat = "schema" | "discord-bot" | "opsgenie-key" | "gitlab-oauth" | "jira-companion";
 export type HttpConnection = HttpConnectionReference & {
   label: string; account: string; provider: string; endpoint: string; runtime: "browser-http";
   alternative: number; security: import("../operation-security.ts").OperationSecurityScheme[];
-  credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata;
+  credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata | JiraOAuthMetadata;
 };
 export type HttpConnectionInput = { label: string; account: string; format: HttpTokenFormat;
   reference?: HttpConnectionReference; expiresAt?: number };

@@ -45,7 +45,7 @@ export class CredentialResponseError extends Error
   }
 }
 
-function redactor(secrets: string[])
+export function redactor(secrets: string[])
 {
   let changed = false;
   const text = (value: string): string =>
@@ -148,7 +148,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         const connected = credentialSelectionForVariables([[scheme]], variables);
         let value = credentialValue(reference, scheme.kind, connected?.credentials[scheme.name] === reference);
         if (connection.format === "gitlab-oauth") {
-          if (scheme.kind !== "bearer" || !connection.oauth) throw new VaultError("PERMISSION");
+          if (scheme.kind !== "bearer" || connection.oauth?.profile !== "gitlab-public-pkce-v1") throw new VaultError("PERMISSION");
           const state = validateGitlabTokenState(credentialSnapshot.find(item => item.id === reference)?.oauthState ?? "", connection.oauth);
           managed = { expiresAt: state.expiresAt, accountId: state.oauth.accountId };
           if (state.refreshPending || managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");

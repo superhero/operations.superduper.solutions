@@ -1,17 +1,20 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { JiraCompanionBroker, validateJiraState, jiraAccessKeyHash, type JiraCompanionRuntime, type JiraCompanionState } from "./jira-companion.ts";
+import { jiraOAuthAlternative, validateJiraMetadata, type JiraOAuthInput } from "./jira-config.ts";
+import { validateGitlabMetadata } from "./gitlab-config.ts";
 import { GitlabOAuthBroker, managedGitlabSecrets, validateGitlabTokenState, type GitlabOAuthRuntime } from "./gitlab-oauth.ts";
 import { gitlabOAuthAlternative, type GitlabOAuthInput, type GitlabOAuthCallback } from "./gitlab-config.ts";
 import { CloudflareUploadSessions } from "./cloudflare-upload.ts";
-import type { InputValues } from "../operation-input.ts";
+import { prepareRequest, type InputValues } from "../operation-input.ts";
 import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passkeyKey, randomBase64,
   runtimeKey, unwrapVaultKey, wrapVaultKey, validId, canonicalJSON, ownObject } from "./crypto.ts";
 import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.ts";
 import { validateApprovedOperation, approvedOperation } from "./policy.ts";
 import { publicVaultKeys } from "./key-index.ts";
-import { executeCredentialed } from "./execution.ts";
-import { connectionCredentialIds, createHttpConnection, createGitlabHttpConnection, httpConnectionReference, resolveHttpConnection,
+import { executeCredentialed, CredentialResponseError, redactor } from "./execution.ts";
+import { connectionCredentialIds, createHttpConnection, createGitlabHttpConnection, createJiraHttpConnection, httpConnectionLimit, httpConnectionReference, resolveHttpConnection,
   storedHttpConnections, validateHttpConnection, invalidateHttpConnections } from "./http-connections.ts";
 import type { HttpConnectionInput } from "./types.ts";
 import { validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
@@ -39,8 +42,10 @@ function credential(value: VaultCredential): VaultCredential {
   }
   if (value.oauthState !== undefined) {
     if (typeof value.oauthState !== "string" || new TextEncoder().encode(value.oauthState).byteLength > vaultLimits.secretBytes
-      || !value.connections?.some(connection => connection.format === "gitlab-oauth")) throw new VaultError("INVALID");
-    validateGitlabTokenState(value.oauthState);
+      || !value.connections?.some(connection => ["gitlab-oauth", "jira-companion"].includes(connection.format))) throw new VaultError("INVALID");
+    const jira = value.connections?.find(connection => connection.format === "jira-companion");
+    if (jira) validateJiraState(value.oauthState, validateJiraMetadata(jira.oauth));
+    else validateGitlabTokenState(value.oauthState);
   }
   const grantIds = new Set<string>();
   for (const grant of value.grants) {
@@ -74,13 +79,14 @@ export class VaultSession {
   private generation = 0;
   private readonly uploadSessions = new CloudflareUploadSessions();
   private readonly gitlabOAuth: GitlabOAuthBroker;
+  private readonly jiraCompanion: JiraCompanionBroker;
   private pending: Pending | undefined;
 
-  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}) {
-    this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime);
+  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}) {
+    this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime); this.jiraCompanion = new JiraCompanionBroker(jiraRuntime);
   }
 
-  lock(): void { this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
+  lock(): void { this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -237,11 +243,18 @@ export class VaultSession {
     if (!connection) throw new VaultError("PERMISSION");
     const binding = { alternative: connection.alternative, credentials: {}, fingerprint: approved.fingerprint, connection: selected };
     const resolved = await resolveHttpConnection(approved, binding, records);
-    if (resolved.oauth) {
-      this.gitlabOAuth.assertMetadata(resolved.oauth);
+    if (resolved.format === "gitlab-oauth" && resolved.oauth) {
+      const oauth = validateGitlabMetadata(resolved.oauth);
+      this.gitlabOAuth.assertMetadata(oauth);
       const id = resolved.binding.credentials.oauth2;
       const record = typeof id === "string" && records.find(item => item.id === id);
-      if (!record || validateGitlabTokenState(record.oauthState ?? "", resolved.oauth).refreshPending) throw new VaultError("AUTHORIZATION");
+      if (!record || validateGitlabTokenState(record.oauthState ?? "", oauth).refreshPending) throw new VaultError("AUTHORIZATION");
+    }
+    if (resolved.format === "jira-companion") {
+      const id = resolved.binding.credentials.OAuth2, record = typeof id === "string" && records.find(item => item.id === id);
+      if (!record) throw new VaultError("AUTHORIZATION");
+      const state = validateJiraState(record.oauthState ?? "", validateJiraMetadata(resolved.oauth)); this.jiraCompanion.assertState(state);
+      await this.jiraKey(state.accessKeyId, state.accessKeyHash);
     }
     await this.assertCurrent();
     return binding;
@@ -260,6 +273,68 @@ export class VaultSession {
     owner.connections = [...owner.connections ?? [], connection];
     await this.save(records);
     return connection;
+  }
+
+  private async jiraKey(id: string, expected?: string): Promise<string> {
+    const record = (await this.records()).find(item => item.id === id);
+    if (!record || record.kind !== "secret" || record.oauthState || expected !== undefined && await jiraAccessKeyHash(record.value) !== expected)
+      throw new VaultError("AUTHORIZATION");
+    await jiraAccessKeyHash(record.value); return record.value;
+  }
+  async beginJiraOAuth(value: JiraOAuthInput, descriptor: ApprovedOperation, replace?: HttpConnectionReference, signal?: AbortSignal) {
+    const generation = this.generation; await this.assertCurrent();
+    const approved = await validateApprovedOperation(descriptor);
+    if (jiraOAuthAlternative(approved) === undefined) throw new VaultError("PERMISSION");
+    await this.assertSchema(approved);
+    const records = await this.records();
+    if (replace) {
+      replace = validateHttpConnectionReference(replace);
+      const previous = storedHttpConnections(records).find(item => item.id === replace!.id);
+      if (previous?.format !== "jira-companion" || previous.oauth?.profile !== "atlassian-jira-3lo-v1" || previous.oauth.host !== value.host)
+        throw new VaultError("PERMISSION");
+      await resolveHttpConnection(approved, { alternative: previous.alternative, credentials: {}, fingerprint: approved.fingerprint, connection: replace }, records);
+    }
+    const key = await this.jiraKey(value.accessKeyId), expected = await jiraAccessKeyHash(key);
+    const guard = async () => { this.guard(generation); await this.assertSchema(approved); await this.assertCurrent(); await this.jiraKey(value.accessKeyId, expected); this.guard(generation); };
+    const task = await this.jiraCompanion.begin(value, approved, key, guard, replace, signal); this.guard(generation); return task;
+  }
+  async pollJiraOAuth(id: string, signal?: AbortSignal) {
+    const generation = this.generation, pending = this.jiraCompanion.pendingInput(id);
+    const guard = async () => { this.guard(generation); await this.assertSchema(pending.descriptor); await this.assertCurrent();
+      await this.jiraKey(pending.input.accessKeyId, pending.accessKeyHash); this.guard(generation); };
+    return this.jiraCompanion.poll(id, guard, signal);
+  }
+  async cancelJiraOAuth(id: string) { await this.assertCurrent(); await this.jiraCompanion.cancel(id); }
+  async completeJiraOAuth(id: string, cloudId: string, signal?: AbortSignal) {
+    const generation = this.generation, pending = this.jiraCompanion.pendingInput(id);
+    const guard = async () => { this.guard(generation); await this.assertSchema(pending.descriptor); await this.assertCurrent();
+      await this.jiraKey(pending.input.accessKeyId, pending.accessKeyHash); this.guard(generation); };
+    try {
+      const state = await this.jiraCompanion.select(id, cloudId, guard, signal); await guard();
+      if (signal?.aborted) throw new VaultError("CANCELLED");
+      const records = await this.records(), connections = storedHttpConnections(records);
+      const previous = pending.replace && connections.find(item => item.id === pending.replace!.id);
+      if (pending.replace && (!previous || previous.format !== "jira-companion" || previous.revision !== pending.replace.revision
+        || previous.fingerprint !== pending.replace.fingerprint || canonicalJSON(previous.oauth) !== canonicalJSON(state.oauth))) throw new VaultError("AUTHORIZATION");
+      if (!previous && connections.length >= httpConnectionLimit) throw new VaultError("LIMIT");
+      if (connections.some(item => item.id !== previous?.id && item.provider === pending.descriptor.operation.id.split(":")[0]
+        && item.label.trim().toLowerCase() === pending.input.label.toLowerCase())) throw new VaultError("DUPLICATE_KEY");
+      const credentialId = previous ? connectionCredentialIds(previous)[0]! : crypto.randomUUID();
+      const connection = await createJiraHttpConnection(pending.descriptor, credentialId, pending.input.label, state.oauth, pending.replace);
+      const key = await this.jiraKey(state.accessKeyId, state.accessKeyHash);
+      if ([key, state.capability].some(secret => JSON.stringify(connection).includes(secret))) throw new VaultError("AUTHORIZATION");
+      const record: VaultCredential = { id: credentialId, label: pending.input.label + " reference", kind: "secret", value: crypto.randomUUID(),
+        oauthState: JSON.stringify(state), grants: [], connections: [connection] };
+      if (records.some(item => item.id !== credentialId && item.label.trim().normalize("NFC").toLowerCase() === record.label.trim().normalize("NFC").toLowerCase())) throw new VaultError("DUPLICATE_KEY");
+      if (previous) {
+        const old = records.find(item => item.id === credentialId);
+        if (!old) throw new VaultError("AUTHORIZATION");
+        await this.jiraCompanion.remove(validateJiraState(old.oauthState ?? "", validateJiraMetadata(previous.oauth)), key, guard);
+      }
+      await guard(); if (signal?.aborted) throw new VaultError("CANCELLED");
+      await this.save([...records.filter(item => item.id !== credentialId), record]); this.guard(generation);
+      this.jiraCompanion.forget(id); return connection;
+    } catch (error) { await this.jiraCompanion.cancel(id).catch(() => {}); throw error; }
   }
 
   async beginGitlabOAuth(input: GitlabOAuthInput, descriptor: ApprovedOperation, replace?: HttpConnectionReference) {
@@ -306,6 +381,15 @@ export class VaultSession {
     const selected = validateHttpConnectionReference(reference), records = await this.records();
     const connection = storedHttpConnections(records).find(item => item.id === selected.id);
     if (!connection || connection.revision !== selected.revision || connection.fingerprint !== selected.fingerprint) throw new VaultError("CONFLICT");
+    if (connection.format === "jira-companion") {
+      const id = connectionCredentialIds(connection)[0]!, record = records.find(item => item.id === id);
+      if (!record) throw new VaultError("AUTHORIZATION");
+      const state = validateJiraState(record.oauthState ?? "", validateJiraMetadata(connection.oauth)), key = await this.jiraKey(state.accessKeyId, state.accessKeyHash);
+      record.oauthState = JSON.stringify({ ...state, disconnected: true }); await this.save(records);
+      let remoteRemoved = true;
+      try { await this.jiraCompanion.remove(state, key, async () => { await this.assertCurrent(); }); } catch { remoteRemoved = false; }
+      await this.remove(null, id); return { remoteRemoved };
+    }
     if (connection.format === "gitlab-oauth") { await this.remove(null, connectionCredentialIds(connection)[0]!); return; }
     for (const record of records) if (record.connections) {
       record.connections = record.connections.filter(item => item.id !== selected.id);
@@ -410,6 +494,24 @@ export class VaultSession {
     const generation = this.generation;
     descriptor = await validateApprovedOperation(descriptor); binding = validateCredentialBinding(binding);
     let records = await this.records(); const resolved = await resolveHttpConnection(descriptor, binding, records);
+    if (resolved.format === "jira-companion") {
+      if (jiraOAuthAlternative(descriptor) === undefined || variables?.length || Object.entries(values).some(([key, value]) => value !== undefined && key !== "query:expand"))
+        throw new VaultError("PERMISSION");
+      const id = resolved.binding.credentials.OAuth2, record = typeof id === "string" && records.find(item => item.id === id);
+      if (!record) throw new VaultError("AUTHORIZATION");
+      const state = validateJiraState(record.oauthState ?? "", validateJiraMetadata(resolved.oauth)), key = await this.jiraKey(state.accessKeyId, state.accessKeyHash);
+      const guard = async () => { this.guard(generation); await this.assertSchema(descriptor); await this.assertCurrent();
+        await this.jiraKey(state.accessKeyId, state.accessKeyHash); this.guard(generation); };
+      const request = prepareRequest(descriptor.operation, values), expand = request.query.expand;
+      if (expand !== undefined && typeof expand !== "string") throw new VaultError("INVALID");
+      const response = await this.jiraCompanion.execute(state, key, expand, guard, signal);
+      const secrets = records.flatMap(record => [record.value, ...managedGitlabSecrets(record.oauthState ?? ""),
+        ...(record.oauthState && record.connections?.some(item => item.format === "jira-companion") ? [validateJiraState(record.oauthState).capability] : [])]);
+      const scrub = redactor([...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length));
+      const safe = scrub.value(response) as typeof response; if (scrub.changed) safe.redacted = true;
+      if (safe.status < 200 || safe.status >= 300) throw new CredentialResponseError("The endpoint returned HTTP " + safe.status + ". Check the request before retrying.", safe);
+      return { request: scrub.value(request) as typeof request, response: safe };
+    }
     const previousSecrets: string[] = [];
     if (resolved.format === "gitlab-oauth") {
       if (gitlabOAuthAlternative(descriptor) === undefined || !resolved.oauth) throw new VaultError("PERMISSION");
@@ -417,7 +519,7 @@ export class VaultSession {
       const reference = resolved.binding.credentials.oauth2;
       if (typeof reference !== "string") throw new VaultError("PERMISSION");
       const record = records.find(item => item.id === reference); if (!record) throw new VaultError("PERMISSION");
-      const original = record.oauthState ?? "", state = validateGitlabTokenState(original, resolved.oauth);
+      const original = record.oauthState ?? "", state = validateGitlabTokenState(original, validateGitlabMetadata(resolved.oauth));
       let expected = original;
       previousSecrets.push(...managedGitlabSecrets(original));
       const guard = async () => { this.guard(generation); await this.assertSchema(descriptor); await this.assertCurrent(); this.guard(generation); };

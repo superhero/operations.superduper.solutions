@@ -147,7 +147,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <legend>Credentials</legend>
   {#if operation.privatePath}<p>Save or select a connection to supply the bot token in Telegram's private URL path.</p>{/if}
   {#if descriptor && !uploadSessionConsumer(operation.cloudflareUpload)}
-    <HttpConnectionSelector {descriptor} {status} manual={manualBinding}
+    <HttpConnectionSelector {descriptor} {status} {credentials} manual={manualBinding}
       initial={initial?.fingerprint === descriptor.fingerprint ? initial.connection : undefined} disabled={disabled || busy} {portalZIndex}
       onSelect={(binding, selected) => { connectionSelected = selected; connectionBinding = binding;
         if (binding) alternative = String(binding.alternative);

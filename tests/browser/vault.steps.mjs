@@ -9,6 +9,7 @@ import { expect } from '@playwright/test';
 import { exampleCatalogState } from './catalog-state.fixture.mjs';
 import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
+import { jiraCanaries } from '../jira-companion.fixture.mjs';
 import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
 
 const fixture = '/vault-storage-fixture.js';
@@ -1174,6 +1175,57 @@ Then('an X OAuth1 connection at {int} pixels signs privately after selecting fou
     for (const secret of Object.values(secrets)) assert.ok(!JSON.stringify(value).includes(secret));
   assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...Object.values(secrets), ...Object.values(secrets).map(encode)]), []);
   await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/x-oauth1-${width}.png` });
+});
+
+Then('Jira companion sign-in at {int} pixels uses native CORS and keeps its provider tokens outside the application', {timeout:90_000}, async function(width){
+  const page=this.page,run=randomUUID();await page.setViewportSize({width,height:900});
+  await this.context.unrouteAll({behavior:'wait'});
+  const endpoint=this.baseURL+'/jira-companion-fixture/'+run;
+  const created=await this.context.request.post(endpoint+'/create');assert.equal(created.status(),200);const host=await created.json();
+  let consents=0;
+  await this.context.route('https://auth.atlassian.com/authorize**',async route=>{
+    const authorization=new URL(route.request().url());consents++;assert.equal(authorization.searchParams.get('audience'),'api.atlassian.com');assert.equal(authorization.searchParams.get('scope'),'read:jira-user offline_access');
+    assert.equal(authorization.searchParams.has('client_secret'),false);assert.equal(authorization.searchParams.get('redirect_uri'),host.publicOrigin+'/oauth/jira/callback');
+    const callback=new URL(host.publicOrigin+'/oauth/jira/callback');callback.searchParams.set('state',authorization.searchParams.get('state'));
+    callback.searchParams.set(consents===1?'error':'code',consents===1?'access_denied':jiraCanaries.code);
+    await route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Synthetic Jira consent</title><script>location.replace('+JSON.stringify(callback.href)+')</script>'});
+  });
+  try{
+    await invoke(page,'seedJira',this.baseURL,run,jiraCanaries.accessKey);
+    const name='Jira companion current user fixture',document={openapi:'3.0.3',info:{title:name,version:'1'},servers:[{url:host.siteUrl}],security:[{OAuth2:[]}],
+      components:{securitySchemes:{OAuth2:{type:'http',scheme:'bearer'}}},paths:{'/rest/api/3/myself':{get:{operationId:'getCurrentUser',summary:name,
+        parameters:[{name:'expand',in:'query',schema:{type:'string'}}],responses:{200:{description:'Current user',content:{'application/json':{schema:{type:'object'}}}}}}}}};
+    await setMode(page,'settings');const schemas=page.locator('summary[aria-label="Schemas"]');if(await schemas.getAttribute('aria-expanded')!=='true')await schemas.click();
+    await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({name:'jira-companion.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
+    await expect(page.getByRole('switch',{name:'Enable '+name,exact:true})).toHaveAttribute('aria-checked','true');await chooseCatalogOperation(page,name);
+    await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'OAuth2',exact:true}).click();
+    const unlock=page.getByLabel('Unlock the vault password',{exact:true});await unlock.fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();
+    await page.getByText('Connect Jira account',{exact:true}).click();await page.getByLabel('Jira companion URL',{exact:true}).fill(host.publicOrigin);
+    await page.getByRole('combobox',{name:'Jira companion access key',exact:true}).click();await page.getByRole('option',{name:'Jira companion access key',exact:true}).click();
+    await page.getByLabel('Jira connection name',{exact:true}).fill('Jira connection');
+    await page.getByRole('button',{name:'Connect Jira',exact:true}).click();await expect(page.getByRole('alert').filter({hasText:'Jira sign-in was not completed.'})).toBeVisible();
+    await page.getByRole('button',{name:'Connect Jira',exact:true}).click();await expect(page.getByRole('combobox',{name:'Jira site',exact:true})).toContainText('Operations Jira');
+    // Chromium routing can hide preflight. Consent is complete; require native
+    // browser networking for the private claim, saved capability and Origin denial.
+    await this.context.unrouteAll({behavior:'wait'});
+    await page.getByRole('button',{name:'Connect selected Jira site',exact:true}).click();
+    const connection=page.getByRole('combobox',{name:'Saved HTTP connection',exact:true});await expect(connection).toContainText('Jira connection · Jira '+host.accountId);
+    const binding=async()=>(await repository(page,'list')).flatMap(workflow=>workflow.nodes).find(node=>node.data?.name===name)?.data.credentialBinding;
+    await expect.poll(async()=>(await binding())?.connection?.revision).toBe(1);assert.deepEqual((await binding()).credentials,{});
+    let seen=await (await this.context.request.get(endpoint+'/observations')).json();assert.equal(seen.providers.filter(item=>item.url==='https://auth.atlassian.com/oauth/token').length,1);
+    await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});await setMode(page,'workflow');await page.getByRole('button',{name:'Run workflow',exact:true}).click();
+    await unlock.fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();await expect(connection).toContainText('Jira connection · Jira '+host.accountId);
+    await this.context.request.post(endpoint+'/expire');await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();
+    await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();await expect(page.locator('[aria-label="Response body"]').last()).toContainText(host.accountId);
+    seen=await (await this.context.request.get(endpoint+'/observations')).json();assert.equal(seen.providers.filter(item=>item.grant==='refresh_token').length,1);
+    assert.ok(seen.providers.filter(item=>item.url.includes('/rest/api/3/myself')).every(item=>item.url.includes('/ex/jira/'+host.cloudId+'/')));
+    assert.ok(seen.events.some(item=>item.method==='OPTIONS'&&item.requestedHeaders.includes('authorization')&&!item.sentAuthorization));assert.ok(seen.events.some(item=>item.sentConnection));assert.ok(!seen.events.some(item=>item.sentCookie));
+    const foreign=await this.context.newPage();await foreign.goto(this.baseURL.replace('127.0.0.1','localhost')+'/vault-fixture.html');
+    const denied=await foreign.evaluate(async({origin,key})=>{try{await fetch(origin+'/v1/jira/config',{headers:{Authorization:'Bearer '+key},credentials:'omit'});return 'allowed';}catch(error){return error.name;}},{origin:host.publicOrigin,key:jiraCanaries.accessKey});assert.equal(denied,'TypeError');await foreign.close();
+    const secrets=[...privateCanaries,jiraCanaries.accessKey,jiraCanaries.clientSecret,jiraCanaries.code,jiraCanaries.accessPrefix,jiraCanaries.refreshPrefix];
+    for(const value of [await page.locator('body').innerText(),await repository(page,'list'),await storage(page,'read')])for(const secret of secrets)assert.ok(!JSON.stringify(value).includes(secret));
+    assert.deepEqual(await invoke(page,'persistedCanaries',secrets),[]);await mkdir(this.artifactDirectory,{recursive:true});await page.screenshot({path:this.artifactDirectory+'/jira-companion-'+width+'.png'});
+  }finally{await this.context.request.delete(endpoint+'/close');}
 });
 
 Then('GitLab public sign-in at {int} pixels uses a private PKCE exchange and saved resource connection', { timeout: 75_000 }, async function (width) {

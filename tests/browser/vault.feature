@@ -7,6 +7,14 @@ Feature: Browser vault persistence and controlled credential execution
   Test-only fixtures exercise storage failures without adding production hooks.
 
   @chromium-only
+  Scenario Outline: Jira companion connections survive reload and refresh at <width>px
+    Then Jira companion sign-in at <width> pixels uses native CORS and keeps its provider tokens outside the application
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @chromium-only
   Scenario Outline: GitLab public OAuth survives reload at <width>px
     Then GitLab public sign-in at <width> pixels uses a private PKCE exchange and saved resource connection
     Examples:

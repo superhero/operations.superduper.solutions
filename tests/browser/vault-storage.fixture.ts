@@ -65,6 +65,10 @@ export async function seed(origin: string, run: string, action = "ok", registere
   return { recovery, status: await session.status(), backup: await session.backup(proof), summaries: await session.list() };
 }
 export function executionInput() { return { descriptor, binding }; }
+export async function seedJira(origin: string, run: string, accessKey: string) {
+  await seed(origin, run);
+  await session.put(null, { label: "Jira companion access key", kind: "secret", value: accessKey });
+}
 export async function seedTelegram(origin: string, run: string) {
   await seed(origin, run);
   const entries = await session.put(null, { label: "Telegram bot fixture", kind: "secret", value: synthetic.bot });

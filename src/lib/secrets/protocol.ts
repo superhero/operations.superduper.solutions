@@ -8,6 +8,7 @@ import type { ResponseProgress } from "../workflow-response-stream.ts";
 
 export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate" | "keys" | "list" | "copyCredential" | "put" | "remove"
   | "grant" | "revoke" | "connections" | "connectionBinding" | "putConnection" | "removeConnection"
+  | "beginJiraOAuth" | "pollJiraOAuth" | "completeJiraOAuth" | "cancelJiraOAuth"
   | "beginGitlabOAuth" | "completeGitlabOAuth" | "cancelGitlabOAuth"
   | "execute" | "checkAssertion" | "backup" | "restore" | "addMethod" | "removeMethod" | "rotate";
 export type VaultArguments<M extends VaultMethod> = Parameters<VaultSession[M]>;
