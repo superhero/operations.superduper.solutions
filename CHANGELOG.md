@@ -385,6 +385,20 @@ Verify 11 Docker and 2 related source scenarios, 3 Docker and 1 related browser 
 
 ```
 
+<!-- changelog-commit:5fa9b28530f136888b887746278ab15e87ccb413 -->
+### Commit [`5fa9b28`](https://github.com/superhero/operations.superduper.solutions/commit/5fa9b28530f136888b887746278ab15e87ccb413)
+
+```text
+feat(schemas): report independent operation capabilities
+
+Collect endpoint, parameter, body, authentication, response and native-runtime limitations independently while retaining legacy errors and original authentication alternatives. Add keyboard and touch requirements details plus current connection-selection feedback.
+
+Store compact version-2 discovery summaries without eager model/provider work, and reject canonical blockers at model loading, graph execution and private approval. Regenerate 224 discovery packs with unchanged source revisions and availability counts.
+
+Verify 6 new and 9 related source scenarios, 3 new and 5 related browser scenarios, final types/build/index freshness on bounded sds-01 Swarm jobs. Document metadata costs and private-binding reauthorization.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
