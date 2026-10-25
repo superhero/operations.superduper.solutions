@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { readGithubAuthenticationContracts } from "./github-authentication-data.ts";
 
-type Profile = "personal" | "app-user" | "installation" | "app-jwt" | "oauth-basic" | "classic-user" | "unreviewed";
+type Profile = "personal" | "app-user" | "installation" | "app-jwt" | "oauth-basic" | "classic-user" | "classic-personal" | "unreviewed";
 type Contract = { method: string; path: string; serverUrl: string; profiles: Profile[]; anonymous: boolean;
   category: string; subcategory: string; permissions: Record<string, string>[]; credentialFields?: string[]; notes?: string[] };
 type Contracts = { version: number; docsRevision: string; apiVersion: string; operations: Record<string, Contract> };
@@ -11,7 +11,7 @@ let contracts: Contracts | undefined;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
 const names: Record<Profile, string> = { personal: "GitHubPersonalAccessToken", "app-user": "GitHubAppUserToken",
   installation: "GitHubInstallationToken", "app-jwt": "GitHubAppJWT", "oauth-basic": "GitHubOAuthApp",
-  "classic-user": "GitHubClassicUserToken", unreviewed: "GitHubAuthenticationNotReviewed" };
+  "classic-user": "GitHubClassicUserToken", "classic-personal": "GitHubClassicPersonalAccessToken", unreviewed: "GitHubAuthenticationNotReviewed" };
 const definitions: Record<string, Record<string, string>> = {
   GitHubPersonalAccessToken: { type: "http", scheme: "bearer", description: "A personal access token accepted by this endpoint. GitHub validates its permissions and resource access." },
   GitHubAppUserToken: { type: "http", scheme: "bearer", description: "An existing GitHub App user access token; this is not an app JWT or installation token." },
@@ -19,6 +19,7 @@ const definitions: Record<string, Record<string, string>> = {
   GitHubAppJWT: { type: "http", scheme: "bearer", bearerFormat: "JWT", description: "An existing JWT authenticating as the GitHub App. This does not mint JWTs or accept a user-token fallback." },
   GitHubOAuthApp: { type: "http", scheme: "basic", description: "Use the OAuth application's client ID as username and its client secret as password." },
   GitHubClassicUserToken: { type: "http", scheme: "bearer", description: "An OAuth user token or classic personal access token with the documented scopes; fine-grained tokens are not qualified here." },
+  GitHubClassicPersonalAccessToken: { type: "http", scheme: "bearer", description: "A personal access token (classic) with notifications or repo scope. Notifications do not accept fine-grained or GitHub App tokens; OAuth user tokens are not qualified here." },
   GitHubAuthenticationNotReviewed: { type: "http", scheme: "github-unreviewed", description: "The pinned GitHub data does not qualify an authentication profile for this operation. Missing metadata does not make it public." },
 };
 const object = (input: unknown): input is Record<string, any> => !!input && typeof input === "object" && !Array.isArray(input);

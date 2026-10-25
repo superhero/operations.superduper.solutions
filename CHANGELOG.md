@@ -42,6 +42,38 @@ chore(ci): reconcile BigQuery squash integration
 
 ```
 
+<!-- changelog-commit:e3325d6b7d3df527112ae734dc40aae423f3511a -->
+### Commit [`e3325d6`](https://github.com/superhero/operations.superduper.solutions/commit/e3325d6b7d3df527112ae734dc40aae423f3511a)
+
+```text
+feat(github): qualify Notifications classic PAT access
+
+```
+
+<!-- changelog-commit:fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2 -->
+### Commit [`fe0f6a2`](https://github.com/superhero/operations.superduper.solutions/commit/fe0f6a2261c3b5d81d950c1933935a99ce1fe7d2)
+
+```text
+chore(github): align notification access with completed service contracts
+
+```
+
+<!-- changelog-commit:9a9bc112324e4ae99786258b66be77444d65d9a8 -->
+### Commit [`9a9bc11`](https://github.com/superhero/operations.superduper.solutions/commit/9a9bc112324e4ae99786258b66be77444d65d9a8)
+
+```text
+chore(ci): retain current develop ancestry for notification access
+
+```
+
+<!-- changelog-commit:32e55db37a84b3104c773ec12d6e7c29903d5c99 -->
+### Commit [`32e55db`](https://github.com/superhero/operations.superduper.solutions/commit/32e55db37a84b3104c773ec12d6e7c29903d5c99)
+
+```text
+chore(ci): reconcile Storage squash integration for Notifications
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
