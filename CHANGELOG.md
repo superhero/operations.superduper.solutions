@@ -243,6 +243,14 @@ fix(ui): surround branch icons with crisp shadows
 Merge branch 'develop' into bugfix/branch-action-surround-shadow
 ```
 
+<!-- changelog-commit:7305da0678a3cec7e64fd7b3945dc6dddc70a45d -->
+### Commit [`7305da0`](https://github.com/superhero/operations.superduper.solutions/commit/7305da0678a3cec7e64fd7b3945dc6dddc70a45d)
+
+```text
+fix(ui): scale branch icons on hover without recoloring
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
