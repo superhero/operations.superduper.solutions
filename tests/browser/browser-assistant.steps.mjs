@@ -286,8 +286,8 @@ Then('assistant loading failures reach the shared history and copy their native 
   await expect(entry.getByRole('status')).toContainText('Could not copy error details');
   consumeExpectedError(this, 'Synthetic clipboard denied');
 });
-Then('the assistant checks its real browser worker without downloading model files', async function() {
-  const page = this.page, requests = [];
+async function checkRealCompatibility(page) {
+  const requests = [];
   page.on('request', request => { if (/huggingface|\.gguf/.test(request.url())) requests.push(request.url()); });
   const panel = await openAssistant(page);
   await panel.getByRole('button', { name: 'Check compatibility', exact: true }).click();
@@ -295,6 +295,22 @@ Then('the assistant checks its real browser worker without downloading model fil
   await expect(panel.getByRole('status')).toContainText(/WebGPU|HTTPS|localhost/);
   await expect(panel.getByRole('alert')).toHaveCount(0);
   expect(requests).toHaveLength(0);
+}
+Then('the assistant checks its real browser worker without downloading model files', async function() {
+  await checkRealCompatibility(this.page);
+});
+Then('the same compatibility check succeeds in a development worker', { timeout: 90000 }, async function() {
+  const { createFixtureServer, waitForApplicationReady } = await import('./legacy-smoke/support.mjs');
+  const server = await createFixtureServer({});
+  const address = server.httpServer.address();
+  const url = `http://127.0.0.1:${address.port}`;
+  const allowDevelopment = route => route.continue();
+  await this.context.route(`${url}/**`, allowDevelopment);
+  try {
+    await this.page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
+    await waitForApplicationReady(this.page);
+    await checkRealCompatibility(this.page);
+  } finally { await this.context.unroute(`${url}/**`, allowDevelopment); }
 });
 
 Then('assistant drafts expand the message input without internal scrolling', async function() {

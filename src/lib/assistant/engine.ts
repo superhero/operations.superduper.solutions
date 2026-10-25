@@ -15,7 +15,8 @@ export type WebMLModule = { Qwen3_5ForConditionalGeneration: { from_pretrained(m
 /** Fetch the original runtime only on demand; verify the source before executing it.
  * The upstream runtime has no established redistribution license, so do not vendor it. */
 export async function fetchBonsaiRuntime(signal: AbortSignal, request: typeof fetch = fetch,
-  importModule: (url: string) => Promise<WebMLModule> = url => import(/* @vite-ignore */ url)): Promise<WebMLModule> {
+  // A template specifier keeps Vite's browser-only query helper out of the worker.
+  importModule: (url: string) => Promise<WebMLModule> = url => import(/* @vite-ignore */ `${url}`)): Promise<WebMLModule> {
   const response = await request(bonsaiRuntime.url, { signal, credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store" });
   if (!response.ok) throw new Error(`Could not load the WebML runtime (${response.status}).`);
   const source = await response.arrayBuffer();

@@ -60,9 +60,12 @@ overlay.configureServer = function (server) {
 
 export default defineConfig({
   root: "src",
-  // File parsing starts in a worker; prepare its CJS dependency before the
-  // first upload rather than discovering it during worker module loading.
-  optimizeDeps: { include: ["papaparse"], exclude: ["parakeet.js", "onnxruntime-web"] },
+  // Prepare worker dependencies before use so late discovery cannot reload the
+  // page during the first upload or assistant compatibility check.
+  optimizeDeps: {
+    include: ["papaparse", "@earendil-works/pi-agent-core", "@earendil-works/pi-ai/utils/event-stream", "@earendil-works/pi-ai/utils/transcript"],
+    exclude: ["parakeet.js", "onnxruntime-web"]
+  },
   // Visulima handles runtime errors; Vite's own forwarding can report failed
   // transmissions back through console.error and create a transport loop.
   server: { forwardConsole: false, headers: isolationHeaders },
