@@ -176,6 +176,8 @@ async function selectPaletteWithKeyboard(page, name, { enterFromSettings = true 
   if (enterFromSettings) {
     await settings(page).focus();
     await page.keyboard.press('Tab');
+    await expect(settings(page).getByRole('switch', { name: 'AI assistant', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(settings(page).getByRole('switch', { name: 'Dark theme', exact: true })).toBeFocused();
     const heading = settings(page).locator('summary[aria-label="Theme"]');
     const sectionCount = await settings(page).locator('summary').count();

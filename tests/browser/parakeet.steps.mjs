@@ -11,8 +11,8 @@ import { installAssistantFixture } from './browser-assistant.fixture.mjs';
 async function open(page, fixture = true) {
   if (fixture) await installSpeechFixture(page);
   await setMode(page, 'settings');
-  const summary = page.locator('summary[aria-label="Assistant"]');
-  if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
+  const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
+  if (await mode.getAttribute('aria-checked') !== 'true') await mode.click();
   const speech = page.locator('.speech-settings');
   if (!(await speech.getAttribute('open') === '')) await speech.locator(':scope > summary').click();
   return speech;
@@ -74,9 +74,9 @@ Then('Parakeet dictation appends confirmed text and saves local audio across rec
 Then('Parakeet silence leaves the draft unchanged and pane closure stops capture', async function() {
   const page = this.page, speech = await open(page); await load(speech); await draft(page).fill('Keep my draft');
   await page.evaluate(() => window.speechFixture.finalText = ''); await start(page, speech);
-  await page.locator('summary[aria-label="Assistant"]').click();
+  await page.getByRole('switch', { name: 'AI assistant', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.speechFixture.stoppedTracks)).toBe(1);
-  await page.locator('summary[aria-label="Assistant"]').click(); await expect(draft(page)).toHaveValue('Keep my draft');
+  await page.getByRole('switch', { name: 'AI assistant', exact: true }).click(); await expect(draft(page)).toHaveValue('Keep my draft');
   await expect(speech.getByRole('status')).toContainText('No speech detected');
   await expect(button(speech, 'Dictate')).toBeEnabled(); expect(await page.evaluate(() => window.speechFixture.terminated)).toBe(0);
 });

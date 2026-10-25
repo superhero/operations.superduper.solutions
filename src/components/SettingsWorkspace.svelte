@@ -104,6 +104,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let storageReady = $state(false);
   let storageDismissing = $state(false);
   let assistantBuilt = $state(false);
+  const assistantMode = $derived(Boolean(assistantHost) && openSection === "assistant");
+  let previousSettingsSection = $state<SettingsSection>(null);
+  function togglePaneView(): void {
+    if (openSection === "assistant") openSection = previousSettingsSection;
+    else { previousSettingsSection = openSection; openSection = "assistant"; }
+  }
   $effect(() => { if (active && openSection === "assistant") assistantBuilt = true; });
   $effect(() => {
     if (!active || openSection !== "storage" || storageBuilt) return;
@@ -251,12 +257,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
-  <div class="settings-sections">
+  <div class="pane-controls">
+    {#if assistantHost}
+      <HintButton class="icon-switch" type="button" role="switch" label={assistantMode ? "Switch to settings" : "Switch to AI assistant"}
+        aria-label="AI assistant" aria-checked={assistantMode} onclick={togglePaneView}>
+        <span class="switch-thumb"></span><span><MaterialIcon name="tune" /></span><span><MaterialIcon name="smart_toy" /></span>
+      </HintButton>
+    {/if}
     <div class="theme-mode">
       <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark} onclick={onTheme}>
         <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
       </HintButton>
     </div>
+  </div>
+  <div class="settings-sections" hidden={assistantMode} inert={assistantMode}>
     <Disclosure lazy class="catalog-group settings-section" label="Application" tooltipEnabled={false} open={active && openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Application</h2><span class="section-subtitle">Configure UI defaults</span></div>
@@ -373,15 +387,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </fieldset>
       <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
-    {#if assistantHost}
-      <Disclosure class="catalog-group settings-section" label="Assistant" tooltipEnabled={false} open={active && openSection === "assistant"} onToggle={next => openSection = next ? "assistant" : null}>
-        {#snippet summary()}
-          <div class="section-heading"><h2>Assistant</h2><span class="section-subtitle">Chat with Bonsai and dictate with Parakeet in this browser</span></div>
-          <MaterialIcon name="chevron_forward" size={17} />
-        {/snippet}
-        {#if assistantBuilt}<AssistantSettings host={assistantHost} visible={active && openSection === "assistant"} />{/if}
-      </Disclosure>
-    {/if}
     <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; storageDismissing = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
@@ -500,6 +505,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </fieldset>
     </Disclosure>
   </div>
+  {#if assistantHost && assistantBuilt}
+    <div hidden={!assistantMode} inert={!assistantMode}>
+      <AssistantSettings host={assistantHost} visible={active && assistantMode} />
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -556,8 +566,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .settings-retry { padding: 16px 16px 0; }
-  .theme-mode { display: flex; justify-content: flex-end; }
-  .theme-mode :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
+  .pane-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .theme-mode { display: flex; justify-content: flex-end; margin-left: auto; }
+  .pane-controls :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }
   .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
