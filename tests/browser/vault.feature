@@ -291,3 +291,11 @@ Feature: Browser vault persistence and controlled credential execution
       | width |
       | 390   |
       | 1280  |
+
+  @chromium-only
+  Scenario Outline: Bluesky OAuth connections survive reload at <width>px
+    Then Bluesky OAuth at <width> pixels uses private proofs and a saved resource connection
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |

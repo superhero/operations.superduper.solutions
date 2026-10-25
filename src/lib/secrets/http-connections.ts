@@ -1,13 +1,14 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { atprotoOAuthAlternative, validateAtprotoMetadata } from "./atproto-config.ts";
 import { jiraOAuthAlternative, validateJiraMetadata } from "./jira-config.ts";
 import { gitlabOAuthAlternative, validateGitlabMetadata } from "./gitlab-config.ts";
 import { canonicalPolicyValue, validateApprovedOperation } from "./policy.ts";
 import { credentialObject, credentialReferenceIds, isBasicCredentialReference, isOAuth1CredentialReference, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
 import { VaultError, type ApprovedOperation, type CredentialBinding, type HttpConnection, type HttpConnectionInput,
-  type HttpConnectionReference, type HttpTokenFormat, type GitlabOAuthMetadata, type JiraOAuthMetadata, type VaultCredential } from "./types.ts";
+  type HttpConnectionReference, type HttpTokenFormat, type AtprotoOAuthMetadata, type GitlabOAuthMetadata, type JiraOAuthMetadata, type VaultCredential } from "./types.ts";
 
 export const httpConnectionLimit = 128;
 function ownObject(value: unknown, required: readonly string[], optional: readonly string[] = []): Record<string, unknown> {
@@ -40,7 +41,7 @@ export function validateHttpConnection(value: unknown): HttpConnection {
   validateHttpConnectionReference({ id: item.id, revision: item.revision, fingerprint: item.fingerprint });
   if ([item.label, item.account].some(value => typeof value !== "string" || !value.trim() || value.length > 120 || /[\u0000-\u001f\u007f]/.test(value))
     || typeof item.provider !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(item.provider)
-    || typeof item.endpoint !== "string" || item.runtime !== "browser-http" || !["schema", "discord-bot", "opsgenie-key", "gitlab-oauth", "jira-companion"].includes(String(item.format))
+    || typeof item.endpoint !== "string" || item.runtime !== "browser-http" || !["schema", "discord-bot", "opsgenie-key", "gitlab-oauth", "jira-companion", "atproto-oauth"].includes(String(item.format))
     || item.expiresAt !== undefined && (!Number.isSafeInteger(item.expiresAt) || (item.expiresAt as number) <= 0)) throw new VaultError("INVALID");
   let endpoint: URL;
   try { endpoint = new URL(item.endpoint); } catch { throw new VaultError("INVALID"); }
@@ -62,6 +63,10 @@ export function validateHttpConnection(value: unknown): HttpConnection {
   } else if (item.format === "jira-companion") {
     if (item.expiresAt !== undefined) throw new VaultError("INVALID");
     item.oauth = validateJiraMetadata(item.oauth);
+  } else if (item.format === "atproto-oauth") {
+    if (item.expiresAt !== undefined) throw new VaultError("INVALID");
+    item.oauth = validateAtprotoMetadata(item.oauth);
+    if (item.endpoint + "/" !== (item.oauth as AtprotoOAuthMetadata).pds) throw new VaultError("INVALID");
   } else if (item.oauth !== undefined) throw new VaultError("INVALID");
   return { ...item, security, credentials: binding.credentials } as HttpConnection;
 }
@@ -86,6 +91,7 @@ export function httpConnectionMatches(connection: HttpConnection, descriptor: Ap
     && canonicalPolicyValue(security) === canonicalPolicyValue(connection.security)
     && (connection.format === "gitlab-oauth" ? gitlabOAuthAlternative(descriptor) === connection.alternative && !!connection.oauth
       : connection.format === "jira-companion" ? jiraOAuthAlternative(descriptor) === connection.alternative && connection.oauth?.profile === "atlassian-jira-3lo-v1" && connection.oauth.siteUrl === descriptor.origin
+      : connection.format === "atproto-oauth" ? atprotoOAuthAlternative(descriptor) === connection.alternative && !!connection.oauth
       : httpTokenFormats(descriptor, connection.alternative).includes(connection.format));
 }
 function assertReferences(connection: HttpConnection, records: readonly VaultCredential[]): void {
@@ -101,7 +107,7 @@ function assertReferences(connection: HttpConnection, records: readonly VaultCre
 }
 
 export async function resolveHttpConnection(descriptor: ApprovedOperation, binding: CredentialBinding, records: readonly VaultCredential[]):
-  Promise<{ binding: CredentialBinding; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata | JiraOAuthMetadata }> {
+  Promise<{ binding: CredentialBinding; format: HttpTokenFormat; expiresAt?: number; oauth?: HttpConnection["oauth"] }> {
   if (!binding.connection) return { binding, format: "schema" };
   const selected = validateCredentialBinding(binding), reference = selected.connection!;
   const connection = storedHttpConnections(records).find(item => item.id === reference.id);
@@ -160,9 +166,20 @@ export async function createJiraHttpConnection(descriptor: ApprovedOperation, cr
   return validateHttpConnection({ ...config, fingerprint: await fingerprint(config) });
 }
 
+export async function createAtprotoHttpConnection(descriptor: ApprovedOperation, credentialId: string, label: string,
+  oauth: AtprotoOAuthMetadata, previous?: HttpConnectionReference): Promise<HttpConnection> {
+  const approved = await validateApprovedOperation(descriptor), alternative = atprotoOAuthAlternative(approved);
+  if (alternative === undefined || oauth.pds !== approved.origin + "/") throw new VaultError("PERMISSION");
+  const config: Omit<HttpConnection, "fingerprint"> = { id: previous?.id ?? crypto.randomUUID(), revision: (previous?.revision ?? 0) + 1, label,
+    account: `Bluesky ${oauth.accountId}`.slice(0, 120), provider: schemaId(approved), endpoint: approved.origin, runtime: "browser-http", alternative,
+    security: structuredClone(approved.operation.security![alternative]!) as HttpConnection["security"], credentials: { Bearer: credentialId },
+    format: "atproto-oauth", oauth: validateAtprotoMetadata(oauth) };
+  return validateHttpConnection({ ...config, fingerprint: await fingerprint(config) });
+}
+
 export function formatHttpToken(format: HttpTokenFormat, value: string): string {
   if (format === "schema") return value;
-  if (format === "gitlab-oauth" || format === "jira-companion") throw new VaultError("PERMISSION");
+  if (format === "gitlab-oauth" || format === "jira-companion" || format === "atproto-oauth") throw new VaultError("PERMISSION");
   if (!value || /\s/.test(value)) throw new VaultError("INVALID");
   return `${format === "discord-bot" ? "Bot" : "GenieKey"} ${value}`;
 }

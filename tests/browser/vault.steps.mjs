@@ -9,6 +9,7 @@ import { expect } from '@playwright/test';
 import { exampleCatalogState } from './catalog-state.fixture.mjs';
 import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
+import { atprotoProvider } from '../atproto-oauth.fixture.mjs';
 import { jiraCanaries } from '../jira-companion.fixture.mjs';
 import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
 
@@ -1402,4 +1403,79 @@ Then('a Cloudflare upload at {int} pixels carries opaque session references thro
     for (const token of [uploadToken, completionToken]) assert.ok(!JSON.stringify(value).includes(token));
   assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, uploadToken, completionToken]), []);
   await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/cloudflare-upload-${width}.png` });
+});
+
+Then('Bluesky OAuth at {int} pixels uses private proofs and a saved resource connection', { timeout: 75_000 }, async function (width) {
+  const page = this.page, provider = atprotoProvider(new URL(this.baseURL).origin);
+  let consents = 0; const expectedHTTP = [];
+  await page.setViewportSize({ width, height: 900 }); await seed(this, 'ok');
+  const redirect = new URL(this.baseURL); redirect.searchParams.set('operations_oauth_callback', 'bluesky');
+  await this.context.route(/^https:\/\/(?:[^/]+\.example\.com|plc\.directory|bsky\.social)\//, async route => {
+    const request = route.request(), url = new URL(request.url());
+    const headers = { 'Access-Control-Allow-Origin': new URL(this.baseURL).origin, 'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Expose-Headers': 'DPoP-Nonce, WWW-Authenticate', 'Cache-Control': 'no-store' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    if (url.origin === provider.issuer && url.pathname === '/authorize') {
+      const callback = provider.consent(url.href, consents++ === 0), target = new URL(redirect);
+      for (const [key, value] of Object.entries(callback)) target.searchParams.set(key, value);
+      return route.fulfill({ status: 302, headers: { ...headers, Location: target.href } });
+    }
+    assert.equal(request.headers().cookie, undefined); assert.equal(request.headers().referer, undefined);
+    const response = await provider.fetch(new Request(request.url(), { method: request.method(), headers: request.headers(),
+      ...(request.postDataBuffer() ? { body: request.postDataBuffer() } : {}), credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer' }));
+    if (response.status >= 400) {
+      const body = await response.clone().json(); assert.ok(['use_dpop_nonce', 'invalid_token'].includes(body.error));
+      expectedHTTP.push({ url: request.url(), status: response.status });
+    }
+    return route.fulfill({ status: response.status, headers: { ...headers, ...Object.fromEntries(response.headers) }, body: Buffer.from(await response.arrayBuffer()) });
+  });
+  const name = 'Bluesky OAuth fixture';
+  const document = { openapi: '3.0.3', info: { title: name, version: '1' }, servers: [{ url: provider.pds }], security: [{ Bearer: [] }],
+    components: { securitySchemes: { Bearer: { type: 'http', scheme: 'bearer' } } },
+    paths: { '/xrpc/app.bsky.actor.getPreferences': { get: { operationId: 'app.bsky.actor.getPreferences', summary: name,
+      responses: { 200: { description: 'Preferences', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'bluesky-oauth.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable '+name, exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: /Bearer/, exact: false }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await page.getByText('Connect Bluesky account', { exact: true }).click();
+  await expect(page.getByLabel('Bluesky redirect URL', { exact: true })).toHaveValue(redirect.href);
+  await page.getByLabel('Bluesky handle or DID', { exact: true }).fill(provider.handle);
+  await page.getByLabel('Bluesky connection name', { exact: true }).fill('Bluesky connection');
+  const deniedWindow = this.context.waitForEvent('page');
+  await page.getByRole('button', { name: 'Connect Bluesky', exact: true }).click();
+  const denied = await deniedWindow;
+  await expect(page.getByRole('alert').filter({ hasText: 'Sign-in was not completed.' })).toBeVisible();
+  await expect.poll(() => denied.isClosed()).toBe(true); assert.equal(provider.tokenCalls, 0);
+  const opened = this.context.waitForEvent('page');
+  await page.getByRole('button', { name: 'Connect Bluesky', exact: true }).click();
+  const popup = await opened;
+  await expect.poll(() => provider.tokenCalls).toBe(1);
+  await expect.poll(() => popup.isClosed()).toBe(true);
+  const connection = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connection).toContainText('Bluesky connection · Bluesky ' + provider.did);
+  const binding = async () => (await repository(page, 'list')).flatMap(document => document.nodes).find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await binding())?.connection?.revision).toBe(1); assert.deepEqual((await binding()).credentials, {});
+  assert.equal(provider.resources, 0); assert.ok(provider.proofs.length >= 4);
+  provider.expiredAccess.add([...provider.tokens.keys()][0]);
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connection).toContainText('Bluesky connection · Bluesky ' + provider.did); await expect(connection).toBeEnabled();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  assert.equal(provider.tokenCalls, 1); assert.equal(provider.refreshCalls, 1); assert.ok(provider.resources >= 2);
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), await storage(page, 'read')])
+    for (const secret of provider.privateValues) assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...provider.privateValues]), []);
+  this.diagnostics = this.diagnostics.filter(item => {
+    const index = expectedHTTP.findIndex(expected => item.type === 'http-error' && item.url === expected.url && item.status === expected.status);
+    if (index < 0) return true; expectedHTTP.splice(index, 1); return false;
+  });
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/bluesky-oauth-${width}.png` });
 });

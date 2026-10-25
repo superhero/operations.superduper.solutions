@@ -1,6 +1,9 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { AtprotoOAuthBroker, type AtprotoRuntime } from "./atproto-oauth.ts";
+import { validateAtprotoState, managedAtprotoSecrets } from "./atproto-state.ts";
+import { atprotoOAuthAlternative, atprotoPath, atprotoProxy, validateAtprotoMetadata, type AtprotoOAuthInput, type AtprotoOAuthCallback } from "./atproto-config.ts";
 import { JiraCompanionBroker, validateJiraState, jiraAccessKeyHash, type JiraCompanionRuntime, type JiraCompanionState } from "./jira-companion.ts";
 import { jiraOAuthAlternative, validateJiraMetadata, type JiraOAuthInput } from "./jira-config.ts";
 import { validateGitlabMetadata } from "./gitlab-config.ts";
@@ -14,7 +17,7 @@ import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.t
 import { validateApprovedOperation, approvedOperation } from "./policy.ts";
 import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed, CredentialResponseError, redactor } from "./execution.ts";
-import { connectionCredentialIds, createHttpConnection, createGitlabHttpConnection, createJiraHttpConnection, httpConnectionLimit, httpConnectionReference, resolveHttpConnection,
+import { connectionCredentialIds, createHttpConnection, createAtprotoHttpConnection, createGitlabHttpConnection, createJiraHttpConnection, httpConnectionLimit, httpConnectionReference, resolveHttpConnection,
   storedHttpConnections, validateHttpConnection, invalidateHttpConnections } from "./http-connections.ts";
 import type { HttpConnectionInput } from "./types.ts";
 import { validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
@@ -42,9 +45,10 @@ function credential(value: VaultCredential): VaultCredential {
   }
   if (value.oauthState !== undefined) {
     if (typeof value.oauthState !== "string" || new TextEncoder().encode(value.oauthState).byteLength > vaultLimits.secretBytes
-      || !value.connections?.some(connection => ["gitlab-oauth", "jira-companion"].includes(connection.format))) throw new VaultError("INVALID");
+      || !value.connections?.some(connection => ["gitlab-oauth", "jira-companion", "atproto-oauth"].includes(connection.format))) throw new VaultError("INVALID");
     const jira = value.connections?.find(connection => connection.format === "jira-companion");
     if (jira) validateJiraState(value.oauthState, validateJiraMetadata(jira.oauth));
+    else if (value.connections?.some(connection => connection.format === "atproto-oauth")) validateAtprotoState(value.oauthState);
     else validateGitlabTokenState(value.oauthState);
   }
   const grantIds = new Set<string>();
@@ -78,15 +82,16 @@ export class VaultSession {
   private key: CryptoKey | undefined;
   private generation = 0;
   private readonly uploadSessions = new CloudflareUploadSessions();
+  private readonly atprotoOAuth: AtprotoOAuthBroker;
   private readonly gitlabOAuth: GitlabOAuthBroker;
   private readonly jiraCompanion: JiraCompanionBroker;
   private pending: Pending | undefined;
 
-  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}) {
-    this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime); this.jiraCompanion = new JiraCompanionBroker(jiraRuntime);
+  constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}, gitlabRuntime: GitlabOAuthRuntime = {}, jiraRuntime: JiraCompanionRuntime = {}, atprotoRuntime: AtprotoRuntime = {}) {
+    this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema; this.gitlabOAuth = new GitlabOAuthBroker(gitlabRuntime); this.jiraCompanion = new JiraCompanionBroker(jiraRuntime); this.atprotoOAuth = new AtprotoOAuthBroker(atprotoRuntime);
   }
 
-  lock(): void { this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
+  lock(): void { this.atprotoOAuth.clear(); this.jiraCompanion.clear(); this.gitlabOAuth.clear(); this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -256,6 +261,10 @@ export class VaultSession {
       const state = validateJiraState(record.oauthState ?? "", validateJiraMetadata(resolved.oauth)); this.jiraCompanion.assertState(state);
       await this.jiraKey(state.accessKeyId, state.accessKeyHash);
     }
+    if (resolved.format === "atproto-oauth") {
+      const id = resolved.binding.credentials.Bearer, record = typeof id === "string" && records.find(item => item.id === id);
+      if (!record || validateAtprotoState(record.oauthState ?? "", validateAtprotoMetadata(resolved.oauth)).refreshPending) throw new VaultError("AUTHORIZATION");
+    }
     await this.assertCurrent();
     return binding;
   }
@@ -337,6 +346,43 @@ export class VaultSession {
     } catch (error) { await this.jiraCompanion.cancel(id).catch(() => {}); throw error; }
   }
 
+  async beginAtprotoOAuth(input: AtprotoOAuthInput, descriptor: ApprovedOperation, replace?: HttpConnectionReference) {
+    const generation = this.generation; await this.assertCurrent();
+    const approved = await validateApprovedOperation(descriptor);
+    if (atprotoOAuthAlternative(approved) === undefined) throw new VaultError("PERMISSION");
+    const guard = async () => { this.guard(generation); await this.assertSchema(approved); await this.assertCurrent(); this.guard(generation); };
+    await guard();
+    if (!replace && storedHttpConnections(await this.records()).length >= httpConnectionLimit) throw new VaultError("LIMIT");
+    if (replace) {
+      const records = await this.records(), selected = validateHttpConnectionReference(replace);
+      const previous = storedHttpConnections(records).find(item => item.id === selected.id);
+      if (!previous || previous.format !== "atproto-oauth" || previous.revision !== selected.revision || previous.fingerprint !== selected.fingerprint
+        || previous.oauth?.clientId !== input.clientId || previous.oauth.redirectUri !== input.redirectUri) throw new VaultError("PERMISSION");
+      replace = selected;
+    }
+    const task = await this.atprotoOAuth.begin(input, approved, guard, replace); await guard(); return task;
+  }
+  async cancelAtprotoOAuth(id: string) { await this.assertCurrent(); this.atprotoOAuth.cancel(id); }
+  async completeAtprotoOAuth(id: string, callback: AtprotoOAuthCallback, signal?: AbortSignal) {
+    const generation = this.generation;
+    const guard = async (descriptor: ApprovedOperation) => { this.guard(generation); await this.assertSchema(descriptor); await this.assertCurrent();
+      this.guard(generation); if (signal?.aborted) throw new VaultError("CANCELLED"); };
+    await this.assertCurrent(); const { pending, state } = await this.atprotoOAuth.complete(id, callback, guard);
+    await guard(pending.context.descriptor);
+    const records = await this.records(), previous = pending.replace && storedHttpConnections(records).find(item => item.id === pending.replace!.id);
+    if (pending.replace && (!previous || previous.format !== "atproto-oauth" || previous.revision !== pending.replace.revision
+      || previous.fingerprint !== pending.replace.fingerprint || canonicalJSON(previous.oauth) !== canonicalJSON(state.oauth))) throw new VaultError("AUTHORIZATION");
+    if (!previous && storedHttpConnections(records).length >= httpConnectionLimit) throw new VaultError("LIMIT");
+    const credentialId = previous ? connectionCredentialIds(previous)[0]! : crypto.randomUUID();
+    const connection = await createAtprotoHttpConnection(pending.context.descriptor, credentialId, pending.context.input.label, state.oauth, pending.replace);
+    if (storedHttpConnections(records).some(item => item.id !== connection.id && item.provider === connection.provider
+      && item.label.toLowerCase() === connection.label.toLowerCase())) throw new VaultError("DUPLICATE_KEY");
+    const record: VaultCredential = { id: credentialId, label: connection.label + " reference", kind: "secret", value: crypto.randomUUID(),
+      oauthState: JSON.stringify(state), grants: [], connections: [connection] };
+    if (records.some(item => item.id !== credentialId && item.label.toLowerCase() === record.label.toLowerCase())) throw new VaultError("DUPLICATE_KEY");
+    await guard(pending.context.descriptor); await this.save([...records.filter(item => item.id !== credentialId), record]); this.guard(generation); return connection;
+  }
+
   async beginGitlabOAuth(input: GitlabOAuthInput, descriptor: ApprovedOperation, replace?: HttpConnectionReference) {
     const generation = this.generation; await this.assertCurrent();
     const approved = await validateApprovedOperation(descriptor);
@@ -390,7 +436,7 @@ export class VaultSession {
       try { await this.jiraCompanion.remove(state, key, async () => { await this.assertCurrent(); }); } catch { remoteRemoved = false; }
       await this.remove(null, id); return { remoteRemoved };
     }
-    if (connection.format === "gitlab-oauth") { await this.remove(null, connectionCredentialIds(connection)[0]!); return; }
+    if (connection.format === "gitlab-oauth" || connection.format === "atproto-oauth") { await this.remove(null, connectionCredentialIds(connection)[0]!); return; }
     for (const record of records) if (record.connections) {
       record.connections = record.connections.filter(item => item.id !== selected.id);
       if (!record.connections.length) delete record.connections;
@@ -513,6 +559,27 @@ export class VaultSession {
       return { request: scrub.value(request) as typeof request, response: safe };
     }
     const previousSecrets: string[] = [];
+    if (resolved.format === "atproto-oauth") {
+      if (atprotoOAuthAlternative(descriptor) === undefined || Object.keys(values).length || variables?.length) throw new VaultError("PERMISSION");
+      const id = resolved.binding.credentials.Bearer, record = typeof id === "string" && records.find(item => item.id === id);
+      if (!record) throw new VaultError("PERMISSION");
+      const state = validateAtprotoState(record.oauthState ?? "", validateAtprotoMetadata(resolved.oauth));
+      const guard = async () => { this.guard(generation); await this.assertSchema(descriptor); await this.assertCurrent(); this.guard(generation);
+        if (signal?.aborted) throw new VaultError("CANCELLED"); };
+      const oldSecrets = managedAtprotoSecrets(record.oauthState ?? ""); let expectedState = record.oauthState;
+      const result = await this.atprotoOAuth.execute(state, descriptor, guard, async next => {
+        await guard(); const latest = await this.records(), owner = latest.find(item => item.id === id);
+        if (!owner || owner.oauthState !== expectedState) throw new VaultError("AUTHORIZATION"); owner.oauthState = JSON.stringify(next); await this.save(latest); expectedState = owner.oauthState;
+      }, signal);
+      await guard();
+      const secrets = [...oldSecrets, ...result.secrets, ...(await this.records()).flatMap(item => [item.value,
+        ...managedGitlabSecrets(item.oauthState ?? ""), ...managedAtprotoSecrets(item.oauthState ?? "")])];
+      const scrub = redactor(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]));
+      const response = { status: result.response.status, statusText: scrub.text(result.response.statusText), headers: { "content-type": "application/json" },
+        body: scrub.value(result.body) as import("../workflow-execution.ts").WorkflowResponse["body"], ...(scrub.changed ? { redacted: true } : {}) };
+      if (!result.response.ok) throw new CredentialResponseError(`The endpoint returned HTTP ${response.status}. Check the request before retrying.`, response);
+      return { request: { method: "GET", path: atprotoPath, query: {}, headers: { Accept: "application/json", "atproto-proxy": atprotoProxy } }, response };
+    }
     if (resolved.format === "gitlab-oauth") {
       if (gitlabOAuthAlternative(descriptor) === undefined || !resolved.oauth) throw new VaultError("PERMISSION");
       await this.assertSchema(descriptor);

@@ -113,3 +113,7 @@ checks do not establish those guarantees; record provider qualification separate
 Coverage includes pure crypto, session, policy, lifecycle and binding logic.
 Browser storage, worker/client adapters and type-only RPC declarations sit outside
 the source coverage scope; their observable behavior is exercised in browsers.
+
+### AT Protocol public OAuth
+
+The [Bluesky connection](../../../docs/bluesky-oauth.md) keeps per-session proof keys and rotating tokens encrypted in the vault. The official OAuth core runs in the owning worker with private stores; saved references permit only the reviewed account-bound preferences read. Legacy bearer references remain separate.

@@ -13,7 +13,7 @@ const send = (reply: VaultReply) => self.postMessage(reply);
 const methods = new Set<VaultMethod>(["status", "unlock", "prepareCreate", "confirmCreate", "keys", "list", "copyCredential", "put", "remove",
   "grant", "revoke", "connections", "connectionBinding", "putConnection", "removeConnection",
   "beginJiraOAuth", "pollJiraOAuth", "completeJiraOAuth", "cancelJiraOAuth",
-  "beginGitlabOAuth", "completeGitlabOAuth", "cancelGitlabOAuth",
+  "beginAtprotoOAuth", "completeAtprotoOAuth", "cancelAtprotoOAuth", "beginGitlabOAuth", "completeGitlabOAuth", "cancelGitlabOAuth",
   "execute", "checkAssertion", "backup", "restore", "addMethod", "removeMethod", "rotate"]);
 let busy = false;
 let controller: AbortController | undefined;
@@ -79,7 +79,7 @@ self.onmessage = async ({ data }) => {
     if (method === "beginJiraOAuth") args[3] = controller.signal;
     if (method === "pollJiraOAuth") args[1] = controller.signal;
     if (method === "completeJiraOAuth") args[2] = controller.signal;
-    if (method === "completeGitlabOAuth") args[2] = controller.signal;
+    if (method === "completeGitlabOAuth" || method === "completeAtprotoOAuth") args[2] = controller.signal;
     // Only named, reviewed management and execution methods are dispatchable.
     const call = session[method].bind(session) as (...args: unknown[]) => Promise<unknown>;
     const value = await call(...args);
