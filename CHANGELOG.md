@@ -113,6 +113,21 @@ fix(ui): preserve the final rounded catalog elbow
 
 ```
 
+<!-- changelog-commit:73a4dddfdb504c526748c8650890efb919834248 -->
+### Commit [`73a4ddd`](https://github.com/superhero/operations.superduper.solutions/commit/73a4dddfdb504c526748c8650890efb919834248)
+
+```text
+fix(ui): use primary color for catalog add icons
+
+```
+
+<!-- changelog-commit:d2634e43acad056beb6caca23b252748ffa2b8e3 -->
+### Commit [`d2634e4`](https://github.com/superhero/operations.superduper.solutions/commit/d2634e43acad056beb6caca23b252748ffa2b8e3)
+
+```text
+Merge branch 'develop' into bugfix/catalog-add-icon-color
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
