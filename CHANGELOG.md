@@ -346,6 +346,33 @@ Keep native execution guarded. Verify eight native and nine related source cases
 
 ```
 
+<!-- changelog-commit:5e1b47e41a88463da909d8243dc1b6baf0f2f9f6 -->
+### Commit [`5e1b47e`](https://github.com/superhero/operations.superduper.solutions/commit/5e1b47e41a88463da909d8243dc1b6baf0f2f9f6)
+
+```text
+feat(auth): pair isolated Codex runtimes privately
+
+Add the optional HTTPS/WSS companion and vault-worker pairing lifecycle with one-use tickets, exact Origin checks, pinned runtime/workspace/account identity and encrypted credential references. Provide settings controls for pairing, checking, reconnecting and scoped disconnect.
+
+Keep agent and HTTP execution guarded. Verify 17 focused source cases, four production-worker browser cases and one real Codex 0.163.0 browser evaluation on bounded sds-01 Swarm resources, plus typechecking and the production build with all 224 indexes.
+
+```
+
+<!-- changelog-commit:c7da174431917bcbed9ce7765387350d9ffb4f64 -->
+### Commit [`c7da174`](https://github.com/superhero/operations.superduper.solutions/commit/c7da174431917bcbed9ce7765387350d9ffb4f64)
+
+```text
+feat(workflows): run bounded Codex agent sessions
+
+```
+
+<!-- changelog-commit:c28056fd557f3dd7b79a06b5f3d66316df37461d -->
+### Commit [`c28056f`](https://github.com/superhero/operations.superduper.solutions/commit/c28056fd557f3dd7b79a06b5f3d66316df37461d)
+
+```text
+chore: refresh dependency badges
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
