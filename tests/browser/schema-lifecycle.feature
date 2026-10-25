@@ -6,6 +6,12 @@
 Feature: Targeted schema storage and independent history
   Disabled content stays unloaded while canonical content and Git history remain authoritative.
 
+  Scenario: Native RPC models publish bounded canonical policies and survive reload
+    Then native RPC schema storage preserves model identity and publishes complete batches only
+
+  Scenario: Native RPC source changes invalidate private policies and stale model requests
+    Then native RPC schema policies reject disabled replaced and forged models
+
   Scenario: Metadata changes and disabled documents need no source decoding
     Then schema metadata and discovery avoid disabled and unrelated document reads
 

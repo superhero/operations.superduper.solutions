@@ -11,6 +11,9 @@ import legacyExamples from "../catalogs/example-revisions.json" with { type: "js
 import { operationServerUrl, validateSchemaDocument, validateSchemaDocumentId, type SchemaDocumentRecord } from "./schema-documents.ts";
 import { catalogsDatabaseName, catalogsIndexDatabaseName } from "./storage-names.ts";
 import { approvedOperation } from "./secrets/policy.ts";
+import { approvedNativeOperation } from "./secrets/native-rpc-policy.ts";
+import { isCodexSchema } from "./codex-schema.ts";
+import { nativeRpcOperation, scopeNativeRpcSchema } from "./native-rpc.ts";
 import { VaultError } from "./secrets/types.ts";
 import type { SchemaCredentialPolicies } from "./secrets/schema-policy-storage.ts";
 import type { Operation, OperationModel } from "./catalog.ts";
@@ -342,6 +345,14 @@ export function readSchemaOperations(id: string, expectedIdentity: string, opera
     for (const operationId of ids) {
       const descriptor = descriptors.get(operationId);
       if (!descriptor) throw new Error("This operation is not available in the registered schemas.");
+      if (isCodexSchema(record.document)) {
+        const operation = nativeRpcOperation(record.document, operationId);
+        const schema = scopeNativeRpcSchema(record.document, operation.rpc!.method);
+        approved.add((await approvedNativeOperation(operation, schema)).fingerprint);
+        models.push({ protocol: "json-rpc", operation, document: schema, sourceIdentity: expectedIdentity,
+          bytes: new TextEncoder().encode(JSON.stringify([operation, schema])).byteLength });
+        continue;
+      }
       const operation = inspect ? inspect(record.document, id, descriptor) : canonical!.get(operationId);
       if (!operation) throw new Error("This operation is not available in the registered schemas.");
       if (operation.unavailableReason) throw new Error(operation.unavailableReason);
@@ -381,6 +392,9 @@ async function credentialPolicy(record: SchemaDocumentRecord, revision: string):
 {
   const adapter = defaults?.adapterRevision ? { adapterRevision: defaults.adapterRevision } : {};
   if (!record.enabled) return { revision, fingerprints: [], version: 2, ...adapter };
+  // Native policies are hydrated lazily with their bounded models, never all
+  // methods on a source edit. Replacing a source clears every prior approval.
+  if (isCodexSchema(record.document)) return { revision, fingerprints: [], version: 2, ...adapter };
   const validated = validateLibraryDocument(record.document, record.id);
   const fingerprints: string[] = [];
   if (record.enabled)

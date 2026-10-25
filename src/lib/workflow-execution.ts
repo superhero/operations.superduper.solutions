@@ -43,6 +43,8 @@ export function workflowExecutionForOperation(operation: Operation | string)
   const catalog = catalogForOperation(id);
   const canonical = operationForId(id);
   if (!catalog || !canonical) throw new Error("This operation is not available in the registered schemas.");
+  if (catalog.execution.kind === "json-rpc" || canonical.protocol === "json-rpc")
+    throw new Error(canonical.unavailableReason ?? "Native RPC execution requires a paired runtime.");
   return { ...catalog.execution, origin: operationOrigin(id) ?? operationServerUrl(catalog.document, canonical) };
 }
 

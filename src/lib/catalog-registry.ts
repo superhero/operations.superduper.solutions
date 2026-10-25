@@ -21,7 +21,7 @@ export type Catalog = {
   name: string;
   document: Record<string, unknown>;
   groups: CatalogGroup[];
-  execution: { kind: "http" | "json-rpc"; origin: string };
+  execution: { kind: "http"; origin: string } | { kind: "json-rpc" };
 };
 
 /** Source schemas, navigation and execution routes share the same registration. */

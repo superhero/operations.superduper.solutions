@@ -68,7 +68,9 @@ export function createWorkflowDemo()
       }
       else
       {
-        const origin = catalogForOperation(canonical.id)!.execution.origin;
+        const execution = catalogForOperation(canonical.id)!.execution;
+        if (execution.kind !== "http") throw new Error("This operation is unavailable in the local demo.");
+        const origin = execution.origin;
         const url = new URL(request.path, origin);
         for (const [name, value] of Object.entries(request.query))
           for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(name, String(item));

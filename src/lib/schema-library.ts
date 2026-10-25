@@ -17,6 +17,7 @@ import type { SchemaBranchHistory, SchemaRevisionDiff } from "./schema-storage.t
 import type { SchemaFieldDiff } from "./schema-diff.ts";
 import type { SchemaResolution } from "./schema-merge.ts";
 import { schemaDeletionReason } from "./schema-deletion.ts";
+import { codexExecutionLimitation } from "./native-rpc.ts";
 
 const state = writable({ records: [] as SchemaLibraryRecord[], operations, catalogs: registeredCatalogs,
   revision: "", busy: false, initialized: false, error: "" });
@@ -70,7 +71,8 @@ export function createWorkflowSchemaLease()
         const descriptor = operationDescriptorForId(id);
         // Missing/unsupported operations keep their saved graph and are diagnosed
         // by the runner, rather than preventing the entire canvas from opening.
-        return descriptor && !descriptor.unavailableReason;
+        return descriptor && (!descriptor.unavailableReason || descriptor.method === "RPC"
+          && descriptor.unavailableReason === codexExecutionLimitation);
       }));
     },
     release() { pinOperationModels(owner); },

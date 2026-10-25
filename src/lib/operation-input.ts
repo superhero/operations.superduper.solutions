@@ -153,6 +153,8 @@ export function additionalBodyField(operation: Operation, name: string, type: In
 export function prepareRequest(operation: Operation, values: InputValues, workflowFields: InputField[] = operation.fields): PreparedRequest
 {
   if (operation.deferred) throw new Error("Load this operation's schema before preparing a request.");
+  if (operation.protocol === "json-rpc" || operation.rpc !== undefined || operation.method === "RPC")
+    throw new Error(operation.unavailableReason ?? "Native RPC execution requires a paired runtime.");
   if (operation.unavailableReason) throw new Error(operation.unavailableReason);
   if (operation.credentialResult !== undefined) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
   responseStreamProfile(operation.responseStream);

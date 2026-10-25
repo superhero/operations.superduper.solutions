@@ -232,6 +232,11 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     if (byId.get(candidate.target)?.type === "stop") return true;
     if (isFileBinaryConnection(candidate, nodes)) return true;
     const output = outputType(candidate.source, candidate.sourceHandle);
+    if (output === "Unknown" && source.type === "data"
+      && source.data.fields.find(field => field.id === candidate.sourceHandle)?.jsonValue) {
+      if (target.type === "cast" && candidate.targetHandle === "value") return true;
+      if (target.type === "data" && target.data.fields.find(field => field.id === candidate.targetHandle)?.jsonValue) return true;
+    }
     if (output === "Unknown" || output === "Mixed") return false;
     // A known union can connect under the receiving port's type assumption.
     // The executor checks the actual value; connecting never casts it.
@@ -251,7 +256,9 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     if (target.type === "cast" && target.data.targetType === "Binary") return true;
     if (target.type === "data")
     {
-      const expected = target.data.fields.find(field => field.id === candidate.targetHandle)!.type;
+      const field = target.data.fields.find(field => field.id === candidate.targetHandle)!;
+      if (field.jsonValue) return type !== "Binary";
+      const expected = field.type;
       if (expected === "Array" && !isFileRowConnection(candidate, nodes, edges)) {
         const source = byId.get(candidate.source)!;
         if (source.type === "data" && source.data.fields.find(field => field.id === candidate.sourceHandle)?.itemType) return true;
@@ -309,7 +316,7 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
   if (target.type === "data") return target.data.direction === "inputs" &&
     target.data.fields.some(field => field.id === connection.targetHandle && field.connectable);
   if (target.type === "cast") return connection.targetHandle === "value" &&
-    (sourceUtility || processingSource || !!sourceField && (target.data.targetType === "Binary" || ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type)));
+    (sourceUtility || processingSource || !!sourceField && (sourceField.jsonValue || target.data.targetType === "Binary" || ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type)));
   if (target.type !== "switch") return false;
   const gate = target.data.gates.find(gate => switchGateInput(gate.id) === connection.targetHandle);
   if (connection.targetHandle !== "value" && !gate) return false;

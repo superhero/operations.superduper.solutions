@@ -145,6 +145,7 @@ export async function approvedOperation(operation: Operation, origin: string): P
 {
   try
   {
+    if (operation.protocol !== undefined || operation.rpc !== undefined) throw new VaultError("PERMISSION");
     const sanitized = JSON.parse(canonicalPolicyValue(operation)) as Operation;
     validateOperation(sanitized);
     const normalized = normalizeCredentialOrigin(origin);

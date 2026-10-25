@@ -10,6 +10,7 @@ import { inspectResponseContent, type ResponseContent } from "./workflow-respons
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile, type ResponseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile, type PrivatePathProfile } from "./server-url.ts";
+import { codexExecutionLimitation, type NativeRpcContract } from "./native-rpc.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -41,6 +42,9 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
 };
 export type BodyMediaType = `${string}/${string}`;
 export type Operation = {
+  protocol?: "json-rpc";
+  /** Native wire schemas resolve against this operation's scoped model document. */
+  rpc?: NativeRpcContract;
   /** Navigation-only descriptor. Execution requires a separately hydrated model. */
   deferred?: true;
   id: string;
@@ -385,8 +389,8 @@ const models = new Map<string, OperationModel>();
 const pins = new Map<object, ReadonlySet<string>>();
 const modelBudget = 8 * 1024 * 1024;
 
-export type OperationModel = { operation: Operation; document: Record<string, unknown>; origin: string;
-  sourceIdentity: string; bytes: number };
+export type OperationModel = { operation: Operation; document: Record<string, unknown>;
+  sourceIdentity: string; bytes: number } & ({ protocol?: "http"; origin: string } | { protocol: "json-rpc"; origin?: never });
 
 export function operationSourceIdentity(id: string): string | undefined {
   const separator = id.indexOf(":");
@@ -427,11 +431,16 @@ export function installOperationModel(model: OperationModel): Operation {
   const catalog = catalogs.find(catalog => catalog.id === model.operation.id.slice(0, model.operation.id.indexOf(":")));
   if (!descriptor || !catalog || operationSourceIdentity(descriptor.id) !== model.sourceIdentity
     || model.operation.deferred || descriptor.method !== model.operation.method || descriptor.path !== model.operation.path
+    || (model.protocol === "json-rpc" ? catalog.execution.kind !== "json-rpc" || model.operation.protocol !== "json-rpc"
+      || model.operation.rpc?.method !== descriptor.path || model.operation.rpc?.version !== (catalog.document.info as { version?: string })?.version
+      || model.operation.unavailableReason !== codexExecutionLimitation || model.origin !== undefined
+      : catalog.execution.kind !== "http" || model.operation.protocol === "json-rpc")
     || !Number.isSafeInteger(model.bytes) || model.bytes < 0)
     throw new Error("The schema changed while its operation was loading. Try again.");
   models.delete(model.operation.id);
   models.set(model.operation.id, model);
-  setOperationCatalog(model.operation.id, { ...catalog, document: model.document, execution: { kind: "http", origin: model.origin } });
+  setOperationCatalog(model.operation.id, { ...catalog, document: model.document, execution: model.protocol === "json-rpc"
+    ? { kind: "json-rpc" } : { kind: "http", origin: model.origin } });
   pruneModels(model.operation.id);
   return model.operation;
 }
@@ -470,7 +479,8 @@ export function publishPreparedCatalogs(next: readonly PreparedCatalog[]): void
   for (const [id, model] of models) {
     const catalog = replacement.find(catalog => catalog.id === id.slice(0, id.indexOf(":")));
     if (!catalog || operationSourceIdentity(id) !== model.sourceIdentity || !operationIndex.has(id)) releaseModel(id);
-    else setOperationCatalog(id, { ...catalog, document: model.document, execution: { kind: "http", origin: model.origin } });
+    else setOperationCatalog(id, { ...catalog, document: model.document, execution: model.protocol === "json-rpc"
+      ? { kind: "json-rpc" } : { kind: "http", origin: model.origin } });
   }
 }
 

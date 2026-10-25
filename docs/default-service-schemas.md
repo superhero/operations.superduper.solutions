@@ -465,8 +465,9 @@ separate OpenAI HTTP API schema remains unchanged.
 
 The [native connector contract](codex-native-connector.md) qualifies a paired
 browser companion using the pinned stdio protocol and an isolated account home.
-Its transport probe does not enable application execution; native model loading,
-pairing and a complete agent workflow remain separate implementation steps.
+Its transport probe does not enable application execution. [Native model loading
+and saved workflows](native-rpc-models.md) preserve the protocol independently of
+HTTP; pairing and a complete agent workflow remain separate implementation steps.
 
 ## Execution limits
 
