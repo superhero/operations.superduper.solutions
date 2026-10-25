@@ -257,6 +257,42 @@ Then('the assistant checks its real browser worker without downloading model fil
   expect(requests).toHaveLength(0);
 });
 
+Then('assistant drafts expand the message input without internal scrolling', async function() {
+  const page = this.page; await installAssistantFixture(page);
+  await page.evaluate(() => window.assistantFixture.behavior = 'manual');
+  const panel = await openAssistant(page), input = panel.getByRole('textbox', { name: 'Message', exact: true });
+  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  const initialHeight = (await input.boundingBox()).height;
+  const metrics = () => input.evaluate(el => ({ height: el.clientHeight, content: el.scrollHeight, scroll: el.scrollTop }));
+  const expectNoScroll = async () => {
+    await expect.poll(async () => { const value = await metrics(); return value.content - value.height; }, { message: JSON.stringify(await metrics()) }).toBeLessThanOrEqual(1);
+    expect((await metrics()).scroll).toBe(0);
+  };
+  await input.fill('A typed draft');
+  for (let line = 0; line < 6; line++) { await input.press('Shift+Enter'); await input.pressSequentially('Another line'); }
+  await expect.poll(async () => (await metrics()).height).toBeGreaterThan(initialHeight);
+  await expectNoScroll();
+  await input.fill(Array.from({ length: 40 }, (_, i) => `Pasted line ${i + 1}`).join('\n') + '\n');
+  await expect.poll(async () => (await metrics()).height).toBeGreaterThan(400);
+  await expectNoScroll();
+  await input.press('Control+a'); await input.press('Backspace');
+  await expect.poll(async () => (await metrics()).height).toBe(initialHeight);
+  await input.fill('This draft wraps to fit the available pane width. '.repeat(14));
+  const wideHeight = (await metrics()).height;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => (await metrics()).height).toBeGreaterThan(wideHeight);
+  await expectNoScroll();
+  await page.locator('#settings-panel').evaluate(el => el.scrollTop = 0);
+  await page.screenshot({ path: `${this.artifactDirectory}/assistant-message-auto-height.png` });
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await expect.poll(async () => (await metrics()).height).toBe(wideHeight);
+  await input.press('Enter');
+  await expect(input).toHaveValue('');
+  await expect.poll(async () => (await metrics()).height).toBe(initialHeight);
+  await expectNoScroll();
+  await page.evaluate(() => window.assistantFixture.emit({ type: 'done' }));
+});
+
 Then('assistant streaming keeps drafts focus and readable tool details', async function() {
   const page = this.page; await installAssistantFixture(page);
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');

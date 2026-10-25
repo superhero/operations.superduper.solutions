@@ -39,6 +39,24 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let messages = $state.raw<AssistantMessageView[]>([]);
   const messageFields = ["role", "text", "thinking", "tool", "failed", "imageCount"] as const;
   let prompt = $state("");
+  function growMessage(input: HTMLTextAreaElement, _draft: { prompt: string; visible: boolean }) {
+    let active = true, width = 0;
+    const resize = () => {
+      if (!active || !input.clientWidth) return;
+      const positions: Array<[HTMLElement, number]> = [];
+      for (let parent = input.parentElement; parent; parent = parent.parentElement) positions.push([parent, parent.scrollTop]);
+      input.style.height = "auto";
+      input.style.height = `${input.scrollHeight}px`;
+      for (const [parent, top] of positions) parent.scrollTop = top;
+    };
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry && entry.contentRect.width !== width) { width = entry.contentRect.width; resize(); }
+    });
+    observer.observe(input);
+    queueMicrotask(resize);
+    void document.fonts.ready.then(resize);
+    return { update: () => queueMicrotask(resize), destroy: () => { active = false; observer.disconnect(); } };
+  }
   let speechReady = $state(false), speechBusy = $state(false), speechRecording = $state(false);
   let speechSettings: SpeechSettings;
   let configurationOpen = $state(false);
@@ -244,7 +262,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
     </div>
     <label for="assistant-message" class="sr-only">Message</label>
-    <textarea id="assistant-message" rows="3" maxlength="16000" bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Prompt" aria-describedby="assistant-message-hint"
+    <textarea id="assistant-message" rows="3" maxlength="16000" use:growMessage={{ prompt, visible }} bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Prompt" aria-describedby="assistant-message-hint"
       onkeydown={event => { if (phase === "ready" && event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); send(); } }}></textarea>
     {#if attachment}<div class="attachment"><img alt="Attachment ready to send" src={`data:${attachment.mimeType};base64,${attachment.data}`} /><button type="button" class="secondary" disabled={busy} onclick={clearAttachment}>Remove image</button></div>{/if}
     {#if imagePreparing}<p class="image-preparing" role="status">Preparing image…</p>{/if}
@@ -377,7 +395,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   details > pre { margin-top: 10px; }
   .image-note { display: flex; align-items: center; gap: 6px; color: var(--color-muted-foreground); }
   pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; }
-  textarea { width: 100%; padding: 10px; resize: vertical; min-height: 80px; max-height: 400px; display: block; border: 0; border-radius: 0; background: var(--color-background); font: inherit; }
+  textarea { width: 100%; padding: 10px; resize: none; overflow: hidden; min-height: 80px; display: block; border: 0; border-radius: 0; background: var(--color-background); font: inherit; }
   .composer-hint { margin: 0; color: var(--color-muted-foreground); font-size: 11px; }
   .attachment { display: flex; align-items: center; gap: 12px; padding: 8px 10px; }
   .attachment img { max-width: 120px; max-height: 100px; }
