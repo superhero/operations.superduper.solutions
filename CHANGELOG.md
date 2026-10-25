@@ -143,6 +143,21 @@ fix(ui): replace branch action circles with crisp icon shadows
 Merge branch 'develop' into bugfix/branch-action-icon-shadow
 ```
 
+<!-- changelog-commit:43b11f202ca86321da2cd0959d6f428236253991 -->
+### Commit [`43b11f2`](https://github.com/superhero/operations.superduper.solutions/commit/43b11f202ca86321da2cd0959d6f428236253991)
+
+```text
+fix(ui): strengthen catalog guides and operation labels
+
+```
+
+<!-- changelog-commit:7fbddf223e2204fc0f17cef0c5cb2cdccf1275b8 -->
+### Commit [`7fbddf2`](https://github.com/superhero/operations.superduper.solutions/commit/7fbddf223e2204fc0f17cef0c5cb2cdccf1275b8)
+
+```text
+Merge branch 'develop' into bugfix/catalog-row-separators
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
