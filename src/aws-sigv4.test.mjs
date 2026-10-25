@@ -105,7 +105,7 @@ Then('native AWS schemas retain source identities while only the selected Lambda
   assert.equal(s3.length,97);assert.deepEqual(s3.filter(item=>!item.unavailableReason).map(item=>item.id).sort(),['aws-s3:GetObject','aws-s3:PutObject']);
   assert.ok(s3.filter(item=>!item.unavailableReason).every(item=>item.security[0][0].kind==='aws-sigv4'));
   for(const id of ['aws-sts','aws-dynamodb']) {
-    const methods=inspectServiceSchema(await readServiceSchema(id),id).operations;assert.ok(methods.length>0);assert.ok(methods.every(item=>item.unavailableReason));
+    const methods=inspectServiceSchema(await readServiceSchema(id),id).operations;assert.ok(methods.length>0);assert.deepEqual(methods.filter(item=>!item.unavailableReason).map(item=>item.id).sort(),id==='aws-sts'?['aws-sts:GET_GetCallerIdentity','aws-sts:POST_GetCallerIdentity']:['aws-dynamodb:BatchGetItem','aws-dynamodb:ListTables']);
   }
   for(const marker of ['awsSigv4','awsS3'])assert.throws(()=>extractOperationSecurity({components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':marker}}},security:[{hmac:[]}]},{}),/Signature Version 4/);
   for(const marker of ['awsSigv4','awsS3']) {

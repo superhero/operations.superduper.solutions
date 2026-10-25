@@ -11,6 +11,7 @@ const regions = new Set(["us-east-1", "us-east-2", "us-west-1", "us-west-2", "ca
   "ap-northeast-3", "ap-southeast-1", "ap-southeast-2", "ap-east-1", "ap-south-1", "sa-east-1", "me-south-1"]);
 const queries = new Set(["MasterRegion", "FunctionVersion", "Marker", "MaxItems"]);
 export const awsSigningRegionSupported = (region: string): boolean => regions.has(region);
+export const awsSigningRegions = [...regions];
 export function awsSigningMarker(definition: Record<string, unknown>): boolean {
   return ["awsSigv4", "awsS3"].includes(String(definition["x-amazon-apigateway-authtype"]));
 }

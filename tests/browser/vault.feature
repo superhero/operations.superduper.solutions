@@ -7,6 +7,14 @@ Feature: Browser vault persistence and controlled credential execution
   Test-only fixtures exercise storage failures without adding production hooks.
 
   @chromium-only
+  Scenario Outline: AWS wire workflows preserve JSON and STS identity at <width>px
+    Then AWS wire workflows at <width> pixels sign real requests and reuse encrypted connections
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @chromium-only
   Scenario Outline: S3 object transfers preserve files at <width>px
     Then S3 transfers at <width> pixels use private signatures raw bytes and verified binary downloads
     Examples:

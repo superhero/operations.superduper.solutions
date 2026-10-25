@@ -722,7 +722,8 @@
     "name": "AWS / DynamoDB",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/dynamodb/2012-08-10/openapi.yaml",
     "provenance": "https://github.com/aws/api-models-aws",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "aws-wire-protocols"
   },
   {
     "id": "aws-elasticache",
@@ -858,7 +859,8 @@
     "name": "AWS / STS",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sts/2011-06-15/openapi.yaml",
     "provenance": "https://github.com/aws/api-models-aws",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "aws-wire-protocols"
   },
   {
     "id": "aws-kms",

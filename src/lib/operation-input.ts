@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { prepareAwsWireRequest } from "./aws-wire.ts";
 import { encodeS3Key, validateS3Bucket, s3MetadataHeaders } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
 import { validateWorkflowBinary, binaryRequestMediaType } from "./workflow-binary.ts";
@@ -161,9 +162,9 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
-  if (operation.s3Files) for (const [key, value] of Object.entries(values)) {
+  if (operation.s3Files || operation.awsWire) for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && !fields.some(field => field.key === key))
-      throw new InputValidationError(key, "This input is outside the supported S3 object transfer profile.");
+      throw new InputValidationError(key, "This input is outside the supported AWS operation profile.");
   }
   for (const candidate of workflowFields)
   {
@@ -240,5 +241,5 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if (["workers-version", "workers-module", "platform-module"].includes(operation.cloudflareUpload ?? "")) {
     request.bodyFormat = "cloudflare-module"; request.contentType = "multipart/form-data";
   }
-  return request;
+  return operation.awsWire ? prepareAwsWireRequest(operation, request) : request;
 }

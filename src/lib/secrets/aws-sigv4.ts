@@ -24,7 +24,7 @@ export async function signAwsRequest(method: string, address: string, initialHea
       || [...url.searchParams.keys()].some(name => /^x-amz-/i.test(name))) throw new VaultError("PERMISSION");
     let body: Uint8Array<ArrayBuffer> | undefined;
     if (input != null) {
-      if (typeof input === "string") body = encoder.encode(input);
+      if (typeof input === "string" || input instanceof URLSearchParams) body = encoder.encode(input.toString());
       else if (input instanceof ArrayBuffer) body = new Uint8Array(input.slice(0));
       else if (input instanceof Uint8Array) body = new Uint8Array(input);
       else if (input instanceof Blob) {

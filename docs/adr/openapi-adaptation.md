@@ -388,9 +388,12 @@ no supported choice remains unavailable. Missing definitions, malformed scope
 arrays and conflicting credential destinations still reject the operation.
 The strict security extraction API remains strict; service and authored-model
 inspection use capability-aware extraction. AWS signing declarations retain
-their signing requirement. The reviewed [Lambda SigV4 profile](../aws-signing.md)
-can execute privately; other signing/wire profiles remain unavailable, including
-when another authentication choice is supported.
+their signing requirement. Reviewed [Lambda SigV4](../aws-signing.md),
+[S3 object files](../s3-files.md) and [DynamoDB/STS wire profiles](../aws-wire-protocols.md)
+execute privately. Unimplemented signing/wire profiles remain unavailable,
+including when another authentication choice is supported. AWS fragment paths
+retain their source identity; reviewed profiles prepare actual HTTP paths,
+protocol fields and bytes before signing.
 
 The credential chooser disables unavailable alternatives and explains why.
 Saved selections keep their original alternative index and vault IDs across
@@ -420,8 +423,8 @@ See [RFC 7617](https://www.rfc-editor.org/rfc/rfc7617.html#section-2),
 [Twilio credential roles](https://www.twilio.com/docs/usage/requests-to-twilio#authentication)
 and [Atlassian email/API-token Basic](https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/).
 
-AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
-and the API's own authorization rules still apply.
+AWS Signature Version 4 is available only for the reviewed service/wire profiles.
+Browser CORS, local-network access and the API's own authorization rules still apply.
 
 ### Failure handling
 

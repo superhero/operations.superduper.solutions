@@ -1169,6 +1169,49 @@ Then('native S3 CORS preflight rejects missing permissions and hidden integrity 
   this.diagnostics=this.diagnostics.filter(item=>!(item.type==='console-error'&&(/CORS|Failed to load resource|net::ERR_FAILED/.test(item.message))&&(item.message.includes('/s3-cors/'+id)||item.location?.url?.startsWith(cross))));
 });
 
+Then('AWS wire workflows at {int} pixels sign real requests and reuse encrypted connections', {timeout:60_000}, async function(width){
+  const page=this.page,calls=[],names={batch:'AWS wire BatchGetItem fixture',tables:'AWS wire ListTables fixture',identity:'AWS wire STS identity fixture'};
+  await page.setViewportSize({width,height:900});await invoke(page,'seedAWS',this.baseURL,randomUUID(),awsSyntheticValues);
+  const items={Orders:{Keys:[{id:{S:'雪 +/%?&='},revision:{N:'900719925474099312345'}}]}};
+  const identity='<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><GetCallerIdentityResult><Account>001234567890</Account><Arn>arn:aws:iam::001234567890:user/Alice</Arn><UserId>000123:Alice</UserId></GetCallerIdentityResult><ResponseMetadata><RequestId>00001234</RequestId></ResponseMetadata></GetCallerIdentityResponse>';
+  for(const service of ['dynamodb','sts'])await this.context.route('https://'+service+'.us-east-1.amazonaws.com/**',async route=>{
+    const request=route.request(),cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'POST, OPTIONS'};
+    if(request.method()==='OPTIONS')return route.fulfill({status:204,headers:cors});
+    const bytes=request.postDataBuffer(),signed=verifyAwsSignature(request.url(),{method:request.method(),headers:request.headers(),body:bytes},awsSyntheticValues,service);
+    const url=new URL(request.url());assert.equal(url.pathname,'/');assert.equal(url.hash,'');assert.equal(url.search,'');assert.equal(request.method(),'POST');calls.push({...signed,service});
+    if(service==='sts'){assert.equal(bytes.toString(),'Action=GetCallerIdentity&Version=2011-06-15');assert.equal(request.headers()['content-type'],'application/x-www-form-urlencoded');return route.fulfill({status:200,headers:{...cors,'Content-Type':'text/xml'},body:identity});}
+    assert.equal(request.headers()['content-type'],'application/x-amz-json-1.0');const body=JSON.parse(bytes.toString()),target=request.headers()['x-amz-target'];
+    if(target==='DynamoDB_20120810.BatchGetItem'){assert.deepEqual(body,{RequestItems:items});return route.fulfill({status:200,headers:{...cors,'Content-Type':'application/x-amz-json-1.0'},body:JSON.stringify({Responses:{Orders:[{revision:{N:'900719925474099312345'}}]},UnprocessedKeys:items})});}
+    assert.equal(target,'DynamoDB_20120810.ListTables');assert.deepEqual(body,{});return route.fulfill({status:200,headers:{...cors,'Content-Type':'application/x-amz-json-1.0'},body:'{"TableNames":["Orders"]}'});
+  });
+  const source=(operationId,name,profile,signing,service)=>({operationId,summary:name,'x-operations-aws-wire':profile,'x-operations-aws-signing':signing,
+    servers:[{url:'https://'+service+'.us-east-1.amazonaws.com'}],responses:{200:{description:'Decoded result',content:{'application/json':{schema:{type:'object'}}}}}});
+  const document={openapi:'3.0.3',info:{title:'AWS wire fixture',version:'1'},servers:[{url:'https://dynamodb.us-east-1.amazonaws.com'}],security:[{hmac:[]}],
+    components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':'awsSigv4'}}},paths:{
+      '/#X-Amz-Target=DynamoDB_20120810.BatchGetItem':{post:source('BatchGetItem',names.batch,'dynamodb-batch-get-item','dynamodb-json-1.0','dynamodb')},
+      '/#X-Amz-Target=DynamoDB_20120810.ListTables':{post:source('ListTables',names.tables,'dynamodb-list-tables','dynamodb-json-1.0','dynamodb')},
+      '/#Action=GetCallerIdentity':{post:source('POST_GetCallerIdentity',names.identity,'sts-get-caller-identity','sts-query-2011-06-15','sts')}}};
+  await setMode(page,'settings');const schemas=page.locator('summary[aria-label="Schemas"]');if(await schemas.getAttribute('aria-expanded')!=='true')await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({name:'aws-wire.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
+  await expect(page.getByRole('switch',{name:'Enable AWS wire fixture',exact:true})).toHaveAttribute('aria-checked','true');
+  const authentication=async()=>{await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'hmac',exact:true}).click();};
+  const unlock=async()=>{await page.getByLabel('Unlock the vault password',{exact:true}).fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();};
+  const save=async name=>{for(const [part,label] of [['accessKeyId','Access key ID'],['secretAccessKey','Secret access key'],['sessionToken','Session token']]){
+    await page.getByRole('combobox',{name:label+' for hmac',exact:true}).click();await page.getByRole('option',{name:'AWS '+part,exact:true}).click();}
+    await page.getByText('Save as connection',{exact:true}).click();await page.getByLabel('Connection name',{exact:true}).fill(name);await page.getByLabel('Account label',{exact:true}).fill('AWS sandbox');await page.getByRole('button',{name:'Save connection',exact:true}).click();};
+  const run=async()=>{await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();};
+  await chooseCatalogOperation(page,names.batch);await authentication();await unlock();await save('DynamoDB wire');
+  await page.getByRole('textbox',{name:'RequestItems',exact:true}).fill(JSON.stringify(items));await run();
+  await expect(page.locator('[aria-label="Response body"]').last()).toContainText('900719925474099312345');assert.equal(calls.length,1);
+  await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});await chooseCatalogOperation(page,names.tables);await authentication();await unlock();
+  await page.getByRole('combobox',{name:'Saved HTTP connection',exact:true}).click();await page.getByRole('option',{name:'DynamoDB wire · AWS sandbox',exact:true}).click();await run();
+  await expect(page.locator('[aria-label="Response body"]').last()).toContainText('Orders');assert.equal(calls.length,2);
+  await chooseCatalogOperation(page,names.identity);await authentication();await save('STS wire');await run();
+  await expect(page.locator('[aria-label="Response body"]').last()).toContainText('001234567890');await expect(page.locator('[aria-label="Response body"]').last()).toContainText('00001234');assert.equal(calls.length,3);
+  const secrets=[...Object.values(awsSyntheticValues),...calls.flatMap(call=>[call.authorization,call.signature])];for(const value of [await page.locator('body').innerText(),await repository(page,'list'),await storage(page,'read')])for(const secret of secrets)assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page,'persistedCanaries',[...privateCanaries,...secrets]),[]);await mkdir(this.artifactDirectory,{recursive:true});await page.screenshot({path:`${this.artifactDirectory}/aws-wire-${width}.png`});
+});
+
 Then('an AWS connection at {int} pixels signs a regional Lambda request after encrypted reload', { timeout: 60_000 }, async function (width) {
   const page = this.page, seen = [], endpoint = 'https://lambda.us-east-1.amazonaws.com';
   await page.setViewportSize({ width, height: 900 }); await invoke(page, 'seedAWS', this.baseURL, randomUUID(), awsSyntheticValues);

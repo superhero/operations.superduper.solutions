@@ -40,8 +40,9 @@ are not automatically retried.
 
 Both `awsSigv4` and `awsS3` declarations require a signing profile. Reviewed
 [S3 object file profiles](s3-files.md) now support signed raw PutObject/GetObject
-transfers. Other S3 methods and AWS action/target,
-Query/XML and AWS-JSON operations retain their independent limitations. Native
+transfers. Reviewed [DynamoDB target JSON and STS Action/Version profiles](aws-wire-protocols.md)
+also finalize their actual wire requests before signing. Other S3 methods and
+unimplemented Query/XML and AWS-JSON operations retain their independent limitations. Native
 schemas and operation identities remain unchanged; discovery indexes are updated.
 
 The profile follows the [AWS signing rules](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html),

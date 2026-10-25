@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "5ec4b2a57738ff4e5e9930f285fc967bc8e517a01c9cb4f350149efc704402d4",
+  "adapterRevision": "ea5b4540bbd532582d209bd45af3e751cece41e71d6f4da9c67714b57941e33d",
   "indexes": [
     {
       "id": "anthropic",
@@ -857,16 +857,16 @@
     },
     {
       "id": "aws-dynamodb",
-      "sourceRevision": "edf78af7371e27e8b8440b0587d04830d881d8681558787f406ffdfe713108e0",
-      "bytes": 21418,
-      "compressedBytes": 2102,
-      "sha256": "a5b0113c2ba62e3dd2b7fde7428b68c19d3be7c0d2fd2a9d43e34fc76de48085",
+      "sourceRevision": "24a1381ac9a7039886253dc4b4ac9ff947cfbd85a15ba906054e0d91bd62038f",
+      "bytes": 21250,
+      "compressedBytes": 2116,
+      "sha256": "87d9119be26c6ab06eeb94967d1babd287f16c35e7cfc5cba920976023b8d876",
       "summary": {
         "name": "Amazon DynamoDB",
         "serverUrl": "http://dynamodb.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon DynamoDB</fullname> <p>Amazon DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability. DynamoDB lets you offload the administrative burdens of operating and scaling a distributed database, so that you don't have to worry about hardware provisioning, setup and configuration, replication, software patching, or cluster scaling.</p> <p>With DynamoDB, you can create database tables that can store and retrieve any amount of data, and serve any level of request traffic. You can scale up or scale down your tables' throughput capacity without downtime or performance degradation, and use the Amazon Web Services Management Console to monitor resource utilization and performance metrics.</p> <p>DynamoDB automatically spreads the data and traffic for your tables over a sufficient number of servers to handle your throughput and storage requirements, while maintaining consistent and fast performance. All of your data is stored on solid state disks (SSDs) and automatically replicated across multiple Availability Zones in an Amazon Web Services Region, providing built-in high availability and data durability.</p>",
         "operationCount": 53,
-        "unavailableCount": 53
+        "unavailableCount": 51
       }
     },
     {
@@ -1291,16 +1291,16 @@
     },
     {
       "id": "aws-sts",
-      "sourceRevision": "57abe7038ef9b4425e87706ef402117db67fa6822947457f49ec1d1abb78b022",
-      "bytes": 6638,
-      "compressedBytes": 968,
-      "sha256": "c0ea7bf3066e8462edf1acfe025b5703265297f1d4f216804da9eca3bab12bac",
+      "sourceRevision": "886ede5b183bd23c14cd512169cab958f68d53a849c6e62fd4e7e30e977cda65",
+      "bytes": 6470,
+      "compressedBytes": 973,
+      "sha256": "326322412dc5fcf281d0851515c4a157a513f9498d85275daff9e4b5781fb8d8",
       "summary": {
         "name": "AWS Security Token Service",
         "serverUrl": "https://sts.amazonaws.com",
         "description": "<fullname>Security Token Service</fullname> <p>Security Token Service (STS) enables you to request temporary, limited-privilege credentials for users. This guide provides descriptions of the STS API. For more information about using this service, see <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html\">Temporary Security Credentials</a>.</p>",
         "operationCount": 16,
-        "unavailableCount": 16
+        "unavailableCount": 14
       }
     },
     {

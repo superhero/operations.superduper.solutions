@@ -1067,6 +1067,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/dynamodb/2012-08-10/openapi.yaml",
     "provenance": "https://github.com/aws/api-models-aws",
     "sourceKind": "community-conversion",
+    "profile": "aws-wire-protocols",
     "version": "2012-08-10",
     "openapi": "3.0.0",
     "operations": 53,
@@ -1077,7 +1078,15 @@
     "sha256": "edf78af7371e27e8b8440b0587d04830d881d8681558787f406ffdfe713108e0",
     "sourceSha256": "0236c0164cd34dee448dd13222746f2ac29ce0c9006663c8544b383a4591392f",
     "bytes": 460735,
-    "compressedBytes": 66178
+    "compressedBytes": 66178,
+    "patches": [
+      {
+        "id": "aws-wire-protocols",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "24a1381ac9a7039886253dc4b4ac9ff947cfbd85a15ba906054e0d91bd62038f",
+    "effectiveBytes": 464296
   },
   {
     "id": "aws-ec2",
@@ -1665,6 +1674,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sts/2011-06-15/openapi.yaml",
     "provenance": "https://github.com/aws/api-models-aws",
     "sourceKind": "community-conversion",
+    "profile": "aws-wire-protocols",
     "version": "2011-06-15",
     "openapi": "3.0.0",
     "operations": 16,
@@ -1675,7 +1685,15 @@
     "sha256": "57abe7038ef9b4425e87706ef402117db67fa6822947457f49ec1d1abb78b022",
     "sourceSha256": "9ee29721aae3fadd22e0b1743989de73331cba8bf641543a61cf1b64f1c47109",
     "bytes": 203472,
-    "compressedBytes": 23731
+    "compressedBytes": 23731,
+    "patches": [
+      {
+        "id": "aws-wire-protocols",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "886ede5b183bd23c14cd512169cab958f68d53a849c6e62fd4e7e30e977cda65",
+    "effectiveBytes": 209105
   },
   {
     "id": "aws-ssm",

@@ -1,6 +1,8 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { decodeAwsWireResponse, maxStsXmlBytes } from "./aws-wire-response.ts";
+import { awsWireProfile, awsWireContracts } from "./aws-wire.ts";
 import type { Operation } from "./catalog.ts";
 import { encodeWorkflowBinary, maxWorkflowUploadBytes } from "./workflow-binary.ts";
 import { WorkflowBodyError } from "./workflow-body-error.ts";
@@ -117,6 +119,14 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
   }
   const raw = response.headers.get("Content-Type");
   const mediaType = responseMediaType(raw ?? (response.ok ? operation.responseMediaType ?? "application/json" : "text/plain"));
+  const wire = awsWireProfile(operation.awsWire);
+  if (wire) {
+    if (!mediaType) { void response.body?.cancel().catch(() => {}); throw new WorkflowBodyError("MEDIA"); }
+    const bytes = await readBytes(response, signal, awsWireContracts[wire].service === "sts" ? Math.min(textLimit, maxStsXmlBytes) : textLimit);
+    let text: string;
+    try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { throw new WorkflowBodyError("CODEC"); }
+    return { body: decodeAwsWireResponse(wire, text, mediaType ?? "", response.status), mediaType: "application/json", transportMediaType: mediaType };
+  }
   const definitions = operation.responseContent;
   const declared = definitions?.[String(response.status)] ?? definitions?.[`${Math.floor(response.status / 100)}XX`] ?? definitions?.DEFAULT;
   const selected = mediaType && (declared?.[mediaType] ?? declared?.["application/octet-stream"]);

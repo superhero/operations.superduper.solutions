@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
+import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
@@ -186,10 +187,12 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         const url = operationServerUrl(document, operation);
         serverUrl ||= url;
         if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
-        if (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path)) throw new Error("This endpoint uses a path or transport that is not supported.");
+        const wire = awsWireProfile(source["x-operations-aws-wire"]);
+        if (!wire && (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path))) throw new Error("This endpoint uses a path or transport that is not supported.");
         const upload = cloudflareUploadProfile(source["x-operations-cloudflare-upload"]);
         const s3 = s3FilesProfile(source["x-operations-s3-files"]);
-        if (s3) configureS3Files(operation, s3);
+        if (wire) configureAwsWire(operation, wire);
+        else if (s3) configureS3Files(operation, s3);
         else if (upload) configureCloudflareUpload(operation, upload);
         else {
         const fields = new Map<string, InputField>();
@@ -258,7 +261,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         }
         const authorization = security(document, source, operation);
         if (authorization !== undefined) operation.security = authorization;
-        if (!s3 && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
+        if (!wire && !s3 && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
         const responses = value(source.responses);
         const stream = responseStreamProfile(source["x-operations-response-stream"]);
         if (stream) operation.responseStream = stream;
@@ -271,7 +274,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         const media = value(content[mediaType!]);
         if (media.example !== undefined) operation.responseExample = media.example;
         if (s3) configureS3Files(operation, s3);
-        if ((s3 || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4")) && !(s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
+        if (wire) configureAwsWire(operation, wire);
+        if ((wire || s3 || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4")) && !(wire ? validAwsWireModel(operation) : s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
           throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
         if (operation.credentialResult) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
       }

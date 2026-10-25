@@ -6,6 +6,7 @@ import { parseDocument } from "yaml";
 import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin } from "./server-url.ts";
+import { awsWirePath, awsWireProfile } from "./aws-wire.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
@@ -226,8 +227,13 @@ export function validateSchemaDocument(value: unknown, id: string): {
   for (const [path, raw] of Object.entries(paths))
   {
     if (path.startsWith("x-")) continue;
-    safePath(path);
     const item = resolve(raw, document, path);
+    const invocations = Object.entries(item).filter(([method]) => methods.has(method));
+    const reviewedWirePath = invocations.length > 0 && invocations.every(([method, raw]) => {
+      const wire = awsWireProfile(object(raw, `${method} ${path}`)["x-operations-aws-wire"]);
+      return wire !== undefined && awsWirePath(path, method.toUpperCase(), wire);
+    });
+    if (!reviewedWirePath) safePath(path);
     for (const [method, value] of Object.entries(item))
     {
       if (!methods.has(method)) continue;

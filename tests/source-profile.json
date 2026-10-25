@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/aws-wire.test.mjs",
     "src/s3-files.test.mjs",
     "src/aws-sigv4.test.mjs",
     "src/cloudflare-upload.test.mjs",
@@ -77,6 +78,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/aws-wire.feature",
     "src/s3-files.feature",
     "src/aws-sigv4.feature",
     "src/cloudflare-upload.feature",

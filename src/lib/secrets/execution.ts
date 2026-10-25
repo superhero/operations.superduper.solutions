@@ -21,6 +21,7 @@ import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
 import { signAwsRequest, type AwsSigningValues } from "./aws-sigv4.ts";
 import { awsCredentialParts, isAwsCredentialReference } from "./bindings.ts";
 import { awsSigningHeaders, lambdaSigningRegion } from "../aws-signing.ts";
+import { awsWireEndpoint } from "../aws-wire.ts";
 import { s3SigningEndpoint, s3ObjectUrl } from "../s3-files.ts";
 import { s3PayloadChecksum, verifyS3Object } from "./s3-files.ts";
 
@@ -138,7 +139,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         delete inputSnapshot[cloudflareSessionField];
       } else if (scheme.kind === "aws-sigv4") {
         if (!isAwsCredentialReference(reference) || alternative.length !== 1
-          || !(approved.operation.s3Files ? s3SigningEndpoint(approved.origin) : lambdaSigningRegion(approved.origin))) throw new VaultError("PERMISSION");
+          || !(approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire) : approved.operation.s3Files ? s3SigningEndpoint(approved.origin) : lambdaSigningRegion(approved.origin))) throw new VaultError("PERMISSION");
         aws = Object.fromEntries(awsCredentialParts.flatMap(part => reference[part] ? [[part, credentialValue(reference[part]!, "aws-sigv4")]] : [])) as AwsSigningValues;
       } else if (scheme.kind === "oauth1") {
         if (!isOAuth1CredentialReference(reference) || scheme.profile !== "x-hmac-sha1" || alternative.length !== 1
@@ -250,7 +251,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       await options.assertCurrent(); if (signal.aborted) throw new VaultError("CANCELLED");
       if (s3Upload) headers.set("x-amz-checksum-sha256", await s3PayloadChecksum(body));
       else if (approved.operation.s3Files) headers.set("x-amz-checksum-mode", "ENABLED");
-      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.s3Files
+      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire)! : approved.operation.s3Files
         ? { service: "s3", region: s3SigningEndpoint(approved.origin)!.region } : { service: "lambda", region: lambdaSigningRegion(approved.origin)! });
       for (const [name, value] of signed.headers) headers.set(name, value);
       body = signed.body ?? null; awsSignedAt = signed.signedAt;

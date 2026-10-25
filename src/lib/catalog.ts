@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
+import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel, type S3FilesProfile } from "./s3-files.ts";
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
@@ -43,6 +44,7 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
 };
 export type BodyMediaType = `${string}/${string}`;
 export type Operation = {
+  awsWire?: import("./aws-wire.ts").AwsWireProfile;
   s3Files?: S3FilesProfile;
   /** Navigation-only descriptor. Execution requires a separately hydrated model. */
   deferred?: true;
@@ -256,14 +258,16 @@ export function extractOperations(value: unknown, source: string): Operation[]
       identities.add(id);
       const upload = cloudflareUploadProfile(operation["x-operations-cloudflare-upload"]);
       const s3 = s3FilesProfile(operation["x-operations-s3-files"]);
-      if (upload || s3) {
+      const wire = awsWireProfile(operation["x-operations-aws-wire"]);
+      if (upload || s3 || wire) {
         const model: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),
           description: text(operation.description, ""), group: Array.isArray(operation.tags) ? String(operation.tags[0]) : "Operations",
           method: method.toUpperCase(), path, fields: [], bodyRequired: false };
-        if (s3) configureS3Files(model, s3); else configureCloudflareUpload(model, upload!);
+        if (wire) configureAwsWire(model, wire); else if (s3) configureS3Files(model, s3); else configureCloudflareUpload(model, upload!);
         const security = inspectOperationSecurity(document, operation);
         if (security !== undefined) model.security = security;
         if (s3 && !validS3FilesModel(model)) throw new Error("S3 objects require their reviewed private signing and byte profile.");
+        if (wire && !validAwsWireModel(model)) throw new Error("AWS wire operations require their reviewed private signing and codec profile.");
         result.push(model); continue;
       }
       const inputs = new Map<string, InputField>();

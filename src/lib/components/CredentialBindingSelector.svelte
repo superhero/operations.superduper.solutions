@@ -184,7 +184,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               <p class="hint">Connect the session reference from the preceding Cloudflare upload step to Private upload session. The token stays in the vault worker and expires when it is locked.</p>
             {:else if scheme.kind === "aws-sigv4"}
               <p class="credential-name">{scheme.name} · AWS Signature Version 4</p>
-              <p class="hint">Choose stored AWS credentials for the configured HTTPS {scheme.profile === "s3-object" ? "S3" : "Lambda"} region. Add the session token when using temporary credentials.</p>
+              <p class="hint">Choose stored AWS credentials for the configured HTTPS {scheme.profile === "s3-object" ? "S3" : scheme.profile === "dynamodb-json-1.0" ? "DynamoDB" : scheme.profile === "sts-query-2011-06-15" ? "STS" : "Lambda"} region. Add the session token when using temporary credentials.</p>
               {#each awsCredentialParts as part}
                 <label for={`${fieldId}-credential-${index}-${part}`}>{awsLabels[part]}{part === "sessionToken" ? " (optional)" : ""}</label>
                 <FieldSelect id={`${fieldId}-credential-${index}-${part}`} label={`${awsLabels[part]} for ${scheme.name}`} value={choice(scheme.name, part)}
