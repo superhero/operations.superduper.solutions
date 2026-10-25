@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.64
+
 <!-- changelog-commit:52cd20d50c01a8f488757e702accc40e47a23da9 -->
 ### Commit [`52cd20d`](https://github.com/superhero/operations.superduper.solutions/commit/52cd20d50c01a8f488757e702accc40e47a23da9)
 
@@ -73,8 +77,6 @@ chore(ci): retain current develop ancestry for notification access
 chore(ci): reconcile Storage squash integration for Notifications
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.63
 
