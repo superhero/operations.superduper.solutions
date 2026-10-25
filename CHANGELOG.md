@@ -334,6 +334,18 @@ limits and required model, pairing and workflow deliveries.
 
 ```
 
+<!-- changelog-commit:0cd2de23628fe4863b338e18525e3eccb1e4542f -->
+### Commit [`0cd2de2`](https://github.com/superhero/operations.superduper.solutions/commit/0cd2de23628fe4863b338e18525e3eccb1e4542f)
+
+```text
+feat(schemas): preserve native RPC models in workflows
+
+Hydrate scoped Codex method, parameter, result and error schemas through the canonical schema worker without HTTP destinations. Bind native model policies to the exact source contract and preserve protocol identity across caching, saved workflows and reports.
+
+Keep native execution guarded. Verify eight native and nine related source cases, four browser lifecycle cases, typechecking and the production build with all 224 indexes on the bounded sds-01 Swarm worker.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
