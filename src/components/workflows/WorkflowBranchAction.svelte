@@ -36,10 +36,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-branch-action[data-side="right"]) { right: -28px; transform: translate(50%, -50%); }
   :global(.workflow-branch-action[data-side="top"]), :global(.workflow-branch-action[data-side="bottom"]) { left: 50%; }
   :global(.workflow-branch-action:disabled) { background: transparent; }
-  :global(.workflow-branch-action:hover:not(:disabled)) { background: transparent; color: var(--color-badge-background); --branch-action-shadow-color: var(--color-primary); }
-  :global(.workflow-branch-action .material-symbols-rounded) { font-variation-settings: "FILL" 1; }
+  :global(.workflow-branch-action .material-symbols-rounded) { font-variation-settings: "FILL" 1; scale: 1; transition: scale 180ms ease-in; }
   :global(.workflow-branch-action[data-side="left"] .material-symbols-rounded) { transform: rotate(-90deg); }
   :global(.workflow-branch-action[data-side="right"] .material-symbols-rounded) { transform: rotate(90deg); }
   :global(.workflow-branch-action[data-side="bottom"] .material-symbols-rounded) { transform: rotate(180deg); }
-  @media (prefers-reduced-motion: reduce) { :global(button.workflow-branch-action) { transition: none; } }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    :global(.workflow-branch-action:hover:not(:disabled) .material-symbols-rounded) { scale: min(1.16, var(--hover-scale, 1.16)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(button.workflow-branch-action), :global(.workflow-branch-action .material-symbols-rounded) { transition: none; }
+  }
 </style>
