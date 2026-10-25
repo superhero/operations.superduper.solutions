@@ -448,6 +448,14 @@ fix(ui): remove assistant composer helper text
 
 ```
 
+<!-- changelog-commit:2622581fa7f920fc02eb54bbaa03727176beeeb0 -->
+### Commit [`2622581`](https://github.com/superhero/operations.superduper.solutions/commit/2622581fa7f920fc02eb54bbaa03727176beeeb0)
+
+```text
+fix(ui): keep assistant model options on one line
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
