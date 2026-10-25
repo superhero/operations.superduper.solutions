@@ -59,6 +59,10 @@ Then('Codex schema settings preserve native data and guard unsupported methods',
   await expect(start).toHaveAttribute('aria-disabled', 'true');
   await start.press('Enter');
   await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+  const requirements = page.getByRole('dialog', { name: 'Requirements: thread/fork', exact: true });
+  await expect(requirements).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(requirements).toBeHidden();
   await searchOperations(page, 'thread/start');
   const reviewed = operation(page, 'codex:thread/start');
   await expect(reviewed).toBeVisible(); await expect(reviewed).not.toHaveAttribute('aria-disabled', 'true');

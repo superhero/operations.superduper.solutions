@@ -6,6 +6,10 @@ Feature: Browser vault session lifecycle
   Encrypted storage becomes usable only after authentication.
   Changes require current authentication and never return stored credential values.
 
+  @coverage-gaps
+  Scenario: Private session progress preserves one terminal result without content
+    Then private session progress publishes only counts while preserving one terminal response
+
   Scenario: Creation requires confirming a saved recovery key
     Then a vault session persists creation only after the exact recovery key is confirmed
 

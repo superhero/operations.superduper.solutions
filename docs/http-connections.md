@@ -94,3 +94,7 @@ and the selected connection scenarios in
 responses; mobile/desktop selection, reload and the production vault worker are
 checked separately. This is not live account, token-validity or browser-CORS
 qualification.
+
+Cloud Storage's qualified [media-only upload](google-storage-upload.md) uses the
+same private request path with a bounded Binary file; its multipart and resumable
+modes remain separate.

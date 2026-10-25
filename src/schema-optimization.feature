@@ -28,3 +28,6 @@ Feature: Bounded schema discovery and canonical models
 
   Scenario: Bundled discovery and targeted models match the complete source collection
     Then every service discovery index matches its source and targeted operation models
+
+  Scenario: Native discovery matches its demand-loaded protocol models
+    Then native discovery entries match hydrated methods without embedding RPC payload schemas

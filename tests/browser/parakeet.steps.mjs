@@ -60,12 +60,13 @@ Then('Parakeet dictation appends confirmed text and saves local audio across rec
   await start(page, speech); await page.evaluate(() => { window.speechFixture.finalText = 'Another recording.'; });
   await button(speech, 'Stop dictation').click();
   await expect(draft(page)).toHaveValue('Edited introduction. First sentence. Second sentence. Another recording.');
-  const evidence = await page.evaluate(async () => {
+  const evidence = () => page.evaluate(async () => {
     const request = indexedDB.open('v1/speech/recordings'); const db = await new Promise(resolve => request.onsuccess = () => resolve(request.result));
     const get = db.transaction('sessions').objectStore('sessions').getAll(); const values = await new Promise(resolve => get.onsuccess = () => resolve(get.result)); db.close();
     return values.map(value => ({ status: value.status, size: value.audio.size, samples: value.signal.samples }));
   });
-  expect(evidence).toHaveLength(2); expect(evidence.every(value => value.status === 'complete' && value.size === 16044 && value.samples === 4000)).toBe(true);
+  const recording = { status: 'complete', size: 16044, samples: 4000 };
+  await expect.poll(evidence).toEqual([recording, recording]);
   expect(await page.evaluate(() => window.speechFixture.stoppedTracks)).toBe(2);
   await expect(page.getByRole('log')).not.toContainText('Another recording.'); expect(requests).toEqual([]);
 });

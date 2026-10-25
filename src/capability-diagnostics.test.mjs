@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { Before, After, Then } from '@cucumber/cucumber';
 import { capabilityDocument } from '../tests/capability-diagnostics.fixture.mjs';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
-import { operationBlockReason, operationCapabilityHint, readOperationCapabilities } from './lib/operation-capabilities.ts';
+import { operationBlockReason, operationCapabilityHint, readOperationCapabilities, summarizeOperationCapabilities,
+  validateCapabilitySummary } from './lib/operation-capabilities.ts';
 import { createSchemaDiscovery, validateSchemaDiscovery, schemaIndexVersion } from './lib/schema-index.ts';
 import { prepareRequest } from './lib/operation-input.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
@@ -119,4 +120,59 @@ Then('current canonical capability failures stop graph HTTP and private approval
   const runner = createWorkflowRunner({ version: 3, id: 'capability-graph', name: 'Capability graph', ...graph,
     viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: false, dashed: false }, 'inspect', execution);
   assert.throws(() => runner.next(), /server URL/); assert.equal(dispatches, 0);
+});
+
+Then('persisted capability records reject malformed issues alternatives and requirements', () => {
+  const index = createSchemaDiscovery(inspectServiceSchema(supported(), 'capability-fixture'), 'revision');
+  const valid = { issues: [{ area: 'request', code: 'limit', message: 'A retained request constraint.' }],
+    alternatives: [{ id: 'security-0', index: 0, names: ['Bearer'], supported: false, reasons: ['Reconnect this account.'] }],
+    requirements: [{ code: 'credentials', message: 'Select the intended private account.' }] };
+  const record = capabilities => { const value = structuredClone(index); value.operations[0].capabilities = capabilities; return value; };
+  assert.equal(validateSchemaDiscovery(record(valid), 'capability-fixture', 'revision').operations[0].capabilities.issues.length, 1);
+  const corrupt = [
+    value => { delete value.issues; }, value => { value.issues = [null]; },
+    value => { value.issues[0].area = 'foreign'; }, value => { value.issues[0].code = ''; },
+    value => { value.issues[0].code = 1; }, value => { value.issues[0].message = ''; },
+    value => { value.issues[0].message = null; }, value => { value.alternatives = {}; },
+    value => { value.alternatives = [null]; }, value => { value.alternatives[0].id = 'security-1'; },
+    value => { value.alternatives[0].index = 1; }, value => { value.alternatives[0].names = null; },
+    value => { value.alternatives[0].names = [42]; }, value => { value.alternatives[0].supported = 'true'; },
+    value => { value.alternatives[0].reasons = {}; }, value => { value.alternatives[0].reasons = [false]; },
+    value => { value.requirements = {}; }, value => { value.requirements = [null]; },
+    value => { value.requirements[0].code = 'foreign'; }, value => { value.requirements[0].message = ''; },
+    value => { value.requirements[0].message = 42; },
+  ];
+  assert.throws(() => validateSchemaDiscovery(record(null), 'capability-fixture', 'revision'), /diagnostics/);
+  for (const change of corrupt) {
+    const value = structuredClone(valid); change(value);
+    assert.throws(() => validateSchemaDiscovery(record(value), 'capability-fixture', 'revision'), /diagnostics/);
+  }
+  assert.doesNotThrow(() => validateSchemaDiscovery(record({ issues: [] }), 'capability-fixture', 'revision'));
+});
+
+Then('compact capability records preserve reason references and reject invalid wire shapes', () => {
+  const caps = { issues: [{ area: 'request', code: 'limit', message: 'A request constraint.' }],
+    alternatives: [{ id: 'security-0', index: 0, names: ['Bearer'], supported: false,
+      reasons: ['Legacy constraint.', 'A request constraint.', 'A separate reason.'] }],
+    requirements: [{ code: 'credentials', message: 'Use this account.' }] };
+  const operation = { ...inspect(supported()), unavailableReason: 'Legacy constraint.', capabilities: caps };
+  const summary = summarizeOperationCapabilities(operation);
+  assert.doesNotThrow(() => validateCapabilitySummary(summary, operation.unavailableReason));
+  assert.deepEqual(readOperationCapabilities({ ...operation, capabilities: undefined, capabilitySummary: summary }), caps);
+  assert.match(operationCapabilityHint({ ...operation, capabilities: { issues: [...caps.issues, { area: 'response', code: 'limit', message: 'A response constraint.' }] } }), /A response constraint/);
+  assert.equal(operationCapabilityHint({ ...operation, capabilities: { issues: [] } }), 'Legacy constraint.');
+  assert.deepEqual(readOperationCapabilities({ ...operation, capabilities: undefined, capabilitySummary: { i: [] } }), { issues: [] });
+  assert.equal(readOperationCapabilities({ ...operation, capabilities: undefined, capabilitySummary: { i: [], a: [[[], true]], r: ['credentials'] } }).alternatives[0].supported, true);
+  assert.deepEqual(readOperationCapabilities({ ...operation, capabilities: undefined, capabilitySummary: { i: [], r: [['credentials', 'Custom account instruction.']] } }).requirements, [{ code: 'credentials', message: 'Custom account instruction.' }]);
+  assert.equal(readOperationCapabilities(inspect(supported())), undefined);
+  const malformed = [null, {}, { i: [null] }, { i: [['request']] }, { i: [['foreign', 'limit', 'Reason']] },
+    { i: [['request', '', 'Reason']] }, { i: [['request', 1, 'Reason']] }, { i: [['request', 'limit', '']] },
+    { i: [['request', 'limit', 42]] }, { i: [], a: {} }, { i: [], a: [null] },
+    { i: [], a: [[[]]] }, { i: [], a: [[null, true]] }, { i: [], a: [[[42], true]] },
+    { i: [], a: [[[], 'true']] }, { i: [], a: [[[], false, {}]] }, { i: [], a: [[[], false, ['']]] },
+    { i: [], a: [[[], false, [-1]]] }, { i: [], a: [[[], false, [1.5]]] }, { i: [], a: [[[], false, [1]]] },
+    { i: [], a: [[[], false, [0]]] }, { i: [], r: {} }, { i: [], r: ['foreign'] },
+    { i: [], r: [null] }, { i: [], r: [['credentials']] }, { i: [], r: [['foreign', 'Reason']] },
+    { i: [], r: [['credentials', 42]] }];
+  for (const value of malformed) assert.throws(() => validateCapabilitySummary(value), /diagnostics/);
 });

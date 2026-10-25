@@ -1,6 +1,9 @@
 {
   "import": [
     "src/github-notification-auth.test.mjs",
+    "src/google-storage-upload.test.mjs",
+    "src/bigquery-jobs.test.mjs",
+    "src/workflow-utilities.test.mjs",
     "src/atlassian-server-bindings.test.mjs",
     "src/provider-path-bindings.test.mjs",
     "src/flat-form.test.mjs",
@@ -93,6 +96,9 @@
   ],
   "paths": [
     "src/github-notification-auth.feature",
+    "src/google-storage-upload.feature",
+    "src/bigquery-jobs.feature",
+    "src/workflow-utilities.feature",
     "src/atlassian-server-bindings.feature",
     "src/provider-path-bindings.feature",
     "src/flat-form.feature",

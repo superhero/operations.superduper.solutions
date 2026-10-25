@@ -168,7 +168,7 @@ Then('GitHub corrections are isolated idempotent and bounded to their reviewed r
     d => { d.paths['/app'].get.servers = [{ url: 'https://other.example.test' }]; },
     d => { d.components.securitySchemes = { GitHubAppJWT: { type: 'http', scheme: 'bearer' } }; },
     d => { d.paths['/user'].get['x-upstream-security'] = null; },
-    d => { d.paths['/app'].get['x-operations-credential-result'] = false; }];
+    d => { d.paths['/app'].get['x-operations-credential-result'] = false; }, d => { d.paths['/malformed'] = null; }];
   for (const mutate of mutants) {
     const document = structuredClone(published); mutate(document);
     const before = JSON.stringify(document);
@@ -176,6 +176,8 @@ Then('GitHub corrections are isolated idempotent and bounded to their reviewed r
     assert.equal(JSON.stringify(document), before);
   }
   const upstream = structuredClone(published); upstream.security = [];
+  const metadata = structuredClone(published); metadata.paths['/user'].summary = 'Retained path metadata';
+  assert.equal(applySchemaPatches(metadata, [githubAuthentication]).paths['/user'].summary, 'Retained path metadata');
   assert.deepEqual(applySchemaPatches(upstream, [githubAuthentication]), upstream, 'Preserve an explicit upstream root decision.');
   const fixed = structuredClone(published); fixed.paths['/user'].get.security = [];
   assert.deepEqual(applySchemaPatches(fixed, [githubAuthentication]).paths['/user'].get.security, [], 'Preserve explicit operation overrides.');

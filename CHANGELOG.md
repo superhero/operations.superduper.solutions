@@ -2,6 +2,34 @@
 
 ## Latest
 
+<!-- changelog-commit:52cd20d50c01a8f488757e702accc40e47a23da9 -->
+### Commit [`52cd20d`](https://github.com/superhero/operations.superduper.solutions/commit/52cd20d50c01a8f488757e702accc40e47a23da9)
+
+```text
+fix(gcp): enable JSON BigQuery job metadata
+
+```
+
+<!-- changelog-commit:6218c0b775a90cab0d79c63b0cc24c3710ace4f4 -->
+### Commit [`6218c0b`](https://github.com/superhero/operations.superduper.solutions/commit/6218c0b775a90cab0d79c63b0cc24c3710ace4f4)
+
+```text
+feat(gcp): qualify Storage media uploads
+
+```
+
+<!-- changelog-commit:e3325d6b7d3df527112ae734dc40aae423f3511a -->
+### Commit [`e3325d6`](https://github.com/superhero/operations.superduper.solutions/commit/e3325d6b7d3df527112ae734dc40aae423f3511a)
+
+```text
+feat(github): qualify Notifications classic PAT access
+
+```
+
+<!-- changelog-latest-end -->
+
+## 0.0.63
+
 <!-- changelog-commit:dbc419598fcd301393d3a5769b4958882c6bf8a1 -->
 ### Commit [`dbc4195`](https://github.com/superhero/operations.superduper.solutions/commit/dbc419598fcd301393d3a5769b4958882c6bf8a1)
 
@@ -632,8 +660,6 @@ contract, include its bytes in destination hashing, and retain the existing
 file, symlink and complete speech-resource restrictions.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.62
 

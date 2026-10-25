@@ -41,7 +41,7 @@ Feature: Bundled service schema integrity
     Then all service schema packs match their size hash and operation inventory
 
   Scenario: Codex retains its native integration protocol without inventing HTTP routes
-    Then the pinned Codex schema preserves requests responses and events with execution unavailable
+    Then the pinned Codex schema preserves native contracts and qualifies only private workflow methods
 
   Scenario: Malformed Codex protocol bundles cannot enter the catalog
     Then Codex inspection rejects incomplete protocols duplicate methods and forged HTTP routes

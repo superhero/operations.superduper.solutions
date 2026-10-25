@@ -9,6 +9,42 @@ import { approvedOperation } from "./lib/secrets/policy.ts";
 import { extractOperations } from "./lib/catalog.ts";
 import { bundledCatalogs } from "./lib/catalog-registry.ts";
 import { validateSchemaDocument } from "./lib/schema-documents.ts";
+import { privatePathProfile, telegramBotTemplate } from './lib/server-url.ts';
+import { operationServerUrl } from './lib/schema-documents.ts';
+import { supportsFormField } from './lib/form-input.ts';
+import { validateAtlassianServerBinding, atlassianAssetsServer } from './lib/atlassian-server-bindings.ts';
+
+Then('explicit signing profiles reject conflicts and missing signing declarations', () => {
+  const base = { type: 'apiKey', in: 'header', name: 'Authorization' };
+  for (const [requested, definition] of [['unreviewed', { ...base, 'x-amazon-apigateway-authtype': 'awsSigv4' }], ['s3-object', { ...base, 'x-operations-aws-sigv4': 'lambda-list-functions' }], ['s3-object', base], [undefined, { ...base, 'x-operations-aws-sigv4': 's3-object' }]]) {
+    const source = document(); source.security = [{ Signed: [] }]; source.components.securitySchemes.Signed = definition;
+    if (requested !== undefined) source.paths['/items'].get['x-operations-aws-signing'] = requested;
+    assert.throws(() => extractOperations(source, 'signing-conflict'), /signing/);
+  }
+  assert.throws(() => privatePathProfile('unreviewed'), /not supported/);
+  assert.equal(supportsFormField({ type: 'number', enum: [Infinity] }, false), false);
+  assert.throws(() => validateAtlassianServerBinding({ url: atlassianAssetsServer, 'x-operations-server-binding': 'atlassian-assets-v1' }), /Cloud ID/);
+  const telegram = { paths: { '/bad/path': { post: { 'x-operations-private-path': 'telegram-bot' } } }, servers: [{ url: telegramBotTemplate, variables: { botToken: { default: '<bot_token>' } } }] };
+  assert.throws(() => operationServerUrl(telegram, { path: '/bad/path', method: 'POST' }), /single Bot API/);
+});
+
+Then('strict and inspectable AWS models retain exact signing and response profiles', () => {
+  const base = { openapi: '3.0.3', info: { title: 'AWS contract', version: '1' }, servers: [{ url: 'https://lambda.us-east-1.amazonaws.com' }],
+    components: { securitySchemes: { hmac: { type: 'apiKey', in: 'header', name: 'Authorization', 'x-amazon-apigateway-authtype': 'awsSigv4', 'x-operations-aws-sigv4': 'lambda-list-functions' } } },
+    security: [{ hmac: [] }], paths: { '/2015-03-31/functions/': { get: { operationId: 'ListFunctions', responses: { '200': { description: 'OK', content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } } } } } } } };
+  assert.equal(extractOperations(base, 'lambda-contract')[0].security[0][0].kind, 'aws-sigv4');
+  const wrongResponse = structuredClone(base); wrongResponse.paths['/2015-03-31/functions/'].get.responses['200'].content = { 'text/plain': { schema: { type: 'string' } } };
+  assert.throws(() => extractOperations(wrongResponse, 'lambda-contract'), /supported REST/);
+  assert.match(inspectServiceSchema(wrongResponse, 'lambda-contract').operations[0].unavailableReason, /supported REST/);
+  for (const profile of ['s3', 'wire']) {
+    const doc = structuredClone(base), path = profile === 's3' ? '/{Bucket}/{Key}' : '/#X-Amz-Target=DynamoDB_20120810.ListTables', method = profile === 's3' ? 'get' : 'post';
+    doc.components.securitySchemes.hmac = { type: 'apiKey', in: 'header', name: 'Authorization', 'x-amazon-apigateway-authtype': profile === 's3' ? 'awsS3' : 'awsSigv4' };
+    doc.paths = { [path]: { [method]: { operationId: profile, tags: ['Objects'], [profile === 's3' ? 'x-operations-s3-files' : 'x-operations-aws-wire']: profile === 's3' ? 'get-object' : 'dynamodb-list-tables', 'x-operations-aws-signing': profile === 's3' ? 's3-object' : 'dynamodb-json-1.0' } } };
+    assert.equal(extractOperations(doc, 'aws-contract')[0].group, 'Objects');
+    delete doc.security;
+    assert.throws(() => extractOperations(doc, 'aws-contract'), /reviewed private signing/);
+  }
+});
 
 Then('HTTP Basic preserves scheme identity destination AND requirements and strict approval', async () => {
   const source = document(); source.components.securitySchemes.Login = { type: 'http', scheme: 'BaSiC' };

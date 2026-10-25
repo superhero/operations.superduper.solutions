@@ -10,7 +10,7 @@ import { readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { extractOperations } from './lib/catalog.ts';
 import { validateSchemaDocument } from './lib/schema-documents.ts';
-import { awsWireContracts, awsWireSources, configureAwsWire, awsWireEndpoint } from './lib/aws-wire.ts';
+import { awsWireContracts, awsWireSources, configureAwsWire, awsWireEndpoint, awsWireProfile, validAwsWireModel, prepareAwsWireRequest } from './lib/aws-wire.ts';
 import { decodeAwsWireResponse } from './lib/aws-wire-response.ts';
 import { prepareRequest } from './lib/operation-input.ts';
 import { readWorkflowResponseBody } from './lib/workflow-response-body.ts';
@@ -27,6 +27,29 @@ const xml=(value=identity)=>'<GetCallerIdentityResponse xmlns="'+namespace+'"><G
 const input={'body:RequestItems':JSON.stringify({Orders:{Keys:[{id:{S:'雪 +/%?&=\r\n'},revision:{N:'900719925474099312345'},bytes:{B:'AP8='}}],ConsistentRead:true,ProjectionExpression:'#id',ExpressionAttributeNames:{'#id':'id'}}}),'body:ReturnConsumedCapacity':'TOTAL'};
 const text=body=>new TextDecoder().decode(body??new Uint8Array());
 const refused=error=>error instanceof Error;
+Then('AWS logical profiles reject malformed models and preserve empty target requests', () => {
+  assert.throws(() => awsWireProfile('unreviewed'));
+  assert.equal(validAwsWireModel({}), false);
+  const original = model('dynamodb-list-tables');
+  for (const mutate of [m => m.method = 'GET', m => m.responseStream = 'ollama-chat', m => m.security = undefined, m => m.security[0] = [], m => m.security[0][0].profile = 's3-object']) {
+    const changed = structuredClone(original); mutate(changed); assert.equal(validAwsWireModel(changed), false);
+    assert.throws(() => prepareAwsWireRequest(changed, { method: 'POST', path: '/', query: {} }));
+  }
+  const reordered = structuredClone(original); reordered.fields = reordered.fields.map(f => Object.fromEntries(Object.entries(f).reverse()));
+  assert.equal(validAwsWireModel(reordered), true);
+  assert.deepEqual(prepareAwsWireRequest(original, { method: 'POST', path: original.path, query: {} }).body, {});
+  const batch = model('dynamodb-batch-get-item');
+  const keys = Array.from({ length: 51 }, (_, index) => ({ id: { S: String(index) } }));
+  assert.throws(() => prepareAwsWireRequest(batch, { method: 'POST', path: batch.path, query: {}, body: { RequestItems: { First: { Keys: keys }, Second: { Keys: keys } } } }), /at most 100 keys/);
+  assert.throws(() => prepareAwsWireRequest(batch, { body: { RequestItems: { ['x'.repeat(1025)]: { Keys: [{ id: { S: 'v' } }] } } } }), /table names/);
+  for (const value of [null, [], { S: '' }, { BOOL: 'true' }, { B: 'not base64' }]) assert.throws(() => prepareAwsWireRequest(batch, { body: { RequestItems: { Orders: { Keys: [{ id: value }] } } } }));
+});
+
+Then('STS decoders reject deep envelopes and unreviewed success and error fields', () => {
+  assert.throws(() => decodeAwsWireResponse('sts-get-caller-identity', '<First></First><Second></Second>', 'text/xml', 200));
+  for (const body of [xml() + '<extra/>', '<extra/>' + xml()]) assert.throws(() => decodeAwsWireResponse('sts-get-caller-identity', body, 'text/xml', 200), { code: 'CODEC' });
+  for (const [body, status] of [[xml(), 201], [xml().replace('</GetCallerIdentityResponse>', '<Extra>no</Extra></GetCallerIdentityResponse>'), 200], ['<ErrorResponse xmlns="'+namespace+'"><RequestId>r</RequestId><Error><Code>Denied</Code><Message>no</Message></Error><Extra>no</Extra></ErrorResponse>', 403], ['<a><b><c><d><e><f><g><h><i>deep</i></h></g></f></e></d></c></b></a>', 200], ['plain text', 200]]) assert.throws(() => decodeAwsWireResponse('sts-get-caller-identity', body, 'text/xml', status));
+});
 function model(profile,method='POST') {
   const c=awsWireContracts[profile],operation={id:'aws-'+c.service+':'+(c.service==='sts'?method+'_':'')+c.action,name:c.action,description:'',group:c.service,method,path:c.path,fields:[],bodyRequired:false,
     security:[[{name:'hmac',kind:'aws-sigv4',header:'Authorization',profile:c.profile}]]};

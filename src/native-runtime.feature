@@ -40,3 +40,43 @@ Feature: Explicit private native runtime pairing
 
   Scenario: The native process uses only a pinned executable and private filesystem authority
     Then the native runtime isolates its home environment configuration and owned child lifecycle
+
+  @coverage-gaps
+  Scenario: Untrusted ticket responses cannot create native sockets
+    Then native ticket parsing rejects malformed opaque and oversized responses before opening sockets
+
+  @coverage-gaps
+  Scenario: Forged pairing frames revoke the private transport
+    Then native pairing rejects forged scope expiry and malformed socket messages and closes the peer
+
+  @coverage-gaps
+  Scenario: Native concurrency and expiry remain bounded by each owner
+    Then native broker limits concurrent owners and requests and revokes expired or disconnected work
+
+  @coverage-gaps
+  Scenario: Malformed account results and transport errors cannot publish success
+    Then native broker rejects malformed account results and converts socket failures without leaking details
+
+  @coverage-gaps
+  Scenario: Stalled pairing and hostile live frames cannot retain owned work
+    Then native stalled pairing retries only tickets while malformed live frames revoke owned work
+
+  @coverage-gaps
+  Scenario: Removed and malformed native profiles cannot retain authority
+    Then native saved authority rejects malformed bindings duplicate owners and removed profiles
+
+  @coverage-gaps
+  Scenario: Authenticated encrypted native records cannot bypass saved authority checks
+    Then native encrypted records reject malformed collections altered fingerprints and excessive saved authority
+
+  @coverage-gaps
+  Scenario: Default trust and changed native peer authority remain pinned
+    Then native runtime defaults retain TLS trust and changed peer authority forces a fresh check
+
+  @coverage-gaps
+  Scenario: Guard delays cannot publish cancelled or disconnected native peers
+    Then native cancellation and disconnect during asynchronous guards cannot publish a paired peer
+
+  @coverage-gaps
+  Scenario: A missing native pairing acknowledgement expires before request dispatch
+    Then native handshake expiry closes an unacknowledged socket before the overall request deadline

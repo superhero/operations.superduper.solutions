@@ -35,3 +35,19 @@ Feature: Private Cloudflare upload sessions
 
   Scenario: Platform Worker completion preserves its dispatch namespace
     Then a platform asset session completes only for its original Worker namespace and account
+
+  @coverage-gaps
+  Scenario: Acquisition enforces manifest token and scope limits
+    Then Cloudflare acquisition rejects malformed manifests buckets and token validity claims
+
+  @coverage-gaps
+  Scenario: Pages completion requires exactly its checked and uploaded hashes
+    Then Cloudflare Pages enforces missing hash state canonical file data and one use completion
+
+  @coverage-gaps
+  Scenario: Upload phases and multipart names remain strict
+    Then Cloudflare rejects inconsistent upload transitions and malformed multipart file names
+
+  @coverage-gaps
+  Scenario: Private upload buckets respect the transport byte budget
+    Then Cloudflare rejects upload buckets exceeding the private transport byte budget

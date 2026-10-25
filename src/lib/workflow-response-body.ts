@@ -74,7 +74,6 @@ async function readBytes(response: Response, signal: AbortSignal, limit: number)
   const aborted = new Promise<never>((_resolve, reject) => { abort = () => reject(new WorkflowBodyError("CANCELLED")); });
   signal.addEventListener("abort", abort, { once: true });
   try {
-    if (signal.aborted) abort();
     while (true) {
       const { value, done } = await Promise.race([reader.read(), aborted]);
       if (signal.aborted) throw new WorkflowBodyError("CANCELLED");
@@ -106,7 +105,7 @@ export function responseFileName(disposition: string | null): string {
   const plain = /(?:^|;)\s*filename\s*=\s*(?:"([^"\r\n]*)"|([^;\s]*))/i.exec(disposition ?? "");
   let name = plain?.[1] ?? plain?.[2] ?? "response.bin";
   if (extended) { try { name = decodeURIComponent(extended[1]!.trim()); } catch { /* Use the plain advisory fallback. */ } }
-  name = (name.split(/[/\\]/).at(-1) ?? "").replace(/[\u0000-\u001f\u007f]/g, "_").trim().slice(0, 255);
+  name = name.split(/[/\\]/).at(-1)!.replace(/[\u0000-\u001f\u007f]/g, "_").trim().slice(0, 255);
   return !name || /^\.+$/.test(name) ? "response.bin" : name;
 }
 
@@ -125,7 +124,7 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
     const bytes = await readBytes(response, signal, awsWireContracts[wire].service === "sts" ? Math.min(textLimit, maxStsXmlBytes) : textLimit);
     let text: string;
     try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { throw new WorkflowBodyError("CODEC"); }
-    return { body: decodeAwsWireResponse(wire, text, mediaType ?? "", response.status), mediaType: "application/json", transportMediaType: mediaType };
+    return { body: decodeAwsWireResponse(wire, text, mediaType, response.status), mediaType: "application/json", transportMediaType: mediaType };
   }
   const definitions = operation.responseContent;
   const declared = definitions?.[String(response.status)] ?? definitions?.[`${Math.floor(response.status / 100)}XX`] ?? definitions?.DEFAULT;

@@ -250,3 +250,31 @@ Feature: Approved credential execution
 
   Scenario: Query API keys are injected only for the selected alternative and common encoded echoes stay private
     Then query credentials reach only the approved URL and stay out of previews and echoed responses
+
+  @coverage-gaps
+  Scenario: Default native and Docker dispatch preserve the selected bridge contract
+    Then the default workflow executor forwards native and Docker calls to their selected private bridge
+
+  @coverage-gaps
+  Scenario: Connection authority cannot expand an anonymous alternative
+    Then workflow credential connections cannot authorize public alternatives or an unsecured upload profile
+
+  @coverage-gaps
+  Scenario: Private protocol profiles bind their approved authentication shape
+    Then private approval rejects malformed security and authentication outside its reviewed protocol profile
+
+  @coverage-gaps
+  Scenario: Private uploads require bounded owned session state
+    Then private uploads require a session manager and a qualified reference and cancel before accepting a response
+
+  @coverage-gaps
+  Scenario: Cancellation remains authoritative before signing and final acceptance
+    Then private OAuth signing and final response acceptance stop when their owner cancels
+
+  @coverage-gaps
+  Scenario: Connection expiration is checked after asynchronous policy confirmation
+    Then a saved connection that expires during policy confirmation cannot dispatch
+
+  @coverage-gaps
+  Scenario: Managed tokens remain bound to their current account and lifetime
+    Then managed private execution refuses stale token state account changes and expiry at every acceptance boundary

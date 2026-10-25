@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "d9b521b4b596169d27279c14697dab4f0c3e096c9da6b5394525e933ac70bb40",
+  "adapterRevision": "dd5b467e1a48661e1df95297d0eb1c0bf96435d213ccdb3bd5c6f9ab2d08b180",
   "indexes": [
     {
       "id": "anthropic",
@@ -1708,16 +1708,16 @@
     },
     {
       "id": "gcp-bigquery",
-      "sourceRevision": "75b5c0076c3187454398758715c83ede652c1f5ebd316a0c4297f617f5c30fb1",
-      "bytes": 17200,
-      "compressedBytes": 1497,
-      "sha256": "9379a08b8831ac4aab1b3d2c2ee2436e421af66a14daac44a29bcc224f04d77e",
+      "sourceRevision": "5f44d6af036c8a1d6f1bb032aa78d57405adf6642f9ecc812a8f52ecbdfc6f18",
+      "bytes": 17075,
+      "compressedBytes": 1417,
+      "sha256": "559f37309433704b895db521c74429505d301d1ec00c53ef43a66592bad5e812",
       "summary": {
         "name": "BigQuery API",
         "serverUrl": "https://bigquery.googleapis.com/bigquery/v2",
         "description": "A data platform for customers to create, manage, share and query data.",
         "operationCount": 37,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
@@ -2224,16 +2224,16 @@
     },
     {
       "id": "gcp-storage",
-      "sourceRevision": "a9a4230a7c6b7bb9c6f8c65a1afac43ce3ea58bb8de9b851e25971e5389fbe7f",
-      "bytes": 36541,
-      "compressedBytes": 2366,
-      "sha256": "74dec1e4f1cabcab12cf80f5d3ef95356106ca78db7b4416e0a4f8e16e309938",
+      "sourceRevision": "17f613d1c470c8a7fc64f3121208af3f6962b237e2b6c0dcbf5732d17aa9aa7d",
+      "bytes": 36416,
+      "compressedBytes": 2282,
+      "sha256": "2ff2fe6e3ac9e9d469c41945dff21f69474d5eba271fbec627b9d2ca415cc891",
       "summary": {
         "name": "Cloud Storage JSON API",
         "serverUrl": "https://storage.googleapis.com/storage/v1",
         "description": "Stores and retrieves potentially large, immutable data objects.",
         "operationCount": 76,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {

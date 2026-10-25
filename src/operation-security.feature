@@ -6,6 +6,14 @@
 Feature: OpenAPI authentication requirements
   Imported operations describe supported credentials without granting permission to use them.
 
+  @coverage-gaps
+  Scenario: Signing and private-path markers cannot broaden credential authority
+    Then explicit signing profiles reject conflicts and missing signing declarations
+
+  @coverage-gaps
+  Scenario: Strict and inspectable AWS contracts retain their signing constraints
+    Then strict and inspectable AWS models retain exact signing and response profiles
+
   Scenario: HTTP Basic is a canonical private authentication choice
     Then HTTP Basic preserves scheme identity destination AND requirements and strict approval
 

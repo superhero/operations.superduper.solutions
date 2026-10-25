@@ -115,6 +115,10 @@ Then('the cloud collections retain their provider counts and representative work
   await expect(aws).toHaveAttribute('aria-disabled', 'true');
   await aws.press('Enter');
   await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+  const requirements = page.getByRole('dialog', { name: 'Requirements: GET_DescribeInstances', exact: true });
+  await expect(requirements).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(requirements).toBeHidden();
   await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Vaults_ListBySubscription');
   await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'Vaults_ListBySubscription');
   const azure = page.locator('[data-operation-id="azure-keyvault:Vaults_ListBySubscription"] > button');

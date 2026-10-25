@@ -145,3 +145,7 @@ Feature: Explore operations from a local OpenAPI catalog
   @explicit-input-values
   Scenario: Nullable collections preserve supported transport restrictions
     Then nullable query collections serialize safely and form bodies reject null schemas
+
+  @coverage-gaps
+  Scenario: Request preparation rejects unqualified profiles before dispatch
+    Then request preparation rejects credential acquisition unknown private paths and malformed field encodings

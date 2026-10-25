@@ -28,3 +28,23 @@ Feature: Reusable private HTTP connections
 
   Scenario: Disabled schemas initialize no authorization provider
     Then a disabled connection initializes no SDK probe or native process
+
+  @coverage-gaps
+  Scenario: Stored HTTP profiles enforce metadata security and owner boundaries
+    Then stored HTTP profiles reject malformed metadata ownership and security before selection
+
+  @coverage-gaps
+  Scenario: HTTP profile edits preserve capacity and credential authority
+    Then HTTP profile edits reject stale capacity duplicate labels and incompatible credential parts
+
+  @coverage-gaps
+  Scenario: Authorization deadlines cannot revive expired or abandoned work
+    Then connection authorization rejects invalid deadlines and suppresses expired or abandoned completion
+
+  @coverage-gaps
+  Scenario: Readiness observers may cancel without stale expiry or failure callbacks
+    Then authorization observers may cancel readiness without reviving expiry or failure state
+
+  @coverage-gaps
+  Scenario: Invalid stored connection payloads cannot change the vault
+    Then malformed stored connection lists and OAuth payloads fail before vault state changes

@@ -177,3 +177,14 @@ Then('Telegram connection previews schemas history and portable documents contai
   assert.ok(!JSON.stringify(portableWorkflowDocument(workflow)).includes(f.profile.id));
   assert.deepEqual(validateWorkflowDocument(JSON.parse(JSON.stringify(workflow))).nodes[0].data.credentialBinding, f.binding);
 });
+
+Then('Telegram private path approval rejects method annotation and security drift', async () => {
+  const model = extractOperations(document(), 'telegram-fixture')[0];
+  for (const changed of [{ ...model, method: 'DELETE' }, { ...model, privatePath: 'other-provider' },
+    { ...model, security: [[{ name: 'Bot token', kind: 'apiKey', header: 'Authorization' }]] }])
+    await assert.rejects(approvedOperation(changed, telegramBotOrigin));
+  await assert.rejects(approvedOperation({ ...model, privatePath: undefined }, 'https://ordinary.example.test'));
+  const f = await connection(model);
+  assert.throws(() => telegramPrivateUrl({ ...f.descriptor, origin: 'https://evil.example.test' }, model.path, token));
+  assert.throws(() => telegramPrivateUrl({ ...f.descriptor, operation: { ...model, privatePath: undefined } }, model.path, token));
+});

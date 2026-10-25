@@ -15,5 +15,6 @@ Feature: GitHub operation authentication
   Scenario: GitHub OAuth app Basic credentials and token inputs stay private
     Then GitHub OAuth app references dispatch Basic privately while credential results remain blocked
 
+  @coverage-gaps
   Scenario: GitHub corrections retain provenance and reject changed contracts
     Then GitHub corrections are isolated idempotent and bounded to their reviewed routes and origins

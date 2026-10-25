@@ -12,9 +12,10 @@ import { VaultError } from './lib/secrets/types.ts';
 import { newVaultKey, recoveryKey, randomBase64, wrapVaultKey } from './lib/secrets/crypto.ts';
 import { sealSnapshot } from './lib/secrets/format.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
-import { AtprotoOAuthBroker } from './lib/secrets/atproto-oauth.ts';
-import { atprotoOAuthAlternative, atprotoCallbackUri, atprotoClientId, publicAtprotoUrl, validateAtprotoInput } from './lib/secrets/atproto-config.ts';
-import { createAtprotoHttpConnection, httpConnectionLimit, formatHttpToken, httpConnectionReference } from './lib/secrets/http-connections.ts';
+import { AtprotoOAuthBroker, validateAtprotoTransport, validateAtprotoRefresh, validateAtprotoContinuation } from './lib/secrets/atproto-oauth.ts';
+import { atprotoOAuthAlternative, atprotoCallbackUri, atprotoClientId, publicAtprotoUrl, validateAtprotoInput, validateAtprotoMetadata, atprotoProxy } from './lib/secrets/atproto-config.ts';
+import { validateAtprotoState, managedAtprotoSecrets } from './lib/secrets/atproto-state.ts';
+import { createAtprotoHttpConnection, httpConnectionLimit, formatHttpToken, httpConnectionReference, validateHttpConnection } from './lib/secrets/http-connections.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { takeAtprotoCallback } from './index.ts';
@@ -133,6 +134,8 @@ Then('Bluesky OAuth rejects stale schemas changed operations and manual managed 
 });
 Then('Bluesky OAuth redacts token echoes and keeps private material out of summaries and copies', async () => {
   const f = await fixture(), connection = await f.connect(); f.echo = true;
+  const ordinary = 'ATPROTO_ORDINARY_PRIVATE_5729';
+  await f.session.put(null, { label: 'Ordinary credential', kind: 'secret', value: ordinary }); f.privateValues.push(ordinary);
   const result = await f.session.execute(f.descriptor, {}, await f.binding(connection)); assert.equal(result.response.redacted, true);
   const summary = await f.session.list(), safe = JSON.stringify({ result, summary, connection, storage: f.storage.state });
   assert.equal(summary[0].oauthState, undefined); for (const value of f.privateValues) assert.ok(!safe.includes(value));
@@ -199,4 +202,218 @@ Then('Bluesky OAuth preserves the connection limit before and after interactive 
   assert.equal(f.calls.length, calls);
   await f.session.removeConnection(httpConnectionReference(original));
   const available = await f.session.beginAtprotoOAuth(input, f.descriptor); await f.session.cancelAtprotoOAuth(available.id);
+});
+
+Then('Bluesky saved proof state and registrations reject malformed or mismatched authority', async () => {
+  const f = await fixture(), connection = await f.connect(), state = JSON.parse((await f.session.records())[0].oauthState);
+  for (const changed of [{ ...state, extra: true }, { ...state, refreshPending: null }, { ...state, jwk: { ...state.jwk, alg: 'none' } },
+    { ...state, jwk: { ...state.jwk, d: 'bad' } }, { ...state, tokenSet: { ...state.tokenSet, expires_at: 'not-a-date' } }])
+    assert.throws(() => validateAtprotoState(JSON.stringify(changed)), refused);
+  assert.throws(() => validateAtprotoState(' '.repeat(65537)), refused);
+  assert.throws(() => validateAtprotoState(JSON.stringify(state), { ...state.oauth, accountId: 'did:plc:'+'b'.repeat(24) }), refused);
+  assert.deepEqual(managedAtprotoSecrets('malformed'), []);
+  assert.throws(() => validateAtprotoMetadata({ ...state.oauth, pds: state.oauth.pds+'unreviewed' }), refused);
+  assert.throws(() => validateAtprotoMetadata({ ...state.oauth, scope: 'atproto' }), refused);
+  for (const url of [undefined, 'x'.repeat(2049)]) assert.throws(() => publicAtprotoUrl(url), refused);
+  assert.throws(() => validateAtprotoInput({ ...input, label: '\u0000' }, origin), refused);
+  const page = 'http://127.0.0.1:12345/', local = { ...input, clientId: 'http://localhost?wrong', redirectUri: atprotoCallbackUri(page) };
+  assert.throws(() => validateAtprotoInput(local, new URL(page).origin), refused);
+  assert.equal(atprotoClientId(origin+'/workspace'), input.clientId);
+  for (const changed of [{ ...connection, expiresAt: Date.now()+1000 }, { ...connection, endpoint: 'https://moved.example.com' }]) assert.throws(() => validateHttpConnection(changed), refused);
+  assert.equal(atprotoOAuthAlternative({ ...f.descriptor, origin: 'https://127.0.0.1' }), undefined);
+  assert.equal(atprotoOAuthAlternative({ ...f.descriptor, operation: { ...f.descriptor.operation, security: [] } }), undefined);
+});
+
+Then('Bluesky pending authorization expires and its loopback and ambient runtimes retain private transport', async () => {
+  const f = await fixture(), broker = new AtprotoOAuthBroker({ applicationOrigin: origin, fetchRequest: f.fetch }), tasks = [];
+  try {
+    for (let i = 0; i < 4; i++) tasks.push(await broker.begin(input, f.descriptor, async () => {}));
+    await assert.rejects(broker.begin(input, f.descriptor, async () => {}), error => error.code === 'LIMIT');
+    vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(Date.now()+300001);
+    const next = await broker.begin(input, f.descriptor, async () => {}); assert.ok(next.id); broker.cancel(next.id); broker.cancel(next.id);
+  } finally { broker.clear(); vi.useRealTimers(); }
+  const page = 'http://127.0.0.1:12345/', provider = atprotoProvider(new URL(page).origin);
+  const local = new AtprotoOAuthBroker({ applicationOrigin: new URL(page).origin, fetchRequest: provider.fetch });
+  try {
+    const task = await local.begin({ ...input, clientId: atprotoClientId(page), redirectUri: atprotoCallbackUri(page) }, f.descriptor, async () => {});
+    assert.ok(task.authorizationUrl.startsWith(provider.issuer)); local.cancel(task.id);
+  } finally { local.clear(); }
+  vi.stubGlobal('location', { origin }); vi.stubGlobal('fetch', f.fetch);
+  try { const ambient = new AtprotoOAuthBroker(), task = await ambient.begin(input, f.descriptor, async () => {}); ambient.cancel(task.id); }
+  finally { vi.unstubAllGlobals(); }
+  vi.stubGlobal('location', undefined);
+  try { await assert.rejects(new AtprotoOAuthBroker({ fetchRequest: f.fetch }).begin(input, f.descriptor, async () => {}), refused); }
+  finally { vi.unstubAllGlobals(); }
+});
+
+Then('Bluesky malformed discovery and resource replies never publish private preferences', async () => {
+  for (const mode of ['no-body', 'stream-error', 'redirect-response', 'redirected', 'redirected-cancel-reject', 'redirected-null-body', 'empty-par', 'requirements', 'revocation', 'no-revocation', 'pds-service', 'pds-path', 'pds-absolute-id', 'pds-moved']) {
+    const f = await fixture(), original = f.fetch; let cancellations = 0, redirectedResponse;
+    if (mode === 'pds-moved') f.stalePds = true;
+    const broker = new AtprotoOAuthBroker({ applicationOrigin: origin, fetchRequest: async request => {
+      const response = await original(request), url = new URL(request.url);
+      if (request.url === input.clientId && mode === 'no-body') return new Response(null, { headers: response.headers });
+      if (request.url === input.clientId && mode === 'stream-error') return new Response(new ReadableStream({ start(controller) { controller.error(new Error('private stream failure')); } }), { headers: response.headers });
+      if (request.url === input.clientId && mode === 'redirect-response') return new Response('Redirect response', {
+        status: 302, headers: { Location: 'https://foreign.example.com/metadata', 'Content-Type': 'text/plain' },
+      });
+      if (request.url === input.clientId && mode.startsWith('redirected')) {
+        const body = mode === 'redirected-null-body' ? null : new ReadableStream({
+          start(controller) { controller.enqueue(new TextEncoder().encode('private-redirect-body')); },
+          cancel() { cancellations++; if (mode === 'redirected-cancel-reject') throw new Error('private-cancellation-failure'); },
+        });
+        redirectedResponse = new Response(body, { headers: response.headers });
+        Object.defineProperty(redirectedResponse, 'redirected', { value: true });
+        return redirectedResponse;
+      }
+      if (url.pathname === '/par' && response.ok && mode === 'empty-par') return Response.json({ request_uri: '', expires_in: 60 }, { status: response.status, headers: response.headers });
+      if (url.pathname === '/.well-known/oauth-authorization-server') {
+        const body = await response.json();
+        if (mode === 'requirements') body.require_pushed_authorization_requests = false;
+        if (mode === 'revocation') body.revocation_endpoint = 'https://foreign.example.com/revoke';
+        if (mode === 'no-revocation') delete body.revocation_endpoint;
+        return Response.json(body);
+      }
+      if (url.hostname === 'plc.directory' && ['pds-service', 'pds-path', 'pds-absolute-id'].includes(mode)) {
+        const body = await response.json();
+        if (mode === 'pds-service') body.service.push({ ...body.service[0] });
+        else if (mode === 'pds-absolute-id') body.service[0].id = f.did+'#atproto_pds';
+        else body.service[0].serviceEndpoint += '/unreviewed';
+        return Response.json(body);
+      }
+      return response;
+    } });
+    try {
+      if (mode === 'no-revocation' || mode === 'pds-absolute-id') { const task = await broker.begin(input, f.descriptor, async () => {}); broker.cancel(task.id); }
+      else await assert.rejects(broker.begin(input, f.descriptor, async () => {}), error => {
+        if (!mode.startsWith('redirected')) return refused(error);
+        assert.equal(error.code, 'PERMISSION'); assert.equal(error.cause, undefined);
+        assert.ok(!error.message.includes('private-')); return true;
+      }, 'Discovery variant must reject: '+mode);
+      if (mode.startsWith('redirected')) {
+        assert.equal(cancellations, mode === 'redirected-null-body' ? 0 : 1);
+        assert.equal(redirectedResponse.bodyUsed, mode !== 'redirected-null-body');
+      }
+      if (mode === 'empty-par') assert.equal(f.pars.size, 1);
+      assert.equal(f.tokenCalls, 0); assert.equal(f.resources, 0);
+    } finally { broker.clear(); }
+  }
+  const switched = await fixture(), foreignDid = 'did:plc:'+'b'.repeat(24); switched.wrongSubject = true;
+  const account = new AtprotoOAuthBroker({ applicationOrigin: origin, fetchRequest: async request => {
+    if (request.url === 'https://plc.directory/'+foreignDid) return Response.json({ id: foreignDid,
+      service: [{ id: '#atproto_pds', type: 'AtprotoPersonalDataServer', serviceEndpoint: switched.pds }] });
+    return switched.fetch(request);
+  } });
+  try {
+    const task = await account.begin(input, switched.descriptor, async () => {});
+    await assert.rejects(account.complete(task.id, switched.consent(task.authorizationUrl), async () => {}), refused);
+    assert.equal(switched.tokenCalls, 1); assert.equal(switched.resources, 0);
+  } finally { account.clear(); }
+  const f = await fixture(); await f.connect(); const state = JSON.parse((await f.session.records())[0].oauthState), controller = new AbortController();
+  controller.abort(); const broker = new AtprotoOAuthBroker({ applicationOrigin: origin, fetchRequest: f.fetch });
+  await assert.rejects(broker.execute(state, f.descriptor, async () => {}, async () => {}, controller.signal), error => error.code === 'CANCELLED');
+  const malformed = new AtprotoOAuthBroker({ applicationOrigin: origin, fetchRequest: async request => request.url === f.pds+'/xrpc/app.bsky.actor.getPreferences'
+    ? new Response('{}', { headers: { 'Content-Type': 'text/plain' } }) : f.fetch(request) });
+  await assert.rejects(malformed.execute(state, f.descriptor, async () => {}, async () => {}), error => error.code === 'NETWORK');
+});
+
+Then('Bluesky reconnect and consent reject stale references duplicate names and cancelled callbacks', async () => {
+  for (const mode of ['stale', 'duplicate', 'record-name', 'aborted', 'extra-callback']) {
+    const f = await fixture(); let previous;
+    if (mode === 'stale' || mode === 'duplicate') previous = await f.connect();
+    if (mode === 'record-name') await f.session.put(null, { label: input.label+' reference', kind: 'secret', value: 'ordinary-key' });
+    const task = await f.session.beginAtprotoOAuth(input, f.descriptor, mode === 'stale' ? httpConnectionReference(previous) : undefined), callback = f.consent(task.authorizationUrl);
+    if (mode === 'stale') await f.session.removeConnection(httpConnectionReference(previous));
+    if (mode === 'extra-callback') callback.extra = 'unreviewed';
+    const controller = new AbortController(); if (mode === 'aborted') controller.abort();
+    await assert.rejects(f.session.completeAtprotoOAuth(task.id, callback, controller.signal), refused);
+    if (mode === 'aborted' || mode === 'extra-callback') assert.equal(f.tokenCalls, 0);
+  }
+  const f = await fixture(), connection = await f.connect();
+  await assert.rejects(f.session.beginAtprotoOAuth(input, f.descriptor, { ...httpConnectionReference(connection), revision: 2 }), refused);
+});
+
+Then('Bluesky private transport policy rejects forged SDK requests and repeated refresh grants', async () => {
+  const resource = 'https://pds.example.com/xrpc/app.bsky.actor.getPreferences', endpoint = 'https://auth.example.com/token';
+  const policy = { resource, endpoints: new Set([endpoint]), calls: 1 };
+  const headers = { DPoP: 'opaque-sdk-proof', Authorization: 'DPoP private-access-value', 'atproto-proxy': atprotoProxy };
+  const rejected = [
+    new Request(resource, { method: 'POST', headers, body: '' }),
+    new Request(resource, { headers: { DPoP: headers.DPoP, 'atproto-proxy': atprotoProxy } }),
+    new Request(resource, { headers: { Authorization: headers.Authorization, 'atproto-proxy': atprotoProxy } }),
+    new Request(resource, { headers: { ...headers, Authorization: 'Bearer private-access-value' } }),
+    new Request(resource, { headers: { ...headers, 'atproto-proxy': 'did:web:foreign.example.com#app' } }),
+    new Request(endpoint, { method: 'PUT', headers: { DPoP: headers.DPoP }, body: '' }),
+    new Request(endpoint, { method: 'POST', headers: { ...headers }, body: '' }),
+    new Request('https://foreign.example.com/token', { method: 'POST', headers: { DPoP: headers.DPoP }, body: '' }),
+  ];
+  for (const request of rejected) await assert.rejects(validateAtprotoTransport(request, policy), error => error.code === 'PERMISSION');
+  await assert.rejects(validateAtprotoTransport(new Request(input.clientId, { headers: { Cookie: 'private-session=value' } }), policy), error => error.code === 'LIMIT');
+  await assert.rejects(validateAtprotoTransport(new Request(input.clientId), { ...policy, calls: 65 }), error => error.code === 'LIMIT');
+  await assert.rejects(validateAtprotoTransport(new Request(endpoint, { method: 'POST', headers: { DPoP: headers.DPoP }, body: 'x'.repeat(32769) }), policy), error => error.code === 'LIMIT');
+  assert.equal((await validateAtprotoTransport(new Request(resource, { headers }), policy)).resource, true);
+  assert.equal((await validateAtprotoTransport(new Request(input.clientId), policy)).resource, false);
+  assert.equal((await validateAtprotoTransport(new Request(endpoint, { method: 'POST', headers: { DPoP: headers.DPoP }, body: 'grant_type=refresh_token' }), policy)).refreshing, true);
+  for (const [available, dispatched, nonceRetry] of [[false, false, false], [true, true, false]])
+    assert.throws(() => validateAtprotoRefresh(available, dispatched, nonceRetry), error => error.code === 'AUTHORIZATION');
+  validateAtprotoRefresh(true, false, false); validateAtprotoRefresh(true, true, true);
+});
+
+Then('Bluesky continuation policy preserves the selected account registration and proof key', async () => {
+  const f = await fixture(); await f.connect(); const state = JSON.parse((await f.session.records())[0].oauthState);
+  assert.deepEqual(validateAtprotoContinuation(f.did, state.tokenSet, state.jwk, state.oauth, f.did, state), state);
+  const foreignDid = 'did:plc:'+'b'.repeat(24);
+  assert.throws(() => validateAtprotoContinuation(foreignDid, { ...state.tokenSet, sub: foreignDid }, state.jwk, { ...state.oauth, accountId: foreignDid }, f.did, state), refused);
+  assert.throws(() => validateAtprotoContinuation(f.did, { ...state.tokenSet, sub: foreignDid }, state.jwk, state.oauth, f.did, state), refused);
+  assert.throws(() => validateAtprotoContinuation(f.did, state.tokenSet, state.jwk, { ...state.oauth, clientId: origin+'/oauth/changed.json' }, f.did, state), refused);
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+  const jwk = { ...await crypto.subtle.exportKey('jwk', pair.privateKey), alg: 'ES256', kid: crypto.randomUUID() };
+  assert.throws(() => validateAtprotoContinuation(f.did, state.tokenSet, jwk, state.oauth, f.did, state), refused);
+});
+
+Then('Bluesky invalid refresh replies and disconnect during rotation cannot recreate authority', async () => {
+  for (const mode of ['invalid-grant', 'malformed-nonce', 'disconnect']) {
+    const f = await fixture(), connection = await f.connect(), binding = await f.binding(connection);
+    try {
+      vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(Date.now()+7200000);
+      if (mode === 'disconnect') {
+        f.onToken = () => f.session.removeConnection(httpConnectionReference(connection));
+        await assert.rejects(f.session.execute(f.descriptor, {}, binding), refused);
+        assert.deepEqual(await f.session.connections(), []); assert.equal(f.refreshCalls, 1);
+      } else {
+        const state = JSON.parse((await f.session.records())[0].oauthState), writes = []; let attempts = 0;
+        const broker = new AtprotoOAuthBroker({ applicationOrigin: origin, fetchRequest: async request => {
+          if (new URL(request.url).pathname === '/token' && new URLSearchParams(await request.clone().text()).get('grant_type') === 'refresh_token') {
+            attempts++;
+            return mode === 'invalid-grant' ? Response.json({ error: 'invalid_grant' }, { status: 400 })
+              : new Response('{', { status: 400, headers: { 'Content-Type': 'application/json', 'DPoP-Nonce': 'private-nonce' } });
+          }
+          return f.fetch(request);
+        } });
+        await assert.rejects(broker.execute(state, f.descriptor, async () => {}, async next => { writes.push(next); }), refused);
+        assert.equal(attempts, 1); assert.ok(writes.length); assert.equal(writes.at(-1).refreshPending, true);
+      }
+      assert.equal(f.resources, 0);
+    } finally { vi.useRealTimers(); }
+  }
+  const f = await fixture(), wrong = await approvedOperation({ ...f.descriptor.operation, path: '/xrpc/app.bsky.actor.putPreferences', method: 'POST' }, f.pds);
+  await assert.rejects(f.session.beginAtprotoOAuth(input, wrong), error => error.code === 'PERMISSION');
+  const connection = await f.connect(), binding = await f.binding(connection), records = await f.session.records();
+  delete records[0].oauthState; await f.session.save(records);
+  await assert.rejects(f.binding(connection), refused); await assert.rejects(f.session.execute(f.descriptor, {}, binding), refused);
+  assert.equal(f.resources, 0);
+  const late = await fixture(), saved = await late.connect(), selected = await late.binding(saved), controller = new AbortController();
+  const execute = AtprotoOAuthBroker.prototype.execute, before = structuredClone(late.storage.state);
+  const spy = vi.spyOn(AtprotoOAuthBroker.prototype, 'execute').mockImplementation(async function (...args) {
+    const result = await execute.apply(this, args); controller.abort(); return result;
+  });
+  try {
+    await assert.rejects(late.session.execute(late.descriptor, {}, selected, controller.signal), error => error.code === 'CANCELLED');
+    assert.equal(spy.mock.calls.length, 1);
+  } finally { spy.mockRestore(); }
+  assert.deepEqual(late.storage.state, before); assert.deepEqual(await late.session.connections(), [saved]);
+  assert.equal(late.resources, 1); assert.equal(late.refreshCalls, 0);
+  const calls = late.calls.length;
+  await assert.rejects(late.session.execute(late.descriptor, {}, selected, controller.signal), error => error.code === 'CANCELLED');
+  assert.equal(late.calls.length, calls); assert.equal(late.resources, 1);
 });

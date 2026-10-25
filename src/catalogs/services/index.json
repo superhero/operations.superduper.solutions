@@ -2335,10 +2335,14 @@
       {
         "id": "google-oauth-alternatives",
         "version": 1
+      },
+      {
+        "id": "bigquery-job-metadata",
+        "version": 1
       }
     ],
-    "effectiveSha256": "75b5c0076c3187454398758715c83ede652c1f5ebd316a0c4297f617f5c30fb1",
-    "effectiveBytes": 349162
+    "effectiveSha256": "5f44d6af036c8a1d6f1bb032aa78d57405adf6642f9ecc812a8f52ecbdfc6f18",
+    "effectiveBytes": 349268
   },
   {
     "id": "gcp-bigquerydatatransfer",
@@ -3371,10 +3375,14 @@
       {
         "id": "google-oauth-alternatives",
         "version": 1
+      },
+      {
+        "id": "google-storage-media",
+        "version": 1
       }
     ],
-    "effectiveSha256": "a9a4230a7c6b7bb9c6f8c65a1afac43ce3ea58bb8de9b851e25971e5389fbe7f",
-    "effectiveBytes": 237374
+    "effectiveSha256": "17f613d1c470c8a7fc64f3121208af3f6962b237e2b6c0dcbf5732d17aa9aa7d",
+    "effectiveBytes": 240909
   },
   {
     "id": "gcp-cloudtasks",
