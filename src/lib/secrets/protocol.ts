@@ -10,6 +10,7 @@ export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate
   | "grant" | "revoke" | "connections" | "connectionBinding" | "putConnection" | "removeConnection"
   | "beginJiraOAuth" | "pollJiraOAuth" | "completeJiraOAuth" | "cancelJiraOAuth"
   | "beginGitlabOAuth" | "completeGitlabOAuth" | "cancelGitlabOAuth"
+  | "nativeConnections" | "pairNativeRuntime" | "checkNativeRuntime" | "disconnectNativeRuntime"
   | "execute" | "checkAssertion" | "backup" | "restore" | "addMethod" | "removeMethod" | "rotate";
 export type VaultArguments<M extends VaultMethod> = Parameters<VaultSession[M]>;
 export type VaultResult<M extends VaultMethod> = Awaited<ReturnType<VaultSession[M]>>;

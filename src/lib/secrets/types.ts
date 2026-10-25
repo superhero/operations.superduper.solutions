@@ -32,6 +32,7 @@ export type CredentialGrant = { id: string; scheme: string; descriptor: Approved
 export type VaultCredential = {
   id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
   connections?: HttpConnection[];
+  nativeConnections?: import("./native-runtime-config.ts").NativeRuntimeConnection[];
   /** Encrypted managed-token payload; never part of key/value reads or summaries. */
   oauthState?: string;
 };

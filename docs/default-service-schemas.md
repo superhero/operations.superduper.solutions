@@ -467,7 +467,9 @@ The [native connector contract](codex-native-connector.md) qualifies a paired
 browser companion using the pinned stdio protocol and an isolated account home.
 Its transport probe does not enable application execution. [Native model loading
 and saved workflows](native-rpc-models.md) preserve the protocol independently of
-HTTP; pairing and a complete agent workflow remain separate implementation steps.
+HTTP. The [optional paired runtime](codex-native-runtime.md) supports private
+initialization and a read-only account check; a complete agent workflow remains
+a separate implementation step.
 
 ## Execution limits
 

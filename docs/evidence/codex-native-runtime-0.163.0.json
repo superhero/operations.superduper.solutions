@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-25",
+  "profile": "codex-stdio-paired-v1",
+  "codexVersion": "codex-cli 0.163.0",
+  "binarySha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "implementation": "companions/codex/server.mjs",
+  "evaluation": "tests/evaluations/native-runtime.feature",
+  "checks": {
+    "productionVaultWorker": true,
+    "realHttpsPreflight": true,
+    "exactOriginAndPrivateAuthorization": true,
+    "realBrowserWssFirstFrameTicket": true,
+    "nativeInitializeThenInitialized": true,
+    "accountReadWithoutLogin": true,
+    "encryptedProfileReloadAndExplicitReconnect": true,
+    "noLogoutOrOtherNativeMethod": true,
+    "temporaryDedicatedHomeAndWorkspace": true,
+    "ownedAppServerChildrenStarted": 2,
+    "ownedAppServerChildrenStopped": 2
+  },
+  "verification": {
+    "sourceScenarios": 17,
+    "browserScenarios": 4,
+    "realBinaryBrowserScenarios": 1,
+    "typecheckErrors": 0,
+    "existingWarnings": 1,
+    "discoveryIndexes": 224
+  },
+  "resources": {
+    "host": "sds-01",
+    "cpus": 4,
+    "memoryGiB": 16,
+    "additionalSwapBytes": 0,
+    "pids": 512,
+    "gpu": 0
+  },
+  "limits": [
+    "The test certificate is trusted only in the explicitly tagged fixture; production certificate validation remains enabled.",
+    "No live account login, agent turn, provider request, shared Codex home/configuration or deployment.",
+    "Actual host/certificate/origin/workspace, account entitlement, mobile reachability and Safari/Firefox remain separate live qualification inputs."
+  ],
+  "implementationSha256": {
+    "companions/codex/host.mjs": "326cd7b32a0852ef1c3f96dd73862609f7e863cedcf4577d500dd8b07898a39f",
+    "companions/codex/runtime.mjs": "54d51f6bfaa063686b9afefd6875bb42193f018c482e11d1927640e6f04d9602",
+    "companions/codex/server.mjs": "493030d6f34283ccaf0728e93a1b5cedd020d8d92d5fe3f521fd292ab08db5df",
+    "src/lib/native-runtime-contract.ts": "fb9d8cc20a77f49ad0664cf0ba28df28145935380b42f41b6e990ee4897f8d9c",
+    "src/lib/secrets/native-runtime.ts": "8dce94b4413f2c50b6655bd89d2846fdf77f6b944573f693af7e442a9577aa1d",
+    "src/lib/secrets/native-runtime-config.ts": "f5e668f9b1e40faba7b4df418ab8dacc0c78959d753c3ab3a2c339d6a5562caa",
+    "src/lib/secrets/session.ts": "4ea04163e443622eea017e1932c5fc5d4e6110e7475ce3ec2dbd7ecc3a3ce48c",
+    "src/lib/secrets/vault.worker.ts": "609e0f85109af68686dfca83d25e649454a70becd38624ca8c1211146c252168",
+    "src/components/settings/NativeRuntimeSettings.svelte": "39127cd10870feb62f575fdf6d480a6bbbe5318a0c153d941a9006877d26366d"
+  }
+}

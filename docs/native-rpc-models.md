@@ -40,6 +40,7 @@ the native discriminator, and late replies from replaced sources are rejected.
 
 Loading or approving a model does **not** enable native execution. HTTP preparation,
 HTTP credential approval and both workflow HTTP executors reject native methods.
-The [paired runtime contract](codex-native-connector.md), runtime pairing and the
-bounded Codex workflow adapter remain separate deliveries. No Codex process,
-account login or provider request is started by model hydration.
+The [paired runtime implementation](codex-native-runtime.md) is a separate,
+explicit connection action; the bounded Codex workflow adapter remains a separate
+delivery. No Codex process, account login or provider request is started by model
+hydration.

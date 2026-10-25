@@ -25,7 +25,8 @@
     "icons:check": "node build/favicons.mjs --check",
     "test:runner": "node tests/gherkin/run.mjs runner",
     "test:components": "node tests/gherkin/run.mjs components",
-    "companion:jira": "node companions/jira/server.mjs"
+    "companion:jira": "node companions/jira/server.mjs",
+    "companion:codex": "node companions/codex/server.mjs"
   },
   "devDependencies": {
     "@actions/artifact": "6.3.1",
@@ -96,7 +97,8 @@
     "papaparse": "5.7.0",
     "yaml": "2.9.1",
     "parakeet.js": "1.4.4",
-    "onnxruntime-web": "1.30.0"
+    "onnxruntime-web": "1.30.0",
+    "ws": "8.22.0"
   },
   "overrides": {
     "parakeet.js": {

@@ -14,6 +14,7 @@ const methods = new Set<VaultMethod>(["status", "unlock", "prepareCreate", "conf
   "grant", "revoke", "connections", "connectionBinding", "putConnection", "removeConnection",
   "beginJiraOAuth", "pollJiraOAuth", "completeJiraOAuth", "cancelJiraOAuth",
   "beginGitlabOAuth", "completeGitlabOAuth", "cancelGitlabOAuth",
+  "nativeConnections", "pairNativeRuntime", "checkNativeRuntime", "disconnectNativeRuntime",
   "execute", "checkAssertion", "backup", "restore", "addMethod", "removeMethod", "rotate"]);
 let busy = false;
 let controller: AbortController | undefined;
@@ -80,6 +81,7 @@ self.onmessage = async ({ data }) => {
     if (method === "pollJiraOAuth") args[1] = controller.signal;
     if (method === "completeJiraOAuth") args[2] = controller.signal;
     if (method === "completeGitlabOAuth") args[2] = controller.signal;
+    if (method === "pairNativeRuntime" || method === "checkNativeRuntime") args[2] = controller.signal;
     // Only named, reviewed management and execution methods are dispatchable.
     const call = session[method].bind(session) as (...args: unknown[]) => Promise<unknown>;
     const value = await call(...args);
