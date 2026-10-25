@@ -55,14 +55,46 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   await expect(toolbar.locator('.workflow-control-group')).toHaveCount(7);
 });
 
-Then('application preferences use three independent lanes', async function () {
+Then('application preferences adapt and balance cards as the pane is resized', async function () {
   const page = this.page;
+  await page.setViewportSize({ width: 1600, height: 1400 });
   await setMode(page, 'settings');
   await page.locator('summary[aria-label="Application"]').click();
-  const lanes = page.getByRole('group', { name: 'UI defaults', exact: true }).locator('.application-lane');
-  await expect(lanes).toHaveCount(3);
-  const boxes = await Promise.all((await lanes.all()).map(lane => lane.boundingBox()));
-  expect(new Set(boxes.map(box => Math.round(box.x))).size).toBe(3);
-  expect(Math.max(...boxes.map(box => box.y)) - Math.min(...boxes.map(box => box.y))).toBeLessThan(2);
-  for (const lane of await lanes.all()) await expect(lane.locator('.workflow-default-pair')).toHaveCount(2);
+  const preferences = page.getByRole('group', { name: 'UI defaults', exact: true });
+  const cards = preferences.locator('[data-application-setting]');
+  const resize = page.getByRole('separator', { name: 'Settings pane width', exact: true });
+  const boxes = () => cards.evaluateAll(elements => elements.map(element => {
+    const { x, y, width, height } = element.getBoundingClientRect(); return { x, y, width, height };
+  }));
+  await expect(cards).toHaveCount(6);
+  const artifactDirectory = this.artifactDirectory;
+  async function inspect(columns, name) {
+    await expect.poll(async () => new Set((await boxes()).map(box => Math.round(box.x))).size).toBe(columns);
+    await expect.poll(async () => {
+      const positions = await boxes();
+      return positions.every((box, index) => positions.slice(index + 1).every(other =>
+        box.x + box.width <= other.x + 1 || other.x + other.width <= box.x + 1 ||
+        box.y + box.height <= other.y + 1 || other.y + other.height <= box.y + 1));
+    }).toBe(true);
+    for (const card of await cards.all()) {
+      expect(await card.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    }
+    await preferences.locator('xpath=../..').screenshot({ path: `${artifactDirectory}/application-settings-${name}.png` });
+  }
+  await inspect(3, 'wide');
+  const clearance = await preferences.locator('[data-application-setting="nodeClearance"]').boundingBox();
+  const snap = await preferences.locator('[data-application-setting="snap"]').boundingBox();
+  expect(Math.abs(snap.x - clearance.x)).toBeLessThan(2);
+  await resize.press('Home');
+  await resize.press('Shift+ArrowLeft');
+  await resize.press('Shift+ArrowLeft');
+  await resize.press('ArrowLeft');
+  await expect(resize).toHaveAttribute('aria-valuenow', '504');
+  await inspect(2, 'medium');
+  const toggle = preferences.getByRole('switch', { name: 'Node symbols', exact: true });
+  const checked = await toggle.getAttribute('aria-checked'); await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', String(checked !== 'true'));
+  await resize.press('Home');
+  await inspect(1, 'narrow');
+  await expect(toggle).toHaveAttribute('aria-checked', String(checked !== 'true'));
 });
