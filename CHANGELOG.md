@@ -377,6 +377,21 @@ fix(ui): use Robot icon for the assistant switch
 
 ```
 
+<!-- changelog-commit:511c4ec0194bdafbb4f88abd9aeb455239b05fcb -->
+### Commit [`511c4ec`](https://github.com/superhero/operations.superduper.solutions/commit/511c4ec0194bdafbb4f88abd9aeb455239b05fcb)
+
+```text
+feat(ui): open AI and settings from separate header buttons
+
+```
+
+<!-- changelog-commit:e10b006d9fbf4e7925deeab9f12cbeec55ec2de6 -->
+### Commit [`e10b006`](https://github.com/superhero/operations.superduper.solutions/commit/e10b006d9fbf4e7925deeab9f12cbeec55ec2de6)
+
+```text
+Merge branch 'develop' into feature/header-assistant-button
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
