@@ -17,6 +17,7 @@ import { readWorkflowResponseBody, WorkflowBodyError } from "./workflow-response
 import { workflowResponseLifetime, responseAccept, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
 import type { NativeExecutionResult, NativeProgressCallback } from "./native-agent-contract.ts";
 import type { NativeWorkflowBinding } from "./secrets/native-runtime-config.ts";
+import type { DockerBinding } from "./secrets/docker-config.ts";
 
 export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown;
   bodyType?: "binary"; mediaType?: string; transportMediaType?: string; stream?: ResponseProgress; redacted?: boolean };
@@ -25,6 +26,7 @@ export type AnyWorkflowExecutionResult = WorkflowExecutionResult | NativeExecuti
 export type WorkflowExecutor = {
   execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext, onProgress?: ResponseProgressCallback): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
   executeNative?(operation: Operation, values: InputValues, binding: NativeWorkflowBinding, signal?: AbortSignal, progress?: NativeProgressCallback): Promise<NativeExecutionResult>;
+  executeDocker?(operation: Operation, values: InputValues, binding: DockerBinding, signal?: AbortSignal): Promise<WorkflowExecutionResult>;
 };
 export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: InputValues,
   context: CredentialExecutionContext, signal?: AbortSignal, onProgress?: ResponseProgressCallback) => Promise<WorkflowExecutionResult>;
@@ -49,7 +51,9 @@ export function workflowExecutionForOperation(operation: Operation | string)
   if (!catalog || !canonical) throw new Error("This operation is not available in the registered schemas.");
   if (catalog.execution.kind === "json-rpc" || canonical.protocol === "json-rpc")
     throw new Error(canonical.unavailableReason ?? "Native RPC execution requires a paired runtime.");
-  return { ...catalog.execution, origin: operationOrigin(id) ?? operationServerUrl(catalog.document, canonical) };
+  const origin = operationOrigin(id) ?? operationServerUrl(catalog.document, canonical);
+  if (canonical.dockerNative && (!/^https?:\/\//i.test(origin) || new URL(origin).hostname === "no-default")) throw new Error("Choose a paired Docker host or configure an absolute HTTP server before running this operation.");
+  return { ...catalog.execution, origin };
 }
 
 export function workflowRequestUrl(request: PreparedRequest, origin: string): string
@@ -152,6 +156,10 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
     async executeNative(operation, values, binding, signal, progress) {
       const { executeNativeWorkflow } = await import("./secrets/native-workflow-executor.ts");
       return executeNativeWorkflow(operation, values, binding, signal, progress);
+    },
+    async executeDocker(operation, values, binding, signal) {
+      const { executeDockerWorkflow } = await import("./secrets/docker-client.ts");
+      return executeDockerWorkflow(operation, values, binding, signal);
     },
     async execute(operation, values, signal, context, onProgress) {
       const canonical = operationForId(operation.id);

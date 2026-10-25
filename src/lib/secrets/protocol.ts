@@ -13,6 +13,7 @@ export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate
   | "beginGitlabOAuth" | "completeGitlabOAuth" | "cancelGitlabOAuth"
   | "nativeConnections" | "pairNativeRuntime" | "checkNativeRuntime" | "disconnectNativeRuntime"
   | "enableNativeWorkflow" | "loginNativeRuntime" | "executeNativeRuntime"
+  | "dockerConnections" | "pairDockerHost" | "checkDockerHost" | "disconnectDockerHost" | "executeDockerRead"
   | "execute" | "checkAssertion" | "backup" | "restore" | "addMethod" | "removeMethod" | "rotate";
 export type VaultArguments<M extends VaultMethod> = Parameters<VaultSession[M]>;
 export type VaultResult<M extends VaultMethod> = Awaited<ReturnType<VaultSession[M]>>;

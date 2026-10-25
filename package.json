@@ -26,7 +26,8 @@
     "test:runner": "node tests/gherkin/run.mjs runner",
     "test:components": "node tests/gherkin/run.mjs components",
     "companion:jira": "node companions/jira/server.mjs",
-    "companion:codex": "node companions/codex/server.mjs"
+    "companion:codex": "node companions/codex/server.mjs",
+    "companion:docker": "node companions/docker/server.mjs"
   },
   "devDependencies": {
     "@actions/artifact": "6.3.1",

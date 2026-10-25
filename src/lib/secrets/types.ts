@@ -33,6 +33,7 @@ export type VaultCredential = {
   id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
   connections?: HttpConnection[];
   nativeConnections?: import("./native-runtime-config.ts").NativeRuntimeConnection[];
+  dockerConnections?: import("./docker-config.ts").DockerConnection[];
   /** Encrypted managed-token payload; never part of key/value reads or summaries. */
   oauthState?: string;
 };
@@ -71,8 +72,13 @@ export const defaultVaultPreferences: Readonly<VaultPreferences> = { idleLockEna
 export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number; epoch: number;
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
-  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN";
+  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN"
+  | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX";
 const messages: Record<VaultErrorCode, string> = {
+  DOCKER_UNAVAILABLE: "The paired Docker host could not complete its read. Check the companion and configured daemon socket.",
+  DOCKER_VERSION: "The Docker daemon does not support the paired API version 1.57.",
+  DOCKER_AUTHORITY: "The Docker host, daemon, socket or approved source changed. Pair the selected host again.",
+  DOCKER_DUPLEX: "Docker streaming and upgraded connections are unavailable in this native read mode.",
   NATIVE_FAILED: "The native operation failed. Check the thread before starting another turn.",
   NATIVE_UNKNOWN: "The native connection ended without a confirmed result. A dispatched turn may have taken effect; it will not be retried automatically.",
   LOCKED: "Unlock the secrets vault to continue.",

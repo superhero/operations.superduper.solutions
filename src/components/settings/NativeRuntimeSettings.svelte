@@ -6,7 +6,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { onMount } from "svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
-  import { vaultCall } from "$lib/secrets/client.ts";
+  import { vaultCall, readVaultConnections } from "$lib/secrets/client.ts";
   import { nativeRuntimeSelection, nativeWorkflowSelection } from "$lib/secrets/native-runtime-client.ts";
   import { nativeReference, type NativeRuntimeConnection } from "$lib/secrets/native-runtime-config.ts";
   import { safeVaultError, type VaultKey } from "$lib/secrets/types.ts";
@@ -20,14 +20,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let loginKind = $state<NativeLoginKind>("chatgptDeviceCode"), credentialId = $state("");
   let signingIn = $state(""), loginNotice = $state<Extract<NativeAgentProgress, { kind: "login" }>>();
   let loginController: AbortController | undefined;
-  async function reload() { connections = await vaultCall("nativeConnections", []); }
+  async function reload() { connections = await readVaultConnections("nativeConnections"); }
   async function action(message: string, call: () => Promise<void>) {
     error = ""; notice = "";
     await run(message, async () => { try { await call(); } finally { await reload(); await refresh(); } });
   }
   onMount(() => {
     let alive = true;
-    void vaultCall("nativeConnections", []).then(value => { if (alive) connections = value; })
+    void readVaultConnections("nativeConnections").then(value => { if (alive) connections = value; })
       .catch(failure => { if (alive) error = safeVaultError(failure).message; });
     return () => { alive = false; loginController?.abort(); loginNotice = undefined; };
   });

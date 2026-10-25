@@ -16,6 +16,7 @@ const methods = new Set<VaultMethod>(["status", "unlock", "prepareCreate", "conf
   "beginGitlabOAuth", "completeGitlabOAuth", "cancelGitlabOAuth",
   "nativeConnections", "pairNativeRuntime", "checkNativeRuntime", "disconnectNativeRuntime",
   "enableNativeWorkflow", "loginNativeRuntime", "executeNativeRuntime",
+  "dockerConnections", "pairDockerHost", "checkDockerHost", "disconnectDockerHost", "executeDockerRead",
   "execute", "checkAssertion", "backup", "restore", "addMethod", "removeMethod", "rotate"]);
 let busy = false;
 let controller: AbortController | undefined;
@@ -89,6 +90,8 @@ self.onmessage = async ({ data }) => {
     if (method === "completeJiraOAuth") args[2] = controller.signal;
     if (method === "completeGitlabOAuth") args[2] = controller.signal;
     if (method === "pairNativeRuntime" || method === "checkNativeRuntime") args[2] = controller.signal;
+    if (method === "pairDockerHost" || method === "checkDockerHost") args[2] = controller.signal;
+    if (method === "executeDockerRead") args[3] = controller.signal;
     if (method === "loginNativeRuntime" || method === "executeNativeRuntime") {
       const offset = method === "loginNativeRuntime" ? 3 : 4;
       args[offset] = controller.signal;
