@@ -16,6 +16,8 @@ Feature: Browser assistant in Settings
     Then assistant loading failures reach the shared history and copy their native error chain
   Scenario: Compatibility runs in the actual browser worker without model downloads
     Then the assistant checks its real browser worker without downloading model files
+  Scenario: The message input grows with drafts and pane width
+    Then assistant drafts expand the message input without internal scrolling
   Scenario: Streamed conversations preserve drafts and the reader's scroll position
     Then assistant streaming keeps drafts focus and readable tool details
   Scenario: Attachments remain visible in chat and obsolete image preparation is discarded
