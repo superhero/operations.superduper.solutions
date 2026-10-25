@@ -456,6 +456,14 @@ fix(ui): keep assistant model options on one line
 
 ```
 
+<!-- changelog-commit:b92112ed4b5ce5bc7f97a2077996fdee3141f0ea -->
+### Commit [`b92112e`](https://github.com/superhero/operations.superduper.solutions/commit/b92112ed4b5ce5bc7f97a2077996fdee3141f0ea)
+
+```text
+fix(ui): align pane switches with header buttons
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

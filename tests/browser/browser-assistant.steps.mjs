@@ -44,6 +44,22 @@ Then('the pane switches between settings and assistant without losing its sessio
   const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
   const theme = page.getByRole('switch', { name: 'Dark theme', exact: true });
   const application = page.locator('summary[aria-label="Application"]');
+  await page.mouse.move(0, 0);
+  const controlHeight = await aiButton.evaluate(el => el.offsetHeight);
+  await expect.poll(async () => {
+    const bounds = await Promise.all([aiButton, settingsButton, mode, theme].map(control => control.boundingBox()));
+    return Math.max(...bounds.map(box => Math.abs(box.height - controlHeight)));
+  }).toBeLessThan(0.1);
+  const aligned = await Promise.all([aiButton, settingsButton, mode, theme].map(control => control.boundingBox()));
+  expect(Math.max(...aligned.map(box => box.y)) - Math.min(...aligned.map(box => box.y))).toBeLessThan(0.5);
+  const expectHighlight = async (control, iconName) => {
+    await expect.poll(async () => {
+      const [thumb, icon] = await Promise.all([control.locator('.switch-thumb').boundingBox(), control.locator('.material-symbols-rounded').filter({ hasText: new RegExp(`^${iconName}$`) }).boundingBox()]);
+      return Math.max(Math.abs(thumb.x + thumb.width / 2 - icon.x - icon.width / 2), Math.abs(thumb.y + thumb.height / 2 - icon.y - icon.height / 2));
+    }).toBeLessThan(0.5);
+  };
+  await expectHighlight(mode, 'robot');
+  await expectHighlight(theme, await theme.getAttribute('aria-checked') === 'true' ? 'dark_mode' : 'light_mode');
   await expect(mode).toHaveAttribute('aria-checked', 'true');
   await expect(aiButton).toHaveAttribute('aria-pressed', 'true');
   await expect(settingsButton).toHaveAttribute('aria-pressed', 'false');
@@ -55,6 +71,7 @@ Then('the pane switches between settings and assistant without losing its sessio
   await settingsButton.click();
   await expect(settingsButton).toHaveAttribute('aria-pressed', 'true');
   await expect(aiButton).toHaveAttribute('aria-pressed', 'false');
+  await expectHighlight(mode, 'tune');
   await application.click();
   const positions = await Promise.all([mode.boundingBox(), theme.boundingBox()]);
   expect(positions[0].x + positions[0].width).toBeLessThan(positions[1].x);
@@ -77,6 +94,7 @@ Then('the pane switches between settings and assistant without losing its sessio
   await expect(panel.getByRole('button', { name: 'Unload model', exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(1);
   await theme.click();
+  await expectHighlight(theme, await theme.getAttribute('aria-checked') === 'true' ? 'dark_mode' : 'light_mode');
   await expect(mode).toHaveAttribute('aria-checked', 'true');
   await aiButton.click();
   await expect(panel).toBeHidden();
@@ -91,6 +109,8 @@ Then('the pane switches between settings and assistant without losing its sessio
   await page.setViewportSize({ width: 390, height: 844 });
   const narrow = await Promise.all([mode.boundingBox(), theme.boundingBox()]);
   expect(narrow[0].x + narrow[0].width).toBeLessThanOrEqual(narrow[1].x);
+  for (const box of narrow) expect(box.height).toBeCloseTo(controlHeight, 1);
+  await expectHighlight(mode, 'robot');
   expect(await page.locator('#settings-panel').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   await page.screenshot({ path: `${this.artifactDirectory}/settings-assistant-switch.png` });
   await page.reload();

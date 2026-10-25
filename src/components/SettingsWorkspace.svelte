@@ -572,12 +572,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .settings-retry { padding: 16px 16px 0; }
+  .workspace { padding-top: var(--header-padding); }
   .pane-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
   .theme-mode { display: flex; justify-content: flex-end; margin-left: auto; }
+  .pane-controls :global(.icon-switch) { --switch-cell-size: calc(var(--navigation-control-size) - 4px); box-sizing: border-box; border: 4px solid var(--color-muted); }
+  .pane-controls :global(.icon-switch > span:not(.switch-thumb)), .pane-controls :global(.icon-switch .switch-thumb) { width: var(--switch-cell-size); }
+  .pane-controls :global(.icon-switch .switch-thumb) { height: 100%; }
+  .pane-controls :global(.icon-switch[aria-checked="true"] .switch-thumb) { transform: translateX(var(--switch-cell-size)); }
   .pane-controls :global(.assistant-switch) { flex-direction: row-reverse; }
   .pane-controls :global(.assistant-switch .switch-thumb) { left: auto; right: 0; border-radius: 0 4px 4px 0; }
-  .pane-controls :global(.assistant-switch[aria-checked="true"] .switch-thumb) { transform: translateX(calc(-1 * var(--navigation-control-size))); border-radius: 4px 0 0 4px; }
-  .pane-controls :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
+  .pane-controls :global(.assistant-switch[aria-checked="true"] .switch-thumb) { transform: translateX(calc(-1 * var(--switch-cell-size))); border-radius: 4px 0 0 4px; }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }
   .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
