@@ -10,6 +10,20 @@ const mediaTypes: Record<string, string> = { json: "application/json", csv: "tex
   png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml",
   zip: "application/zip", gz: "application/gzip", wasm: "application/wasm", mp3: "audio/mpeg", mp4: "video/mp4", webm: "video/webm" };
 
+/** File content has no qualified enum/pattern representation; retain byte bounds. */
+export function validateBinarySchema(value: InputSchema | Record<string, unknown>): void {
+  const schema = value as Record<string, unknown>;
+  if (schema.enum !== undefined || schema.const !== undefined || schema.pattern !== undefined)
+    throw new Error("Binary files cannot be enumerated or pattern-constrained.");
+  if (schema.nullable !== undefined && typeof schema.nullable !== "boolean") throw new Error("Binary file nullable must be Boolean.");
+  if (Array.isArray(schema.type) && (!schema.type.includes("string") || schema.type.length > 2 || new Set(schema.type).size !== schema.type.length
+    || schema.type.some(type => type !== "string" && type !== "null"))) throw new Error("Unsupported binary file type union.");
+  for (const key of ["minLength", "maxLength"] as const)
+    if (schema[key] !== undefined && (!Number.isSafeInteger(schema[key]) || (schema[key] as number) < 0)) throw new Error(`Binary files: invalid ${key} constraint.`);
+  if (typeof schema.minLength === "number" && typeof schema.maxLength === "number" && schema.minLength > schema.maxLength)
+    throw new Error("Binary file minimum size exceeds maximum size.");
+}
+
 export function fileMediaType(name: string, provided = ""): string {
   const extension = name.split(".").at(-1)!.toLowerCase();
   return provided.length <= 255 && mediaPattern.test(provided) ? provided.toLowerCase()

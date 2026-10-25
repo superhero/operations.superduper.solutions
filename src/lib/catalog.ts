@@ -5,7 +5,7 @@
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
-import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
+import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent, type ResponseContent } from "./workflow-response-body.ts";
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile, type ResponseStreamProfile } from "./workflow-response-stream.ts";
@@ -155,7 +155,7 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   supported(shape, [...keys, "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"], context);
   const result: InputSchema = { type, ...(nullable ? { nullable: true } : {}) };
   if (shape.format === "binary") result.format = "binary";
-  if (result.format && (nullable || shape.enum !== undefined)) throw new Error(`${context}: binary files cannot be nullable or enumerated.`);
+  if (result.format) validateBinarySchema(shape);
   if (shape.enum !== undefined)
   {
     if (!Array.isArray(shape.enum) || !shape.enum.length || shape.enum.some(value =>
@@ -338,6 +338,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
         const schema = inputSchema(shape, document, id);
         bodySchema = schema;
         if (binary) {
+          if (schema.nullable) throw new Error(`${id}: nullable raw-file bodies have no qualified wire encoding.`);
           if (mediaTypes.some(type => {
             const alternative = object(content[type], id);
             supported(alternative, ["schema", "example", "examples"], id);

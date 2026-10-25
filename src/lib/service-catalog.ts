@@ -7,7 +7,7 @@ import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { extractCredentialPermissions, extractOperationSecurity, inspectSecurityAlternatives, supportedSecurityAlternative } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
-import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
+import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
@@ -58,7 +58,12 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   if (Array.isArray(variants) && variants.length === 2)
   {
     const nonNull = variants.filter(item => value(item).type !== "null");
-    if (nonNull.length === 1) return { ...inputSchema(nonNull[0], document, depth + 1, ancestors, binary), nullable: true };
+    if (nonNull.length === 1) {
+      const inner = inputSchema(nonNull[0], document, depth + 1, ancestors, binary);
+      if (binary && (Object.keys(shape).some(key => !["anyOf", "oneOf"].includes(key) && !annotation.has(key) && !key.startsWith("x-"))
+        || shape.format === "binary" && inner.format !== "binary")) throw new Error("Nullable form union constraints must remain on the non-null value branch.");
+      return { ...inner, nullable: true };
+    }
   }
   if (Object.keys(shape).some(key => !constraints.has(key) && !annotation.has(key) && !key.startsWith("x-"))) return json();
   const types = Array.isArray(shape.type) ? shape.type.filter(type => type !== "null") : [shape.type];
@@ -73,7 +78,7 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   if (Array.isArray(shape.enum) && shape.enum.every(item => item === null || ["string", "number", "boolean"].includes(typeof item)))
     result.enum = shape.enum as NonNullable<InputSchema["enum"]>;
   if (Object.hasOwn(shape, "const") && (shape.const === null || ["string", "number", "boolean"].includes(typeof shape.const))) result.enum = [shape.const as string | number | boolean | null];
-  if (result.format && (result.nullable || result.enum || shape.pattern !== undefined)) throw new Error("Binary files cannot be nullable, enumerated or pattern-constrained.");
+  if (result.format) validateBinarySchema(shape);
   for (const key of ["minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"] as const)
     if (typeof shape[key] === "number" && Number.isFinite(shape[key])) result[key] = shape[key];
   if (typeof shape.pattern === "string")
@@ -245,7 +250,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               operation.bodyMediaType = mediaType as BodyMediaType;
               operation.bodySchema = parsed;
               if (binaryMediaTypes.includes(mediaType)) {
-                if (parsed.format !== "binary" || binaryMediaTypes.some(type => value(content[type]).encoding !== undefined))
+                if (parsed.format !== "binary" || parsed.nullable || binaryMediaTypes.some(type => value(content[type]).encoding !== undefined))
                   throw new Error("This binary body requires an unsupported schema or custom encoding.");
                 if (binaryMediaTypes.some(type => JSON.stringify(inputSchema(value(content[type]).schema, document, 0, new Set(), true)) !== JSON.stringify(parsed)))
                   throw new Error("Binary media alternatives must use the same file schema.");

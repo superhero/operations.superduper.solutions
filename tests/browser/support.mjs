@@ -15,6 +15,7 @@ import { createJiraBrowserEndpoint } from './jira-companion.fixture.mjs';
 import { createNativeBrowserEndpoint } from './native-runtime.fixture.mjs';
 import { createDockerBrowserEndpoint } from './docker-native.fixture.mjs';
 import { queryArrayEndpoint } from './query-array.fixture.mjs';
+import { nullableFormEndpoint } from './nullable-form.fixture.mjs';
 import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
 import { enterBrowserFeature, releaseDevelopmentResources } from './development-resources.fixture.mjs';
 import { exampleCatalogState } from "./catalog-state.fixture.mjs";
@@ -77,6 +78,7 @@ BeforeAll(async function () {
     if (nativeEndpoint.handle(request, response)) return;
     if (dockerEndpoint.handle(request, response)) return;
     if (queryArrayEndpoint(request, response)) return;
+    if (nullableFormEndpoint(request, response)) return;
     if (vaultEndpoint(request, response)) return;
     if (new URL(request.url, 'http://localhost').pathname === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',

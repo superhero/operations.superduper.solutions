@@ -503,8 +503,12 @@ Then("nullable query collections serialize safely and form bodies reject null sc
   assert.deepEqual(prepareRequest(query, { "query:filter": '{"value":null}', "query:tags": '[null,"null"]' }).query,
     { "filter[value]": null, tags: [null, "null"] });
   for (const media of ["application/x-www-form-urlencoded", "multipart/form-data"])
-    for (const schema of [{ type: "object", nullable: true }, { type: "object", properties: { value: { type: ["string", "null"] } } }])
-      assert.throws(() => bodyOperation(schema, media), /form bodies require named primitive fields/);
+  {
+    assert.throws(() => bodyOperation({ type: "object", nullable: true }, media), /form bodies require named primitive fields/);
+    const form = bodyOperation({ type: "object", properties: { value: { type: ["string", "null"] } } }, media);
+    assert.equal(prepareRequest(form, { "body:value": "null" }).body.value, "null");
+    assert.throws(() => prepareRequest(form, { "body:value": null }), error => error instanceof InputValidationError && error.fieldKey === "body:value");
+  }
 });
 
 Then("nested values enforce declared types, required fields and bounds", function ()

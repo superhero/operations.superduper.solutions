@@ -4,7 +4,7 @@
 
 import { operationBlockReason } from "./operation-capabilities.ts";
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
-import { validateWorkflowBinary, binaryRequestMediaType } from "./workflow-binary.ts";
+import { validateWorkflowBinary, binaryRequestMediaType, validateBinarySchema } from "./workflow-binary.ts";
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import type { QuerySerialization } from "./query-serialization.ts";
@@ -52,6 +52,9 @@ function validate(input: InputField, schema: InputSchema, value: JsonValue, path
 {
   const type = schema.type;
   if (schema.format === "binary") {
+    try { validateBinarySchema(schema); }
+    catch (error) { fail(input, error instanceof Error ? error.message : "This file schema is not supported."); }
+    if (value === null) fail(input, "explicit null has no qualified file encoding; omit an optional field or upload a file.");
     let file;
     try { file = validateWorkflowBinary(value); }
     catch { fail(input, `${path} must be an uploaded binary file.`); }
@@ -223,6 +226,8 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     else if (operation.bodyValue) request.body = value;
     else
     {
+      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data") && value === null)
+        fail(input, "explicit null has no qualified form encoding; omit an optional field or provide a value.");
       if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
         && !supportsFormField(input.schema ?? input, operation.bodyMediaType === "multipart/form-data"))
         fail(input, "form body properties must be primitive values, primitive arrays or declared binary files.");
