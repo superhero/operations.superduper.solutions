@@ -261,7 +261,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if assistantHost}
       <HintButton class="icon-switch" type="button" role="switch" label={assistantMode ? "Switch to settings" : "Switch to AI assistant"}
         aria-label="AI assistant" aria-checked={assistantMode} onclick={togglePaneView}>
-        <span class="switch-thumb"></span><span><MaterialIcon name="tune" /></span><span><MaterialIcon name="smart_toy" /></span>
+        <span class="switch-thumb"></span><span><MaterialIcon name="tune" /></span><span><MaterialIcon name="robot" /></span>
       </HintButton>
     {/if}
     <div class="theme-mode">
