@@ -228,6 +228,21 @@ fix(ui): style catalog operations as primary buttons
 
 ```
 
+<!-- changelog-commit:46744b7193a338a38f59abc36a2f37df8ca49a78 -->
+### Commit [`46744b7`](https://github.com/superhero/operations.superduper.solutions/commit/46744b7193a338a38f59abc36a2f37df8ca49a78)
+
+```text
+fix(ui): surround branch icons with crisp shadows
+
+```
+
+<!-- changelog-commit:98c8b7917871e6c403145f964d40323e04922a5e -->
+### Commit [`98c8b79`](https://github.com/superhero/operations.superduper.solutions/commit/98c8b7917871e6c403145f964d40323e04922a5e)
+
+```text
+Merge branch 'develop' into bugfix/branch-action-surround-shadow
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
