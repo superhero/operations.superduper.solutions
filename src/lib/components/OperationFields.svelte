@@ -11,6 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "./HintButton.svelte";
   import MaterialIcon from "./MaterialIcon.svelte";
   import Reveal from "./Reveal.svelte";
+  import FieldSelect from "./FieldSelect.svelte";
 
   let { operation, values, onValueChange, idPrefix = "field", active = true, disabled = false,
     mappedFields = [], fieldError = null, portalZIndex = 40 }: {
@@ -23,6 +24,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let fieldHelp = $state<string[]>([]);
   let drafts = $state<Record<string, string>>({});
   let includedValues = $state<InputValues>({});
+  let addedFields = $state<string[]>([]);
+  function visibleFields(fields: InputField[]): InputField[] {
+    return fields.length <= 200 ? fields : fields.filter((field, index) => index < 5 || field.required
+      || values[field.key] !== undefined || mappedFields.includes(field.key) || addedFields.includes(field.key) || fieldError?.fieldKey === field.key);
+  }
+  function addField(key: string) {
+    const field = operation.fields.find(field => field.key === key);
+    if (!field || disabled || !key) return;
+    addedFields = [...addedFields, key];
+    if (values[key] === undefined) onValueChange(field, "");
+  }
   // Keep required indicators aligned with request preparation: an explicitly
   // supplied empty string is still a value for an additional body property.
   const bodyProvided = $derived(Boolean(operation.bodyRequired || operation.fields.some(field =>
@@ -60,11 +72,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="operation-fields">
   {#each locations as location}
     {@const fields = operation.fields.filter(field => field.location === location.key)}
+    {@const visible = visibleFields(fields)}
     {#if fields.length}
       <fieldset class="request-input-group">
         <legend class="context-label">{location.label}</legend>
         {#if location.key === "body" && !operation.bodyRequired}<p class="hint">Optional body. Starred fields are required when providing a body.</p>{/if}
-        {#each fields as field (field.key)}
+        {#each visible as field (field.key)}
           {@const connected = mappedFields.includes(field.key)}
           {@const omitted = canOmit(field) && !mappedFields.includes(field.key) && values[field.key] === undefined}
           {@const nullValue = values[field.key] === null}
@@ -124,6 +137,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             {#if fieldError?.fieldKey === field.key}<p role="alert" id={`${idPrefix}-error-${field.key}`} class="error">{fieldError.message}</p>{/if}
           </div>
         {/each}
+        {#if visible.length < fields.length}
+          <div class="joined-field">
+            <label for={`${idPrefix}-add-${location.key}`}>Add optional field</label>
+            <FieldSelect id={`${idPrefix}-add-${location.key}`} label={`Add ${location.label.toLowerCase()} field`} value=""
+              options={fields.filter(field => !visible.includes(field)).map(field => ({ value: field.key, label: field.label }))}
+              {active} {disabled} {portalZIndex} onValueChange={addField} />
+          </div>
+        {/if}
       </fieldset>
     {/if}
   {/each}

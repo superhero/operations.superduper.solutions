@@ -23,8 +23,8 @@ const adapterRevision = "a".repeat(64);
 export const counters = () => ({ reads: { ...reads }, indexes: { ...indexReads } });
 export const failRead = (id: string) => failures.add(id);
 
-export async function setupCapabilities(document: Record<string, unknown>) {
-  const id = "capability-fixture", bytes = new TextEncoder().encode(JSON.stringify(document));
+export async function setupCapabilities(document: Record<string, unknown>, id = "capability-fixture") {
+  const bytes = new TextEncoder().encode(JSON.stringify(document));
   const revision = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
   const discovery = createSchemaDiscovery(inspectServiceSchema(document, id), revision);
   configureSchemaDefaults({ adapterRevision, catalogs: [{ id, name: "Capability fixture", file: "capabilities.json", revision,

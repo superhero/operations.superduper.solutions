@@ -25,6 +25,27 @@ const value = (input: unknown): Value => input && typeof input === "object" && !
 const text = (input: unknown, fallback = ""): string => typeof input === "string" ? input : fallback;
 const json = (): InputSchema => ({ type: "json" });
 
+/** Two reviewed flat forms have 99 explicitly named pairs, not nested arrays.
+ * Only this root gets 203 slots; children and every other schema keep 200. */
+function formPropertyBudget(operation: Operation, schema: Value, document: Value): number {
+  const contracts: Record<string, { path: string; ordinary: string[]; required: string[] }> = {
+    "twilio:CreateSiprec": { path: "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Siprec.json",
+      ordinary: ["Name", "ConnectorName", "Track", "StatusCallback", "StatusCallbackMethod"], required: [] },
+    "twilio:CreateStream": { path: "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Streams.json",
+      ordinary: ["Url", "Name", "Track", "StatusCallback", "StatusCallbackMethod"], required: ["Url"] },
+  };
+  const contract = contracts[operation.id];
+  if (!contract || operation.method !== "POST" || operation.path !== contract.path
+    || value(document.info).title !== "Twilio - Api" || value(document.info).version !== "1.0.0"
+    || schema.type !== "object" || Object.keys(schema).some(key => !["type", "title", "properties", "required"].includes(key))) return 200;
+  const names = [...contract.ordinary, ...Array.from({ length: 99 }, (_, index) => [`Parameter${index + 1}.Name`, `Parameter${index + 1}.Value`]).flat()];
+  const properties = value(schema.properties);
+  if (Object.keys(properties).length !== names.length || names.some(name => !Object.hasOwn(properties, name))
+    || JSON.stringify(schema.required ?? []) !== JSON.stringify(contract.required)
+    || names.some(name => resolve(properties[name], document).type !== "string")) return 200;
+  return names.length;
+}
+
 /** Resolve schema references without expanding recursive models or discarding siblings. */
 function resolve(input: unknown, document: Value): Value
 {
@@ -50,7 +71,7 @@ function resolve(input: unknown, document: Value): Value
 
 /** Keep familiar controls where their constraints are representable. Other JSON
  * Schema vocabularies remain in the source and use explicit server validation. */
-function inputSchema(input: unknown, document: Value, depth: number, ancestors: Set<unknown>, binary: boolean): InputSchema
+function inputSchema(input: unknown, document: Value, depth: number, ancestors: Set<unknown>, binary: boolean, rootPropertyBudget = 200): InputSchema
 {
   if (depth > 8 || ancestors.has(input)) return json();
   const shape = resolve(input, document);
@@ -90,7 +111,7 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   if (inferred === "object")
   {
     const properties = Object.entries(value(shape.properties)).filter(([, property]) => resolve(property, document).readOnly !== true);
-    if (properties.length > 200) return json();
+    if (properties.length > (depth === 0 ? rootPropertyBudget : 200)) return json();
     result.properties = Object.fromEntries(properties.map(([name, property]) => [name, inputSchema(property, document, depth + 1, next, binary)]));
     if (Array.isArray(shape.required) && shape.required.some(name => typeof name !== "string" || !Object.hasOwn(value(shape.properties), name))) return json();
     result.required = Array.isArray(shape.required) ? shape.required.filter((name): name is string => typeof name === "string" && Object.hasOwn(result.properties!, name)) : [];
@@ -245,7 +266,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               if (!mediaType) throw new Error("This request requires an unsupported binary or streaming media type.");
               const schema = resolve(value(content[mediaType]).schema, document);
               const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
-              const parsed = inputSchema(schema, document, 0, new Set(), binary);
+              const parsed = inputSchema(schema, document, 0, new Set(), binary,
+                mediaType === "application/x-www-form-urlencoded" ? formPropertyBudget(operation, schema, document) : 200);
               operation.bodyRequired = body.required === true;
               operation.bodyMediaType = mediaType as BodyMediaType;
               operation.bodySchema = parsed;

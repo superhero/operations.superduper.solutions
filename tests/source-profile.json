@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/flat-form.test.mjs",
     "src/nullable-form.test.mjs",
     "src/query-array.test.mjs",
     "src/capability-diagnostics.test.mjs",
@@ -84,6 +85,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/flat-form.feature",
     "src/nullable-form.feature",
     "src/query-array.feature",
     "src/capability-diagnostics.feature",
