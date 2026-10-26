@@ -2,6 +2,14 @@
 
 ## Latest
 
+<!-- changelog-commit:48dd946031676a430d0f1fec95c9df958b0a4fd2 -->
+### Commit [`48dd946`](https://github.com/superhero/operations.superduper.solutions/commit/48dd946031676a430d0f1fec95c9df958b0a4fd2)
+
+```text
+fix(ai): scroll the assistant conversation with its pane
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.65
