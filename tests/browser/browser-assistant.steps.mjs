@@ -365,7 +365,14 @@ Then('assistant streaming keeps drafts focus and readable tool details', async f
   await input.fill('Start a reply'); await input.press('Enter');
   await expect(input).toBeFocused(); await expect(input).toBeEnabled();
   await input.fill('A draft for the next message');
-  const initialComposerY = (await input.boundingBox()).y;
+  const pane = page.locator('#settings-panel'), composer = panel.locator('form.composer');
+  const initialComposerTop = await composer.evaluate(element => element.offsetTop);
+  const bottomGap = () => pane.evaluate(element => element.scrollHeight - element.scrollTop - element.clientHeight);
+  const expectNaturalConversation = async () => {
+    await expect.poll(() => log.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+    expect(await log.evaluate(element => element.scrollTop)).toBe(0);
+    expect((await log.boundingBox()).height).toBeGreaterThan(await pane.evaluate(element => element.clientHeight));
+  };
   await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toHaveCount(0);
   await page.evaluate(() => {
     window.assistantFixture.history = [{ role: 'user', text: 'Start a reply' }, { role: 'tool', tool: 'read_operation', text: 'Complete tool details remain available.' },
@@ -374,11 +381,19 @@ Then('assistant streaming keeps drafts focus and readable tool details', async f
   });
   const details = log.locator('.tool-result'); await expect(details).not.toHaveAttribute('open');
   await expect(details.locator('pre')).toBeHidden();
-  await expect.poll(() => log.evaluate(element => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(2);
-  expect(Math.abs((await input.boundingBox()).y - initialComposerY)).toBeLessThan(2);
-  await log.evaluate(element => element.scrollTop = 0);
+  await expect.poll(bottomGap).toBeLessThan(2);
+  await expectNaturalConversation();
+  expect(await composer.evaluate(element => element.offsetTop)).toBeGreaterThan(initialComposerTop);
+  await pane.evaluate(element => element.scrollTop = 0);
+  const paneBox = await pane.boundingBox();
+  await page.mouse.move(paneBox.x + paneBox.width / 2, paneBox.y + 180);
+  await page.mouse.wheel(0, 250);
+  await expect.poll(() => pane.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  expect(await log.evaluate(element => element.scrollTop)).toBe(0);
+  await pane.evaluate(element => element.scrollTop = 0);
   await page.evaluate(() => window.assistantFixture.emit({ type: 'update', messages: [...window.assistantFixture.history, { role: 'assistant', text: 'Latest chunk' }], error: '' }));
-  await expect.poll(() => log.evaluate(element => element.scrollTop)).toBe(0);
+  await expect(log).toContainText('Latest chunk');
+  await expect.poll(() => pane.evaluate(element => element.scrollTop)).toBe(0);
   await details.locator('summary').click();
   await expect(details.locator('pre')).toBeVisible();
   await page.evaluate(() => window.assistantFixture.emit({ type: 'done' }));
@@ -386,10 +401,18 @@ Then('assistant streaming keeps drafts focus and readable tool details', async f
   await expect(panel.getByRole('status')).toHaveText('Ready for your next message.');
   await input.press('Enter');
   await page.evaluate(() => window.assistantFixture.emit({ type: 'update', messages: [...window.assistantFixture.history, { role: 'user', text: 'A draft for the next message' }, { role: 'assistant', text: 'New reply' }], error: '' }));
-  await expect.poll(() => log.evaluate(element => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(2);
+  await expect(log).toContainText('New reply');
+  await expect.poll(bottomGap).toBeLessThan(2);
+  await page.evaluate(() => window.assistantFixture.emit({ type: 'update', messages: [...window.assistantFixture.history, { role: 'user', text: 'A draft for the next message' }, { role: 'assistant', text: 'The answer keeps growing.\n\n'.repeat(30) + 'Streaming tail' }], error: '' }));
+  await expect(log).toContainText('Streaming tail');
+  await expect.poll(bottomGap).toBeLessThan(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
-  for (const button of await panel.locator('.actions button').all()) expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  await expectNaturalConversation();
+  await pane.evaluate(element => element.scrollTop = 0);
+  await page.screenshot({ path: `${this.artifactDirectory}/assistant-pane-conversation-top.png` });
+  await pane.evaluate(element => element.scrollTop = element.scrollHeight);
+  await page.screenshot({ path: `${this.artifactDirectory}/assistant-pane-conversation-bottom.png` });
 });
 
 Then('assistant attachments and new conversation respect asynchronous image cleanup', async function() {
