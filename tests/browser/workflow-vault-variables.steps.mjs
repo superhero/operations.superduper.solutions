@@ -16,6 +16,12 @@ Then('I can add and connect a vault variable without exposing its value', async 
   const secrets = page.getByRole('region', { name: 'Secrets vault', exact: true });
   await secrets.getByLabel('Credential label', { exact: true }).fill('Another vault key');
   await secrets.getByLabel('Credential value', { exact: true }).fill('another-synthetic-secret');
+  // Lazy vault initialization adds controls after the disclosure first opens.
+  // Its natural contents must remain reachable after that asynchronous growth.
+  await expect.poll(() => secrets.evaluate(node => {
+    const panel = node.closest('.disclosure-panel');
+    return panel.clientHeight >= panel.scrollHeight;
+  })).toBe(true);
   await secrets.getByRole('button', { name: 'Save credential', exact: true }).click();
   await expect(secrets.getByLabel('Credential label', { exact: true })).toHaveValue('');
   await setMode(page, 'workflow');

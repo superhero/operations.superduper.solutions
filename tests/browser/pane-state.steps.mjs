@@ -8,7 +8,7 @@ import { openCatalog, searchOperations } from './workspace.fixture.mjs';
 import { paneStateKey } from '../../src/lib/pane-state.ts';
 
 const menu = page => page.locator('.site-header [aria-controls="side-navigation"]');
-const settings = page => page.locator('.site-header [aria-controls="settings-panel"]');
+const settings = page => page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
 const navigation = page => page.locator('#side-navigation');
 const drawer = page => page.locator('#settings-panel');
 const section = (page, label) => drawer(page).locator(`summary[aria-label=${JSON.stringify(label)}]`);

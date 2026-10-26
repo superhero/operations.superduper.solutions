@@ -24,14 +24,18 @@ const operationNodes = (page, name) => workflow(page).locator(".svelte-flow__nod
 const connections = page => workflow(page).locator(".svelte-flow__edge:not(.workflow-schema-edge)");
 
 async function openCatalog(page) {
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  const activeSettings = page.locator('.site-header button[aria-controls="settings-panel"][aria-pressed="true"]');
+  if (await page.evaluate(() => matchMedia('(max-width: 899px)').matches) && await activeSettings.count()) {
+    await expect(page.getByRole('button', { name: 'Close settings', exact: true })).toBeVisible();
+  }
   const mobileClose = page.getByRole('button', { name: 'Close settings', exact: true });
   if (await mobileClose.isVisible()) {
     await mobileClose.click();
     await expect(page.locator('.settings-drawer')).toBeHidden();
   }
-  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
-  if (await settings.getAttribute('aria-pressed') === 'true') {
-    await settings.click();
+  if (await activeSettings.count()) {
+    await activeSettings.click();
     await expect(page.locator('.settings-drawer')).toBeHidden();
   }
   const open = page.getByRole("button", { name: "Open navigation", exact: true });
