@@ -92,7 +92,8 @@
     "src/workflow-response.test.mjs",
     "src/workflow-defensive.test.mjs",
     "src/browser-assistant.test.mjs",
-    "src/parakeet-streaming.test.mjs"
+    "src/parakeet-streaming.test.mjs",
+    "src/assistant-models.test.mjs"
   ],
   "paths": [
     "src/github-notification-auth.feature",
@@ -187,6 +188,7 @@
     "src/workflow-response.feature",
     "src/workflow-defensive.feature",
     "src/browser-assistant.feature",
-    "src/parakeet-streaming.feature"
+    "src/parakeet-streaming.feature",
+    "src/assistant-models.feature"
   ]
 }

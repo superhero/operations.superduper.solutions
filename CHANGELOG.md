@@ -512,6 +512,22 @@ fix(ui): match assistant input focus to hover
 
 ```
 
+<!-- changelog-commit:bc3851ccfd5f4b23951613ad03e32165259ad067 -->
+### Commit [`bc3851c`](https://github.com/superhero/operations.superduper.solutions/commit/bc3851ccfd5f4b23951613ad03e32165259ad067)
+
+```text
+feat(ai): add native language vision and decision models
+
+```
+
+<!-- changelog-commit:a21df70b6fae850d6006835a29aef6a2381f6a5c -->
+### Commit [`a21df70`](https://github.com/superhero/operations.superduper.solutions/commit/a21df70b6fae850d6006835a29aef6a2381f6a5c)
+
+```text
+chore(ci): refresh native model dependency badges
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63

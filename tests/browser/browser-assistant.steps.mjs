@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { installAssistantFixture, loadAssistantModel } from './browser-assistant.fixture.mjs';
+import { installAssistantFixture, loadAssistantModel, installDecisionFixture } from './browser-assistant.fixture.mjs';
 import { setMode } from './workspace.fixture.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 
@@ -120,7 +120,7 @@ Then('the pane switches between settings and assistant without losing its sessio
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
 });
 
-Then('the assistant settings expose only three Bonsai models and remember configuration', async function() {
+Then('the assistant settings expose accepted local models and remember configuration', async function() {
   const page = this.page; await installAssistantFixture(page);
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
   let panel = await openAssistant(page);
@@ -143,7 +143,7 @@ Then('the assistant settings expose only three Bonsai models and remember config
   await page.setViewportSize({ width: 1280, height: 844 });
   let picker = panel.getByRole('combobox', { name: 'Local model', exact: true });
   await picker.click();
-  await expect(page.getByRole('option')).toHaveCount(3);
+  await expect(page.getByRole('option').locator('.field-select-option-label')).toHaveText(['Bonsai 2 · 2B','Bonsai 2 · 4B','Bonsai 2 · 9B','Bonsai 2 · 27B','Ornith 1.5 · 9B Q4_K_M','Ornith 1.5 · 9B Q8_0','Gemma 4 · E2B','MiniCPM5 · 2.52B']);
   await page.keyboard.press('Escape');
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
   await picker.click();
@@ -310,6 +310,14 @@ Then('the same compatibility check succeeds in a development worker', { timeout:
     await this.page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
     await waitForApplicationReady(this.page);
     await checkRealCompatibility(this.page);
+    const decision = await this.page.evaluate(() => new Promise((resolve, reject) => {
+      const worker = new Worker(new URL('./lib/assistant/decision.worker.ts?worker_file&type=module', location.href), {type:'module'});
+      const timer = setTimeout(() => {worker.terminate(); reject(Error('Decision compatibility timed out'));},15000);
+      worker.onerror = event => {event.preventDefault(); clearTimeout(timer); worker.terminate(); reject(Error(event.message));};
+      worker.onmessage = ({data}) => {if(data.type==='compatibility'){clearTimeout(timer);worker.terminate();resolve(data.value);}else if(data.type==='error'){clearTimeout(timer);worker.terminate();reject(Error(data.error.message));}};
+      worker.postMessage({type:'check',profile:'strands-cpu'});
+    }));
+    expect(decision.ready).toBe(true);expect(decision.summary).toContain('CPU Wasm');
   } finally { await this.context.unroute(`${url}/**`, allowDevelopment); }
 });
 
@@ -416,4 +424,79 @@ Then('assistant attachments and new conversation respect asynchronous image clea
   await expect(panel.getByRole('alert')).toContainText('Choose a PNG');
   consumeExpectedError(this, 'Choose a PNG');
   expect(await upload.inputValue()).toBe('');
+});
+
+Then('Gemma MiniCPM and Ornith load on selection with their supported settings', async function() {
+  const page=this.page;await installAssistantFixture(page);const panel=await openAssistant(page);
+  const picker=panel.getByRole('combobox',{name:'Local model',exact:true});
+  for(const [label,id] of [['Gemma 4 · E2B','gemma-e2b'],['MiniCPM5 · 2.52B','minicpm5-2b'],['Ornith 1.5 · 9B Q4_K_M','ornith-q4'],['Ornith 1.5 · 9B Q8_0','ornith-q8'],['Bonsai 2 · 27B','27b']]) {
+    await picker.click();await page.getByRole('option',{name:label,exact:true}).click();
+    await expect(panel.getByRole('button',{name:'Unload model',exact:true})).toBeVisible();
+    const settings=await page.evaluate(()=>window.assistantFixture.settings);expect(settings.model).toBe(id);
+    if(id==='gemma-e2b'){expect(settings.sampling).toBe(false);expect(settings.thinking).toBe(false);expect(settings.prefixCache).toBe(false);expect(settings.maxTokens).toBe(256);}
+    if(id.startsWith('ornith'))expect(settings.executionMode).toBe('gpu');
+    await panel.getByRole('button',{name:'Unload model',exact:true}).click();
+    if(id==='minicpm5-2b') {
+      await openConfiguration(panel);
+      await panel.getByRole('combobox',{name:'Execution',exact:true}).click();await page.getByRole('option',{name:'CPU',exact:true}).click();
+      await picker.click();await page.getByRole('option',{name:label,exact:true}).click();
+      await expect(panel.getByRole('button',{name:'Unload model',exact:true})).toBeVisible();
+      expect(await page.evaluate(()=>window.assistantFixture.settings.executionMode)).toBe('cpu');
+      await panel.getByRole('button',{name:'Unload model',exact:true}).click();
+    }
+    if(id==='gemma-e2b') {
+      await openConfiguration(panel);
+      for(const name of ['Reasoning','Sample responses','Prefix cache'])await expect(panel.getByRole('checkbox',{name,exact:true})).toBeDisabled();
+    }
+  }
+  expect(await page.evaluate(()=>window.assistantFixture.terminated)).toBe(6);
+});
+Then('decision controls preserve native results and release their exclusive model session', async function() {
+  const page=this.page;await installDecisionFixture(page);const panel=await openAssistant(page);await openConfiguration(panel);
+  await panel.locator('.decision-settings > summary').click();
+  const section=panel.locator('.decision-settings'), picker=section.getByRole('combobox',{name:'Decision model',exact:true});
+  await picker.click();await expect(page.getByRole('option')).toHaveCount(9);await page.keyboard.press('Escape');
+  expect(await page.evaluate(()=>window.decisionFixture.workers)).toBe(0);
+  await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 CPU',exact:true}).click();
+  await expect(section.getByRole('button',{name:'Score decision',exact:true})).toBeEnabled();
+  await expect(panel.getByRole('combobox',{name:'Local model',exact:true})).toBeDisabled();
+  expect(await page.evaluate(()=>window.decisionFixture.messages.map(row=>row.type))).toEqual(['load']);
+  await section.getByRole('button',{name:'Score decision',exact:true}).click();
+  const output=section.getByRole('region',{name:'Decision result',exact:true});await expect(output).toContainText('0.85');
+  await output.locator('summary').click();await expect(output).toContainText('native_fixture');await expect(output).toContainText('rendered_tokens');
+  const messages=await page.evaluate(()=>window.decisionFixture.messages);expect(messages[0].profile).toBe('strands-cpu');expect(messages[1].request.questions.q.type).toBe('noul');
+  await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
+  await expect(panel.getByRole('combobox',{name:'Local model',exact:true})).toBeEnabled();
+  expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(1);
+});
+Then('native runtime modules and compressed Wasm load in real browser workers', {timeout:90000}, async function() {
+  const page=this.page, requests=[];page.on('request',request=>{if(/huggingface|\.gguf/.test(request.url()))requests.push(request.url());});
+  const result=await page.evaluate(async()=>{
+    const base=new URL('./assistant-runtime/',location.href), sha=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+    const compressed=await(await fetch(new URL('compressed-assets.json',base))).json();
+    for(const item of compressed){const response=await fetch(item.path), bytes=await response.arrayBuffer();if(!response.ok||bytes.byteLength!==item.bytes||await sha(bytes)!==item.sha256)throw Error('Compressed native asset does not restore its pinned bytes: '+item.path);}
+    for(const folder of ['wllama','wllama-d3-inspect','wllama-elephant','wllama-pplx-v3']) {
+      const response=await fetch(new URL('decision/vendor/'+folder+'/wllama.wasm',base));await WebAssembly.compile(await response.arrayBuffer());
+    }
+    const worker=new Worker(new URL('litert/candidate-bootstrap.js',base),{type:'classic'});
+    try {await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Gemma bootstrap timed out')),15000);worker.onerror=event=>{event.preventDefault();clearTimeout(timer);reject(Error(event.message));};worker.onmessage=({data})=>{if(data.type==='bootstrap_ready'){clearTimeout(timer);resolve();}else if(data.type==='bootstrap_error'){clearTimeout(timer);reject(Error(data.error.message));}};worker.postMessage({type:'bootstrap',moduleUrl:new URL('gemma-worker.js',base).href});});}
+    finally {worker.terminate();}
+    let imports=0;
+    for(const entry of ['gemma-worker.js','vision-worker.js']) {
+      const source=await(await fetch(new URL(entry,base))).text();
+      for(const match of source.matchAll(/import\(["']([^"']+\.js)["']\)/g)) {
+        const url=new URL(match[1],new URL(entry,base)).href, code='import('+JSON.stringify(url)+').then(()=>postMessage({ok:true})).catch(error=>postMessage({error:error.message}))', blob=URL.createObjectURL(new Blob([code],{type:'text/javascript'})), child=new Worker(blob,{type:'module'});
+        try {await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Native module import timed out')),15000);child.onerror=event=>{event.preventDefault();clearTimeout(timer);reject(Error(event.message));};child.onmessage=({data})=>{clearTimeout(timer);data.error?reject(Error(data.error)):resolve();};});imports++;}
+        finally {child.terminate();URL.revokeObjectURL(blob);}
+      }
+    }
+    for(const path of ['load-language.mjs','decision/engine.mjs',...['wllama','wllama-d3-inspect','wllama-elephant','wllama-pplx-v3'].map(folder=>'decision/vendor/'+folder+'/index.js')]) {
+      const code='import('+JSON.stringify(new URL(path,base).href)+').then(()=>postMessage({ok:true})).catch(error=>postMessage({error:error.message}))';
+      const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})), child=new Worker(url,{type:'module'});
+      try {await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Native decision module import timed out')),15000);child.onerror=event=>{event.preventDefault();clearTimeout(timer);reject(Error(event.message));};child.onmessage=({data})=>{clearTimeout(timer);data.error?reject(Error(data.error)):resolve();};});imports++;}
+      finally {child.terminate();URL.revokeObjectURL(url);}
+    }
+    return {compressed:compressed.length,imports};
+  });
+  expect(result.compressed).toBeGreaterThan(0);expect(result.imports).toBeGreaterThanOrEqual(2);expect(requests).toEqual([]);
 });

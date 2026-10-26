@@ -1,0 +1,120 @@
+{
+  "repository": "llm-sds-01",
+  "reference_date": "2026-10-26",
+  "files": [
+    {
+      "source": "inference/attempts/jd-browser-text-bonsai2-2b/attempt.json",
+      "sha256": "6c2af441150fe19765ceb8df053438231b83d409709b2e0d8a1b16a48f41f7f7"
+    },
+    {
+      "source": "inference/attempts/je-browser-text-bonsai2-4b/attempt.json",
+      "sha256": "16f7c444fd07dd3b26769703665b8ff4d0a939745d566b334a4d5115b6437601"
+    },
+    {
+      "source": "inference/attempts/jf-browser-text-bonsai2-9b/attempt.json",
+      "sha256": "207d153ee8805686a7900e8601a8a800a369eea8b3f038a38df375c319e91905"
+    },
+    {
+      "source": "inference/attempts/jg-browser-text-bonsai2-27b/attempt.json",
+      "sha256": "cdac133629d33d006f0bf9a008a02d1d3bf0b3b17ae233e27597ec75e232ec30"
+    },
+    {
+      "source": "inference/attempts/jh-browser-text-ornith15-q4/attempt.json",
+      "sha256": "9c703bebcba3c39303cadd104785faa022726bdc86e9150ed6ebc8bd6ae0cca5"
+    },
+    {
+      "source": "inference/attempts/ji-browser-text-ornith15-q8/attempt.json",
+      "sha256": "d68f2abcce76acecd00bfb7385aa8ddd761119e3987564cafd00684a32537f34"
+    },
+    {
+      "source": "inference/attempts/kg-browser-assistant-gemma4-e2b/attempt.json",
+      "sha256": "ce4cf38d3a257c5694901fb83c685a43494550b4cdd3be061b37aa1bce179526"
+    },
+    {
+      "source": "inference/attempts/kh-browser-assistant-minicpm5-2b/attempt.json",
+      "sha256": "0137ea157c157fb2388791ffa62b81dea8e2f2081f56d00324976859fa528598"
+    },
+    {
+      "source": "inference/evaluations/shared-webgpu/runtime/wllama/artifacts/index.js",
+      "target": "ornith/upstream/index.js",
+      "sha256": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+    },
+    {
+      "source": "inference/evaluations/shared-webgpu/runtime/wllama/artifacts/wllama.wasm",
+      "target": "ornith/upstream/wllama.wasm",
+      "sha256": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f"
+    },
+    {
+      "source": "inference/evaluations/shared-webgpu/runtime/wllama/artifacts/LICENCE",
+      "target": "ornith/upstream/LICENCE",
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "source": "inference/evaluations/shared-webgpu/runtime/wllama/artifacts/build-receipt.json",
+      "target": "ornith/upstream/build-receipt.json",
+      "sha256": "8f7b2c1affa197b1e3da488b7fda82ac899b2ab50f30a5c317ccf3b9f430d578"
+    },
+    {
+      "source": "inference/evaluations/pi-browser/runtime/ornith-engine.mjs",
+      "target": "ornith/engine.mjs",
+      "sha256": "12dc24faa2effcb9f7b0919f1a487a810f2663c1b479cd2d6b2263c2fc942a48"
+    },
+    {
+      "source": "inference/evaluations/pi-browser/runtime/src/settings.js",
+      "target": "ornith/settings.js",
+      "sha256": "6ae34b0023151ea8a7d1e38d5a43bebe22c110cc71d1430e37b156440cc1eb6a"
+    },
+    {
+      "source": "inference/attempts/gs-browser-ornith15-q8/runtime/range-blob.mjs",
+      "target": "ornith/range-blob.mjs",
+      "sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6"
+    },
+    {
+      "source": "inference/evaluations/mobile-candidates/runtime/text-engines.js",
+      "sha256": "c94383410b206629dedf40ac69312e69f35e1f9cc2b5834d131a9f2369517747"
+    },
+    {
+      "source": "inference/evaluations/mobile-candidates/runtime/text-protocol.js",
+      "sha256": "f8fcdf9fb10fafd6beb275e0a500648e74ea49b913adbbeaa7ce6e5230d08c57"
+    },
+    {
+      "source": "inference/evaluations/mobile-candidates/runtime/litert-worker.js",
+      "sha256": "7de0eeb7a1b9e71e88a8646bc5daf6848a88bf547cab0d1063fc0c748de0bdda"
+    },
+    {
+      "source": "inference/evaluations/mobile-candidates/runtime/candidate-bootstrap.js",
+      "sha256": "14917e8213f4c12b78461593727c7c5a1b443f40f05bd5904ff7b9f8818405ee"
+    },
+    {
+      "source": "inference/evaluations/mobile-candidates/runtime/vision-worker.js",
+      "sha256": "5072a1246ac8c90a01680ec517d76d4b24b2eb810647d222a14097f7038092e5"
+    },
+    {
+      "source": "inference/evaluations/mobile-candidates/runtime/vision-engine.js",
+      "sha256": "6dc7edeaaf8bd5b4710ac7f01aec9d9c55f24a336ff5b2322d0585a683857206"
+    },
+    {
+      "source": "examples/browser-assistant/src/vision-tool.js",
+      "sha256": "221e6cbada13973af9456b8b627b3402814cf9c3d4a546e37de7b00d6d269329"
+    },
+    {
+      "source": "inference/evaluations/pi-browser/runtime/src/execution.js",
+      "sha256": "3aadca11c611ef4e9bb560c7710f7f8112ae440b2d0b574c542eafee0c98eeaf"
+    },
+    {
+      "source": "inference/evaluations/pi-browser/runtime/src/settings.js",
+      "sha256": "6ae34b0023151ea8a7d1e38d5a43bebe22c110cc71d1430e37b156440cc1eb6a"
+    },
+    {
+      "source": "inference/evaluations/pi-browser/runtime/src/adapters.js",
+      "sha256": "2dd4bf90a3c194cd5c3ab236f3fb98ca22743a0475809c64dfac37c9971959d0"
+    }
+  ],
+  "adaptations": [
+    "Language profiles have projector:null and WebML explicitly receives mmproj:null.",
+    "Worker asset paths use an explicit same-origin application asset base.",
+    "Image tool uses the existing application JSON-schema convention; runtime/source behavior remains native.",
+    "LFM450M is excluded; only accepted LFM1.6B is offered.",
+    "Large Wasm binaries use transparent gzip transport without changing the decoded bytes."
+  ]
+}

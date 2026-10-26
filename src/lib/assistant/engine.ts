@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { bonsaiRuntime, bonsaiModels, type AssistantSettings } from "./config.ts";
+import { bonsaiRuntime, bonsaiModels, assistantProfile, type AssistantSettings } from "./config.ts";
 import type { AssistantCompatibility } from "./compatibility.ts";
 import type { LocalEngine, NativeMessage, NativeResult } from "./pi-session.ts";
 
@@ -39,7 +39,7 @@ export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: 
   let raw: WebMLModel;
   try {
     raw = await module.Qwen3_5ForConditionalGeneration.from_pretrained(profile.model, {
-      file: profile.file, revision: profile.revision, mmproj: profile.projector, max_pixels: settings.imagePixels, maxLength: settings.context,
+      file: profile.file, revision: profile.revision, mmproj: null, max_pixels: settings.imagePixels, maxLength: settings.context,
       cache: false, prefixSnapshotStore: null, chatTemplateArgs: { enable_thinking: settings.thinking }, signal,
       onProgress: (event: unknown) => {
         if (event && typeof event === "object" && "message" in event && typeof event.message === "string") stage = event.message;
@@ -77,4 +77,33 @@ export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: 
     },
     async dispose() { try { await session.dispose(); } finally { await raw.dispose(); } },
   };
+}
+
+export type NativeLanguageRuntime = {
+  loadWllama: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
+  loadGemma: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
+};
+
+/** Adapt accepted native engines without substituting a server or a text parser. */
+export async function loadAssistantEngine(settings: AssistantSettings, onProgress: (event: unknown) => void,
+  signal: AbortSignal, compatibility: Pick<AssistantCompatibility, "fp16" | "fp32">, assetBase: string, nativeRuntime?: NativeLanguageRuntime): Promise<LocalEngine & { dispose(): Promise<void> }> {
+  const profile = assistantProfile(settings.model);
+  if (profile.engine === "webml") return loadBonsaiEngine(settings, onProgress, signal, compatibility);
+  const url = new URL("load-language.mjs", assetBase).href;
+  const runtime = nativeRuntime ?? await import(/* @vite-ignore */ `${url}`) as NativeLanguageRuntime;
+  signal.throwIfAborted();
+  const configured = { ...profile, projector: null, settings: { ...profile.settings,
+    context_tokens: settings.context, max_new_tokens: settings.maxTokens, load_timeout_ms: settings.loadTimeout,
+    response_timeout_ms: settings.responseTimeout, thinking: settings.thinking, prefix_cache: settings.prefixCache,
+    temperature: settings.sampling ? settings.temperature : 0, sampling_mode: settings.sampling ? "sample" : "greedy",
+    top_k: settings.topK, top_p: settings.topP, min_p: settings.minP, seed: settings.seed, cpu_threads: settings.cpuThreads,
+  } };
+  const loader = profile.engine === "litert-lm" ? runtime.loadGemma : runtime.loadWllama;
+  const engine = await loader(configured, onProgress, { assetBase, mode: settings.executionMode,
+    // The accepted MiniCPM allocation fallback uses eight GPU layers.
+    gpuLayers: settings.executionMode === "hybrid" ? settings.gpuLayers : 8,
+    capabilities: { gpu: { compute: compatibility.fp32, f16_compute: compatibility.fp16 } },
+  });
+  if (signal.aborted) { await engine.dispose(); signal.throwIfAborted(); }
+  return engine;
 }

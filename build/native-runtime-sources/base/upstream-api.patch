@@ -1,0 +1,6 @@
+diff --git a/cpp/wllama-context.h b/cpp/wllama-context.h
+--- a/cpp/wllama-context.h
++++ b/cpp/wllama-context.h
+@@ -762 +762 @@
+-    auto tokens = format_prompt_rerank(model, vocab, nullptr, query, document, mtmd_helper_init_opt_default());
++    auto tokens = format_prompt_rerank(model, vocab, nullptr, query, document, {}, {}, mtmd_helper_init_opt_default());

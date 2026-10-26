@@ -54,6 +54,7 @@
     "src/lib/workflow-processing-client.ts",
     "src/lib/workflow-processing.worker.ts",
     "src/lib/assistant/inference.worker.ts",
+    "src/lib/assistant/decision.worker.ts",
     "src/lib/speech/inference.worker.js",
     "src/lib/speech/features.worker.js",
     "src/lib/speech/capture-worklet.js",

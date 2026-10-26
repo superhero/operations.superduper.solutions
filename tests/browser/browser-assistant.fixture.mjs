@@ -70,3 +70,25 @@ export async function installAssistantFixture(page) {
   await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' });
 }
+
+/** UI fixture only; source/native artifact cases qualify the actual runtime boundary. */
+export async function installDecisionFixture(page) {
+  await page.evaluate(() => {
+    const NativeWorker=window.Worker;
+    window.decisionFixture={messages:[],workers:0,terminated:0};
+    window.Worker=class extends EventTarget {
+      constructor(url, options) {
+        super(); if(options?.name!=='operations-native-decision') return new NativeWorker(url,options);
+        window.decisionFixture.workers++;
+      }
+      postMessage(data) {
+        window.decisionFixture.messages.push(structuredClone(data));
+        const emit=value=>queueMicrotask(()=>{const event=new MessageEvent('message',{data:value});this.onmessage?.(event);this.dispatchEvent(event);});
+        if(data.type==='check')emit({type:'compatibility',value:{ready:true,summary:'Synthetic CPU compatibility'}});
+        if(data.type==='load'){this.profile=data.profile;emit({type:'ready'});}
+        if(data.type==='decide')emit({type:'result',value:{profile:this.profile,answers:{q:{type:'noul',noul:0.85,probabilities:{true:0.85,false:0.15},confidence:0.2}},raw:{native_fixture:true},prepared:{rendered_tokens:42}}});
+      }
+      terminate(){window.decisionFixture.terminated++;}
+    };
+  });
+}

@@ -1,0 +1,216 @@
+{
+  "reference": "llm-sds-01",
+  "files": [
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/context-guard.mjs",
+      "target": "src/public/assistant-runtime/decision/context-guard.mjs",
+      "sha256": "79468483746849653412048af273f257888f4aac04e4ddde60af4618dda52906"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/load-progress.mjs",
+      "target": "src/public/assistant-runtime/decision/load-progress.mjs",
+      "sha256": "d512e378a778d385cb10f47e4a025d3173aa30da63de62172f46fafb0ef8a162"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/knowline-browser.mjs",
+      "target": "src/public/assistant-runtime/decision/knowline-browser.mjs",
+      "sha256": "673773013ed80819015febee8d94861b7e1eb2fa8830f1fd594b92e5bcea4ef7"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/knowline-prompt.mjs",
+      "target": "src/public/assistant-runtime/decision/knowline-prompt.mjs",
+      "sha256": "cddf7e1d6d640f6cf4f34e591cf84f8d4ddf83c65ca004ec92db06ce3a6eba2e"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/elephant-browser.mjs",
+      "target": "src/public/assistant-runtime/decision/elephant-browser.mjs",
+      "sha256": "d7d0dea6a66d3a077cc6cace68c0221d455fc8b1ad5b1406496e6eb99da08ea7"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/elephant-prompt.mjs",
+      "target": "src/public/assistant-runtime/decision/elephant-prompt.mjs",
+      "sha256": "974c088486f56d18a4cc5777559d71551b2202de71c958d63e8310180de2fbcb"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/pplx-browser.mjs",
+      "target": "src/public/assistant-runtime/decision/pplx-browser.mjs",
+      "sha256": "91b48d94b5cc96a063df0f0c41f9907af855786f511ef26bc8a3574a0134f718"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/pplx-prompt.mjs",
+      "target": "src/public/assistant-runtime/decision/pplx-prompt.mjs",
+      "sha256": "8a0cdfefc090f9f4bfd6c5ed8435f4bd0c7c312636a11c0fa30b02f3c8eba1e7"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/elephant-OneJev.LICENSE",
+      "target": "src/public/assistant-runtime/decision/elephant-OneJev.LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/pplx-publisher-LICENSE",
+      "target": "src/public/assistant-runtime/decision/pplx-publisher-LICENSE",
+      "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+    },
+    {
+      "source": "inference/evaluations/browser-decisions/runtime/pplx-publisher-NOTICE",
+      "target": "src/public/assistant-runtime/decision/pplx-publisher-NOTICE",
+      "sha256": "381fb81e814716a5ef8e5eae26a08607d052cf12f019dba9da9e81298ef5cb75"
+    },
+    {
+      "source": "inference/attempts/gs-browser-ornith15-q8/runtime/range-blob.mjs",
+      "target": "src/public/assistant-runtime/decision/range-blob.mjs",
+      "sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/hf-tokenizers/tokenizers.mjs",
+      "target": "src/public/assistant-runtime/decision/vendor/hf-tokenizers/tokenizers.mjs",
+      "sha256": "1c4a848f86156201c033d6cd08c4cf81ae1088552acec3367f31ef086edf5af0"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/hf-tokenizers/LICENSE",
+      "target": "src/public/assistant-runtime/decision/vendor/hf-tokenizers/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/hf-jinja/index.js",
+      "target": "src/public/assistant-runtime/decision/vendor/hf-jinja/index.js",
+      "sha256": "77e3506437517fe3b6bf4fc71882af1dfa9e809690714dfe0105ea17b6865b25"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/hf-jinja/LICENSE",
+      "target": "src/public/assistant-runtime/decision/vendor/hf-jinja/LICENSE",
+      "sha256": "d6e7b19451c1b3d1d66353bb4b1274138953b3bfd9ae60c56e77b1f548796982"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama/wllama.wasm",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama/wllama.wasm",
+      "sha256": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama/LICENCE",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama/LICENCE",
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama/index.js",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama/index.js",
+      "sha256": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-elephant/wllama.wasm",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-elephant/wllama.wasm",
+      "sha256": "25b0c03e06d1acde8417ce7c8505427a94dad1cc3689995dd2125a1718a0daf7"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-elephant/LICENCE",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-elephant/LICENCE",
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-elephant/index.js",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-elephant/index.js",
+      "sha256": "723d5885f7019684610e1896a61b9a9f9c5bca7b39eae05e2491617c1a41739e"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-elephant/build-receipt.json",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-elephant/build-receipt.json",
+      "sha256": "d0cf781048f753c4f095b236785d00e039b81c994a61f190a6366c5e6983533c"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-pplx-v3/wllama.wasm",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-pplx-v3/wllama.wasm",
+      "sha256": "14be4bdc0b50ad4664f6fe9602829f543558ca6c2ad6fb16a7771b374d7fdae1"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-pplx-v3/LICENCE",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-pplx-v3/LICENCE",
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-pplx-v3/index.js",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-pplx-v3/index.js",
+      "sha256": "986903d0b17cf439bc40d647aadc1a84c84f6e2e3677f54bcc583b10f960797a"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/wllama-pplx-v3/build-receipt.json",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-pplx-v3/build-receipt.json",
+      "sha256": "d8874093ce11bfbd91adeeb31f951675e1969af388c61d9e5c9a83b209efd59e"
+    },
+    {
+      "source": "inference/evaluations/browser-decision-context/runtime/native/.runtime/d3-wllama/generations/c4af87211dc9a995591aca19027ef3d9b827af04af0878c23f8247d897b45542/source/artifacts/index.js",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-d3-inspect/index.js",
+      "sha256": "19184979ce0993aebe1e327c8c301d1f32e32513739b2b24870cbf0c09f5a3b5"
+    },
+    {
+      "source": "inference/evaluations/browser-decision-context/runtime/native/.runtime/d3-wllama/generations/c4af87211dc9a995591aca19027ef3d9b827af04af0878c23f8247d897b45542/source/artifacts/wllama.wasm",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-d3-inspect/wllama.wasm",
+      "sha256": "ae5cec9811a376a3a165b7c46bd2ca0c3740d9dc99a245bd88f67f58e922906b"
+    },
+    {
+      "source": "inference/evaluations/browser-decision-context/runtime/native/.runtime/d3-wllama/generations/c4af87211dc9a995591aca19027ef3d9b827af04af0878c23f8247d897b45542/source/artifacts/LICENCE",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-d3-inspect/LICENCE",
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "source": "inference/evaluations/browser-decision-context/runtime/native/.runtime/d3-wllama/generations/c4af87211dc9a995591aca19027ef3d9b827af04af0878c23f8247d897b45542/source/artifacts/build-receipt.json",
+      "target": "src/public/assistant-runtime/decision/vendor/wllama-d3-inspect/build-receipt.json",
+      "sha256": "f4c88ba8f4e6e8f56647640812729fdd4ba321d352722e29b1bbf7d4c56638c1"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands/js/decider-client.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands/js/decider-client.js",
+      "sha256": "fe6391f5f2f2e22edf525d9b46f851ba15b90368bd6fd7edb90b5e71a47b9988",
+      "source_sha256": "545c7b425209e8f8a13fb793e4b3efebd2b2ac02088ff86797375e951df59da7"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands/js/worker.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands/js/worker.js",
+      "sha256": "9c056ac39f7c94ca92057b27169e049bb2e62e94874e9ec4cd003c9f9ae4245a"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands/js/prompt.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands/js/prompt.js",
+      "sha256": "5135f3ed247de5951ed47ee76ff3b3ef31c08f24aed459277e5e6a61f93caf4e"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands/js/head.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands/js/head.js",
+      "sha256": "2420831356db63ff2d7bc4e93730f87d83cd662a5d39ce786e7b3624f4348488"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands/tokenizers/tokenizers.min.mjs",
+      "target": "src/public/assistant-runtime/decision/vendor/strands/tokenizers/tokenizers.min.mjs",
+      "sha256": "258e46332101335ce8d95aed7745b19ac3b46d37f3e159a89cf894c2ea9b1d3a"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands-native-device/js/decider-client.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands-native-device/js/decider-client.js",
+      "sha256": "fe6391f5f2f2e22edf525d9b46f851ba15b90368bd6fd7edb90b5e71a47b9988",
+      "source_sha256": "545c7b425209e8f8a13fb793e4b3efebd2b2ac02088ff86797375e951df59da7"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands-native-device/js/worker.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands-native-device/js/worker.js",
+      "sha256": "c4ba1adfee6e766dc064091318abca3c9fc65ac6451a4362960e409365aa6ff1"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands-native-device/js/prompt.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands-native-device/js/prompt.js",
+      "sha256": "5135f3ed247de5951ed47ee76ff3b3ef31c08f24aed459277e5e6a61f93caf4e"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands-native-device/js/head.js",
+      "target": "src/public/assistant-runtime/decision/vendor/strands-native-device/js/head.js",
+      "sha256": "2420831356db63ff2d7bc4e93730f87d83cd662a5d39ce786e7b3624f4348488"
+    },
+    {
+      "source": "inference/attempts/kl-browser-decision-d3-lite/runtime/dist/vendor/strands-native-device/tokenizers/tokenizers.min.mjs",
+      "target": "src/public/assistant-runtime/decision/vendor/strands-native-device/tokenizers/tokenizers.min.mjs",
+      "sha256": "258e46332101335ce8d95aed7745b19ac3b46d37f3e159a89cf894c2ea9b1d3a"
+    }
+  ],
+  "adaptations": [
+    "Strands worker query contains only explicit device, pinned weights and nocache=1; no page query copying.",
+    "ORT1.30 assets are staged from the exact installed package by build/assistant-runtime.mjs."
+  ]
+}
