@@ -2,6 +2,126 @@
 
 ## Latest
 
+<!-- changelog-commit:ba6dfcd35bf1bfe8412fe203354d64acd61ca1f2 -->
+### Commit [`ba6dfcd`](https://github.com/superhero/operations.superduper.solutions/commit/ba6dfcd35bf1bfe8412fe203354d64acd61ca1f2)
+
+```text
+fix(ui): grow assistant input with the message
+
+```
+
+<!-- changelog-commit:a69de1cd186bbda27bef95e1c86d56fde4f1eb5a -->
+### Commit [`a69de1c`](https://github.com/superhero/operations.superduper.solutions/commit/a69de1cd186bbda27bef95e1c86d56fde4f1eb5a)
+
+```text
+fix(ui): scale grouped header buttons outwards
+
+```
+
+<!-- changelog-commit:7c7f34464fee1c94ae8e793ffd74b0fcc70d4bf2 -->
+### Commit [`7c7f344`](https://github.com/superhero/operations.superduper.solutions/commit/7c7f34464fee1c94ae8e793ffd74b0fcc70d4bf2)
+
+```text
+fix(ui): use a 2px assistant composer border
+
+```
+
+<!-- changelog-commit:76ceafdb20dfe0ed7e7fd9d8ba9d8b5cb8bcee60 -->
+### Commit [`76ceafd`](https://github.com/superhero/operations.superduper.solutions/commit/76ceafdb20dfe0ed7e7fd9d8ba9d8b5cb8bcee60)
+
+```text
+fix(ui): remove assistant composer helper text
+
+```
+
+<!-- changelog-commit:2622581fa7f920fc02eb54bbaa03727176beeeb0 -->
+### Commit [`2622581`](https://github.com/superhero/operations.superduper.solutions/commit/2622581fa7f920fc02eb54bbaa03727176beeeb0)
+
+```text
+fix(ui): keep assistant model options on one line
+
+```
+
+<!-- changelog-commit:b92112ed4b5ce5bc7f97a2077996fdee3141f0ea -->
+### Commit [`b92112e`](https://github.com/superhero/operations.superduper.solutions/commit/b92112ed4b5ce5bc7f97a2077996fdee3141f0ea)
+
+```text
+fix(ui): align pane switches with header buttons
+
+```
+
+<!-- changelog-commit:f513878342e57ecf18be35e774e2f1f0091b3e00 -->
+### Commit [`f513878`](https://github.com/superhero/operations.superduper.solutions/commit/f513878342e57ecf18be35e774e2f1f0091b3e00)
+
+```text
+feat(ui): load assistant models when selected
+
+```
+
+<!-- changelog-commit:dabb1a1ed76c8086ed71d87affe1a1c33d8bc0e9 -->
+### Commit [`dabb1a1`](https://github.com/superhero/operations.superduper.solutions/commit/dabb1a1ed76c8086ed71d87affe1a1c33d8bc0e9)
+
+```text
+fix(ui): remove redundant assistant load button
+
+```
+
+<!-- changelog-commit:e6477c434af7b32bb513eb288b09f02ea69d84fb -->
+### Commit [`e6477c4`](https://github.com/superhero/operations.superduper.solutions/commit/e6477c434af7b32bb513eb288b09f02ea69d84fb)
+
+```text
+fix(ui): align composer model and attachment icons
+
+```
+
+<!-- changelog-commit:b4332d11a62013be09e74c0346c4b9af9d278d76 -->
+### Commit [`b4332d1`](https://github.com/superhero/operations.superduper.solutions/commit/b4332d11a62013be09e74c0346c4b9af9d278d76)
+
+```text
+fix(ai): keep Vite client out of compatibility workers
+
+```
+
+<!-- changelog-commit:f9f3957eab196f56ccaaf73e20ac9dc9a544103d -->
+### Commit [`f9f3957`](https://github.com/superhero/operations.superduper.solutions/commit/f9f3957eab196f56ccaaf73e20ac9dc9a544103d)
+
+```text
+fix(ui): remove assistant send button
+
+```
+
+<!-- changelog-commit:d74f196f66040117784d198bc00a8afd6571beff -->
+### Commit [`d74f196`](https://github.com/superhero/operations.superduper.solutions/commit/d74f196f66040117784d198bc00a8afd6571beff)
+
+```text
+fix(ui): match assistant input focus to hover
+
+```
+
+<!-- changelog-commit:bc3851ccfd5f4b23951613ad03e32165259ad067 -->
+### Commit [`bc3851c`](https://github.com/superhero/operations.superduper.solutions/commit/bc3851ccfd5f4b23951613ad03e32165259ad067)
+
+```text
+feat(ai): add native language vision and decision models
+
+```
+
+<!-- changelog-commit:a21df70b6fae850d6006835a29aef6a2381f6a5c -->
+### Commit [`a21df70`](https://github.com/superhero/operations.superduper.solutions/commit/a21df70b6fae850d6006835a29aef6a2381f6a5c)
+
+```text
+chore(ci): refresh native model dependency badges
+
+```
+
+<!-- changelog-commit:e791b06b7c73e7127d924a4efc7768a927336a56 -->
+### Commit [`e791b06`](https://github.com/superhero/operations.superduper.solutions/commit/e791b06b7c73e7127d924a4efc7768a927336a56)
+
+```text
+fix(settings): observe lazy disclosure growth and refresh browser contracts
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.64

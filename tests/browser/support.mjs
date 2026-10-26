@@ -60,12 +60,18 @@ BeforeAll(async function () {
   };
   const icons = new Map(await Promise.all(Object.entries(iconTypes).map(async ([filename, type]) =>
     [`/${filename}`, { type, bytes: await readFile(`dist/${filename}`) }])));
-  const speechAssets = new Map(await Promise.all((await readdir('dist/speech', { recursive: true, withFileTypes: true }))
-    .filter(entry => entry.isFile()).map(async entry => {
-      const path = resolve(entry.parentPath, entry.name);
-      const url = '/speech/' + path.slice(resolve('dist/speech').length + 1);
-      return [url, { bytes: await readFile(path), type: entry.name.endsWith('.js') ? 'text/javascript' : 'application/octet-stream' }];
-    })));
+  const runtimeAssets = new Map();
+  for (const folder of ['speech', 'assistant-runtime']) {
+    const root = resolve('dist', folder);
+    for (const entry of await readdir(root, {recursive: true, withFileTypes: true})) {
+      if (!entry.isFile()) continue;
+      const path = resolve(entry.parentPath, entry.name), url = '/' + folder + '/' + path.slice(root.length + 1);
+      const gzip = entry.name.endsWith('.wasm.gz');
+      const type = /\.m?js$/.test(entry.name) ? 'text/javascript' : /\.wasm(?:\.gz)?$/.test(entry.name) ? 'application/wasm' : entry.name.endsWith('.json') ? 'application/json' : 'application/octet-stream';
+      const asset = {bytes: await readFile(path), type, gzip}; runtimeAssets.set(url, asset);
+      if (gzip) runtimeAssets.set(url.slice(0, -3), asset);
+    }
+  }
   if (typeof this.parameters.fixtureBundlesFile !== 'string')
     throw new Error('Start browser scenarios with npm run test:browser or node tests/browser/run.mjs.');
   const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture, fixtureChunks = {} } =
@@ -118,9 +124,9 @@ BeforeAll(async function () {
     } else if (request.url === '/vault-fixture.html') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       response.end('<!doctype html><title>Vault persistence and execution fixture</title>');
-    } else if (speechAssets.has(request.url)) {
-      const asset = speechAssets.get(request.url);
-      response.writeHead(200, { 'content-type': asset.type,
+    } else if (runtimeAssets.has(request.url)) {
+      const asset = runtimeAssets.get(request.url);
+      response.writeHead(200, { 'content-type': asset.type, ...(asset.gzip ? {'content-encoding':'gzip'} : {}),
         'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' }); response.end(asset.bytes);
     } else if (icons.has(request.url)) {
       const icon = icons.get(request.url);

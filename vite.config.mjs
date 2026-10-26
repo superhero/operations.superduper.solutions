@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
+import { assistantRuntimeDevelopment } from "./build/assistant-plugin.mjs";
 import { parakeetSerialInitialization } from "./build/parakeet-plugin.mjs";
 
 const isolationHeaders = {
@@ -60,21 +61,26 @@ overlay.configureServer = function (server) {
 
 export default defineConfig({
   root: "src",
-  // File parsing starts in a worker; prepare its CJS dependency before the
-  // first upload rather than discovering it during worker module loading.
-  optimizeDeps: { include: ["papaparse"], exclude: ["parakeet.js", "onnxruntime-web"] },
+  // Prepare worker dependencies before use so late discovery cannot reload the
+  // page during the first upload or assistant compatibility check.
+  optimizeDeps: {
+    include: ["papaparse", "@earendil-works/pi-agent-core", "@earendil-works/pi-ai/utils/event-stream", "@earendil-works/pi-ai/utils/transcript", "@litert-lm/core", "@huggingface/transformers"],
+    exclude: ["parakeet.js", "onnxruntime-web"]
+  },
   // Visulima handles runtime errors; Vite's own forwarding can report failed
   // transmissions back through console.error and create a transport loop.
   server: { forwardConsole: false, headers: isolationHeaders },
   preview: { headers: isolationHeaders },
   resolve: {
-    alias: {
-      "onnxruntime-web": fileURLToPath(new URL("./node_modules/onnxruntime-web/dist/ort.webgpu.min.mjs", import.meta.url)),
-      $lib: fileURLToPath(new URL("./src/lib", import.meta.url))
-    }
+    alias: [
+      { find: /^onnxruntime-web$/, replacement: fileURLToPath(new URL("./node_modules/onnxruntime-web/dist/ort.webgpu.min.mjs", import.meta.url)) },
+      { find: /^onnxruntime-web\/webgpu$/, replacement: fileURLToPath(new URL("./node_modules/@huggingface/transformers/node_modules/onnxruntime-web/dist/ort.webgpu.min.mjs", import.meta.url)) },
+      { find: "$lib", replacement: fileURLToPath(new URL("./src/lib", import.meta.url)) }
+    ]
   },
   plugins: [
     parakeetSerialInitialization(),
+    assistantRuntimeDevelopment(),
     {
       name: "operations-vault-notices",
       transformIndexHtml: {

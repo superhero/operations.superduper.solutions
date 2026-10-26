@@ -1,2 +1,6 @@
 # Preserve upstream bytes and license formatting in vendored speech resources.
 src/lib/speech/vendor/** -whitespace
+
+# Preserve byte-pinned native patches and publisher notices.
+build/native-runtime-sources/**/*.patch -text whitespace=-blank-at-eol
+src/public/assistant-runtime/decision/pplx-publisher-LICENSE -text -whitespace

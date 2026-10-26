@@ -1,0 +1,121 @@
+{
+  "id": "jo-browser-mobile-lfm25-vl16b-letterbox",
+  "title": "LFM2.5-VL \u00b7 1.6B \u00b7 preserve geometry",
+  "kind": "vision",
+  "engine": "transformers",
+  "model": "LiquidAI/LFM2.5-VL-1.6B-ONNX",
+  "revision": "d0e00ca26cc42892d9f3c4380faa631927218209",
+  "dtype": {
+    "embed_tokens": "fp16",
+    "vision_encoder": "fp16",
+    "decoder_model_merged": "q4"
+  },
+  "session_files": {
+    "embed_tokens": "embed_tokens_fp16",
+    "vision_encoder": "embed_images_fp16",
+    "decoder_model_merged": "decoder_q4"
+  },
+  "weight_bytes": 2339072031,
+  "files": [
+    {
+      "file": "onnx/decoder_q4.onnx",
+      "bytes": 169018,
+      "sha256": "44bbb840012f64393e74c6c3fa48d22c2d03317a71e3de882b1115daab028480",
+      "integrity": "HF LFS metadata; whole model file not downloaded/independently rehashed"
+    },
+    {
+      "file": "onnx/decoder_q4.onnx_data",
+      "bytes": 1217650688,
+      "sha256": "144e30048e0de1af8b9524fc4bdca99286090ff92c0f12792ccedd31804f2d73",
+      "integrity": "HF LFS metadata; whole model file not downloaded/independently rehashed"
+    },
+    {
+      "file": "onnx/embed_images_fp16.onnx",
+      "bytes": 245704,
+      "sha256": "2a7b59cf6a8c635cd13a9fb8eb17e85d4e127bb96ba3fdc55f4729d8e864ddd4",
+      "integrity": "HF LFS metadata; whole model file not downloaded/independently rehashed"
+    },
+    {
+      "file": "onnx/embed_images_fp16.onnx_data",
+      "bytes": 852570592,
+      "sha256": "8054413051a026379524506513c30489dea5ba8830a8d5f7a1bb6fd3d6221041",
+      "integrity": "HF LFS metadata; whole model file not downloaded/independently rehashed"
+    },
+    {
+      "file": "onnx/embed_tokens_fp16.onnx",
+      "bytes": 573,
+      "sha256": "de3dd76a0d69bc47dc96c0ee086e1f97b28a892e0dee36c2ff5475456ab8b258",
+      "integrity": "HF LFS metadata; whole model file not downloaded/independently rehashed"
+    },
+    {
+      "file": "onnx/embed_tokens_fp16.onnx_data",
+      "bytes": 268435456,
+      "sha256": "9f7fe1eac2569a8be47a56bb721fdb8d98bc34ce5edc5fce073b5db7c0b1785d",
+      "integrity": "HF LFS metadata; whole model file not downloaded/independently rehashed"
+    }
+  ],
+  "runtime_source": {
+    "package": "@huggingface/transformers",
+    "version": "4.3.1",
+    "release": "https://github.com/huggingface/transformers.js/releases/tag/4.3.1",
+    "onnxruntimeWeb": "1.31.0-dev.20260914-8d85527a0",
+    "wasmThreads": 1
+  },
+  "format": "Official mixed ONNX: FP16 vision + token embeddings, Q4 decoder; actual accumulator/kernel placement unmeasured.",
+  "precision": "FP16 vision/embeddings + Q4 decoder",
+  "source_authorization": "User requested this published official ONNX candidate. Native base configs declare BF16. This experiment intentionally uses the publisher-recommended mixed FP16 vision and token embeddings plus Q4 decoder. Published bytes are retained without conversion; this does not assert absence of BF16 base weights.",
+  "sources": [
+    "https://huggingface.co/api/models/LiquidAI/LFM2.5-VL-1.6B-ONNX/revision/d0e00ca26cc42892d9f3c4380faa631927218209?blobs=true",
+    "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/blob/d0e00ca26cc42892d9f3c4380faa631927218209/README.md",
+    "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/d0e00ca26cc42892d9f3c4380faa631927218209/config.json"
+  ],
+  "settings": {
+    "context_tokens": 1024,
+    "max_new_tokens": 256,
+    "load_timeout_ms": 1200000,
+    "response_timeout_ms": 180000,
+    "thinking": false,
+    "temperature": 0,
+    "wasm_threads": 1,
+    "nvidia_f16_override": true,
+    "device": "webgpu",
+    "image_fixture_size": [
+      384,
+      240
+    ],
+    "preprocessing": "letterbox-white-square-v1"
+  },
+  "projector": null,
+  "input": [
+    "text",
+    "image"
+  ],
+  "status": "working",
+  "demo_url": "https://192.168.1.173:8444/jj-browser-mobile-qwen35-08b/?model=jo-browser-mobile-lfm25-vl16b-letterbox",
+  "execution": "Visiting browser; static Swarm and first-pass Playwright pinned sds-01. WebGPU requested; JS/Wasm work and unmeasured per-node placement disclosed. No phone acceptance.",
+  "whole_file_checksum_verified": false,
+  "baseline": "jm-browser-mobile-lfm25-vl16b",
+  "changed_variable": "preserve aspect ratio by fitting original into a white square before the unchanged official processor",
+  "processor_metadata": {
+    "chat_template": {
+      "file": "chat_template.jinja",
+      "bytes": 434,
+      "sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+      "revision": "d0e00ca26cc42892d9f3c4380faa631927218209",
+      "source": "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/d0e00ca26cc42892d9f3c4380faa631927218209/chat_template.jinja"
+    }
+  },
+  "license": {
+    "id": "other",
+    "name": "lfm1.0",
+    "file": "LICENSE",
+    "url": "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/blob/d0e00ca26cc42892d9f3c4380faa631927218209/LICENSE"
+  },
+  "measured_run_id": "mobile-candidates-1792856283165453658",
+  "measured_evidence": {
+    "path": ".runtime/mobile-candidates/mobile-candidates-1792856283165453658/browser.json",
+    "sha256": "4696005f5d1a6c2f6b9646ffee077be84b9cc48ca95d705a8dda3573e12d372e"
+  },
+  "finding_summary": "Plain text works without an image. All five image checks still pass with concise answers. READY. adds punctuation, failing the strict READY instruction; phone/tool-chain acceptance remains untested.",
+  "test_browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+}

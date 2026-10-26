@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { speechProfiles } from "$lib/speech/config.js";
   import { compare } from "$lib/speech/diagnostics.js";
   import { clearSpeechCache, deleteRecordings, saveRecording } from "$lib/speech/storage.js";
-  let { visible = true, onDictation, onActivity }: { visible?: boolean; onDictation: (text: Dictation) => void; onActivity: (state: { ready: boolean; busy: boolean; recording: boolean }) => void } = $props();
+  let { visible = true, externalBusy = false, onDictation, onActivity }: { visible?: boolean; externalBusy?: boolean; onDictation: (text: Dictation) => void; onActivity: (state: { ready: boolean; busy: boolean; recording: boolean }) => void } = $props();
   let speechState = $state<SpeechState>({ phase: "unloaded", status: "", error: "", provisional: "", storageError: "", seconds: 0 });
   let records = $state.raw<Recording[]>([]);
   let selectedId = $state("");
@@ -24,7 +24,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   export async function toggleDictation() {
     opened = true;
     if (speechState.phase === "recording" || speechState.phase === "requesting") await controller.stopRecording();
-    else if (speechState.phase === "ready" && !storageBusy) await controller.startRecording();
+    else if (speechState.phase === "ready" && !storageBusy && !externalBusy) await controller.startRecording();
     else {
       await tick();
       panel.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
@@ -94,13 +94,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <summary>Speech input<MaterialIcon name="chevron_forward" size={16} /></summary>
   <div class="speech-card">
     <label for="speech-profile">Parakeet TDT 0.6B v3</label>
-    <FieldSelect id="speech-profile" label="Speech runtime" options={speechProfiles} includePlaceholder={false} value={preferences.mode} disabled={loaded}
+    <FieldSelect id="speech-profile" label="Speech runtime" options={speechProfiles} includePlaceholder={false} value={preferences.mode} disabled={loaded || externalBusy}
       onValueChange={value => preference({ mode: value })} />
     <p>{(profile.bytes / 1e9).toFixed(2)} GB model download · {preferences.mode === "cpu" ? "CPU encoder and decoder" : "WebGPU encoder · INT8 CPU decoder"}</p>
     {#if preferences.mode === "gpu-fp32"}<p>Needs browser file storage and substantially more memory than the download size. Private browsing may have too little storage space.</p>{/if}
     <div class="speech-actions">
       {#if !loaded}
-        <button type="button" onclick={() => controller.load()}>{speechState.error ? "Retry speech" : "Load speech"}</button>
+        <button type="button" disabled={externalBusy} onclick={() => controller.load()}>{speechState.error ? "Retry speech" : "Load speech"}</button>
         <button type="button" class="secondary" onclick={clearCache}>Clear speech cache</button>
       {:else}
         <button type="button" class="secondary" onclick={() => { controller.unload(); preferences = { ...controller.preferences }; }}>Unload speech</button>
@@ -108,10 +108,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if speechState.phase === "recording" || speechState.phase === "requesting"}
         <button type="button" class="recording" onclick={() => void controller.stopRecording()}>{speechState.phase === "requesting" ? "Cancel microphone" : "Stop dictation"}</button>
       {:else}
-        <button type="button" disabled={speechState.phase !== "ready" || storageBusy} onclick={() => void controller.startRecording()}><MaterialIcon name="mic" size={18} />Dictate</button>
-        <button type="button" class="secondary" disabled={speechState.phase !== "ready" || storageBusy} onclick={() => audioInput.click()}>Choose audio</button>
+        <button type="button" disabled={speechState.phase !== "ready" || storageBusy || externalBusy} onclick={() => void controller.startRecording()}><MaterialIcon name="mic" size={18} />Dictate</button>
+        <button type="button" class="secondary" disabled={speechState.phase !== "ready" || storageBusy || externalBusy} onclick={() => audioInput.click()}>Choose audio</button>
       {/if}
-      <input hidden aria-label="Transcribe audio file" type="file" accept="audio/*" disabled={speechState.phase !== "ready"} bind:this={audioInput}
+      <input hidden aria-label="Transcribe audio file" type="file" accept="audio/*" disabled={speechState.phase !== "ready" || externalBusy} bind:this={audioInput}
         onchange={event => { void controller.file(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
     </div>
     <p class="status" role="status">{speechState.status}{busy ? ` · ${speechState.seconds.toFixed(1)}s` : ""}</p>

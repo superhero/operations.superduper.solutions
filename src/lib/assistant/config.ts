@@ -2,27 +2,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-/** Pins from llm-sds-01/inference/evaluations/pi-browser/HANDOFF.md. */
+import languageProfiles from "./language-profiles.json";
+
+/** Accepted text-only profiles from llm-sds-01; exact provenance is retained beside this catalog. */
 export const bonsaiRuntime = {
   url: "https://huggingface.co/spaces/webml-community/ternary-bonsai-2-hermes-webgpu/resolve/621e20782f208660f4f58283c2ce58430020f243/assets/qwen35-vision-Kzp5MMIJ.js",
   sha256: "00c1a72a962a84fee17000a6b1d18b24d75033e56d59996fc504b7c57cfc6488",
   bytes: 2208435,
 } as const;
-export const bonsaiModels = [
-  { id: "2b", label: "Bonsai 2 · 2B", model: "prism-ml/Ternary-Bonsai-2-2B-gguf", revision: "683f7be2629342a50987627b40881e54761a2430",
-    file: "Ternary-Bonsai-2-2B-PTQ1_0.gguf", projector: "Ternary-Bonsai-2-2B-mmproj-Q8_0.gguf", bytes: 793847808,
-    attempt: "gw-browser-pi-bonsai2-2b", run: "gw-browser-pi-bonsai2-2b-1792646112919399916" },
-  { id: "4b", label: "Bonsai 2 · 4B", model: "prism-ml/Ternary-Bonsai-2-4B-gguf", revision: "8d6557168168f91ea6697a4a49ed2ef622b53adb",
-    file: "Ternary-Bonsai-2-4B-PTQ1_0.gguf", projector: "Ternary-Bonsai-2-4B-mmproj-Q8_0.gguf", bytes: 1316444544,
-    attempt: "he-browser-pi-bonsai2-4b", run: "he-browser-pi-bonsai2-4b-1792657842970109100" },
-  { id: "9b", label: "Bonsai 2 · 9B", model: "prism-ml/Ternary-Bonsai-2-9B-gguf", revision: "5b2abb02362efbed46bbe204014b02837778b2c2",
-    file: "Ternary-Bonsai-2-9B-PTQ1_0.gguf", projector: "Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf", bytes: 2621716640,
-    attempt: "gx-browser-pi-bonsai2-9b", run: "gx-browser-pi-bonsai2-9b-1792648337305103722" },
-] as const;
-export type BonsaiModel = typeof bonsaiModels[number];
+export const assistantModels = languageProfiles;
+export const bonsaiModels = assistantModels.filter(model => model.engine === "webml");
+export type AssistantModel = typeof assistantModels[number];
+export type BonsaiModel = AssistantModel;
+export function assistantProfile(id: string): AssistantModel {
+  const profile = assistantModels.find(model => model.id === id);
+  if (!profile) throw new Error("Choose an available local language model.");
+  return profile;
+}
 export const assistantSettingsKey = "v1/settings/assistant";
 export const defaultAssistantSettings = {
-  model: "2b", context: 4096, maxTokens: 1024, sampling: false, temperature: 0.7, topK: 20, topP: 0.8, minP: 0, seed: 42,
+  model: "2b", executionMode: "auto", gpuLayers: 8, cpuThreads: 4, context: 4096, maxTokens: 1024, sampling: false, temperature: 0.7, topK: 20, topP: 0.8, minP: 0, seed: 42,
   thinking: false, prefixCache: true, imagePixels: 262144, tools: true, editing: true, skills: true,
   maxTurns: 6, maxToolCalls: 8, responseTimeout: 180000, requestTimeout: 600000, loadTimeout: 1200000,
 };
@@ -34,10 +33,17 @@ export function validateAssistantSettings(value: unknown): AssistantSettings {
   const input = value as Record<string, unknown>;
   if (Object.keys(input).some(key => !Object.hasOwn(defaultAssistantSettings, key))) throw new Error("Unknown assistant setting.");
   const next = { ...defaultAssistantSettings, ...input } as AssistantSettings;
-  if (!bonsaiModels.some(model => model.id === next.model)) throw new Error("Choose Bonsai 2B, 4B or 9B.");
+  const profile = assistantProfile(next.model);
+  if (!["auto", "gpu", "hybrid", "cpu"].includes(next.executionMode)) throw new Error("Choose Auto, GPU, partial GPU or CPU execution.");
+  if (profile.engine === "webml" && !["auto", "gpu"].includes(next.executionMode)) throw new Error("Bonsai requires WebGPU execution.");
+  if (profile.engine === "litert-lm" && (next.sampling || next.thinking || next.prefixCache || !["auto", "gpu"].includes(next.executionMode)))
+    throw new Error("Gemma uses GPU greedy decoding with reasoning and prefix caching off.");
+  if (profile.engine === "litert-lm" && next.context > 4096) throw new Error("Gemma supports at most 4096 context tokens in this profile.");
+  if (profile.engine === "wllama" && next.executionMode === "cpu" && profile.bytes >= 4294967296)
+    throw new Error("This model's language weights exceed the native 4 GiB CPU heap. Select GPU or partial GPU execution.");
   for (const key of ["sampling", "thinking", "prefixCache", "tools", "editing", "skills"] as const)
     if (typeof next[key] !== "boolean") throw new Error(`${key} must be true or false.`);
-  const bounds = { context: [512, 32768], maxTokens: [1, 20000], topK: [1, 64], seed: [0, 4294967295], imagePixels: [16384, 1048576],
+  const bounds = { gpuLayers: [1, 999], cpuThreads: [1, 8], context: [512, 32768], maxTokens: [1, 20000], topK: [1, 64], seed: [0, 4294967295], imagePixels: [16384, 1048576],
     maxTurns: [1, 32], maxToolCalls: [1, 64], responseTimeout: [1000, 3600000], requestTimeout: [1000, 3600000], loadTimeout: [30000, 3600000] } as const;
   for (const [key, [min, max]] of Object.entries(bounds)) {
     const value = next[key as keyof typeof bounds];
@@ -48,4 +54,19 @@ export function validateAssistantSettings(value: unknown): AssistantSettings {
   if (next.maxTokens >= next.context) throw new Error("Output tokens must be smaller than the context window.");
   if (next.responseTimeout > next.requestTimeout) throw new Error("Response timeout must not exceed the request timeout.");
   return next;
+}
+
+/** Apply the selected engine's supported defaults before automatic loading. */
+export function settingsForAssistantModel(id: string, current: AssistantSettings): AssistantSettings {
+  const profile = assistantProfile(id);
+  const native = profile.engine !== "webml";
+  return validateAssistantSettings({ ...current, model: id,
+    context: profile.settings.context_tokens, maxTokens: Math.min(current.maxTokens, profile.settings.max_new_tokens, profile.settings.context_tokens - 1),
+    executionMode: profile.engine === "wllama" && id.startsWith("ornith") ? "gpu" : "auto",
+    gpuLayers: 8, cpuThreads: 4,
+    prefixCache: native ? false : current.prefixCache,
+    sampling: profile.engine === "litert-lm" ? false : current.sampling,
+    thinking: profile.engine === "litert-lm" ? false : current.thinking,
+    requestTimeout: ["gemma-e2b", "minicpm5-2b"].includes(id) ? 1200000 : current.requestTimeout,
+  });
 }

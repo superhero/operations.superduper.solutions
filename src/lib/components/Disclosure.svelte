@@ -63,10 +63,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const update = () => { reduced = media.matches; if (reduced) settle(); };
     update(); ready = true;
     media.addEventListener("change", update);
+    return () => { parent?.children.delete(settleTree); media.removeEventListener("change", update); animation?.cancel(); };
+  });
+  $effect(() => {
+    if (!animateSize || !content) return;
+    const observed = content;
     let frame = 0;
     // Observe natural content, not the animated panel. Keep its height pinned so
     // asynchronous reports cannot jump before the next animation frame.
-    const observer = animateSize ? new ResizeObserver(() => {
+    const observer = new ResizeObserver(() => {
       if (!frame) frame = requestAnimationFrame(() => {
         frame = 0;
         if (!open || !content) return;
@@ -76,9 +81,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         if (reduced) settle();
         else animateHeight(panel.offsetHeight, height);
       });
-    }) : undefined;
-    if (content) observer?.observe(content);
-    return () => { parent?.children.delete(settleTree); media.removeEventListener("change", update); animation?.cancel(); observer?.disconnect(); cancelAnimationFrame(frame); };
+    });
+    observer.observe(observed);
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   });
   $effect.pre(() => {
     const next = open;

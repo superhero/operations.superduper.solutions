@@ -10,7 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import WorkflowCommentPreview from "../workflows/WorkflowCommentPreview.svelte";
-  import { assistantSettingsKey, bonsaiModels, defaultAssistantSettings, validateAssistantSettings, type AssistantSettings as Preferences } from "$lib/assistant/config.ts";
+  import { assistantSettingsKey, assistantModels, settingsForAssistantModel, defaultAssistantSettings, validateAssistantSettings, type AssistantSettings as Preferences } from "$lib/assistant/config.ts";
   import { enabledAssistantTools, executeAssistantTool, type AssistantHost } from "$lib/assistant/tools.ts";
   import { assistantSkills } from "$lib/assistant/skills.ts";
   import type { AssistantCompatibility } from "$lib/assistant/compatibility.ts";
@@ -18,6 +18,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import InferenceWorker from "$lib/assistant/inference.worker.ts?worker&inline";
   import { trackApplicationWorker } from "$lib/application-workers.ts";
   import SpeechSettings from "./SpeechSettings.svelte";
+  import DecisionSettings from "./DecisionSettings.svelte";
   import { appendDictation } from "$lib/speech/config.js";
   import type { Dictation } from "$lib/speech/controller.js";
   import { encodeError, decodeError } from "$lib/worker-rpc.ts";
@@ -31,14 +32,35 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   let preferences = $state<Preferences>(readPreferences());
   let phase = $state<"unloaded" | "checking" | "loading" | "ready" | "generating">("unloaded");
-  const busy = $derived(["checking", "loading", "generating"].includes(phase));
-  const locked = $derived(phase !== "unloaded");
-  let status = $state("Load a model to start a local conversation.");
+  let decisionBusy = $state(false);
+  const busy = $derived(["checking", "loading", "generating"].includes(phase) || decisionBusy);
+  let decisionActive = $state(false);
+  const languageLocked = $derived(phase !== "unloaded");
+  const locked = $derived(languageLocked || decisionActive);
+  let status = $state("");
   let error = $state("");
   let compatibility = $state<AssistantCompatibility>();
   let messages = $state.raw<AssistantMessageView[]>([]);
   const messageFields = ["role", "text", "thinking", "tool", "failed", "imageCount"] as const;
   let prompt = $state("");
+  function growMessage(input: HTMLTextAreaElement, _draft: { prompt: string; visible: boolean }) {
+    let active = true, width = 0;
+    const resize = () => {
+      if (!active || !input.clientWidth) return;
+      const positions: Array<[HTMLElement, number]> = [];
+      for (let parent = input.parentElement; parent; parent = parent.parentElement) positions.push([parent, parent.scrollTop]);
+      input.style.height = "auto";
+      input.style.height = `${input.scrollHeight}px`;
+      for (const [parent, top] of positions) parent.scrollTop = top;
+    };
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry && entry.contentRect.width !== width) { width = entry.contentRect.width; resize(); }
+    });
+    observer.observe(input);
+    queueMicrotask(resize);
+    void document.fonts.ready.then(resize);
+    return { update: () => queueMicrotask(resize), destroy: () => { active = false; observer.disconnect(); } };
+  }
   let speechReady = $state(false), speechBusy = $state(false), speechRecording = $state(false);
   let speechSettings: SpeechSettings;
   let configurationOpen = $state(false);
@@ -66,13 +88,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let alive = true;
   let imageGeneration = 0;
   let followNextUpdate = false;
-  const model = $derived(bonsaiModels.find(model => model.id === preferences.model)!);
-  const modelOptions = bonsaiModels.map(model => ({ value: model.id, label: model.label }));
+  const model = $derived(assistantModels.find(model => model.id === preferences.model)!);
+  const modelOptions = assistantModels.map(model => ({ value: model.id, label: model.label }));
   const integers = [
     { key: "context", label: "Context tokens", minimum: 512, maximum: 32768 },
+    { key: "gpuLayers", label: "Partial GPU layers", minimum: 1, maximum: 999 },
+    { key: "cpuThreads", label: "CPU threads", minimum: 1, maximum: 8 },
     { key: "maxTokens", label: "Output tokens", minimum: 1, maximum: 20000 },
     { key: "topK", label: "Top K", minimum: 1, maximum: 64 },
-    { key: "imagePixels", label: "Image pixel budget", minimum: 16384, maximum: 1048576 },
     { key: "maxTurns", label: "Model turns per message", minimum: 1, maximum: 32 },
     { key: "maxToolCalls", label: "Tool calls per message", minimum: 1, maximum: 64 },
     { key: "seed", label: "Seed", minimum: 0, maximum: 4294967295 },
@@ -159,8 +182,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function check() {
     if (locked) return;
     error = ""; phase = "checking"; status = "Checking browser GPU computation…";
-    try { deadline(20000); startWorker().postMessage({ type: "check" }); }
+    try { deadline(20000); startWorker().postMessage({ type: "check", settings: validateAssistantSettings(preferences) }); }
     catch (problem) { failure(problem, "check"); }
+  }
+  function selectModel(value: string) {
+    if (locked) return;
+    if (value !== preferences.model) preferences = settingsForAssistantModel(value, preferences);
+    load();
   }
   function load() {
     if (locked) return;
@@ -168,7 +196,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       loadedSettings = validateAssistantSettings(preferences); savePreferences();
       clearAttachment();
       error = ""; messages = []; phase = "loading"; status = "Checking WebGPU and loading model…";
-      deadline(loadedSettings.loadTimeout + 20000); startWorker().postMessage({ type: "load", settings: loadedSettings });
+      deadline(loadedSettings.loadTimeout + 20000); startWorker().postMessage({ type: "load", settings: loadedSettings, assetBase: new URL("./assistant-runtime/", document.baseURI).href });
     } catch (problem) { failure(problem, "load"); }
   }
   function send() {
@@ -197,10 +225,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const bitmap = await createImageBitmap(file);
       try {
         if (bitmap.width * bitmap.height > 16000000) throw new Error("Choose an image up to 16 megapixels.");
-        const scale = Math.min(1, Math.sqrt(preferences.imagePixels / (bitmap.width * bitmap.height)));
-        const canvas = document.createElement("canvas"); canvas.width = Math.max(1, Math.floor(bitmap.width * scale)); canvas.height = Math.max(1, Math.floor(bitmap.height * scale));
-        canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        if (alive && generation === imageGeneration) attachment = { data: canvas.toDataURL("image/png").split(",")[1]!, mimeType: "image/png" };
+        if (bitmap.width > 8192 || bitmap.height > 8192) throw new Error("Choose an image no larger than 8192 pixels per side.");
+        const data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1]!);
+          reader.onerror = () => reject(reader.error ?? new Error("Could not read the image.")); reader.readAsDataURL(file);
+        });
+        if (alive && generation === imageGeneration) attachment = {data, mimeType: file.type};
       } finally { bitmap.close(); }
     } catch (problem) { if (alive && generation === imageGeneration) { error = report(problem, "image"); imageInput.value = ""; } }
     finally { if (alive && generation === imageGeneration) imagePreparing = false; }
@@ -230,50 +260,53 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <div class="model-picker">
         <MaterialIcon name="robot" size={16} />
         <FieldSelect id="assistant-model" label="Local model" options={modelOptions} includePlaceholder={false} value={preferences.model} disabled={locked} active={visible}
-          onValueChange={value => { preferences.model = value; savePreferences(); }} />
+          onValueChange={selectModel} onReselect={selectModel} />
       </div>
       <span class="context-window" aria-label={`Context window: ${preferences.context} tokens`}>{new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(preferences.context)} context</span>
       <div class="model-actions" role="group" aria-label="Model controls">
-        {#if locked}
+        {#if languageLocked}
           <HintButton type="button" class="composer-action" label="New conversation" disabled={phase !== "ready" || speechBusy} onclick={reset}><MaterialIcon name="add_comment" size={18} /></HintButton>
           <HintButton type="button" class="composer-action" label={busy ? "Stop and unload" : "Unload model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
         {:else}
-          <HintButton type="button" class="composer-action" label="Check compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
-          <HintButton type="button" class="composer-action" label="Load model" onclick={load}><MaterialIcon name="download" size={18} /></HintButton>
+          <HintButton type="button" class="composer-action" label="Check compatibility" disabled={decisionActive} onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
         {/if}
       </div>
     </div>
     <label for="assistant-message" class="sr-only">Message</label>
-    <textarea id="assistant-message" rows="3" maxlength="16000" bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Prompt" aria-describedby="assistant-message-hint"
+    <textarea id="assistant-message" rows="3" maxlength="16000" use:growMessage={{ prompt, visible }} bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Prompt"
       onkeydown={event => { if (phase === "ready" && event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); send(); } }}></textarea>
     {#if attachment}<div class="attachment"><img alt="Attachment ready to send" src={`data:${attachment.mimeType};base64,${attachment.data}`} /><button type="button" class="secondary" disabled={busy} onclick={clearAttachment}>Remove image</button></div>{/if}
     {#if imagePreparing}<p class="image-preparing" role="status">Preparing image…</p>{/if}
     <div class="composer-toolbar" role="group" aria-label="Message actions">
       <HintButton type="button" class="composer-action attach-action" label="Attach image" disabled={phase !== "ready" || imagePreparing} onclick={() => imageInput.click()}><MaterialIcon name="attach_file" size={16} /><span class="attach-label">Attach image</span></HintButton>
       <div class="composer-tools">
-        <HintButton type="button" class={speechRecording ? "composer-action recording" : "composer-action"} label={speechRecording ? "Stop dictation" : "Dictate"} aria-pressed={speechRecording} disabled={speechBusy && !speechRecording} onclick={() => void toggleDictation()}><MaterialIcon name={speechRecording ? "stop" : "mic"} size={16} /><span>{speechRecording ? "Stop" : "Dictate"}</span></HintButton>
+        <HintButton type="button" class={speechRecording ? "composer-action recording" : "composer-action"} label={speechRecording ? "Stop dictation" : "Dictate"} aria-pressed={speechRecording} disabled={(speechBusy || busy) && !speechRecording} onclick={() => void toggleDictation()}><MaterialIcon name={speechRecording ? "stop" : "mic"} size={16} /><span>{speechRecording ? "Stop" : "Dictate"}</span></HintButton>
         <HintButton type="button" class="composer-action" label="Assistant configuration" aria-expanded={configurationOpen} aria-controls="assistant-configuration-panel" onclick={() => configurationOpen = !configurationOpen}><MaterialIcon name="tune" size={18} /></HintButton>
-        <HintButton type="submit" class="composer-action send-action" label="Send message" disabled={phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)}><MaterialIcon name="send" size={18} /></HintButton>
       </div>
       <input hidden aria-label="Attach assistant image" type="file" accept="image/png,image/jpeg,image/webp" disabled={phase !== "ready" || imagePreparing} bind:this={imageInput} onchange={event => void prepareImage(event.currentTarget.files?.[0])} />
     </div>
   </form>
   </div>
-  <p class="status" role="status">{status}</p>
-  <p id="assistant-message-hint" class="composer-hint">Enter to send · Shift+Enter for a new line. {phase === "generating" ? "You can draft your next message while waiting." : ""}</p>
+  <p class="status" class:sr-only={!status} role="status">{status}</p>
   {#if preferenceError}<p class="error" role="alert">{preferenceError}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if dictationWarning}<p class="error" role="status">{dictationWarning}</p>{/if}
   <div id="assistant-configuration-panel" class="assistant-configuration" hidden={!configurationOpen} inert={!configurationOpen}>
-  <SpeechSettings bind:this={speechSettings} {visible} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
+  <SpeechSettings bind:this={speechSettings} {visible} externalBusy={busy} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
+  <DecisionSettings languageActive={languageLocked} {speechBusy} onActivity={(active, working) => { decisionActive = active; decisionBusy = working; }} />
   <details class="assistant-details">
     <summary>Configuration<MaterialIcon name="chevron_forward" size={16} /></summary>
     <p>{locked ? "Unload the model to change configuration. " : ""}Preferences are saved on this browser.</p>
     <fieldset disabled={locked} aria-label="Assistant configuration">
       <div class="options">
+        <div class="option"><label for="assistant-execution">Execution</label>
+          <FieldSelect id="assistant-execution" label="Execution" value={preferences.executionMode}
+            options={model.engine === "wllama" ? [{value: "auto", label: "Auto"}, {value: "gpu", label: "GPU"}, {value: "hybrid", label: "Partial GPU"}, ...(model.bytes < 4294967296 ? [{value: "cpu", label: "CPU"}] : [])] : [{value: "auto", label: "GPU"}]}
+            disabled={locked} onValueChange={value => { preferences.executionMode = value; savePreferences(); }} />
+        </div>
         {#each integers as setting}
           <div class="option"><label for={`assistant-${setting.key}`}>{setting.label}</label>
-            <FieldInteger id={`assistant-${setting.key}`} label={setting.label} value={String(preferences[setting.key])} minimum={setting.minimum} maximum={setting.maximum} disabled={locked} logarithmic={setting.maximum > 1000}
+            <FieldInteger id={`assistant-${setting.key}`} label={setting.label} value={String(preferences[setting.key])} minimum={setting.minimum} maximum={setting.key === "gpuLayers" ? Number(model.gguf_block_count || model.model_layers || setting.maximum) + 1 : setting.maximum} disabled={locked || (["gpuLayers", "cpuThreads"].includes(setting.key) && model.engine !== "wllama")} logarithmic={setting.maximum > 1000}
               onValueChange={value => { preferences[setting.key] = Number(value); savePreferences(); }} />
           </div>
         {/each}
@@ -287,7 +320,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <div class="switches">
         {#each switches as setting}
           <label class="switch-option"><span>{setting.label}</span><span class="switch-control">
-            <input type="checkbox" bind:checked={preferences[setting.key]} onchange={savePreferences} /><span aria-hidden="true"></span>
+            <input type="checkbox" bind:checked={preferences[setting.key]} disabled={model.engine === "litert-lm" && ["sampling", "thinking", "prefixCache"].includes(setting.key)} onchange={savePreferences} /><span aria-hidden="true"></span>
           </span></label>
         {/each}
       </div>
@@ -303,11 +336,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <details class="assistant-details">
     <summary>Compatibility and model details<MaterialIcon name="chevron_forward" size={16} /></summary>
     {#if compatibility}<p>{compatibility.summary} {compatibility.detail}</p><p>FP32: {compatibility.fp32 ? "verified" : "unavailable"} · FP16: {compatibility.fp16 ? "verified" : "unavailable"}</p><p>{compatibility.adapter}</p>{/if}
-    <p>{(model.bytes / 1e9).toFixed(2)} GB download · WebGPU · language and vision</p>
-    <p>GPU only; no CPU fallback. Free RAM and VRAM are not exposed by browsers. Download size is not a measured memory requirement. Mobile and tablet inference are not qualified.</p>
-    <p>These pinned Bonsai 2B, 4B and 9B profiles passed recorded text, tool and skill checks, but failed the OCR card checks. Image support does not imply reliable text extraction.</p>
-    <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run}<br />Runtime: WebML · Pi 1.3.0</p>
-    <p>Runtime and model files load from Hugging Face when requested. Inference and application tool data stay in this browser. Chat lasts for this tab; a new model load starts a new conversation.</p>
+    <p>{(model.bytes / 1e9).toFixed(2)} GB language download · {model.engine === "wllama" ? "native Wllama" : model.engine === "litert-lm" ? "LiteRT GPU" : "WebML GPU"}</p>
+    <p>{model.engine === "wllama" ? "Native Wasm supports explicit CPU or GPU placement. Ornith cannot fit the 4 GiB CPU heap; partial offload still needs a supported GPU." : "GPU only; no CPU fallback."} Images require verified WebGPU shader-f16. Free RAM and VRAM are not exposed by browsers. Download size is not a measured memory requirement. Mobile and tablet inference are not qualified.</p>
+    <p>These pinned language profiles passed the reference text, tool and skill checks. Images use the separate LFM2.5-VL 1.6B tool; model observations can be wrong. Desktop acceptance does not qualify phones or guarantee memory fit.</p>
+    <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run}<br />Runtime: {model.engine} · Pi 1.3.0</p>
+    <p>Model files load from their pinned publishers when requested. Optional runtime code loads with the selected engine. Inference and application tool data stay in this browser. Chat lasts for this tab; a new model load starts a new conversation.</p>
   </details>
 
   </div>
@@ -319,21 +352,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .assistant-configuration { display: grid; gap: 12px; min-width: 0; }
   .assistant-configuration[hidden] { display: none; }
   .assistant-chat { min-width: 0; }
-  .composer { padding: 0; border: 1px solid var(--color-muted); border-radius: 4px; background: var(--color-background); min-width: 0; overflow: clip; }
+  .composer { padding: 0; border: 2px solid var(--color-muted); border-radius: 4px; background: var(--color-background); min-width: 0; overflow: clip; }
   .composer-header, .composer-toolbar { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--color-surface); }
   .composer-header { border-bottom: 1px solid var(--color-muted); }
-  .model-picker { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
+  .model-picker { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; padding-left: 6px; }
   .model-picker :global(.field-select-trigger) { width: auto; min-height: 32px; padding: 4px 0; gap: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; }
   .model-picker :global(.field-select-value) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  :global(.field-select-content[aria-label="Local model"]) { width: max-content; min-width: var(--bits-select-anchor-width); max-width: calc(100vw - 24px); }
+  :global(.field-select-content[aria-label="Local model"] .field-select-option-label) { white-space: nowrap; }
   .context-window { color: var(--color-muted-foreground); font-size: 10px; white-space: nowrap; }
   .model-actions, .composer-tools { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
   .composer-toolbar { justify-content: space-between; flex-wrap: wrap; border-top: 1px solid var(--color-muted); }
   .composer-tools { margin-left: auto; }
   .assistant-settings :global(.composer-action) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 30px; min-height: 32px; padding: 4px 6px; border: 0; border-radius: 4px; background: transparent; color: var(--color-foreground); font-size: 11px; font-weight: 600; cursor: pointer; }
   .assistant-settings :global(.composer-action:disabled) { color: var(--color-muted-foreground); cursor: default; }
-  .assistant-settings :global(.send-action:not(:disabled)) { background: var(--color-primary); color: var(--color-primary-foreground); }
   .assistant-settings :global(.recording) { background: var(--color-error-background); color: var(--color-error-foreground); }
-  .composer :global(:focus-visible) { outline-offset: -2px; }
+  .composer :global(:focus-visible:not(textarea)) { outline-offset: -2px; }
   .image-preparing { padding: 0 10px; }
   label, summary { font-weight: 700; }
   summary { display: flex; align-items: center; gap: 8px; min-height: 24px; cursor: pointer; list-style: none; }
@@ -377,8 +411,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   details > pre { margin-top: 10px; }
   .image-note { display: flex; align-items: center; gap: 6px; color: var(--color-muted-foreground); }
   pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; }
-  textarea { width: 100%; padding: 10px; resize: vertical; min-height: 80px; max-height: 400px; display: block; border: 0; border-radius: 0; background: var(--color-background); font: inherit; }
-  .composer-hint { margin: 0; color: var(--color-muted-foreground); font-size: 11px; }
+  textarea { width: 100%; padding: 10px; resize: none; overflow: hidden; min-height: 80px; display: block; border: 0; border-radius: 0; background: var(--color-background); font: inherit; }
   .attachment { display: flex; align-items: center; gap: 12px; padding: 8px 10px; }
   .attachment img { max-width: 120px; max-height: 100px; }
   @container (max-width: 280px) { .context-window, .attach-label { display: none; } }

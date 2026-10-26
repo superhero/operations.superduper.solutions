@@ -763,7 +763,7 @@ Then('Settings disables the workspace when insufficient space remains', async fu
 Then('the catalog and settings coexist only when there is room for both panes', async function () {
   const page = this.page;
   const menu = page.locator('.site-header [aria-controls="side-navigation"]');
-  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   const catalog = page.locator('#side-navigation');
   const drawer = page.locator('#settings-panel');
   await page.setViewportSize({ width: 1920, height: 1000 });

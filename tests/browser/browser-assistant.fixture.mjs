@@ -5,6 +5,13 @@ import { operations } from '../../src/lib/catalog.ts';
 
 // Only inference is scripted. The production Settings UI, capability dispatcher,
 // graph validation, real handles, autosave and persistence run unchanged.
+export async function loadAssistantModel(page) {
+  const picker = page.getByRole('combobox', { name: 'Local model', exact: true });
+  const selected = (await picker.locator('.field-select-value').innerText()).trim();
+  await picker.click();
+  await page.getByRole('option', { name: selected, exact: true }).click();
+}
+
 export async function installAssistantFixture(page) {
   const operation = operations.find(operation => operation.name === 'Example GET request');
   await page.addInitScript(({ operationId }) => {
@@ -62,4 +69,26 @@ export async function installAssistantFixture(page) {
   }, { operationId: operation.id });
   await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' });
+}
+
+/** UI fixture only; source/native artifact cases qualify the actual runtime boundary. */
+export async function installDecisionFixture(page) {
+  await page.evaluate(() => {
+    const NativeWorker=window.Worker;
+    window.decisionFixture={messages:[],workers:0,terminated:0};
+    window.Worker=class extends EventTarget {
+      constructor(url, options) {
+        super(); if(options?.name!=='operations-native-decision') return new NativeWorker(url,options);
+        window.decisionFixture.workers++;
+      }
+      postMessage(data) {
+        window.decisionFixture.messages.push(structuredClone(data));
+        const emit=value=>queueMicrotask(()=>{const event=new MessageEvent('message',{data:value});this.onmessage?.(event);this.dispatchEvent(event);});
+        if(data.type==='check')emit({type:'compatibility',value:{ready:true,summary:'Synthetic CPU compatibility'}});
+        if(data.type==='load'){this.profile=data.profile;emit({type:'ready'});}
+        if(data.type==='decide')emit({type:'result',value:{profile:this.profile,answers:{q:{type:'noul',noul:0.85,probabilities:{true:0.85,false:0.15},confidence:0.2}},raw:{native_fixture:true},prepared:{rendered_tokens:42}}});
+      }
+      terminate(){window.decisionFixture.terminated++;}
+    };
+  });
 }

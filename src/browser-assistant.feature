@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-Feature: Browser-local Bonsai assistant boundaries
+Feature: Browser-local assistant boundaries
   Scenario: Model pins and validated configuration remain browser-local
-    Then the Bonsai assistant preserves its three profiles and rejects invalid settings
+    Then the local assistant preserves accepted profiles and rejects unsupported engine settings
   Scenario: Application reads are bounded and editing is a separate capability
     Then assistant tools page application state and reject unavailable capabilities
   Scenario: Tool arguments and private payloads are constrained

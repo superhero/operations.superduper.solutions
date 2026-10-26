@@ -1,0 +1,24 @@
+{
+  "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+  "declared_version": "3.12.0-source",
+  "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+  "original_llama_cpp": "5aeac37a35b44fde4bdffaec9159f2fcb253b622",
+  "change": "Pinned Qwen3.5 WebGPU plus isolated Elephant two-block scoring RPC; no weight conversion.",
+  "emscripten": "4.0.20",
+  "dawn_tag": "v20260317.182325",
+  "dawn_zip_sha256": "8dcae86c630d76b6794b271c6572becba36f4237d132bee121a56638c3d76575",
+  "backend": "webgpu + wasm SIMD/pthreads",
+  "cpu_heap_max_gib": 4,
+  "files": {
+    "llama-cpp.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+    "wllama.wasm": "25b0c03e06d1acde8417ce7c8505427a94dad1cc3689995dd2125a1718a0daf7",
+    "upstream.patch": "1e30b55b7d1814171b6643b6c13b863455bd70137aaf75d8ce1f7452576186d6",
+    "index.js": "723d5885f7019684610e1896a61b9a9f9c5bca7b39eae05e2491617c1a41739e"
+  },
+  "inputs_sha256": {
+    "build.sh": "6b836c6d47fa9afa38e178786755e7a8c53805cc9beca1f63a5cb4eefc87bc6d",
+    "upstream-api.patch": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3",
+    "elephant-native.patch": "9fb039976cbe3f711ea456a4b4a24ad5b9cc202d37c5a3aae57582472571a7b4"
+  }
+}

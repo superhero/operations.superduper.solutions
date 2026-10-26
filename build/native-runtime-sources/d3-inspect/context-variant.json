@@ -1,0 +1,15 @@
+{
+  "variant": "d3",
+  "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+  "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+  "image": "emscripten/emsdk:4.0.20@sha256:33e992367f721747d8008c9141c04fa017139e3557a60e0c80be93a0870fe462",
+  "patch": "d3-inspect.patch",
+  "patch_sha256": "14832785f650bd3590b23baf6ffea4ddd59773c75e7ae95de20cf3eb0865234b",
+  "base_build_script_sha256": "ed8444727cfbf8b69777c5498cfff4852fa691c3d5fff630e2a4b5537e908937",
+  "upstream_api_sha256": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3",
+  "builder_sha256": "575bf783fea31294a9e2a6582d028359583a66555a94cb84b65a2755dad61b9f",
+  "wrapper_sha256": "22327db39c8f87cdbb41005f7eb84aa664c1f149ba557ed269b1bcb6afd97e16",
+  "remote_builder_sha256": "992b84387bfd16f69c10a668b5f9ee857058ba3c3eb08ec93522f7f0c8607b13",
+  "publisher_max_input_tokens": 262144,
+  "inspection_only": true
+}
