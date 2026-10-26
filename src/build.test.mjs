@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 import { readFile } from "node:fs/promises";
 import { Given, Then } from "@cucumber/cucumber";
 import { listBundleFiles, OAUTH_FILES } from "../.github/scripts/bundle-contract.mjs";
@@ -33,7 +35,7 @@ Then("optional speech resources preserve runtime isolation and license notices",
 Then("the hosting headers enable cross-origin isolation", async function ()
 {
   const headers = await readFile("dist/_headers", "utf8");
-  assert.match(headers, /^\/\*\n  Cross-Origin-Opener-Policy: same-origin\n  Cross-Origin-Embedder-Policy: credentialless\n$/);
+  assert.match(headers, /^\/\*\n  Cross-Origin-Opener-Policy: same-origin\n  Cross-Origin-Embedder-Policy: credentialless\n(?:\n|$)/);
 });
 
 Then("the production page contains the application title", function ()
@@ -99,4 +101,22 @@ Then("the production page contains the Pi assistant license notices", function (
   assert.match(html, /Assistant dependency notices/);
   assert.match(html, /@earendil-works\/pi-agent-core/);
   assert.match(html, /Copyright \(c\) 2025 Mario Zechner/);
+});
+
+Then("native assistant resources preserve decoded Wasm pins and hosting rewrites", async function () {
+  const versions = JSON.parse(await readFile('dist/assistant-runtime/runtime-versions.json', 'utf8'));
+  assert.equal(versions.modelWeightsBundled, false);
+  const compressed = JSON.parse(await readFile('dist/assistant-runtime/compressed-assets.json', 'utf8'));
+  assert.ok(compressed.length > 0, 'Native runtimes must preserve oversized Wasm through encoded transport.');
+  const headers = await readFile('dist/_headers', 'utf8');
+  const redirects = await readFile('dist/_redirects', 'utf8');
+  for (const asset of compressed) {
+    const packed = await readFile(`dist${asset.path}.gz`);
+    const decoded = gunzipSync(packed);
+    assert.equal(createHash('sha256').update(decoded).digest('hex'), asset.sha256);
+    assert.equal(decoded.length, asset.bytes);
+    assert.ok(packed.length <= 25 * 1024 ** 2);
+    assert.ok(headers.includes(`${asset.path}\n  Content-Type: application/wasm\n  Content-Encoding: gzip\n`));
+    assert.ok(redirects.includes(`${asset.path} ${asset.path}.gz 200`));
+  }
 });

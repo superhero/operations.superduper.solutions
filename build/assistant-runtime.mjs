@@ -44,9 +44,11 @@ for (const file of await readdir(`${ort}/dist`)) {
   if (file.startsWith('ort-wasm-simd-threaded') && /\.(?:mjs|wasm)$/.test(file)) await cp(`${ort}/dist/${file}`, `${output}/vision-ort/${file}`);
 }
 for (const [name, folder] of [['litert-lm', lite], ['transformers', hf], ['vision-ort', ort]]) {
-  await mkdir(`${output}/licenses/${name}`, {recursive: true});
   for (const file of ['LICENSE', 'LICENSE.txt', 'LICENSE.md', 'ThirdPartyNotices.txt']) {
-    if ((await readdir(folder)).includes(file)) await cp(`${folder}/${file}`, `${output}/licenses/${name}/${file}`);
+    if ((await readdir(folder)).includes(file)) {
+      await mkdir(`${output}/licenses/${name}`, {recursive: true});
+      await cp(`${folder}/${file}`, `${output}/licenses/${name}/${file}`);
+    }
   }
 }
 await writeFile(`${output}/runtime-versions.json`, JSON.stringify({litert: '0.18.0', transformers: '4.3.1', visionOrt: '1.31.0-dev.20260914-8d85527a0', speechOrt: '1.30.0', modelWeightsBundled: false}, null, 2) + '\n');

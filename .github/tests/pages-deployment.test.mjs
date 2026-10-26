@@ -7,7 +7,7 @@ import { mkdirSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from 
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, get, OTHER_SHA, REPOSITORY, SHA } from "./support.mjs";
-import { BUNDLE_FILES, OAUTH_FILES, SPEECH_FILES } from '../scripts/bundle-contract.mjs';
+import { BUNDLE_FILES, OAUTH_FILES, SPEECH_FILES, ASSISTANT_FILES } from '../scripts/bundle-contract.mjs';
 import { validateArtifactContract, REPORT_FILES } from '../scripts/validation-artifacts.mjs';
 
 const PROJECT = "operations-superduper-solutions";
@@ -275,4 +275,19 @@ Then("Pages preparation fails with {string}", function (reason)
     assert.ok(this.result.stderr.includes(value), this.result.stderr);
   assert.equal(readFileSync(this.automation.output, "utf8"), "");
   assert.ok(!this.result.stderr.includes("private response detail"), this.result.stderr);
+});
+
+Then('validation manifests require complete native assistant resources and reject unlisted model weights', () => {
+  const files = { bundle: Object.fromEntries([...BUNDLE_FILES, ...ASSISTANT_FILES, '_redirects', 'assistant-runtime/chunks/vision-fixture.js'].map(path => [path, 'a'.repeat(64)])),
+    coverage: { 'coverage-summary.json': 'hash', 'index.html': 'hash' },
+    'test-report': Object.fromEntries([...REPORT_FILES, 'ui/assets/app.js', 'ui/assets/app.css'].map(path => [path, 'hash'])) };
+  validateArtifactContract(files);
+  for (const path of [...ASSISTANT_FILES, '_redirects', 'assistant-runtime/chunks/vision-fixture.js']) {
+    const broken = structuredClone(files); delete broken.bundle[path];
+    assert.throws(() => validateArtifactContract(broken), /complete bundle/, path);
+  }
+  for (const path of ['assistant-runtime/model.gguf', 'assistant-runtime/model.onnx', 'assistant-runtime/unreviewed.js']) {
+    const extra = structuredClone(files); extra.bundle[path] = 'a'.repeat(64);
+    assert.throws(() => validateArtifactContract(extra), /complete bundle/, path);
+  }
 });

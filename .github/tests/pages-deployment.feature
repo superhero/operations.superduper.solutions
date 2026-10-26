@@ -210,3 +210,6 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
     Given a tested Pages bundle for "feature/new-ui"
     When the Pages deployment is prepared
     Then Pages preparation fails with "Pages deployment supports"
+
+  Scenario: Optional native assistant resources require their pinned bundle inventory
+    Then validation manifests require complete native assistant resources and reject unlisted model weights
