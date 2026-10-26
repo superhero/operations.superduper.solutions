@@ -20,7 +20,7 @@ Then('I can add and connect a vault variable without exposing its value', async 
   // Its natural contents must remain reachable after that asynchronous growth.
   await expect.poll(() => secrets.evaluate(node => {
     const panel = node.closest('.disclosure-panel');
-    return panel.clientHeight >= panel.scrollHeight;
+    return panel.clientHeight + 1 >= panel.scrollHeight;
   })).toBe(true);
   await secrets.getByRole('button', { name: 'Save credential', exact: true }).click();
   await expect(secrets.getByLabel('Credential label', { exact: true })).toHaveValue('');

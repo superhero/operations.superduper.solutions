@@ -1201,7 +1201,7 @@ Then('AWS wire workflows at {int} pixels sign real requests and reuse encrypted 
   const save=async name=>{for(const [part,label] of [['accessKeyId','Access key ID'],['secretAccessKey','Secret access key'],['sessionToken','Session token']]){
     await page.getByRole('combobox',{name:label+' for hmac',exact:true}).click();await page.getByRole('option',{name:'AWS '+part,exact:true}).click();}
     await page.getByText('Save as connection',{exact:true}).click();await page.getByLabel('Connection name',{exact:true}).fill(name);await page.getByLabel('Account label',{exact:true}).fill('AWS sandbox');await page.getByRole('button',{name:'Save connection',exact:true}).click();};
-  const run=async()=>{await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();};
+  const run=async()=>{await expect(page.getByRole('button',{name:'Use connection',exact:true})).toBeEnabled();await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();};
   await chooseCatalogOperation(page,names.batch);await authentication();await unlock();await save('DynamoDB wire');
   await page.getByRole('textbox',{name:'RequestItems',exact:true}).fill(JSON.stringify(items));await run();
   await expect(page.locator('[aria-label="Response body"]').last()).toContainText('900719925474099312345');assert.equal(calls.length,1);

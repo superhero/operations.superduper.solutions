@@ -41,7 +41,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!open) onClosed?.();
     if (animateSize && panel) {
       targetHeight = open ? content?.offsetHeight ?? 0 : 0;
-      panel.style.height = `${targetHeight}px`;
+      panel.style.height = open ? "auto" : "0px";
     }
   }
   function animateHeight(from: number, to: number) {
@@ -50,7 +50,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (animateSize) panel.style.height = `${to}px`;
     const current = panel.animate([{ height: `${from}px`, overflow: "visible clip" }, { height: `${to}px`, overflow: "visible clip" }], { duration: 240, easing: "ease-in-out", fill: "both" });
     animation = current;
-    current.onfinish = () => { if (animation === current) { expanded = open; animation = undefined; current.cancel(); if (!open) onClosed?.(); } };
+    current.onfinish = () => { if (animation === current) { expanded = open; animation = undefined; if (animateSize && open) panel.style.height = "auto"; current.cancel(); if (!open) onClosed?.(); } };
   }
   function settleTree() { settle(); for (const child of childrenToSettle) child(); }
   setContext<DisclosureContext>(disclosureContext, {
@@ -69,8 +69,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!animateSize || !content) return;
     const observed = content;
     let frame = 0;
-    // Observe natural content, not the animated panel. Keep its height pinned so
-    // asynchronous reports cannot jump before the next animation frame.
+    // Open idle panels use natural height so late content cannot remain clipped.
+    // Animate changes from the last measured height when the panel is idle.
     const observer = new ResizeObserver(() => {
       if (!frame) frame = requestAnimationFrame(() => {
         frame = 0;
@@ -79,7 +79,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         const height = content.offsetHeight;
         if (height === targetHeight) return;
         if (reduced) settle();
-        else animateHeight(panel.offsetHeight, height);
+        else animateHeight(panel.style.height === "auto" ? targetHeight : panel.offsetHeight, height);
       });
     });
     observer.observe(observed);
