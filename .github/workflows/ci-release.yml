@@ -696,5 +696,7 @@ jobs:
         run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" "$PAGES_BRANCH" "$DEPLOY_SHA" "$BUNDLE_HASH"
           "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
 env:
+  # Browser runtimes use Wasm/WebGPU; Node CUDA binaries are unused.
+  ONNXRUNTIME_NODE_INSTALL: skip
   CI_INCREMENTAL_TESTS: ${{ vars.CI_INCREMENTAL_TESTS != 'false' && 'true' || 'false' }}
   CI_BROWSER_CAPTURE: ${{ vars.CI_BROWSER_CAPTURE || 'minimal' }}

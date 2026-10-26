@@ -530,8 +530,10 @@ Then('moving and undoing the blocker restores its derived route without saving r
   await saved(page);
   await expectClearRoute(page);
   await expect.poll(() => minimumNodeClearance(route(page), 'routing-blocker')).toBeGreaterThanOrEqual(15.5);
-  const attachment = await endpointErrors(page);
-  assert.ok(attachment.source < 1 && attachment.target < 1, 'Undo must restore attachment to the measured handles.');
+  await expect.poll(async () => {
+    const attachment = await endpointErrors(page);
+    return Math.max(attachment.source, attachment.target);
+  }, { message: 'Undo must restore attachment to the measured handles.' }).toBeLessThan(1);
   // Remeasurement can select another equally short corridor and perturb coordinates.
   // Verify route quality instead of requiring one particular serialized SVG path.
   await expect.poll(async () => Math.abs(await route(page).evaluate(element => element.getTotalLength()) - originalLength)).toBeLessThan(8);

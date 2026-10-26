@@ -405,5 +405,7 @@ jobs:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"
 env:
+  # Browser runtimes use Wasm/WebGPU; Node CUDA binaries are unused.
+  ONNXRUNTIME_NODE_INSTALL: skip
   CI_INCREMENTAL_TESTS: ${{ vars.CI_INCREMENTAL_TESTS != 'false' && 'true' || 'false' }}
   CI_BROWSER_CAPTURE: ${{ vars.CI_BROWSER_CAPTURE || 'minimal' }}

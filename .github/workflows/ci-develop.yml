@@ -17,6 +17,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Browser runtimes use Wasm/WebGPU; Node CUDA binaries are unused.
+  ONNXRUNTIME_NODE_INSTALL: skip
+
 jobs:
   integration:
     name: Prepare queued integration

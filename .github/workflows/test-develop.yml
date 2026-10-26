@@ -422,5 +422,7 @@ jobs:
           retention-days: 7
     if: (!cancelled()) && (true)
 env:
+  # Browser runtimes use Wasm/WebGPU; Node CUDA binaries are unused.
+  ONNXRUNTIME_NODE_INSTALL: skip
   CI_INCREMENTAL_TESTS: ${{ vars.CI_INCREMENTAL_TESTS != 'false' && 'true' || 'false' }}
   CI_BROWSER_CAPTURE: ${{ vars.CI_BROWSER_CAPTURE || 'minimal' }}

@@ -1088,5 +1088,7 @@ jobs:
         run: |
           echo '[Tests and coverage](https://status.operations.superduper.solutions/test-report.html)' >> "$GITHUB_STEP_SUMMARY"
 env:
+  # Browser runtimes use Wasm/WebGPU; Node CUDA binaries are unused.
+  ONNXRUNTIME_NODE_INSTALL: skip
   CI_INCREMENTAL_TESTS: ${{ vars.CI_INCREMENTAL_TESTS != 'false' && 'true' || 'false' }}
   CI_BROWSER_CAPTURE: ${{ vars.CI_BROWSER_CAPTURE || 'minimal' }}
