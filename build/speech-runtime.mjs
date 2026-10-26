@@ -24,3 +24,6 @@ for (const [from, to] of [
   ['src/lib/speech/vendor/onnxruntime/LICENSE', 'onnxruntime-LICENSE'],
   ['src/lib/speech/vendor/onnxruntime/ThirdPartyNotices.txt', 'onnxruntime-ThirdPartyNotices.txt'],
 ]) await cp(from, `dist/speech/licenses/${to}`);
+
+// Optional language/image runtimes share the static artifact, not speech ORT.
+await import("./assistant-runtime.mjs");

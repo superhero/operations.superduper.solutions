@@ -1,11 +1,13 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-// WebML-only version of the handoff's real compute/readback capability probe.
+import { assistantProfile, defaultAssistantSettings, validateAssistantSettings } from "./config.ts";
+
+// Real compute/readback checks; capability does not promise model memory fit.
 export type AssistantCompatibility = { ready: boolean; summary: string; fp32: boolean; fp16: boolean; adapter: string; detail: string };
 export type ComputeDevice = GPUDevice;
 export type ComputeAdapter = Pick<GPUAdapter, "features" | "info" | "requestDevice">;
-export type GPUEnvironment = { isSecureContext?: boolean; navigator?: { gpu?: Pick<GPU, "requestAdapter"> } };
+export type GPUEnvironment = { isSecureContext?: boolean; crossOriginIsolated?: boolean; WebAssembly?: typeof WebAssembly; navigator?: { gpu?: Pick<GPU, "requestAdapter"> } };
 
 export async function probeCompute(adapter: ComputeAdapter, fp16: boolean): Promise<void> {
   const device = await adapter.requestDevice({ requiredFeatures: fp16 ? ["shader-f16"] : [] });
@@ -29,7 +31,7 @@ export async function probeCompute(adapter: ComputeAdapter, fp16: boolean): Prom
   } finally { input?.destroy(); output?.destroy(); read?.destroy(); device.destroy(); }
 }
 
-export async function probeAssistantCompatibility(environment: GPUEnvironment): Promise<AssistantCompatibility> {
+async function probeGPUCompatibility(environment: GPUEnvironment): Promise<AssistantCompatibility> {
   const result: AssistantCompatibility = { ready: false, summary: "WebGPU is required.", fp32: false, fp16: false, adapter: "Not exposed", detail: "" };
   if (!environment.isSecureContext) return { ...result, summary: "Open this application over HTTPS or localhost." };
   const gpu = environment.navigator?.gpu;
@@ -52,4 +54,21 @@ export async function probeAssistantCompatibility(environment: GPUEnvironment): 
     result.detail = error instanceof Error ? error.message : String(error);
   }
   return result;
+}
+
+export async function probeAssistantCompatibility(environment: GPUEnvironment, input: unknown = defaultAssistantSettings): Promise<AssistantCompatibility> {
+  const settings = validateAssistantSettings(input), profile = assistantProfile(settings.model);
+  const gpu = await probeGPUCompatibility(environment);
+  if (profile.engine !== "wllama") return gpu;
+  const wasm = environment.WebAssembly ?? globalThis.WebAssembly;
+  const header = [0, 97, 115, 109, 1, 0, 0, 0];
+  const simd = wasm.validate(new Uint8Array([...header, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
+  const memory64 = wasm.validate(new Uint8Array([...header, 5, 3, 1, 4, 0]));
+  if (!environment.isSecureContext || !environment.crossOriginIsolated || !simd || !memory64 || !("Suspending" in wasm))
+    return { ...gpu, ready: false, summary: "Native Wasm requirements are missing.", detail: "Use a secure, cross-origin isolated Chromium browser with Wasm SIMD, Memory64 and JSPI. Model files have not been downloaded." };
+  const fitsCPU = profile.bytes < 4294967296;
+  if (settings.executionMode === "cpu" || (settings.executionMode === "auto" && !gpu.fp16 && fitsCPU))
+    return { ...gpu, ready: true, summary: "Native Wasm CPU path available.", detail: "Memory fit is verified during loading; CPU execution is explicit and local." };
+  if (!gpu.fp16) return { ...gpu, ready: false, summary: "Native GPU execution needs verified shader-f16.", detail: "This execution mode cannot fall back to a full CPU model. Choose a supported GPU or a smaller CPU profile." };
+  return { ...gpu, ready: true, summary: "Native Wasm and WebGPU compute verified.", detail: "Memory fit is verified during loading. Partial offload uses the configured GPU layer budget." };
 }

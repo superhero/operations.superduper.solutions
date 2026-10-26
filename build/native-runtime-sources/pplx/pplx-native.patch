@@ -1,0 +1,274 @@
+diff --git a/cpp/wllama-context.h b/cpp/wllama-context.h
+--- a/cpp/wllama-context.h
++++ b/cpp/wllama-context.h
+@@ -265,6 +265,7 @@
+   // one reader per in-flight request, keyed by req_id; erasing an entry cancels its unfinished tasks
+   std::unordered_map<int, std::unique_ptr<server_response_reader>> readers;
+   int next_req_id = 1;
++  bool inline_readout_active = false;
+   std::unique_ptr<const server_context_meta> meta;
+ 
+   // the one inside ctx_server is private, so we keep our own copy
+@@ -771,6 +772,186 @@
+     return res;
+   }
+ 
++  // Dedicated protocol-v3 Qwen3.5 decision instance. Keep every prompt token:
++  // dense attention is bidirectional, GatedDeltaNet remains causal, and only
++  // the interior <|fim_suffix|> marker requests an output row. No sampling.
++  glue_msg_get_result_res action_score_inline(const char *req_raw)
++  {
++    glue_msg_get_result_res res;
++    res.success.value = false;
++    res.has_more.value = false;
++    res.is_error.value = true;
++    const char *stage = "request";
++    int decode_calls = 0;
++    try
++    {
++      PARSE_REQ(glue_msg_systemone_req);
++      if (!ctx || !model || !vocab)
++        throw std::runtime_error("Inline readout requires a loaded model");
++      if (inline_readout_active || !readers.empty() || !decision_reqs.empty() || has_more_tasks)
++        throw std::runtime_error("Inline readout requires an idle dedicated instance");
++      auto require_metadata = [&](const char *key, const char *expected)
++      {
++        char value[128] = {0};
++        const int length = llama_model_meta_val_str(model, key, value, sizeof(value));
++        if (length <= 0 || length >= static_cast<int>(sizeof(value)) || std::string(value) != expected)
++          throw std::runtime_error(std::string("Unsupported inline-readout metadata: ") + key);
++      };
++      require_metadata("general.architecture", "qwen35");
++      require_metadata("qwen35.attention.causal", "false");
++      require_metadata("pplx_decider.protocol_version", "3");
++      require_metadata("pplx_decider.template", "joint-question-inline-readout-v1");
++      require_metadata("pplx_decider.marker", "<|fim_suffix|>");
++      if (llama_n_seq_max(ctx) != 1)
++        throw std::runtime_error("Inline readout requires exactly one sequence");
++      const json body = json::parse(req.data_json.value);
++      const int32_t n_vocab = llama_vocab_n_tokens(vocab);
++      auto token_ids = [&](const char *key, size_t minimum, size_t maximum)
++      {
++        const auto value = body.at(key);
++        if (!value.is_array() || value.size() < minimum || value.size() > maximum)
++          throw std::runtime_error(std::string("Invalid inline-readout token count: ") + key);
++        std::vector<llama_token> ids;
++        ids.reserve(value.size());
++        for (size_t i = 0; i < value.size(); ++i)
++        {
++          const auto item = value.at(i);
++          if (!item.is_number_integer())
++            throw std::runtime_error(std::string("Token ID must be an integer: ") + key);
++          const int64_t id = item.get<int64_t>();
++          if (id < 0 || id >= n_vocab)
++            throw std::runtime_error(std::string("Token ID outside loaded vocabulary: ") + key);
++          ids.push_back(static_cast<llama_token>(id));
++        }
++        return ids;
++      };
++      const auto tokens = token_ids("token_ids", 3, 1024);
++      const auto labels = token_ids("label_ids", 1, 255);
++      for (size_t i = 0; i < labels.size(); ++i)
++        for (size_t j = 0; j < i; ++j)
++          if (labels[i] == labels[j]) throw std::runtime_error("Duplicate inline slot token ID");
++      const auto index_json = body.at("readout_index");
++      if (!index_json.is_number_integer())
++        throw std::runtime_error("Inline readout index must be an integer");
++      const int64_t index = index_json.get<int64_t>();
++      if (index <= 0 || index >= static_cast<int64_t>(tokens.size()) - 1)
++        throw std::runtime_error("Inline readout must be an interior marker with trailing prompt tokens");
++      const llama_token marker_id = tokens[static_cast<size_t>(index)];
++      if (common_token_to_piece(vocab, marker_id, true) != "<|fim_suffix|>")
++        throw std::runtime_error("Inline readout token does not decode to <|fim_suffix|>");
++      size_t marker_count = 0;
++      for (const auto id : tokens) marker_count += id == marker_id;
++      if (marker_count != 1)
++        throw std::runtime_error("This single-question readout requires exactly one inline marker");
++      if (tokens.size() > llama_n_ctx(ctx) || tokens.size() > llama_n_batch(ctx) ||
++          tokens.size() > llama_n_ubatch(ctx))
++        throw std::runtime_error("The complete prompt must fit one whole microbatch and context");
++      llama_memory_t memory = llama_get_memory(ctx);
++      if (!memory) throw std::runtime_error("Inline readout requires hybrid model memory");
++      const bool saved_causal = llama_get_causal_attn(ctx);
++      struct context_guard
++      {
++        llama_context *ctx;
++        llama_memory_t memory;
++        bool causal;
++        bool &active;
++        context_guard(llama_context *c, llama_memory_t m, bool prior, bool &busy)
++            : ctx(c), memory(m), causal(prior), active(busy)
++        {
++          active = true;
++        }
++        ~context_guard()
++        {
++          llama_synchronize(ctx);
++          llama_memory_clear(memory, true);
++          llama_set_causal_attn(ctx, causal);
++          active = false;
++        }
++      };
++      json answer;
++      const int64_t started = ggml_time_us();
++      {
++        context_guard cleanup(ctx, memory, saved_causal, inline_readout_active);
++        llama_synchronize(ctx);
++        llama_memory_clear(memory, true);
++        if (llama_memory_seq_pos_max(memory, 0) != -1)
++          throw std::runtime_error("Hybrid memory did not reset before inline readout");
++        llama_set_causal_attn(ctx, false);
++        if (llama_get_causal_attn(ctx))
++          throw std::runtime_error("Failed to enable noncausal full attention");
++        struct batch_guard
++        {
++          llama_batch value;
++          explicit batch_guard(int32_t size) : value(llama_batch_init(size, 0, 1)) {}
++          ~batch_guard() { llama_batch_free(value); }
++        } batch(static_cast<int32_t>(tokens.size()));
++        batch.value.n_tokens = static_cast<int32_t>(tokens.size());
++        for (int32_t i = 0; i < batch.value.n_tokens; ++i)
++        {
++          batch.value.token[i] = tokens[i];
++          batch.value.pos[i] = i;
++          batch.value.n_seq_id[i] = 1;
++          batch.value.seq_id[i][0] = 0;
++          batch.value.logits[i] = i == index;
++        }
++        stage = "prefill";
++        const int64_t prefill_started = ggml_time_us();
++        const int result = llama_decode(ctx, batch.value);
++        if (result != 0)
++          throw std::runtime_error("Inline decode failed with native status " + std::to_string(result));
++        ++decode_calls;
++        llama_synchronize(ctx);
++        const llama_pos final_position = llama_memory_seq_pos_max(memory, 0);
++        if (final_position != static_cast<llama_pos>(tokens.size()) - 1)
++          throw std::runtime_error("Hybrid cache did not retain the full prompt including trailing tokens");
++        // -1 selects the sole REQUESTED output, not the final input token.
++        const float *logits = llama_get_logits_ith(ctx, -1);
++        if (!logits) throw std::runtime_error("Native inline-marker logits are unavailable");
++        const double prefill_ms = (ggml_time_us() - prefill_started) / 1000.0;
++        stage = "logits";
++        json selected = json::array(), label_ids = json::array(), label_pieces = json::array();
++        for (const auto id : labels)
++        {
++          if (!std::isfinite(logits[id])) throw std::runtime_error("Native inline slot logit is nonfinite");
++          label_ids.push_back(id);
++          label_pieces.push_back(common_token_to_piece(vocab, id, true));
++          selected.push_back(logits[id]);
++        }
++        // The publisher zeroes non-code rows of the LM head. Full-vocabulary
++        // allowed-token mass is therefore not a useful confidence metric.
++        answer = json{
++            {"label_ids", label_ids}, {"label_pieces", label_pieces}, {"logits", selected},
++            {"diagnostics", {
++                {"input_tokens", tokens.size()}, {"decode_calls", decode_calls},
++                {"microbatches", json::array({json{{"start", 0}, {"length", tokens.size()}}})},
++                {"readout_index", index}, {"readout_token_id", marker_id},
++                {"trailing_tokens", tokens.size() - static_cast<size_t>(index) - 1},
++                {"final_cache_position", final_position}, {"marker_count", marker_count},
++                {"sampled_tokens", 0}, {"causal_full_attention", llama_get_causal_attn(ctx)},
++                {"causal_recurrent_attention", true}, {"model_architecture", "qwen35"},
++                {"protocol_version", 3}, {"template", "joint-question-inline-readout-v1"},
++                {"sequence_id", 0}, {"n_batch", llama_n_batch(ctx)}, {"n_ubatch", llama_n_ubatch(ctx)},
++                {"cache_reset", true},
++            }},
++            {"timings", {{"prefill_ms", prefill_ms}}},
++        };
++      }
++      if (llama_get_causal_attn(ctx) != saved_causal || llama_memory_seq_pos_max(memory, 0) != -1)
++        throw std::runtime_error("Inline readout failed to restore causal state and clear hybrid memory");
++      answer["diagnostics"]["causal_state_restored"] = true;
++      answer["diagnostics"]["cache_cleared_after"] = true;
++      answer["timings"]["native_elapsed_ms"] = (ggml_time_us() - started) / 1000.0;
++      res.data_json.value = answer.dump_safe();
++      res.success.value = true;
++      res.is_error.value = false;
++    }
++    catch (const std::exception &error)
++    {
++      res.data_json.value = json{{"message", error.what()}, {"stage", stage}, {"completed_decode_calls", decode_calls}}.dump_safe();
++    }
++    return res;
++  }
++
+   glue_msg_systemone_res action_systemone(const char *req_raw)
+   {
+     PARSE_REQ(glue_msg_systemone_req);
+diff --git a/cpp/wllama.cpp b/cpp/wllama.cpp
+--- a/cpp/wllama.cpp
++++ b/cpp/wllama.cpp
+@@ -114,6 +114,7 @@
+     WLLAMA_ACTION(embedding)
+     WLLAMA_ACTION(rerank)
+     WLLAMA_ACTION(systemone)
++    WLLAMA_ACTION(score_inline)
+     WLLAMA_ACTION(get_result)
+     WLLAMA_ACTION(cancel)
+     WLLAMA_ACTION(test_backend_ops)
+diff --git a/src/wllama.ts b/src/wllama.ts
+--- a/src/wllama.ts
++++ b/src/wllama.ts
+@@ -758,6 +758,61 @@
+   }
+ 
+   /**
++   * Experimental protocol-v3 Perplexity Qwen3.5 inline-marker readout.
++   * Use a dedicated instance; do not mix this with cached completion APIs.
++   * All trailing prompt tokens remain in the single noncausal dense batch.
++   */
++  async createInlineReadout(options: {
++    token_ids: number[];
++    readout_index: number;
++    label_ids: number[];
++  }): Promise<{
++    label_ids: number[];
++    label_pieces: string[];
++    logits: number[];
++    diagnostics: {
++      input_tokens: number;
++      decode_calls: number;
++      microbatches: { start: number; length: number }[];
++      readout_index: number;
++      readout_token_id: number;
++      trailing_tokens: number;
++      final_cache_position: number;
++      marker_count: number;
++      sampled_tokens: number;
++      causal_full_attention: boolean;
++      causal_recurrent_attention: boolean;
++      model_architecture: string;
++      protocol_version: number;
++      template: string;
++      sequence_id: number;
++      n_batch: number;
++      n_ubatch: number;
++      cache_reset: boolean;
++      cache_cleared_after: boolean;
++      causal_state_restored: boolean;
++    };
++    timings: { prefill_ms: number; native_elapsed_ms: number };
++  }> {
++    this.checkModelLoaded();
++    const result = await this.proxy.wllamaAction<GlueMsgGetResultRes>(
++      'score_inline',
++      { _name: 'sys1_req', data_json: JSON.stringify(options) }
++    );
++    if (result.has_more || !result.data_json) {
++      throw new WllamaError('Invalid inline readout response', 'inference_error');
++    }
++    const response = this.jsonDecode(result.data_json);
++    if (!result.success || result.is_error) {
++      throw new WllamaError(
++        `Inline readout ${response.stage || 'request'}: ${response.message || 'Unknown native error'}`,
++        'inference_error'
++      );
++    }
++    return response;
++  }
++
++  /**
+    * Make chat completion for a given chat messages.
+    * @param options OAI-compatible chat completion options
+    * @returns OAI-compatible chat completion response (only the final result when stream=false) or an async iterator of completion chunks (when stream=true)

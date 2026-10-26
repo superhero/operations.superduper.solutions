@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { vi } from 'vitest';
-import { assistantSettingsKey, bonsaiRuntime, bonsaiModels, defaultAssistantSettings, validateAssistantSettings } from './lib/assistant/config.ts';
+import { assistantSettingsKey, bonsaiRuntime, bonsaiModels, assistantModels, settingsForAssistantModel, defaultAssistantSettings, validateAssistantSettings } from './lib/assistant/config.ts';
 import { assistantSkills, readAssistantSkill } from './lib/assistant/skills.ts';
 import { assistantToolDefinitions, enabledAssistantTools, executeAssistantTool, validateToolObject, assistantReadable } from './lib/assistant/tools.ts';
 import { editAssistantWorkspace } from './lib/assistant/workspace.ts';
@@ -43,13 +43,26 @@ Then('assistant publication coalesces token bursts and retains image message ide
   await session.reset(); pending(); assert.deepEqual(updates.at(-1), { messages: [], error: '' });
 });
 
-Then('the Bonsai assistant preserves its three profiles and rejects invalid settings', () => {
+Then('the local assistant preserves accepted profiles and rejects unsupported engine settings', () => {
   assert.equal(assistantSettingsKey, 'v1/settings/assistant');
-  assert.deepEqual(bonsaiModels.map(m => m.id), ['2b', '4b', '9b']);
-  for (const model of bonsaiModels) { assert.match(model.revision, /^[0-9a-f]{40}$/); assert.match(model.projector, /Q8_0/); assert.match(model.file, /PTQ1_0/); assert.ok(model.bytes > 700e6); assert.match(model.run, new RegExp(model.attempt)); }
+  assert.deepEqual(bonsaiModels.map(m => m.id), ['2b', '4b', '9b', '27b']);
+  for (const model of bonsaiModels) { assert.match(model.revision, /^[0-9a-f]{40}$/); assert.equal(model.projector, null); assert.match(model.file, /PTQ1_0/); assert.ok(model.bytes > 400e6); assert.match(model.run, new RegExp(model.attempt)); }
   assert.match(bonsaiRuntime.url, /621e20782f208660f4f58283c2ce58430020f243/);
+  assert.equal(assistantModels.length, 8);
+  for (const profile of assistantModels) {
+    const configured = settingsForAssistantModel(profile.id, settings());
+    assert.equal(configured.model, profile.id); assert.equal(profile.projector, null);
+    assert.ok(configured.maxTokens < configured.context);
+  }
+  const gemma = settingsForAssistantModel('gemma-e2b', settings());
+  assert.equal(gemma.maxTokens, 256); assert.equal(gemma.requestTimeout, 1200000);
+  for (const unsupported of [{sampling:true}, {thinking:true}, {prefixCache:true}, {executionMode:'cpu'}, {context:8192}])
+    assert.throws(() => validateAssistantSettings({...gemma, ...unsupported}), /Gemma/);
+  assert.throws(() => validateAssistantSettings({...settingsForAssistantModel('ornith-q4', settings()), executionMode:'cpu'}), /4 GiB/);
+  assert.equal(validateAssistantSettings({...settingsForAssistantModel('minicpm5-2b', settings()), executionMode:'cpu'}).executionMode, 'cpu');
+
   assert.deepEqual(validateAssistantSettings({}), settings());
-  for (const value of [null, [], 3, { bad: 1 }, { model: '27b' }]) assert.throws(() => validateAssistantSettings(value));
+  for (const value of [null, [], 3, { bad: 1 }, { model: 'unavailable-model' }, {executionMode:'unknown'}, {executionMode:'cpu'}]) assert.throws(() => validateAssistantSettings(value));
   for (const key of ['sampling', 'thinking', 'prefixCache', 'tools', 'editing', 'skills']) assert.throws(() => validateAssistantSettings({ [key]: 1 }));
   for (const key of ['context', 'maxTokens', 'topK', 'seed', 'imagePixels', 'maxTurns', 'maxToolCalls', 'responseTimeout', 'requestTimeout', 'loadTimeout'])
     for (const value of [-1, Infinity, 1.1, '2']) assert.throws(() => validateAssistantSettings({ [key]: value }));
@@ -219,7 +232,7 @@ Then('assistant model loading verifies runtime integrity and forwards pinned nat
     await engine.reset();
     const result = await engine.generate([], { tools: [], signal: signal(), maxTokens: 13, onText: text => events.push(text), onThinking: text => events.push(text) });
     assert.equal(result.message.content, 'Hello'); assert.equal(captured.generation.temperature, sampling ? 0.7 : 0);
-    assert.equal(captured.load.revision, bonsaiModels[0].revision); assert.equal(captured.load.cache, false); assert.equal(captured.load.prefixSnapshotStore, null);
+    assert.equal(captured.load.revision, bonsaiModels[0].revision); assert.equal(captured.load.cache, false); assert.equal(captured.load.mmproj, null); assert.equal(captured.load.prefixSnapshotStore, null);
     await engine.dispose();
   }
   assert.equal(record.resets, 3); assert.ok(events.includes('Think'));

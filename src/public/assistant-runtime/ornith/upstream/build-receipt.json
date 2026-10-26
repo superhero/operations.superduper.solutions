@@ -1,0 +1,18 @@
+{
+  "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+  "declared_version": "3.12.0-source",
+  "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+  "original_llama_cpp": "5aeac37a35b44fde4bdffaec9159f2fcb253b622",
+  "change": "Update upstream llama.cpp submodule for official Q2_0 WebGPU and Hadamard support; no weight conversion.",
+  "emscripten": "4.0.20",
+  "dawn_tag": "v20260317.182325",
+  "dawn_zip_sha256": "8dcae86c630d76b6794b271c6572becba36f4237d132bee121a56638c3d76575",
+  "backend": "webgpu + wasm SIMD/pthreads",
+  "cpu_heap_max_gib": 4,
+  "files": {
+    "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+    "wllama.wasm": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f",
+    "upstream.patch": "16fc127aa4bddc8fafc28729ac0924d44b2cc2af5dcdc2735f4cf48946e7fb6e",
+    "index.js": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+  }
+}

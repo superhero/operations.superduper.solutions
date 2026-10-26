@@ -1,0 +1,1532 @@
+[
+  {
+    "id": "d3-flash",
+    "title": "D3-flash \u00b7 9B upstream Q8_0",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-flash-GGUF",
+    "revision": "50a0b7585fb8732fce67a921fab83ed2ac6e2fcb",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-flash-Q8_0.gguf",
+        "bytes": 9527503328,
+        "sha256": "14c3e70f5fce941698cb55f6bc670f2de1146f709e9252ee04bc9d4f56315d19",
+        "integrity": "Pinned upstream LFS metadata; full file not independently rehashed"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 9527503328,
+    "precision": "Upstream ggml-org GGUF: 250 Q8_0 and 177 FP32 tensors; Q8_0 output.weight and token_embd.weight, FP32 norms. INT8 blocks with FP16 scales, not FP8. Expanded output head differs from publisher's separate FP32 readout; BF16-reference probability parity untested.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested browser support for current D3 sizes 2B/4B/9B on 2026-10-25, deferring 27B. Named official runtime upstream ggml-org is permitted by select-model-experiments; these are upstream conversions, not publisher safetensors or local requantizations.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "source_revision": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "declared_version": "3.12.0-source",
+      "backend": "webgpu + wasm SIMD/pthreads",
+      "files": {
+        "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+        "wllama.wasm": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f",
+        "upstream.patch": "16fc127aa4bddc8fafc28729ac0924d44b2cc2af5dcdc2735f4cf48946e7fb6e",
+        "index.js": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+      },
+      "cpu_heap_max_gib": 4
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native text decisions and source/template/dimension/calibration checks passed. Images, larger contexts, grouped questions, phones and publisher BF16 probability parity remain unqualified."
+    },
+    "status": "working",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/?case=lb-browser-decision-d3-flash-q8",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual native D3 decisions in Chromium 149 on sds-01 using pinned Wllama WebGPU/Wasm. GET/HEAD-only unauthenticated assets, no inference backend, WebSocket or generated-text decision parser.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/tree/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb",
+      "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/raw/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb/.src_sha",
+      "https://huggingface.co/vllm-sr/d3-flash/tree/13dc1cc8ef23caefa765907e1d764751e5629f7d",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://ollama.com/library/d3"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-flash-GGUF",
+      "revision": "50a0b7585fb8732fce67a921fab83ed2ac6e2fcb",
+      "file": "vllm-d3-flash-Q8_0.gguf",
+      "weight_bytes": 9527503328,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false
+      },
+      "required_decision_type": "vllm-d3",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "expected_context": {
+        "n_layer": 32,
+        "n_embd": 4096,
+        "n_vocab": 248320,
+        "n_ctx": 1024
+      },
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e",
+      "required_temperatures": {
+        "choice": 1,
+        "score": 1,
+        "noul": 1
+      }
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-flash",
+      "revision": "13dc1cc8ef23caefa765907e1d764751e5629f7d",
+      "verified_by": ".src_sha at the pinned ggml-org revision",
+      "text_config_max_position_embeddings": 262144,
+      "original_backbone_dtype": "bfloat16"
+    },
+    "baseline": "kt-browser-decision-d3-lite-gguf-bf16",
+    "comparison": "Extend verified native D3 SystemOne browser support to this current larger checkpoint, using upstream Q8_0 consistently across 2B/4B/9B. No local conversion or older Decision-2.0 replacement.",
+    "precision_audit": {
+      "path": ".runtime/browser-decisions/d3-family-source/flash-gguf-audit.json",
+      "sha256": "d60d2c639a849f905cea60a14864073afbe45395345e9314fcfc4dbd88869859",
+      "host": "sds-01",
+      "tensor_type_counts": {
+        "Q8_0": 250,
+        "F32": 177
+      },
+      "output_weight": "Q8_0",
+      "token_embedding": "Q8_0",
+      "norms": "FP32",
+      "tensor_bytes_fetched": 0,
+      "publisher_codebook_verified": true,
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792933758928131038",
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792933758928131038/browser.json",
+      "raw_sha256": "8fa4d9c257992158adad5179f7e78770668f2f4369120a917285e2f4a59661ea",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792933758928131038/receipt.json",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "url_selected_profile_verified": true,
+      "loaded_context_verified": true,
+      "native_template_calibration_verified": true,
+      "metrics": {
+        "cold_load_ms": 684947.0400000215,
+        "first_decision_from_load_start_ms": 686525.8149999976,
+        "warm_repeat_ms": 1975.7050000429153,
+        "later_decision_min_ms": 1961.1100000143051,
+        "later_decision_max_ms": 2012.6949999928474,
+        "maximum_sampled_whole_device_gpu_mib": 8443,
+        "native_buffers": {
+          "CPU_model_mib": 1030.62,
+          "WebGPU_model_mib": 8045.05,
+          "CPU_output_mib": 0.95,
+          "WebGPU_KV_mib": 32.0,
+          "WebGPU_RS_mib": 50.25,
+          "WebGPU_compute_mib": 220.03,
+          "CPU_compute_mib": 76.04
+        },
+        "offloaded_layers": [
+          33,
+          33
+        ],
+        "rendered_tokens_min": 96,
+        "rendered_tokens_max": 123,
+        "allocator_peak_verified": false
+      }
+    },
+    "label": "D3 flash \u00b7 9B Q8",
+    "attempt": "lb-browser-decision-d3-flash-q8",
+    "category": "decision"
+  },
+  {
+    "id": "d3-lite",
+    "title": "D3-lite \u00b7 upstream BF16 GGUF",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-lite-GGUF",
+    "revision": "d4d6ebde7717eb37014a1c7401127fb48f26da42",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-lite-BF16.gguf",
+        "bytes": 2025305664,
+        "sha256": "21603acb3dfad2ba50b7b16979298c54e8d3f52267fa930269aefd7c5e36c903",
+        "integrity": "Pinned official ggml-org upstream conversion metadata; full file not independently rehashed"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 2025305664,
+    "precision": "Upstream ggml-org BF16 GGUF: BF16 backbone and BF16 expanded output/readout, with FP32 scalar/norm tensors. The converter casts the original FP32 readout to BF16; this is not bit-identical to the publisher BF16-backbone/FP32-head reference. No local conversion.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested investigation and resolution of other D3 browser paths on 2026-10-25. Named official runtime upstream ggml-org is allowed by select-model-experiments; this is an upstream conversion, not the original publisher safetensors.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "source_revision": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "declared_version": "3.12.0-source",
+      "backend": "webgpu + wasm SIMD/pthreads",
+      "files": {
+        "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+        "wllama.wasm": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f",
+        "upstream.patch": "16fc127aa4bddc8fafc28729ac0924d44b2cc2af5dcdc2735f4cf48946e7fb6e",
+        "index.js": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+      },
+      "cpu_heap_max_gib": 4
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native decisions passed the small smoke; deeper quality, native-reference parity and phones remain untested."
+    },
+    "status": "working",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Planned visiting-browser inference with static Docker Swarm and Playwright pinned to sds-01. No inference backend, remote API or Python model execution qualifies as local-browser acceptance.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/tree/d4d6ebde7717eb37014a1c7401127fb48f26da42",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/raw/d4d6ebde7717eb37014a1c7401127fb48f26da42/.src_sha"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-lite-GGUF",
+      "revision": "d4d6ebde7717eb37014a1c7401127fb48f26da42",
+      "file": "vllm-d3-lite-BF16.gguf",
+      "weight_bytes": 2025305664,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false
+      },
+      "required_decision_type": "vllm-d3",
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-lite",
+      "revision": "03560c26f5199c3c04129a2ccb38960c913635e0",
+      "verified_by": ".src_sha at the pinned ggml-org revision"
+    },
+    "baseline": "kl-browser-decision-d3-lite",
+    "comparison": "Same publisher checkpoint in upstream BF16 GGUF rather than native safetensors, using existing native Wllama D3/SystemOne support; no custom head or weight conversion.",
+    "precision_audit": {
+      "source": "ggml-org conversion log at the pinned revision",
+      "output.weight": "torch.float32 -> BF16, expanded to vocabulary slots",
+      "difference_from_reference": "Original separate FP32 head is rounded to BF16 in this upstream GGUF."
+    },
+    "measured_run_id": "browser-decisions-1792919408113293110",
+    "measured_evidence": {
+      "path": ".runtime/browser-decisions/browser-decisions-1792919408113293110/browser.json",
+      "sha256": "b99f8e1079e64a39b8f8d26d57446a57c2d494a1aba2c4584604407d8178bbb3"
+    },
+    "measured_date": "2026-10-25 Europe/Madrid",
+    "label": "D3 lite \u00b7 0.8B BF16",
+    "attempt": "kt-browser-decision-d3-lite-gguf-bf16",
+    "category": "decision",
+    "template_pin_evidence": {
+      "attempt": "kt-browser-decision-d3-lite-gguf-bf16",
+      "run_id": "browser-decisions-1792919408113293110",
+      "source": "inference/attempts/kt-browser-decision-d3-lite-gguf-bf16/results.jsonl"
+    }
+  },
+  {
+    "id": "d3-mini",
+    "title": "D3-mini \u00b7 4B upstream Q8_0",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-mini-GGUF",
+    "revision": "e7230e2309c186c80182fbeed6fef70680b20c64",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-mini-Q8_0.gguf",
+        "bytes": 5157835232,
+        "sha256": "f9f99be46b7ce1e5a5f09ed620de89106447646b34f7d2993e7563b48feb2858",
+        "integrity": "Pinned upstream LFS metadata; full file not independently rehashed"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 5157835232,
+    "precision": "Upstream ggml-org GGUF: 250 Q8_0 and 177 FP32 tensors; Q8_0 output.weight and token_embd.weight, FP32 norms. INT8 blocks with FP16 scales, not FP8. Expanded output head differs from publisher's separate FP32 readout; BF16-reference probability parity untested.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested browser support for current D3 sizes 2B/4B/9B on 2026-10-25, deferring 27B. Named official runtime upstream ggml-org is permitted by select-model-experiments; these are upstream conversions, not publisher safetensors or local requantizations.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "source_revision": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "declared_version": "3.12.0-source",
+      "backend": "webgpu + wasm SIMD/pthreads",
+      "files": {
+        "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+        "wllama.wasm": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f",
+        "upstream.patch": "16fc127aa4bddc8fafc28729ac0924d44b2cc2af5dcdc2735f4cf48946e7fb6e",
+        "index.js": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+      },
+      "cpu_heap_max_gib": 4
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native text decisions and source/template/dimension/calibration checks passed. Images, larger contexts, grouped questions, phones and publisher BF16 probability parity remain unqualified."
+    },
+    "status": "working",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/?case=la-browser-decision-d3-mini-q8",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual native D3 decisions in Chromium 149 on sds-01 using pinned Wllama WebGPU/Wasm. GET/HEAD-only unauthenticated assets, no inference backend, WebSocket or generated-text decision parser.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/tree/e7230e2309c186c80182fbeed6fef70680b20c64",
+      "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/raw/e7230e2309c186c80182fbeed6fef70680b20c64/.src_sha",
+      "https://huggingface.co/vllm-sr/d3-mini/tree/bd0090dd758d32ba59ef5c749910a8e87fc4391f",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://ollama.com/library/d3"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-mini-GGUF",
+      "revision": "e7230e2309c186c80182fbeed6fef70680b20c64",
+      "file": "vllm-d3-mini-Q8_0.gguf",
+      "weight_bytes": 5157835232,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false
+      },
+      "required_decision_type": "vllm-d3",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "expected_context": {
+        "n_layer": 32,
+        "n_embd": 2560,
+        "n_vocab": 248320,
+        "n_ctx": 1024
+      },
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e",
+      "required_temperatures": {
+        "choice": 1,
+        "score": 1,
+        "noul": 1
+      }
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-mini",
+      "revision": "bd0090dd758d32ba59ef5c749910a8e87fc4391f",
+      "verified_by": ".src_sha at the pinned ggml-org revision",
+      "text_config_max_position_embeddings": 262144,
+      "original_backbone_dtype": "bfloat16"
+    },
+    "baseline": "kt-browser-decision-d3-lite-gguf-bf16",
+    "comparison": "Extend verified native D3 SystemOne browser support to this current larger checkpoint, using upstream Q8_0 consistently across 2B/4B/9B. No local conversion or older Decision-2.0 replacement.",
+    "precision_audit": {
+      "path": ".runtime/browser-decisions/d3-family-source/mini-gguf-audit.json",
+      "sha256": "4d302598fa63127c47821fac41f7b47bcb54466f2920c39e83bfba0b6e09953c",
+      "host": "sds-01",
+      "tensor_type_counts": {
+        "Q8_0": 250,
+        "F32": 177
+      },
+      "output_weight": "Q8_0",
+      "token_embedding": "Q8_0",
+      "norms": "FP32",
+      "tensor_bytes_fetched": 0,
+      "publisher_codebook_verified": true,
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792933208087621897",
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792933208087621897/browser.json",
+      "raw_sha256": "8d840c55d12ee4ae28f9b5b5cf972648479e72207e85cbd2a51ffb94dad05e9a",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792933208087621897/receipt.json",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "url_selected_profile_verified": true,
+      "loaded_context_verified": true,
+      "native_template_calibration_verified": true,
+      "metrics": {
+        "cold_load_ms": 384599.74500000477,
+        "first_decision_from_load_start_ms": 385467.6100000143,
+        "warm_repeat_ms": 1008.1700000166893,
+        "later_decision_min_ms": 1005.6199999451637,
+        "later_decision_max_ms": 1035.0550000071526,
+        "maximum_sampled_whole_device_gpu_mib": 4608,
+        "native_buffers": {
+          "CPU_model_mib": 644.14,
+          "WebGPU_model_mib": 4264.3,
+          "CPU_output_mib": 0.95,
+          "WebGPU_KV_mib": 32.0,
+          "WebGPU_RS_mib": 50.25,
+          "WebGPU_compute_mib": 164.03,
+          "CPU_compute_mib": 52.04
+        },
+        "offloaded_layers": [
+          33,
+          33
+        ],
+        "rendered_tokens_min": 96,
+        "rendered_tokens_max": 123,
+        "allocator_peak_verified": false
+      }
+    },
+    "label": "D3 mini \u00b7 4B Q8",
+    "attempt": "la-browser-decision-d3-mini-q8",
+    "category": "decision"
+  },
+  {
+    "id": "d3-nano",
+    "title": "D3-nano \u00b7 2B upstream Q8_0",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-nano-GGUF",
+    "revision": "50dea2057df10c4b393559a155ab3bf0bc7532c6",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-nano-Q8_0.gguf",
+        "bytes": 2552358464,
+        "sha256": "4867d306fd22aec8c5ebd1851b7f1074f480702655e8000ceedf0c47c6a6f337",
+        "integrity": "Pinned upstream LFS metadata; full file not independently rehashed"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 2552358464,
+    "precision": "Upstream ggml-org GGUF: 188 Q8_0 and 133 FP32 tensors; Q8_0 output.weight and token_embd.weight, FP32 norms. INT8 blocks with FP16 scales, not FP8. Expanded output head differs from publisher's separate FP32 readout; BF16-reference probability parity untested.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested browser support for current D3 sizes 2B/4B/9B on 2026-10-25, deferring 27B. Named official runtime upstream ggml-org is permitted by select-model-experiments; these are upstream conversions, not publisher safetensors or local requantizations.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "source_revision": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "declared_version": "3.12.0-source",
+      "backend": "webgpu + wasm SIMD/pthreads",
+      "files": {
+        "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+        "wllama.wasm": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f",
+        "upstream.patch": "16fc127aa4bddc8fafc28729ac0924d44b2cc2af5dcdc2735f4cf48946e7fb6e",
+        "index.js": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+      },
+      "cpu_heap_max_gib": 4
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native text decisions and source/template/dimension/calibration checks passed. Images, larger contexts, grouped questions, phones and publisher BF16 probability parity remain unqualified."
+    },
+    "status": "working",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/?case=kz-browser-decision-d3-nano-q8",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual native D3 decisions in Chromium 149 on sds-01 using pinned Wllama WebGPU/Wasm. GET/HEAD-only unauthenticated assets, no inference backend, WebSocket or generated-text decision parser.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/tree/50dea2057df10c4b393559a155ab3bf0bc7532c6",
+      "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/raw/50dea2057df10c4b393559a155ab3bf0bc7532c6/.src_sha",
+      "https://huggingface.co/vllm-sr/d3-nano/tree/462efc366229ea268cf4eed3738b3fc4415e4817",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://ollama.com/library/d3"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-nano-GGUF",
+      "revision": "50dea2057df10c4b393559a155ab3bf0bc7532c6",
+      "file": "vllm-d3-nano-Q8_0.gguf",
+      "weight_bytes": 2552358464,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false
+      },
+      "required_decision_type": "vllm-d3",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "expected_context": {
+        "n_layer": 24,
+        "n_embd": 2048,
+        "n_vocab": 248320,
+        "n_ctx": 1024
+      },
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e",
+      "required_temperatures": {
+        "choice": 1,
+        "score": 1,
+        "noul": 1
+      }
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-nano",
+      "revision": "462efc366229ea268cf4eed3738b3fc4415e4817",
+      "verified_by": ".src_sha at the pinned ggml-org revision",
+      "text_config_max_position_embeddings": 262144,
+      "original_backbone_dtype": "bfloat16"
+    },
+    "baseline": "kt-browser-decision-d3-lite-gguf-bf16",
+    "comparison": "Extend verified native D3 SystemOne browser support to this current larger checkpoint, using upstream Q8_0 consistently across 2B/4B/9B. No local conversion or older Decision-2.0 replacement.",
+    "precision_audit": {
+      "path": ".runtime/browser-decisions/d3-family-source/nano-gguf-audit.json",
+      "sha256": "1a655c035696f5ff27142a3ebb21309f4d85b9200368770ad893ba55539c2b2e",
+      "host": "sds-01",
+      "tensor_type_counts": {
+        "Q8_0": 188,
+        "F32": 133
+      },
+      "output_weight": "Q8_0",
+      "token_embedding": "Q8_0",
+      "norms": "FP32",
+      "tensor_bytes_fetched": 0,
+      "publisher_codebook_verified": true,
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792932812100126414",
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792932812100126414/browser.json",
+      "raw_sha256": "ff7dd9afe356ca69287b9ba2038668d5fa048d15e3272b8a0c26a6bbe4d65877",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792932812100126414/receipt.json",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "url_selected_profile_verified": true,
+      "loaded_context_verified": true,
+      "native_template_calibration_verified": true,
+      "metrics": {
+        "cold_load_ms": 203604,
+        "first_decision_from_load_start_ms": 204219.47500002384,
+        "warm_repeat_ms": 441.0400000214577,
+        "later_decision_min_ms": 423.81999999284744,
+        "later_decision_max_ms": 441.0400000214577,
+        "maximum_sampled_whole_device_gpu_mib": 2001,
+        "native_buffers": {
+          "CPU_model_mib": 515.31,
+          "WebGPU_model_mib": 1908.36,
+          "CPU_output_mib": 0.95,
+          "WebGPU_KV_mib": 12.0,
+          "WebGPU_RS_mib": 19.27,
+          "WebGPU_compute_mib": 112.03,
+          "CPU_compute_mib": 40.04
+        },
+        "offloaded_layers": [
+          25,
+          25
+        ],
+        "rendered_tokens_min": 96,
+        "rendered_tokens_max": 123,
+        "allocator_peak_verified": false
+      }
+    },
+    "label": "D3 nano \u00b7 2B Q8",
+    "attempt": "kz-browser-decision-d3-nano-q8",
+    "category": "decision"
+  },
+  {
+    "id": "elephant",
+    "title": "Elephant-1 \u00b7 community Q4_K_M two-block readout",
+    "kind": "decision",
+    "engine": "wllama-elephant",
+    "model": "prithivMLmods/elephant-1-GGUF",
+    "revision": "77d938a13309d7b3da168d87abf5589f9329b122",
+    "license": "mit",
+    "files": [
+      {
+        "file": "elephant-1.Q4_K_M.gguf",
+        "bytes": 5629109376,
+        "sha256": "764ef1834ffe7721f11ff7ed2ba42c3616140493b7505e2928eee057496c95a4",
+        "integrity": "Pinned community LFS metadata; not independently rehashed"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 5629109376,
+    "precision": "Community Q4_K_M: 217 Q4_K, 33 Q6_K and 177 FP32 tensors. Output head Q6_K, final norm FP32, input embedding Q4_K. Native selected logits FP32; distinct from publisher BF16 weights/upcast FP32 head reference.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User explicitly selected Test the community Q4_K_M export after the named prithivMLmods candidate, size and publisher-source exception were disclosed on 2026-10-25.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "source_revision": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "declared_version": "3.12.0-source",
+      "backend": "webgpu + wasm SIMD/pthreads",
+      "files": {
+        "llama-cpp.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+        "wllama.wasm": "25b0c03e06d1acde8417ce7c8505427a94dad1cc3689995dd2125a1718a0daf7",
+        "upstream.patch": "1e30b55b7d1814171b6643b6c13b863455bd70137aaf75d8ce1f7452576186d6",
+        "index.js": "723d5885f7019684610e1896a61b9a9f9c5bca7b39eae05e2491617c1a41739e"
+      },
+      "cpu_heap_max_gib": 4,
+      "javascript": {
+        "tokenizers": "0.2.0",
+        "jinja": "0.5.3",
+        "prompt_adapter": "evaluations/browser-decisions/runtime/elephant-prompt.mjs",
+        "readout_adapter": "evaluations/browser-decisions/runtime/elephant-browser.mjs"
+      },
+      "native_api": "createBlockReadout / score_blocks, dedicated instance",
+      "patch": "evaluations/browser-decisions/runtime/elephant-native.patch",
+      "patch_sha256": "9fb039976cbe3f711ea456a4b4a24ad5b9cc202d37c5a3aae57582472571a7b4",
+      "build_image": "emscripten/emsdk:4.0.20@sha256:33e992367f721747d8008c9141c04fa017139e3557a60e0c80be93a0870fe462",
+      "build_inputs_sha256": {
+        "build.sh": "6b836c6d47fa9afa38e178786755e7a8c53805cc9beca1f63a5cb4eefc87bc6d",
+        "upstream-api.patch": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3",
+        "elephant-native.patch": "9fb039976cbe3f711ea456a4b4a24ad5b9cc202d37c5a3aae57582472571a7b4"
+      }
+    },
+    "browser_adapter": {
+      "state": "browser-verified-native-two-block-readout",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Exact publisher qev-labels-v2 prompt/token/block-boundary parity, full noncausal prefix then suffix at continuing positions; causal GatedDeltaNet. Read final suffix slot logits, T1 and native answer/confidence normalization. No sampling; fresh hybrid memory per request.",
+      "gap": "Text-only, one question/request, at least two options and <=1024 tokens. Publisher BF16 numerical equivalence, multi-question shared-prefix branches, images, phones and deeper calibration/quality remain unqualified."
+    },
+    "status": "working",
+    "test_status": "browser-tested",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual Chromium149 browser decisions on sds-01 through isolated Wllama WebGPU/Wasm two-block RPC. Zero sampling; GET-only unauthenticated downloads and no inference WebSockets.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/baselabs/elephant-1/tree/b3f8a93462fb1051a9de031e94a7ff380e254072",
+      "https://huggingface.co/prithivMLmods/elephant-1-GGUF/tree/77d938a13309d7b3da168d87abf5589f9329b122",
+      "https://github.com/OmniJev/OneJev/tree/81ce62f1597c91e46767d4d02d6ac2e18534fe94"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "prithivMLmods/elephant-1-GGUF",
+      "revision": "77d938a13309d7b3da168d87abf5589f9329b122",
+      "file": "elephant-1.Q4_K_M.gguf",
+      "weight_bytes": 5629109376,
+      "kind": "elephant-two-block-slot-lm",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "runtime_folder": "wllama-elephant",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false
+      },
+      "prompt_model": "baselabs/elephant-1",
+      "prompt_revision": "b3f8a93462fb1051a9de031e94a7ff380e254072",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "prompt_style": "qev-labels-v2",
+      "label_temperature": 1,
+      "calibration": "No calibration.json at pinned publisher release; native fallback T1",
+      "full_attention": "block_bidirectional: prefix sees prefix; suffix sees prefix+suffix",
+      "linear_attention": "causal GatedDeltaNet, source-derived; not a sampled mask getter",
+      "native_decode_calls_per_request": 2,
+      "sampled_tokens_per_request": 0,
+      "application_prefix_cache": false,
+      "minimum_options": 2
+    },
+    "original_source": {
+      "model": "baselabs/elephant-1",
+      "prompt_revision": "b3f8a93462fb1051a9de031e94a7ff380e254072",
+      "quantizer_source_revision": "Not supplied; pinned card identifies baselabs/elephant-1",
+      "onejev_revision": "81ce62f1597c91e46767d4d02d6ac2e18534fe94",
+      "serve_patch_sha256": "f234c125f1d38d82104b9e1f24e75bde51e4401928acfba2fbf5c59ef2fb46b8"
+    },
+    "baseline": "ko-browser-decision-elephant1",
+    "comparison": "Replace native-safetensors format probe with the named community GGUF and an exact two-block native slot-logit RPC. Retain official BF16 baseline and disclose quantized head/probability drift; no plain causal-generation substitution.",
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792926063835373379",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "native_python_js_prompt_boundary_parity": true,
+      "unicode_layout_only": true,
+      "synthetic_native_answer_parity_cases": 6,
+      "decode_calls_per_request": 2,
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792926063835373379/browser.json",
+      "raw_sha256": "5c9284f2f9e1feb5cabf603572767e428b0a489c41fccaebe97e66a139a72d45",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792926063835373379/receipt.json",
+      "tensor_header_audit": ".runtime/browser-decisions/browser-decisions-1792926063835373379/gguf-head-audit.json",
+      "tensor_header_audit_sha256": "de1b9bd025f47169244276755c41ef7f1c98a94ac254a51c76712c35e9b88e36"
+    },
+    "label": "Elephant-1 \u00b7 9B Q4_K_M",
+    "attempt": "kw-browser-decision-elephant1-q4",
+    "category": "decision"
+  },
+  {
+    "id": "knowline",
+    "title": "KnowLine Gen5.5 \u00b7 Q8_0 bounded raw label readout",
+    "kind": "decision",
+    "engine": "wllama-knowline",
+    "model": "mradermacher/KnowLine-4B-Gen5.5-GGUF",
+    "revision": "d95d0de41cd9c2b813535c9fead6f7a29c07052a",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "KnowLine-4B-Gen5.5.Q8_0.gguf",
+        "bytes": 4610580896,
+        "sha256": "6970db55cca4fd7d8e4c9d73af6c63a8a7dfe602706c4c3a23f93bcad2b0370d",
+        "integrity": "Pinned community artifact metadata; full weights not independently rehashed"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 4610580896,
+    "precision": "Actual loader: 257 Q8_0 and 184 FP32 tensors. INT8 blocks of 32 with FP16 scales; unused MTP tensors ignored, no vision execution. Community conversion, not FP8 or native publisher BF16.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User instructed proceeding with KnowLine after the specifically recommended mradermacher Gen5.5 Q8_0 candidate and disclosed contributor-source exception on 2026-10-25. This records authorization to test that named community artifact separately, not blanket approval for other conversions.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "source_revision": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "declared_version": "3.12.0-source",
+      "backend": "webgpu + wasm SIMD/pthreads",
+      "files": {
+        "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+        "wllama.wasm": "68d7d381d505da43b890912552870ec6db54ce18862ce695c6f80cff142c395f",
+        "upstream.patch": "16fc127aa4bddc8fafc28729ac0924d44b2cc2af5dcdc2735f4cf48946e7fb6e",
+        "index.js": "0df764726d349c47085ac79703557b45e8c8411a09ed4f5ad7e439571c611b2f"
+      },
+      "cpu_heap_max_gib": 4,
+      "javascript": {
+        "tokenizers": "0.2.0",
+        "jinja": "0.5.3",
+        "prompt_adapter": "evaluations/browser-decisions/runtime/knowline-prompt.mjs",
+        "readout_adapter": "evaluations/browser-decisions/runtime/knowline-browser.mjs"
+      },
+      "raw_readout_source": "https://github.com/ggml-org/llama.cpp/blob/970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc/tools/server/server-common.cpp#L1659"
+    },
+    "browser_adapter": {
+      "state": "browser-verified-original-label-readout",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Compare JavaScript prompt/token/label IDs with pinned native Python on sds-01. Preserve Gen5.5 read-twice <=3000 once-tokens and folded calibration T1. Full original label logprobs, one prefill, sampled token discarded.",
+      "gap": "Complete offered-label coverage required within returned top 64; arbitrary prompts/options, publisher BF16 probability parity and physical phones remain unqualified."
+    },
+    "status": "working",
+    "test_status": "browser-tested",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual browser decisions on sds-01 Chromium 149, Wllama WebGPU/Wasm. No inference backend; only unauthenticated GET downloads and no WebSockets.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/mradermacher/KnowLine-4B-Gen5.5-GGUF/tree/d95d0de41cd9c2b813535c9fead6f7a29c07052a",
+      "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/tree/779944d2cc8ffa19cef386aee83c83bcb967ade2"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "mradermacher/KnowLine-4B-Gen5.5-GGUF",
+      "revision": "d95d0de41cd9c2b813535c9fead6f7a29c07052a",
+      "file": "KnowLine-4B-Gen5.5.Q8_0.gguf",
+      "weight_bytes": 4610580896,
+      "kind": "knowline-causal-label-logprobs",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false
+      },
+      "prompt_model": "PelaAI/KnowLine-4B-Gen5.5",
+      "prompt_revision": "779944d2cc8ffa19cef386aee83c83bcb967ade2",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "read_twice": true,
+      "twice_max_tokens": 3000,
+      "label_temperature": 1,
+      "calibration_folded_into_norm": true,
+      "raw_full_vocabulary": false,
+      "sampled_tokens_per_request": 1,
+      "sampled_text_used": false,
+      "logprobs_output_limit": 64,
+      "require_offered_label_coverage": true
+    },
+    "original_source": {
+      "model": "PelaAI/KnowLine-4B-Gen5.5",
+      "prompt_revision": "779944d2cc8ffa19cef386aee83c83bcb967ade2",
+      "quantizer_source_revision": "not supplied; the pinned quantizer card names this source model"
+    },
+    "baseline": "ku-browser-decision-knowline-gen55-q8",
+    "comparison": "Same weights/runtime/prompt; return original top 64 logprobs with strict complete label coverage, avoiding invalid UTF-8 vocabulary tail serialization. No missing-label estimates or generated-answer parser.",
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792923992623330923",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "native_python_js_prompt_parity": true,
+      "native_label_coverage": true,
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792923992623330923/browser.json",
+      "raw_sha256": "a7e45e0d02b74dfd731a5c04db738d1696303f3b0e36f75ed98c01a4e9459be1",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792923992623330923/receipt.json"
+    },
+    "label": "KnowLine Gen5.5 \u00b7 4B Q8",
+    "attempt": "kv-browser-decision-knowline-gen55-top64",
+    "category": "decision"
+  },
+  {
+    "id": "perplexity",
+    "title": "Perplexity Decider Flash \u00b7 official Q8_0 protocol-v3 readout",
+    "kind": "decision",
+    "engine": "wllama-pplx",
+    "model": "perplexity-ai/pplx-decider-flash-gguf-v1.2",
+    "revision": "2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "decider-flash-v1.2-q8_0.gguf",
+        "bytes": 5157837472,
+        "sha256": "ffb27ade8976765b0e6943a0b7f5f3fd0f7042d45ad90256a76d608bcd3942c2",
+        "integrity": "Publisher LFS metadata; full weights not downloaded or independently rehashed"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 5157837472,
+    "precision": "Publisher GGUF Q8_0 backbone/readout; mixed tensor types, not uniform INT8 arithmetic. Exclude the separate F16 vision projector.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested separate preparation for the current decision-model families. Only publisher artifacts are pinned; no local export, requantization or community replacement is authorized by this record.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "source_revision": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "declared_version": "3.12.0-source",
+      "backend": "webgpu + wasm SIMD/pthreads",
+      "files": {
+        "llama-cpp.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+        "wllama.wasm": "14be4bdc0b50ad4664f6fe9602829f543558ca6c2ad6fb16a7771b374d7fdae1",
+        "upstream.patch": "6e7035dd4dbb599cc24c2346cbf1a205ee2e655d279fb8f49234e65a9ae6934d",
+        "index.js": "986903d0b17cf439bc40d647aadc1a84c84f6e2e3677f54bcc583b10f960797a"
+      },
+      "cpu_heap_max_gib": 4,
+      "javascript": {
+        "tokenizers": "0.2.0",
+        "jinja": "0.5.3",
+        "prompt_adapter": "evaluations/browser-decisions/runtime/pplx-prompt.mjs",
+        "readout_adapter": "evaluations/browser-decisions/runtime/pplx-browser.mjs"
+      },
+      "native_api": "createInlineReadout / score_inline, dedicated instance",
+      "patch": "evaluations/browser-decisions/runtime/pplx-native.patch",
+      "patch_sha256": "5f09e2a54cc85e627ea0e7feec799b22c539fd5fcc7adf38cbd0cde0c92ba517",
+      "build_image": "emscripten/emsdk:4.0.20@sha256:33e992367f721747d8008c9141c04fa017139e3557a60e0c80be93a0870fe462",
+      "build_inputs_sha256": {
+        "build.sh": "d6297fd12f2e9419efcaa8131b0b1d51b912be65224edaddd79394ef260b3ea1",
+        "upstream-api.patch": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3",
+        "pplx-native.patch": "5f09e2a54cc85e627ea0e7feec799b22c539fd5fcc7adf38cbd0cde0c92ba517"
+      }
+    },
+    "browser_adapter": {
+      "state": "browser-verified-native-protocol-v3",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Exact publisher Python/JS prompt, token, codebook and interior-marker parity; entire prompt in one noncausal full-attention batch with causal GatedDeltaNet. Read offered raw slot logits at marker, apply exact FLOAT64 publisher temperature and native answer normalization; no sampling.",
+      "gap": "All six native browser decisions passed. Text only, one question per request, 2\u2013255 options, <=1024 tokens. Structured JSON numeric values restricted to finite safe integers; arbitrary text accepted. Images, phones, grouped questions and broad quality/calibration remain unqualified."
+    },
+    "status": "working",
+    "test_status": "browser-tested",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual Chromium 149 browser decisions on sds-01 through isolated Wllama WebGPU/Wasm protocol-v3 inline-marker RPC. Zero sampling; GET/HEAD-only unauthenticated assets, no inference backend or WebSockets. Python reference prepares tokenizer/protocol fixtures only.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/tree/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc",
+      "https://huggingface.co/api/models/perplexity-ai/pplx-decider-flash-gguf-v1.2/revision/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc?blobs=true",
+      "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2#gguf-files",
+      "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/tree/9ff7cf9838e59df461c276b7699d56b244d2af58/source"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "perplexity-ai/pplx-decider-flash-gguf-v1.2",
+      "revision": "2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc",
+      "file": "decider-flash-v1.2-q8_0.gguf",
+      "weight_bytes": 5157837472,
+      "kind": "pplx-v3-inline-marker",
+      "required_protocol_version": 3,
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false
+      },
+      "runtime_folder": "wllama-pplx-v3",
+      "prompt_model": "perplexity-ai/pplx-decider-flash-v1.2",
+      "prompt_revision": "9ff7cf9838e59df461c276b7699d56b244d2af58",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "prompt_style": "joint-question-inline-readout-v1",
+      "marker": "<|fim_suffix|>",
+      "marker_token_id": 248062,
+      "label_temperature": 1.5539092221462472,
+      "temperature_gguf_type": "FLOAT64",
+      "full_attention": "noncausal over the entire complete prompt",
+      "linear_attention": "causal GatedDeltaNet, source-derived",
+      "native_decode_calls_per_request": 1,
+      "sampled_tokens_per_request": 0,
+      "application_prefix_cache": false,
+      "minimum_options": 2,
+      "maximum_options": 255
+    },
+    "baseline": "kp-browser-decision-pplx-flash-q8",
+    "comparison": "Same official GGUF; replace unsupported legacy SystemOne API with exact whole-prompt protocol-v3 inline-marker readout. No weight or quantization change.",
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792930207762032452",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "native_python_js_prompt_token_marker_parity": true,
+      "gguf_metadata_and_float64_temperature_verified": true,
+      "unicode_layout_only": true,
+      "synthetic_native_answer_parity_cases": 6,
+      "decode_calls_per_request": 1,
+      "sampled_tokens_per_request": 0,
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792930207762032452/browser.json",
+      "raw_sha256": "527d69bcae5feca4414fda5d488c2b1e3d691a3c931f552762abaf70c0b445ef",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792930207762032452/receipt.json",
+      "native_build_receipt": ".runtime/browser-decisions-pplx/browser-decisions-pplx-build-1792929453104788546/receipt.json",
+      "maximum_sampled_whole_device_gpu_mib": 4610
+    },
+    "label": "Perplexity Flash \u00b7 4B Q8",
+    "attempt": "ky-browser-decision-pplx-flash-v3",
+    "category": "decision"
+  },
+  {
+    "id": "strands-cpu",
+    "title": "Strands Decider \u00b7 current INT4 Wasm CPU",
+    "kind": "decision",
+    "engine": "strands-onnx",
+    "model": "alxnahas/strands-decider-webgpu-ci",
+    "revision": "b08c4c84e3380ca86cc3990208a6dc070f427bd5",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/model/head.safetensors",
+        "bytes": 12605928,
+        "sha256": "ace56742545b505e6fae34ada85c8edbeedb23ba8974d8680aebe0380d6083a1",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx",
+        "bytes": 375280,
+        "sha256": "14b7daf2eabbea922770114ce9910a12edd1c0b73589f8cc61defc57a78a812b",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx.data.0",
+        "bytes": 536552192,
+        "sha256": "3b6a4c21d6bcedbf77c2940cc0b191ccb424d2be39e2be7477b76c4eb41d3fd5",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx.data.1",
+        "bytes": 536346624,
+        "sha256": "4d9a152166e4ae4a9ded28c3447fe4fa6f0b2d40f2ecf01da9dc86cb04641080",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx.data.2",
+        "bytes": 55443456,
+        "sha256": "8feb08f1acf6caf1b95c5fec094f88cf7605701acc744b0312d836672580e524",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 1141323480,
+    "precision": "Contributor ONNX INT4 merged backbone with FP16 activations/recurrent state; unchanged official FP32 pointer heads on browser JavaScript CPU. Not the publisher BF16 release.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User explicitly authorized this separately labeled contributor INT4 export exception on 2026-10-25. Unmerged upstream PR41, not an official production browser release. No local conversion or older v19/v21 replacement.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "repository": "https://github.com/strands-labs/strands-decider",
+      "ref": "refs/pull/41/head",
+      "source_revision": "0607f4ebc4eb6c5abaefcc5489c373a7411997b1",
+      "upstream_status": "unmerged contributor PR",
+      "onnxruntime_web": "1.30.0",
+      "tokenizers": "0.2.0",
+      "backend": "WebGPU backbone and JavaScript CPU pointer readout"
+    },
+    "browser_adapter": {
+      "state": "browser-decision-smoke-passed",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Preserve upstream native formatting, option positions, FP32 head and per-kind calibration. One decide call per full request, not decideMany. Terminate its worker after the smoke.",
+      "gap": "Working status requires six real browser decisions, not a manifest or load-only check."
+    },
+    "status": "working",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Planned visiting-browser inference with static Docker Swarm and Playwright pinned to sds-01. No inference backend, remote API or Python model execution qualifies as local-browser acceptance.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://github.com/strands-labs/strands-decider/pull/41",
+      "https://huggingface.co/alxnahas/strands-decider-webgpu-ci/tree/b08c4c84e3380ca86cc3990208a6dc070f427bd5"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "kind": "native-onnx-pointer-head",
+      "model": "alxnahas/strands-decider-webgpu-ci",
+      "revision": "b08c4c84e3380ca86cc3990208a6dc070f427bd5",
+      "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx",
+      "weight_bytes": 1141323480,
+      "weights_url": "https://huggingface.co/alxnahas/strands-decider-webgpu-ci/resolve/b08c4c84e3380ca86cc3990208a6dc070f427bd5/strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/",
+      "original_model": "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610",
+      "original_revision": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
+      "application_answer_cache": false,
+      "disk_cache": false,
+      "device": "wasm",
+      "runtime_folder": "strands",
+      "gpu_computation": false
+    },
+    "official_source": {
+      "repo": "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610",
+      "revision": "216d1ccb46a9e9b036eb9187b248db98480f77d4"
+    },
+    "base_source": {
+      "repo": "Qwen/Qwen3.5-2B-Base",
+      "revision": "b1485b2fa6dfa1287294f269f5fb618e03d52d7c"
+    },
+    "conversion_manifest_sha256": "d855ce380cf949b6a0b8d549e8f83f99fb9a369f9e537ff5230f67e54966d444",
+    "artifact_files": {
+      "model/LICENSE.md": {
+        "bytes": 12636,
+        "sha256": "c0d777a0fed01cceb107d91f1aef96d51737be04f2ed75b1b933286a170d7411"
+      },
+      "model/decider_config.json": {
+        "bytes": 808,
+        "sha256": "2fa0d96b9dbd3cb97c706e153e918cbca6329611145e52528074ec8c3329c8e5"
+      },
+      "model/head.safetensors": {
+        "bytes": 12605928,
+        "sha256": "ace56742545b505e6fae34ada85c8edbeedb23ba8974d8680aebe0380d6083a1"
+      },
+      "model/tokenizer.json": {
+        "bytes": 19989592,
+        "sha256": "a2cdd2e108566b09079afa8d266e9e65e7c280f27b771218237a06de5ba9cd86"
+      },
+      "model/tokenizer_config.json": {
+        "bytes": 1128,
+        "sha256": "8671bed7c852ce9e661be94f179a7b4ffd091c2a65aea0363e5501c20318ee45"
+      },
+      "onnx/model.onnx": {
+        "bytes": 375280,
+        "sha256": "14b7daf2eabbea922770114ce9910a12edd1c0b73589f8cc61defc57a78a812b"
+      },
+      "onnx/model.onnx.data.0": {
+        "bytes": 536552192,
+        "sha256": "3b6a4c21d6bcedbf77c2940cc0b191ccb424d2be39e2be7477b76c4eb41d3fd5"
+      },
+      "onnx/model.onnx.data.1": {
+        "bytes": 536346624,
+        "sha256": "4d9a152166e4ae4a9ded28c3447fe4fa6f0b2d40f2ecf01da9dc86cb04641080"
+      },
+      "onnx/model.onnx.data.2": {
+        "bytes": 55443456,
+        "sha256": "8feb08f1acf6caf1b95c5fec094f88cf7605701acc744b0312d836672580e524"
+      }
+    },
+    "baseline": "kq-browser-decision-strands-current-int4",
+    "comparison": "Same authorized current contributor INT4 export, original unpatched runtime, native pointer head and six requests; select its explicit Wasm CPU backend after both GPU configurations failed warmup.",
+    "measured_run_id": "browser-decisions-1792882060073914754",
+    "measured_evidence": {
+      "path": ".runtime/browser-decisions/browser-decisions-1792882060073914754/browser.json",
+      "sha256": "121dfefb304ca49c10dfd6f39c7b19a61c450a7465baa0222e9b789cd04eb330"
+    },
+    "measured_date": "2026-10-25 Europe/Madrid",
+    "label": "Strands \u00b7 2B INT4 CPU",
+    "attempt": "ks-browser-decision-strands-current-int4-cpu",
+    "category": "decision"
+  },
+  {
+    "id": "strands-gpu",
+    "title": "Strands current INT4 \u00b7 native EP baseline GPU device",
+    "kind": "decision",
+    "engine": "strands-onnx",
+    "model": "alxnahas/strands-decider-webgpu-ci",
+    "revision": "b08c4c84e3380ca86cc3990208a6dc070f427bd5",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/model/head.safetensors",
+        "bytes": 12605928,
+        "sha256": "ace56742545b505e6fae34ada85c8edbeedb23ba8974d8680aebe0380d6083a1",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx",
+        "bytes": 375280,
+        "sha256": "14b7daf2eabbea922770114ce9910a12edd1c0b73589f8cc61defc57a78a812b",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx.data.0",
+        "bytes": 536552192,
+        "sha256": "3b6a4c21d6bcedbf77c2940cc0b191ccb424d2be39e2be7477b76c4eb41d3fd5",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx.data.1",
+        "bytes": 536346624,
+        "sha256": "4d9a152166e4ae4a9ded28c3447fe4fa6f0b2d40f2ecf01da9dc86cb04641080",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      },
+      {
+        "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx.data.2",
+        "bytes": 55443456,
+        "sha256": "8feb08f1acf6caf1b95c5fec094f88cf7605701acc744b0312d836672580e524",
+        "integrity": "Pinned contributor conversion manifest; checked by the upstream browser worker at first download"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 1141323480,
+    "precision": "Contributor ONNX INT4 merged backbone with FP16 activations/recurrent state; unchanged official FP32 pointer heads on browser JavaScript CPU. Not the publisher BF16 release.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User explicitly authorized this separately labeled contributor INT4 export exception on 2026-10-25. Unmerged upstream PR41, not an official production browser release. No local conversion or older v19/v21 replacement.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "repository": "https://github.com/strands-labs/strands-decider",
+      "ref": "refs/pull/41/head",
+      "source_revision": "0607f4ebc4eb6c5abaefcc5489c373a7411997b1",
+      "upstream_status": "unmerged contributor PR",
+      "onnxruntime_web": "1.30.0",
+      "tokenizers": "0.2.0",
+      "backend": "Native ORT WebGPU EP with explicitly bound shader-f16-only device; unchanged FP32 JavaScript CPU pointer head",
+      "patch": "evaluations/browser-decisions/runtime/strands-native-device.patch",
+      "patch_sha256": "5df29b3e3796624d1f5cb81154adb2e7b341c7ed8e022cd85b5b7f7258e38a8f",
+      "worker_sha256": "c4ba1adfee6e766dc064091318abca3c9fc65ac6451a4362960e409365aa6ff1"
+    },
+    "browser_adapter": {
+      "state": "native-ep-custom-device-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Preserve upstream native formatting, option positions, FP32 head and per-kind calibration. One decide call per full request, not decideMany. Terminate its worker after the smoke.",
+      "gap": "Six native GPU decisions passed; publisher BF16 equivalence, physical phones and representative resident VRAM peak remain unmeasured."
+    },
+    "status": "working",
+    "test_status": "browser-tested",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual Chromium 149 browser decisions on sds-01 through the native ORT WebGPU execution provider with a shader-f16-only custom device and unchanged CPU FP32 head. No inference backend or Python model execution.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://github.com/strands-labs/strands-decider/pull/41",
+      "https://huggingface.co/alxnahas/strands-decider-webgpu-ci/tree/b08c4c84e3380ca86cc3990208a6dc070f427bd5"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "kind": "native-onnx-pointer-head",
+      "model": "alxnahas/strands-decider-webgpu-ci",
+      "revision": "b08c4c84e3380ca86cc3990208a6dc070f427bd5",
+      "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx",
+      "weight_bytes": 1141323480,
+      "weights_url": "https://huggingface.co/alxnahas/strands-decider-webgpu-ci/resolve/b08c4c84e3380ca86cc3990208a6dc070f427bd5/strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/",
+      "original_model": "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610",
+      "original_revision": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
+      "application_answer_cache": false,
+      "disk_cache": false,
+      "runtime_folder": "strands-native-device",
+      "device_features": [
+        "shader-f16"
+      ],
+      "optional_gpu_features": false,
+      "device": "webgpu",
+      "require_native_custom_device": true
+    },
+    "official_source": {
+      "repo": "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610",
+      "revision": "216d1ccb46a9e9b036eb9187b248db98480f77d4"
+    },
+    "base_source": {
+      "repo": "Qwen/Qwen3.5-2B-Base",
+      "revision": "b1485b2fa6dfa1287294f269f5fb618e03d52d7c"
+    },
+    "conversion_manifest_sha256": "d855ce380cf949b6a0b8d549e8f83f99fb9a369f9e537ff5230f67e54966d444",
+    "artifact_files": {
+      "model/LICENSE.md": {
+        "bytes": 12636,
+        "sha256": "c0d777a0fed01cceb107d91f1aef96d51737be04f2ed75b1b933286a170d7411"
+      },
+      "model/decider_config.json": {
+        "bytes": 808,
+        "sha256": "2fa0d96b9dbd3cb97c706e153e918cbca6329611145e52528074ec8c3329c8e5"
+      },
+      "model/head.safetensors": {
+        "bytes": 12605928,
+        "sha256": "ace56742545b505e6fae34ada85c8edbeedb23ba8974d8680aebe0380d6083a1"
+      },
+      "model/tokenizer.json": {
+        "bytes": 19989592,
+        "sha256": "a2cdd2e108566b09079afa8d266e9e65e7c280f27b771218237a06de5ba9cd86"
+      },
+      "model/tokenizer_config.json": {
+        "bytes": 1128,
+        "sha256": "8671bed7c852ce9e661be94f179a7b4ffd091c2a65aea0363e5501c20318ee45"
+      },
+      "onnx/model.onnx": {
+        "bytes": 375280,
+        "sha256": "14b7daf2eabbea922770114ce9910a12edd1c0b73589f8cc61defc57a78a812b"
+      },
+      "onnx/model.onnx.data.0": {
+        "bytes": 536552192,
+        "sha256": "3b6a4c21d6bcedbf77c2940cc0b191ccb424d2be39e2be7477b76c4eb41d3fd5"
+      },
+      "onnx/model.onnx.data.1": {
+        "bytes": 536346624,
+        "sha256": "4d9a152166e4ae4a9ded28c3447fe4fa6f0b2d40f2ecf01da9dc86cb04641080"
+      },
+      "onnx/model.onnx.data.2": {
+        "bytes": 55443456,
+        "sha256": "8feb08f1acf6caf1b95c5fec094f88cf7605701acc744b0312d836672580e524"
+      }
+    },
+    "baseline": "kr-browser-decision-strands-int4-portable-gpu",
+    "comparison": "Same current graph/head/weights and ORT1.30; bind shader-f16-only device through executionProviders[0].device, rather than ignored env.webgpu.device. Inspect actual bound-device compute pipeline use.",
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792929241442058667",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "actual_native_ep_custom_device": true,
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792929241442058667/browser.json",
+      "raw_sha256": "37978b71291e0a130d752c6ec2bf7b81ab472aa3fc945645e9e78ba4daa564cb",
+      "max_probability_delta_vs_saved_ks": 0.006299999999999972,
+      "resident_vram_peak": "Not captured: fast ready/inference completed between ten-second samples; do not use 468 MiB load sample as model memory requirement.",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792929241442058667/receipt.json"
+    },
+    "label": "Strands \u00b7 2B INT4 WebGPU",
+    "attempt": "kx-browser-decision-strands-portable-matmul",
+    "category": "decision"
+  }
+]

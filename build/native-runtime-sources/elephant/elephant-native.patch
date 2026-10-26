@@ -1,0 +1,280 @@
+diff --git a/cpp/wllama-context.h b/cpp/wllama-context.h
+--- a/cpp/wllama-context.h
++++ b/cpp/wllama-context.h
+@@ -265,6 +265,7 @@
+   // one reader per in-flight request, keyed by req_id; erasing an entry cancels its unfinished tasks
+   std::unordered_map<int, std::unique_ptr<server_response_reader>> readers;
+   int next_req_id = 1;
++  bool block_readout_active = false;
+   std::unique_ptr<const server_context_meta> meta;
+ 
+   // the one inside ctx_server is private, so we keep our own copy
+@@ -771,6 +772,193 @@
+     return res;
+   }
+ 
++  // Dedicated text-only Qwen3.5 decision instance: do not mix with the server's
++  // cached completion slots. Two noncausal dense-attention batches implement
++  // prefix->prefix and suffix->(prefix+suffix); GatedDeltaNet remains causal.
++  glue_msg_get_result_res action_score_blocks(const char *req_raw)
++  {
++    glue_msg_get_result_res res;
++    res.success.value = false;
++    res.has_more.value = false;
++    res.is_error.value = true;
++    const char *stage = "request";
++    int decode_calls = 0;
++    try
++    {
++      PARSE_REQ(glue_msg_systemone_req);
++      if (!ctx || !model || !vocab)
++        throw std::runtime_error("Block readout requires a loaded model");
++      if (block_readout_active || !readers.empty() || !decision_reqs.empty() || has_more_tasks)
++        throw std::runtime_error("Block readout requires an idle dedicated instance");
++      char architecture[32] = {0};
++      if (llama_model_meta_val_str(model, "general.architecture", architecture, sizeof(architecture)) <= 0 ||
++          std::string(architecture) != "qwen35")
++        throw std::runtime_error("Block readout supports only the Qwen3.5 hybrid attention path");
++      if (llama_n_seq_max(ctx) != 1)
++        throw std::runtime_error("Block readout requires exactly one sequence");
++      const json body = json::parse(req.data_json.value);
++      const int32_t n_vocab = llama_vocab_n_tokens(vocab);
++      auto token_ids = [&](const char *key, size_t minimum, size_t maximum)
++      {
++        const auto value = body.at(key);
++        if (!value.is_array() || value.size() < minimum || value.size() > maximum)
++          throw std::runtime_error(std::string("Invalid block readout token count: ") + key);
++        std::vector<llama_token> ids;
++        ids.reserve(value.size());
++        for (size_t i = 0; i < value.size(); ++i)
++        {
++          const auto item = value.at(i);
++          if (!item.is_number_integer())
++            throw std::runtime_error(std::string("Token ID must be an integer: ") + key);
++          const int64_t id = item.get<int64_t>();
++          if (id < 0 || id >= n_vocab)
++            throw std::runtime_error(std::string("Token ID outside loaded vocabulary: ") + key);
++          ids.push_back(static_cast<llama_token>(id));
++        }
++        return ids;
++      };
++      const auto prefix = token_ids("prefix_ids", 1, 1024);
++      const auto suffix = token_ids("suffix_ids", 1, 1024);
++      const auto labels = token_ids("label_ids", 2, 256);
++      for (size_t i = 0; i < labels.size(); ++i)
++        for (size_t j = 0; j < i; ++j)
++          if (labels[i] == labels[j]) throw std::runtime_error("Duplicate slot token ID");
++      const auto index_json = body.at("readout_suffix_index");
++      if (!index_json.is_number_integer() || index_json.get<int64_t>() != static_cast<int64_t>(suffix.size()) - 1)
++        throw std::runtime_error("Block readout must select the final suffix token");
++      const size_t total = prefix.size() + suffix.size();
++      if (total > 1024 || total > llama_n_ctx(ctx) ||
++          prefix.size() > llama_n_batch(ctx) || suffix.size() > llama_n_batch(ctx) ||
++          prefix.size() > llama_n_ubatch(ctx) || suffix.size() > llama_n_ubatch(ctx))
++        throw std::runtime_error("Both blocks must fit whole microbatches and the 1024-token context budget");
++      llama_memory_t memory = llama_get_memory(ctx);
++      if (!memory) throw std::runtime_error("Block readout requires hybrid model memory");
++      const bool saved_causal = llama_get_causal_attn(ctx);
++      struct context_guard
++      {
++        llama_context *ctx;
++        llama_memory_t memory;
++        bool causal;
++        bool &active;
++        context_guard(llama_context *c, llama_memory_t m, bool prior, bool &busy)
++            : ctx(c), memory(m), causal(prior), active(busy)
++        {
++          active = true;
++        }
++        ~context_guard()
++        {
++          llama_synchronize(ctx);
++          llama_memory_clear(memory, true);
++          llama_set_causal_attn(ctx, causal);
++          active = false;
++        }
++      };
++      json answer;
++      const int64_t started = ggml_time_us();
++      {
++        context_guard cleanup(ctx, memory, saved_causal, block_readout_active);
++        llama_synchronize(ctx);
++        llama_memory_clear(memory, true);
++        if (llama_memory_seq_pos_max(memory, 0) != -1)
++          throw std::runtime_error("Hybrid memory did not reset before block readout");
++        llama_set_causal_attn(ctx, false);
++        if (llama_get_causal_attn(ctx))
++          throw std::runtime_error("Failed to enable noncausal full attention");
++        auto decode_block = [&](const std::vector<llama_token> &ids, int32_t start)
++        {
++          struct batch_guard
++          {
++            llama_batch value;
++            explicit batch_guard(int32_t size) : value(llama_batch_init(size, 0, 1)) {}
++            ~batch_guard() { llama_batch_free(value); }
++          } batch(static_cast<int32_t>(ids.size()));
++          batch.value.n_tokens = static_cast<int32_t>(ids.size());
++          for (int32_t i = 0; i < batch.value.n_tokens; ++i)
++          {
++            batch.value.token[i] = ids[i];
++            batch.value.pos[i] = start + i;
++            batch.value.n_seq_id[i] = 1;
++            batch.value.seq_id[i][0] = 0;
++            // A single final output avoids zero-output graph special cases.
++            batch.value.logits[i] = i == batch.value.n_tokens - 1;
++          }
++          const int result = llama_decode(ctx, batch.value);
++          if (result != 0)
++            throw std::runtime_error("Block decode failed with native status " + std::to_string(result));
++          ++decode_calls;
++          llama_synchronize(ctx);
++          if (llama_memory_seq_pos_max(memory, 0) != start + static_cast<int32_t>(ids.size()) - 1)
++            throw std::runtime_error("Decoded block did not preserve the expected hybrid-cache positions");
++        };
++        stage = "prefix";
++        const int64_t prefix_started = ggml_time_us();
++        decode_block(prefix, 0);
++        const double prefix_ms = (ggml_time_us() - prefix_started) / 1000.0;
++        // No memory clear, server cache reuse, or prefix-token replay here.
++        const llama_pos retained_prefix = llama_memory_seq_pos_max(memory, 0);
++        stage = "suffix";
++        const int64_t suffix_started = ggml_time_us();
++        decode_block(suffix, static_cast<int32_t>(prefix.size()));
++        const float *logits = llama_get_logits_ith(ctx, -1);
++        if (!logits) throw std::runtime_error("Native final-position logits are unavailable");
++        const double suffix_ms = (ggml_time_us() - suffix_started) / 1000.0;
++        stage = "logits";
++        double peak = -INFINITY;
++        for (int32_t i = 0; i < n_vocab; ++i)
++        {
++          if (std::isnan(logits[i]) || logits[i] == INFINITY)
++            throw std::runtime_error("Native vocabulary contains NaN or positive-infinite logits");
++          if (logits[i] > peak) peak = logits[i];
++        }
++        if (!std::isfinite(peak)) throw std::runtime_error("Native vocabulary has no finite logit");
++        double denominator = 0, numerator = 0;
++        for (int32_t i = 0; i < n_vocab; ++i) denominator += std::exp(static_cast<double>(logits[i]) - peak);
++        json selected = json::array(), label_ids = json::array(), label_pieces = json::array();
++        for (const auto id : labels)
++        {
++          if (!std::isfinite(logits[id])) throw std::runtime_error("Native slot logit is nonfinite");
++          label_ids.push_back(id);
++          label_pieces.push_back(common_token_to_piece(vocab, id, true));
++          selected.push_back(logits[id]);
++          numerator += std::exp(static_cast<double>(logits[id]) - peak);
++        }
++        double mass = numerator / denominator;
++        if (!std::isfinite(mass) || mass < 0 || mass > 1.000000000001)
++          throw std::runtime_error("Native allowed-token mass is invalid");
++        if (mass > 1) mass = 1;
++        answer = json{
++            {"label_ids", label_ids}, {"label_pieces", label_pieces}, {"logits", selected}, {"allowed_token_mass", mass},
++            {"diagnostics", {
++                {"prefix_tokens", prefix.size()}, {"suffix_tokens", suffix.size()}, {"input_tokens", total},
++                {"decode_calls", decode_calls},
++                {"microbatches", json::array({json{{"start", 0}, {"length", prefix.size()}},
++                                              json{{"start", prefix.size()}, {"length", suffix.size()}}})},
++                {"causal_full_attention", llama_get_causal_attn(ctx)}, {"causal_recurrent_attention", true},
++                {"model_architecture", architecture}, {"sequence_id", 0},
++                {"n_batch", llama_n_batch(ctx)}, {"n_ubatch", llama_n_ubatch(ctx)},
++                {"cache_reset", true}, {"cache_preserved_between_blocks", retained_prefix == static_cast<llama_pos>(prefix.size()) - 1},
++                {"readout_suffix_index", suffix.size() - 1}, {"sampled_tokens", 0},
++            }},
++            {"timings", {{"prefix_ms", prefix_ms}, {"suffix_ms", suffix_ms}}},
++        };
++      }
++      // The guard has completed: verify cleanup instead of merely promising it.
++      if (llama_get_causal_attn(ctx) != saved_causal || llama_memory_seq_pos_max(memory, 0) != -1)
++        throw std::runtime_error("Block readout failed to restore causal state and clear hybrid memory");
++      answer["diagnostics"]["causal_state_restored"] = true;
++      answer["diagnostics"]["cache_cleared_after"] = true;
++      answer["timings"]["native_elapsed_ms"] = (ggml_time_us() - started) / 1000.0;
++      res.data_json.value = answer.dump_safe();
++      res.success.value = true;
++      res.is_error.value = false;
++    }
++    catch (const std::exception &error)
++    {
++      res.data_json.value = json{{"message", error.what()}, {"stage", stage}, {"completed_decode_calls", decode_calls}}.dump_safe();
++    }
++    return res;
++  }
++
+   glue_msg_systemone_res action_systemone(const char *req_raw)
+   {
+     PARSE_REQ(glue_msg_systemone_req);
+diff --git a/cpp/wllama.cpp b/cpp/wllama.cpp
+--- a/cpp/wllama.cpp
++++ b/cpp/wllama.cpp
+@@ -114,6 +114,7 @@
+     WLLAMA_ACTION(embedding)
+     WLLAMA_ACTION(rerank)
+     WLLAMA_ACTION(systemone)
++    WLLAMA_ACTION(score_blocks)
+     WLLAMA_ACTION(get_result)
+     WLLAMA_ACTION(cancel)
+     WLLAMA_ACTION(test_backend_ops)
+diff --git a/src/wllama.ts b/src/wllama.ts
+--- a/src/wllama.ts
++++ b/src/wllama.ts
+@@ -758,6 +758,60 @@
+   }
+ 
+   /**
++   * Experimental text-only Qwen3.5 two-block decision readout.
++   * Use a dedicated instance; do not mix this with cached completion APIs.
++   * Returns original final-position FP32 logits without sampling a token.
++   */
++  async createBlockReadout(options: {
++    prefix_ids: number[];
++    suffix_ids: number[];
++    label_ids: number[];
++    readout_suffix_index: number;
++  }): Promise<{
++    label_ids: number[];
++    label_pieces: string[];
++    logits: number[];
++    allowed_token_mass: number;
++    diagnostics: {
++      prefix_tokens: number;
++      suffix_tokens: number;
++      input_tokens: number;
++      decode_calls: number;
++      microbatches: { start: number; length: number }[];
++      causal_full_attention: boolean;
++      causal_recurrent_attention: boolean;
++      model_architecture: string;
++      sequence_id: number;
++      n_batch: number;
++      n_ubatch: number;
++      cache_reset: boolean;
++      cache_preserved_between_blocks: boolean;
++      readout_suffix_index: number;
++      sampled_tokens: number;
++      causal_state_restored: boolean;
++      cache_cleared_after: boolean;
++    };
++    timings: { prefix_ms: number; suffix_ms: number; native_elapsed_ms: number };
++  }> {
++    this.checkModelLoaded();
++    const result = await this.proxy.wllamaAction<GlueMsgGetResultRes>(
++      'score_blocks',
++      { _name: 'sys1_req', data_json: JSON.stringify(options) }
++    );
++    if (result.has_more || !result.data_json) {
++      throw new WllamaError('Invalid block readout response', 'inference_error');
++    }
++    const response = this.jsonDecode(result.data_json);
++    if (!result.success || result.is_error) {
++      throw new WllamaError(
++        `Block readout ${response.stage || 'request'}: ${response.message || 'Unknown native error'}`,
++        'inference_error'
++      );
++    }
++    return response;
++  }
++
++  /**
+    * Make chat completion for a given chat messages.
+    * @param options OAI-compatible chat completion options
+    * @returns OAI-compatible chat completion response (only the final result when stream=false) or an async iterator of completion chunks (when stream=true)

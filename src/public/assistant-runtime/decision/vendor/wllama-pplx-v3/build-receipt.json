@@ -1,0 +1,24 @@
+{
+  "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+  "declared_version": "3.12.0-source",
+  "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+  "original_llama_cpp": "5aeac37a35b44fde4bdffaec9159f2fcb253b622",
+  "change": "Pinned Qwen3.5 WebGPU plus isolated Perplexity protocol-v3 inline-marker RPC; no weight conversion.",
+  "emscripten": "4.0.20",
+  "dawn_tag": "v20260317.182325",
+  "dawn_zip_sha256": "8dcae86c630d76b6794b271c6572becba36f4237d132bee121a56638c3d76575",
+  "backend": "webgpu + wasm SIMD/pthreads",
+  "cpu_heap_max_gib": 4,
+  "files": {
+    "llama-cpp.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+    "wllama.wasm": "14be4bdc0b50ad4664f6fe9602829f543558ca6c2ad6fb16a7771b374d7fdae1",
+    "upstream.patch": "6e7035dd4dbb599cc24c2346cbf1a205ee2e655d279fb8f49234e65a9ae6934d",
+    "index.js": "986903d0b17cf439bc40d647aadc1a84c84f6e2e3677f54bcc583b10f960797a"
+  },
+  "inputs_sha256": {
+    "build.sh": "d6297fd12f2e9419efcaa8131b0b1d51b912be65224edaddd79394ef260b3ea1",
+    "upstream-api.patch": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3",
+    "pplx-native.patch": "5f09e2a54cc85e627ea0e7feec799b22c539fd5fcc7adf38cbd0cde0c92ba517"
+  }
+}
