@@ -149,7 +149,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         if (typeof value?.progress === "number") status += ` ${Math.round(value.progress * 100)}%`;
       } else if (message.type === "ready") { clearTimeout(timer); phase = "ready"; status = "Ready · inference stays in this browser."; }
       else if (message.type === "update") {
-        const atBottom = followNextUpdate || !conversation || conversation.scrollHeight - conversation.scrollTop - conversation.clientHeight < 50;
+        const pane = conversation?.closest<HTMLElement>("#settings-panel");
+        const atBottom = visible && (followNextUpdate || !pane || pane.scrollHeight - pane.scrollTop - pane.clientHeight < 50);
         followNextUpdate = false;
         // A worker snapshot clones every object. Keep completed row identities so
         // streaming a reply only invalidates the message that actually changed.
@@ -158,7 +159,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           return previous && messageFields.every(key => previous[key] === next[key]) ? previous : next;
         });
         error = message.error;
-        if (atBottom) void tick().then(() => { if (alive && conversation) conversation.scrollTop = conversation.scrollHeight; });
+        if (atBottom) void tick().then(() => { if (alive && visible && pane) pane.scrollTop = pane.scrollHeight; });
       } else if (message.type === "done") { clearTimeout(timer); phase = "ready"; status = "Ready for your next message."; }
       else if (message.type === "error") failure(decodeError(message.error), message.operation);
       else if (message.type === "diagnostic") report(decodeError(message.error), message.operation);
@@ -240,7 +241,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section class="assistant-settings" aria-label="Browser assistant">
   <div class="assistant-chat">
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex (The scrollable conversation needs keyboard focus.) -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex (The conversation can receive keyboard focus for reading.) -->
   <div class="conversation" class:empty={!messages.length && phase !== "generating"} role="log" aria-label="Assistant conversation" aria-live="off" bind:this={conversation} tabindex={messages.length ? 0 : -1}>
     {#each messages as message, index}
       <article class:user={message.role === "user"} class:tool={message.role === "tool"} class:failed={message.failed}>
@@ -395,7 +396,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .error { margin: 0; padding: 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); }
   ul { margin: 12px 0 0; padding-left: 18px; }
   li { margin: 6px 0; line-height: 1.5; overflow-wrap: anywhere; }
-  .conversation { height: clamp(160px, 24dvh, 320px); overflow-y: auto; overscroll-behavior: contain; padding: 10px; border-radius: 4px; background: var(--color-background); }
+  .conversation { padding: 10px; border-radius: 4px; background: var(--color-background); }
   .conversation:not(.empty) { margin-bottom: 12px; }
   .conversation.empty { height: 0; padding: 0; }
   article { margin: 0 0 10px; padding: 12px; border-radius: 4px; background: var(--color-surface); overflow-wrap: anywhere; }
