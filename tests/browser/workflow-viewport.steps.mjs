@@ -70,7 +70,11 @@ Then('Fit View centers the graph between visible panes with {string} motion', as
   await page.getByRole('separator', { name: 'Settings pane width', exact: true }).press('Shift+ArrowRight');
   await checkFit();
   await page.setViewportSize({ width: 1280, height: 844 });
-  if (await menu.getAttribute('aria-expanded') !== 'true') await menu.click();
+  // The viewport resize reaches the app asynchronously. The last resized pane
+  // stays open; wait for that responsive state before opening navigation.
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await menu.click();
   await expect(menu).toHaveAttribute('aria-expanded', 'true');
   await expect(settings).toHaveAttribute('aria-expanded', 'false');
   await checkFit();

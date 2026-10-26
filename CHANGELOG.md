@@ -4,6 +4,17 @@
 
 <!-- changelog-latest-end -->
 
+## 0.0.65
+
+<!-- changelog-commit:3aca43efd8a3b451fd90371beafcf186839a74cb -->
+### Commit [`3aca43e`](https://github.com/superhero/operations.superduper.solutions/commit/3aca43efd8a3b451fd90371beafcf186839a74cb)
+
+```text
+fix(ci): allow paced release report publication to finish
+
+
+```
+
 ## 0.0.64
 
 <!-- changelog-commit:52cd20d50c01a8f488757e702accc40e47a23da9 -->
