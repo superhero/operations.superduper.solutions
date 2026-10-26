@@ -1006,7 +1006,9 @@ jobs:
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 3,216 report objects need at least 19 minutes at the safe R2 upload rate,
+    # before setup, network latency and retries. Keep time for complete publication.
+    timeout-minutes: 40
     env:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}

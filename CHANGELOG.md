@@ -4,6 +4,10 @@
 
 <!-- changelog-latest-end -->
 
+## 0.0.65
+
+Allow release report publication to finish at the required R2 upload rate by raising its job timeout from 20 to 40 minutes.
+
 ## 0.0.64
 
 <!-- changelog-commit:52cd20d50c01a8f488757e702accc40e47a23da9 -->
