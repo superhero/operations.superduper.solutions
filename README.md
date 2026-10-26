@@ -260,6 +260,14 @@ WebML adapter; no hosted model provider is selected.
 
 ---
 
+<a href="https://www.npmjs.com/package/@huggingface/transformers"><img src=".github/badges/version-dependency-huggingface--transformers.svg" alt="@huggingface/transformers declared version"></a>
+<a href="https://www.npmjs.com/package/@litert-lm/core"><img src=".github/badges/version-dependency-litert-lm--core.svg" alt="@litert-lm/core declared version"></a>
+
+Provide the separate local image tool and Gemma language runtime. Their pinned
+browser workers load lazily; model weights stay outside the application bundle.
+
+---
+
 <a href="https://www.npmjs.com/package/@codemirror/commands"><img src=".github/badges/version-dependency-codemirror--commands.svg" alt="@codemirror/commands declared version"></a>
 <a href="https://www.npmjs.com/package/@codemirror/lang-markdown"><img src=".github/badges/version-dependency-codemirror--lang-markdown.svg" alt="@codemirror/lang-markdown declared version"></a>
 <a href="https://www.npmjs.com/package/@codemirror/language"><img src=".github/badges/version-dependency-codemirror--language.svg" alt="@codemirror/language declared version"></a>
