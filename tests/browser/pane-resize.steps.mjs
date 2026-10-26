@@ -24,7 +24,7 @@ Then('resizing Settings changes when the catalog closes and Settings becomes ful
   await page.setViewportSize({ width: 1920, height: 1000 });
   await openCatalog(page);
   const menu = page.locator('.site-header [aria-controls="side-navigation"]');
-  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   const drawer = page.locator('#settings-panel');
   const grip = page.getByRole('separator', { name: 'Settings pane width', exact: true });
   await settings.click();
@@ -74,7 +74,7 @@ Then('the left menu resizes from its right edge without becoming narrower than 3
   await openCatalog(page);
   const catalog = page.locator('#side-navigation');
   const grip = page.getByRole('separator', { name: 'Navigation pane width', exact: true });
-  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   await settings.click();
   await expect(grip).toHaveAttribute('aria-valuemin', '320');
   await expect(grip).toHaveAttribute('aria-valuenow', '320');

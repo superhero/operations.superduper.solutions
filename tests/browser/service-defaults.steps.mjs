@@ -382,7 +382,7 @@ Then('all service schemas appear and preserve disablement renames and default pr
   await openCatalog(page);
   const root = page.locator('[data-catalog-group="ollama"] > .catalog-group > summary');
   await root.click();
-  await catalogResourcePath(page, 'ollama', ['api', 'generate']);
+  await catalogResourcePath(page, 'ollama', ['generate']);
   await page.locator('[data-operation-id="ollama:generate"] > button').click();
   await expect(page.locator('.svelte-flow__node-operation')).toContainText('Generate a response');
   await closeCatalog(page);

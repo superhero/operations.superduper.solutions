@@ -24,7 +24,7 @@ Then('Fit View centers the graph between visible panes with {string} motion', as
   const canvas = page.locator('.workflow-workspace');
   const nodes = canvas.locator('.svelte-flow__node');
   const menu = page.locator('.site-header [aria-controls="side-navigation"]');
-  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   const fit = page.getByRole('button', { name: 'Fit View', exact: true });
   const positions = await nodes.evaluateAll(elements => elements.map(element => element.style.transform));
 

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 
-const settingsToggle = page => page.locator('.site-header [aria-controls="settings-panel"]');
+const settingsToggle = page => page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
 const navToggle = page => page.locator('.site-header [aria-controls="side-navigation"]');
 async function closeInitialNavigation(page) {
   if (await navToggle(page).getAttribute('aria-expanded') === 'true') {

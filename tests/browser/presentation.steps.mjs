@@ -226,13 +226,11 @@ Then('matching menu actions retain their theme colors across evaluations', async
     await action.click();
     await expect(action).not.toHaveAttribute('aria-current');
     await page.mouse.move(0, 0);
-    await expectThemeColors(action, { color: '--color-catalog-foreground' });
-    await expect(action).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expectThemeColors(action, { color: '--color-primary-foreground', backgroundColor: '--color-primary' });
     await searchOperations(page, 'Example array response');
     await expect(action).not.toHaveAttribute('aria-current');
     await action.hover();
-    await expectThemeColors(action, { color: '--color-catalog-foreground' });
-    await expect(action).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expectThemeColors(action, { color: '--color-primary-foreground', backgroundColor: '--color-primary' });
     await expect(operationNodes(page, 'Example object response')).toHaveCount(theme === 'light' ? 1 : 2);
   }
 });
