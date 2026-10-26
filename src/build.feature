@@ -5,7 +5,7 @@ Feature: Production build
     Then the dist directory contains the application hosting files and optional speech resources
     And the hosting headers enable cross-origin isolation
     And optional speech resources preserve runtime isolation and license notices
-    And native assistant resources preserve decoded Wasm pins and hosting rewrites
+    And native assistant resources preserve decoded Wasm pins and hosted encoding
 
   Scenario: Production page exposes operations and the workflow editor
     Given the production build has completed

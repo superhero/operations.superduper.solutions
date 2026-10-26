@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { readFile } from "node:fs/promises";
@@ -103,20 +105,39 @@ Then("the production page contains the Pi assistant license notices", function (
   assert.match(html, /Copyright \(c\) 2025 Mario Zechner/);
 });
 
-Then("native assistant resources preserve decoded Wasm pins and hosting rewrites", async function () {
+Then("native assistant resources preserve decoded Wasm pins and hosted encoding", async function () {
   const versions = JSON.parse(await readFile('dist/assistant-runtime/runtime-versions.json', 'utf8'));
   assert.equal(versions.modelWeightsBundled, false);
   const compressed = JSON.parse(await readFile('dist/assistant-runtime/compressed-assets.json', 'utf8'));
   assert.ok(compressed.length > 0, 'Native runtimes must preserve oversized Wasm through encoded transport.');
-  const headers = await readFile('dist/_headers', 'utf8');
-  const redirects = await readFile('dist/_redirects', 'utf8');
+  const routes = JSON.parse(await readFile('dist/_routes.json', 'utf8'));
+  assert.deepEqual(routes, {version: 1, include: compressed.map(asset => asset.path), exclude: []});
+  const worker = (await import(pathToFileURL(resolve('dist/_worker.js')).href)).default;
   for (const asset of compressed) {
     const packed = await readFile(`dist${asset.path}.gz`);
     const decoded = gunzipSync(packed);
     assert.equal(createHash('sha256').update(decoded).digest('hex'), asset.sha256);
     assert.equal(decoded.length, asset.bytes);
     assert.ok(packed.length <= 25 * 1024 ** 2);
-    assert.ok(headers.includes(`${asset.path}\n  Content-Type: application/wasm\n  Content-Encoding: gzip\n`));
-    assert.ok(redirects.includes(`${asset.path} ${asset.path}.gz 200`));
+    const response = await worker.fetch(new Request(`https://assets.test${asset.path}`, {headers: {Range: 'bytes=0-31'}}), {
+      ASSETS: {fetch: async request => {
+        assert.equal(new URL(request.url).pathname, asset.path + '.gz');
+        assert.equal(request.headers.get('accept-encoding'), 'identity');
+        assert.equal(request.headers.get('range'), null);
+        return new Response(packed, {headers: {'Content-Type': 'application/gzip'}});
+      }},
+    });
+    assert.equal(response.headers.get('content-type'), 'application/wasm');
+    assert.equal(response.headers.get('content-encoding'), 'gzip');
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), packed);
   }
+  const fallback = new Response('ordinary static asset');
+  assert.equal(await worker.fetch(new Request('https://assets.test/'), {ASSETS: {fetch: () => fallback}}), fallback);
+  const first = compressed[0].path;
+  const denied = await worker.fetch(new Request(`https://assets.test${first}`, {method: 'POST'}), {ASSETS: {fetch: () => { throw Error('No asset read for POST'); }}});
+  assert.equal(denied.status, 405);
+  const head = await worker.fetch(new Request(`https://assets.test${first}`, {method: 'HEAD'}), {ASSETS: {fetch: () => new Response(null)}});
+  assert.equal(await head.text(), '');
+  const missing = new Response('missing asset', {status: 404});
+  assert.equal(await worker.fetch(new Request(`https://assets.test${first}`), {ASSETS: {fetch: () => missing}}), missing);
 });

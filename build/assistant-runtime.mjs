@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Build optional engines separately so opening Assistant never loads native runtimes.
 import { build } from 'vite';
+import { nativeWasmWorker } from './native-wasm-worker.mjs';
 import { cp, mkdir, readFile, readdir, writeFile, rm, stat } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
@@ -62,8 +63,8 @@ for (const variant of ['strands', 'strands-native-device']) {
   for (const name of ['ort.webgpu.min.mjs', 'ort-wasm-simd-threaded.asyncify.mjs', 'ort-wasm-simd-threaded.asyncify.wasm'])
     await cp(`node_modules/onnxruntime-web/dist/${name}`, `${target}/${name}`);
 }
-// Pages serves precompressed binaries through exact rewrites. Browser decoding
-// restores the pinned Wasm bytes; the native loaders and their URLs stay intact.
+// Pages Functions preserve the encoding of precompressed native assets.
+// Browser decoding restores pinned Wasm bytes at the unchanged loader URLs.
 const compressed = [];
 async function compressLargeAssets(folder) {
   for (const entry of (await readdir(folder, {withFileTypes: true})).sort((a,b) => a.name.localeCompare(b.name))) {
@@ -80,12 +81,8 @@ async function compressLargeAssets(folder) {
 }
 await compressLargeAssets(output);
 if (compressed.length) {
-  let headers = await readFile('dist/_headers', 'utf8').catch(() => '');
-  let redirects = await readFile('dist/_redirects', 'utf8').catch(() => '');
-  for (const item of compressed) {
-    headers += `\n${item.path}\n  Content-Type: application/wasm\n  Content-Encoding: gzip\n${item.path}.gz\n  Content-Type: application/wasm\n  Content-Encoding: gzip\n`;
-    redirects += `\n${item.path} ${item.path}.gz 200\n`;
-  }
-  await writeFile('dist/_headers', headers); await writeFile('dist/_redirects', redirects);
+  const paths = compressed.map(asset => asset.path);
+  await writeFile('dist/_worker.js', '// Copyright (C) 2026 Erik Landvall\n// SPDX-License-Identifier: AGPL-3.0-only\nexport default (' + nativeWasmWorker.toString() + ')(' + JSON.stringify(paths) + ');\n');
+  await writeFile('dist/_routes.json', JSON.stringify({version: 1, include: paths, exclude: []}, null, 2) + '\n');
 }
 await writeFile(`${output}/compressed-assets.json`, JSON.stringify(compressed, null, 2) + '\n');

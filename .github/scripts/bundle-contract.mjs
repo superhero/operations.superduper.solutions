@@ -126,8 +126,8 @@ export function validBundlePaths(paths) {
   if (!Array.isArray(paths) || new Set(paths).size !== paths.length || !BUNDLE_FILES.every(path => paths.includes(path))) return false;
   const assistant = paths.some(path => path.startsWith('assistant-runtime/'));
   if (!paths.every(path => BUNDLE_FILES.includes(path) || OAUTH_FILES.includes(path) || SPEECH_FILES.includes(path) || chunk.test(path)
-    || assistant && (path === '_redirects' || ASSISTANT_FILES.includes(path) || assistantChunk.test(path)))) return false;
-  if (assistant && (!paths.includes('_redirects') || !ASSISTANT_FILES.every(path => paths.includes(path)) || !paths.some(path => assistantChunk.test(path)))) return false;
+    || assistant && (['_worker.js', '_routes.json'].includes(path) || ASSISTANT_FILES.includes(path) || assistantChunk.test(path)))) return false;
+  if (assistant && (!['_worker.js', '_routes.json'].every(path => paths.includes(path)) || !ASSISTANT_FILES.every(path => paths.includes(path)) || !paths.some(path => assistantChunk.test(path)))) return false;
   return !paths.some(path => path.startsWith('speech/'))
     || SPEECH_FILES.every(path => paths.includes(path)) && paths.some(path => chunk.test(path));
 }

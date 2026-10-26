@@ -278,11 +278,11 @@ Then("Pages preparation fails with {string}", function (reason)
 });
 
 Then('validation manifests require complete native assistant resources and reject unlisted model weights', () => {
-  const files = { bundle: Object.fromEntries([...BUNDLE_FILES, ...ASSISTANT_FILES, '_redirects', 'assistant-runtime/chunks/vision-fixture.js'].map(path => [path, 'a'.repeat(64)])),
+  const files = { bundle: Object.fromEntries([...BUNDLE_FILES, ...ASSISTANT_FILES, '_worker.js', '_routes.json', 'assistant-runtime/chunks/vision-fixture.js'].map(path => [path, 'a'.repeat(64)])),
     coverage: { 'coverage-summary.json': 'hash', 'index.html': 'hash' },
     'test-report': Object.fromEntries([...REPORT_FILES, 'ui/assets/app.js', 'ui/assets/app.css'].map(path => [path, 'hash'])) };
   validateArtifactContract(files);
-  for (const path of [...ASSISTANT_FILES, '_redirects', 'assistant-runtime/chunks/vision-fixture.js']) {
+  for (const path of [...ASSISTANT_FILES, '_worker.js', '_routes.json', 'assistant-runtime/chunks/vision-fixture.js']) {
     const broken = structuredClone(files); delete broken.bundle[path];
     assert.throws(() => validateArtifactContract(broken), /complete bundle/, path);
   }
