@@ -528,6 +528,14 @@ chore(ci): refresh native model dependency badges
 
 ```
 
+<!-- changelog-commit:e791b06b7c73e7127d924a4efc7768a927336a56 -->
+### Commit [`e791b06`](https://github.com/superhero/operations.superduper.solutions/commit/e791b06b7c73e7127d924a4efc7768a927336a56)
+
+```text
+fix(settings): observe lazy disclosure growth and refresh browser contracts
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.63
