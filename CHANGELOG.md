@@ -6,7 +6,14 @@
 
 ## 0.0.65
 
-Allow release report publication to finish at the required R2 upload rate by raising its job timeout from 20 to 40 minutes.
+<!-- changelog-commit:3aca43efd8a3b451fd90371beafcf186839a74cb -->
+### Commit [`3aca43e`](https://github.com/superhero/operations.superduper.solutions/commit/3aca43efd8a3b451fd90371beafcf186839a74cb)
+
+```text
+fix(ci): allow paced release report publication to finish
+
+
+```
 
 ## 0.0.64
 
