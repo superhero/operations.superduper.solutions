@@ -67,10 +67,14 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
   await expect(workflow(page)).toBeFocused();
   await page.keyboard.press('Control+Shift+r');
   await expect(workflow(page).locator('.svelte-flow__node-comment')).toHaveCount(1);
+  await expect(workflow(page).getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
+  await expect(workflow(page)).toBeFocused();
   await workflow(page).focus();
   await page.keyboard.press('Escape');
   const input = workflow(page).locator('.svelte-flow__node-comment [contenteditable="true"]');
-  await input.fill('Text editing');
+  await input.focus();
+  await input.pressSequentially('Text editing');
+  await expect(input).toHaveText('Text editing');
   await input.press('Control+a');
   await expect.poll(() => input.evaluate(() => window.getSelection()?.toString())).toBe('Text editing');
   await input.press('Control+q');
