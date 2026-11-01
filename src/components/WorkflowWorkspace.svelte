@@ -56,6 +56,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowStopNode from "./workflows/WorkflowStopNode.svelte";
   import WorkflowProcessingNode from "./workflows/WorkflowProcessingNode.svelte";
   import type { ProcessingData, ProcessingKind } from "$lib/workflow-processing.ts";
+  import type { ChartData } from "$lib/workflow-chart.ts";
+  import WorkflowChartNode from "./workflows/WorkflowChartNode.svelte";
   import { isValueConnection, isWorkflowConnectionTypeCompatible } from "$lib/workflow-utilities.ts";
   import WorkflowCommentNode from "./workflows/WorkflowCommentNode.svelte";
   import WorkflowReferenceNode from "./workflows/WorkflowReferenceNode.svelte";
@@ -70,7 +72,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { toolbarButtons = defaultToolbarButtons, keybindings = defaultKeybindings, active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { toolbarButtons?: ToolbarButtons; keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode,
-    transform: WorkflowProcessingNode, filter: WorkflowProcessingNode, assert: WorkflowProcessingNode, stop: WorkflowStopNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
+    transform: WorkflowProcessingNode, filter: WorkflowProcessingNode, assert: WorkflowProcessingNode, stop: WorkflowStopNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode, chart: WorkflowChartNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: WorkflowCurveEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
@@ -196,6 +198,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return edge ? inputTypes.get(edge.source) ?? "Unknown" : "Unknown";
   });
   setContext("workflow-input-connected", (nodeId: string, handleId?: string | null) => workflowInputConnected(nodeId, handleId, edges));
+  setContext("workflow-chart", (nodeId: string, data: ChartData) => {
+    if (!keyboardActive) return;
+    const changed = nodes.map(node => node.id === nodeId && node.type === "chart" ? { ...node, data } : node);
+    const byId = new Map(changed.map(node => [node.id, node]));
+    const connections = edges.filter(edge => edge.target !== nodeId || edge.kind !== "mapping"
+      || isValueConnection(edge, byId.get(edge.source)!, byId.get(edge.target)!, edges.filter(other => other.id !== edge.id))
+        && isWorkflowConnectionTypeCompatible(edge, changed, edges));
+    applyGraph({ nodes: changed, edges: connections }, true);
+  });
   setContext("workflow-filter-assertion", {
     available: (nodeId: string) => canAddArrayFilterAssertion(nodeId, nodes, edges),
     add: (nodeId: string) => {
@@ -331,6 +342,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function storedNode(node: GraphNode): WorkflowDocumentNode {
     const common = { id: node.id, position: node.position, ...(node.hidden ? { hidden: true } : {}) };
+    if (node.type === "chart") return { ...common, type: "chart", data: { ...node.data,
+      width: node.width ?? node.data.width, height: node.height ?? node.data.height } };
     if (node.type === "comment") return { ...common, type: "comment", data: { ...node.data,
       ...(node.width ? { width: node.width } : {}), ...(node.height ? { height: node.height } : {}) } };
     if (node.type === "operation") return { ...common, ...(version >= 2 ? { type: "operation" as const } : {}), data: node.data };
@@ -673,7 +686,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally { changingOperationVersion = false; pinOperationModels(owner); }
   }
 
-  async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file" | "stop" | ProcessingKind) {
+  async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file" | "stop" | "chart" | ProcessingKind) {
     if (!keyboardActive) return;
     const nodeId = crypto.randomUUID();
     await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3, true);
@@ -1304,7 +1317,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     tooltip={descriptionError ? "Try again" : "Save workflow details"} onclick={saveWorkflowDetails}><MaterialIcon name="save" size={20} /></Button></div>
 </Modal>
 
-<Modal bind:open={runOpen} size="wide" title={`Run workflow: ${runDocument?.name ?? name}`}
+<Modal bind:open={runOpen} size="workspace" title={`Run workflow: ${runDocument?.name ?? name}`}
   onCloseAutoFocus={(event) => { event.preventDefault(); void tick().then(focusCanvas); }}>
   {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} onNativeBindingChange={bindRunCredential} onDockerBindingChange={bindRunDocker} />{/if}
 </Modal>

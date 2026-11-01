@@ -10,6 +10,27 @@ fix(ai): scroll the assistant conversation with its pane
 
 ```
 
+<!-- changelog-commit:0eecd0c2f2ae04edbf8bee57dc11a94d3a5a2971 -->
+### Commit [`0eecd0c`](https://github.com/superhero/operations.superduper.solutions/commit/0eecd0c2f2ae04edbf8bee57dc11a94d3a5a2971)
+
+```text
+feat(workflows): add live monitoring views
+
+Add one configurable visualization node for Line, Bar, Pie, Area,
+Scatter, Sankey and Table, with connected named series and live run tabs.
+Keep bounded stream samples separate from saved workflow configuration.
+
+Support theme-derived colors, optional graph patterns, region and wheel
+zoom, responsive legends, cumulative Sankey selections and typed tables.
+Include small and dense examples, stream cancellation boundaries,
+licensed dependency notices and named source/browser scenarios.
+
+Validate 44 targeted source scenarios with complete coverage across the
+seven new chart and stream modules in isolated local Docker. Preserve
+upstream defaults and its accepted assistant changes.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.65

@@ -15,6 +15,7 @@ import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
 import { createJiraBrowserEndpoint } from './jira-companion.fixture.mjs';
 import { createNativeBrowserEndpoint } from './native-runtime.fixture.mjs';
 import { createDockerBrowserEndpoint } from './docker-native.fixture.mjs';
+import { createWorkflowChartsEndpoint } from './workflow-charts-endpoint.fixture.mjs';
 import { queryArrayEndpoint } from './query-array.fixture.mjs';
 import { nullableFormEndpoint } from './nullable-form.fixture.mjs';
 import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
@@ -81,7 +82,9 @@ BeforeAll(async function () {
   nativeEndpoint = createNativeBrowserEndpoint();
   dockerEndpoint = createDockerBrowserEndpoint();
   const s3Endpoint = createS3CorsEndpoint(() => baseURL);
+  const workflowChartsEndpoint = createWorkflowChartsEndpoint();
   server = createServer((request, response) => {
+    if (workflowChartsEndpoint(request, response)) return;
     if (jiraEndpoint.handle(request, response)) return;
     if (nativeEndpoint.handle(request, response)) return;
     if (dockerEndpoint.handle(request, response)) return;

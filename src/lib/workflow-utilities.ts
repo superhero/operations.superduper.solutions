@@ -10,6 +10,7 @@ import { numericValue } from "./workflow-cast.ts";
 export { numericValue, castValue } from "./workflow-cast.ts";
 import { processingDefinition, processingInputTypes, processingOutputType, processingTypeAlternatives } from "./workflow-processing.ts";
 import { isArrayFilter, isArrayFilterReturn } from "./workflow-array-filter.ts";
+import { chartInputs } from "./workflow-chart.ts";
 
 export const switchGateLimit = 32;
 export const switchValueLimit = 4096;
@@ -237,6 +238,7 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
       if (target.type === "cast" && candidate.targetHandle === "value") return true;
       if (target.type === "data" && target.data.fields.find(field => field.id === candidate.targetHandle)?.jsonValue) return true;
     }
+    if (target.type === "chart" && output === "Unknown" && source.type === "data" && source.data.fields.find(field => field.id === candidate.sourceHandle)?.jsonValue) return true;
     if (output === "Unknown" || output === "Mixed") return false;
     // A known union can connect under the receiving port's type assumption.
     // The executor checks the actual value; connecting never casts it.
@@ -244,6 +246,8 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
   };
   const compatibleType = (candidate: ValueConnection, type: ConnectionValueType): boolean => {
     const target = byId.get(candidate.target)!;
+    if (target.type === "chart") return (target.data.kind === "table" ? ["Text", "Boolean", "Integer", "Number", "Array", "Object", "Null"]
+      : target.data.kind === "sankey" ? ["Array"] : ["Integer", "Number", "Array", "Object", "Null"]).includes(type);
     if (target.type === "transform" || target.type === "filter" || target.type === "assert") {
       const main = mainInputs(target.id);
       const accepted = processingInputTypes(target.type, target.data, candidate.targetHandle, main.length === 1 ? outputType(main[0]!.source, main[0]!.sourceHandle) : "Unknown");
@@ -311,6 +315,7 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
     source.data.gates.some(gate => gate.id === connection.sourceHandle);
   if (!sourceField && !sourceUtility && !processingSource) return false;
   if (target.type === "stop") return connection.targetHandle === "value";
+  if (target.type === "chart") return chartInputs(target.data).some(input => input.id === connection.targetHandle);
   if (target.type === "transform" || target.type === "filter" || target.type === "assert")
     return !!processingInputTypes(target.type, target.data, connection.targetHandle);
   if (target.type === "data") return target.data.direction === "inputs" &&

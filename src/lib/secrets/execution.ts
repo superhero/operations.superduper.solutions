@@ -12,7 +12,7 @@ import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariab
 import { resolvePrivateExpression } from "./processing.ts";
 import { validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
-import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
+import { workflowResponseLifetime, responseAccept, isJsonResponseStream, type ResponseProgressCallback, type ResponseValueCallback } from "../workflow-response-stream.ts";
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
 import { managedAtprotoSecrets } from "./atproto-state.ts";
@@ -37,6 +37,7 @@ export type CredentialExecutionOptions = {
   assertCurrent: () => void | Promise<void>;
   fetchRequest?: typeof fetch;
   onProgress?: ResponseProgressCallback;
+  onValue?: ResponseValueCallback;
   oauth1Clock?: OAuth1Clock;
   uploadSessions?: CloudflareUploadSessions;
   privateSecrets?: readonly string[];
@@ -287,7 +288,14 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     responseStatus = response.status;
     if (response.redirected) throw new VaultError("NETWORK");
     const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes,
-      { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}) });
+      { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(isJsonResponseStream(approved.operation.responseStream)); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}),
+        ...(options.onValue ? { onValue: sample => {
+          if (signal.aborted) throw new VaultError("CANCELLED");
+          if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
+          const scrub = redactor(secrets), body = scrub.value(sample.body);
+          if (scrub.changed) throw new VaultError("REDACTED");
+          options.onValue!({ ...sample, body });
+        } } : {}) });
     const { malformedJson, ...result } = parsed;
     if (managed && (managed.expiresAt <= Date.now() || response.ok && (!result.body || typeof result.body !== "object"
       || Array.isArray(result.body) || String((result.body as Record<string, unknown>).id) !== managed.accountId))) throw new VaultError("AUTHORIZATION");

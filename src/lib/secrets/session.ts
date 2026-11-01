@@ -809,7 +809,8 @@ export class VaultSession {
   }
 
   async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal,
-    variables?: import("./variables.ts").VaultVariableInput[], onProgress?: ResponseProgressCallback) {
+    variables?: import("./variables.ts").VaultVariableInput[], onProgress?: ResponseProgressCallback,
+    onValue?: import("../workflow-response-stream.ts").ResponseValueCallback) {
     const generation = this.generation;
     descriptor = await validateApprovedOperation(descriptor); binding = validateCredentialBinding(binding);
     let records = await this.records(); const resolved = await resolveHttpConnection(descriptor, binding, records);
@@ -870,6 +871,7 @@ export class VaultSession {
     return executeCredentialed(descriptor, values, binding, records, {
       uploadSessions: this.uploadSessions, privateSecrets: previousSecrets,
       ...(onProgress ? { onProgress: progress => { this.guard(generation); onProgress(progress); } } : {}),
+      ...(onValue ? { onValue: value => { this.guard(generation); onValue(value); } } : {}),
       ...(signal ? { signal } : {}), ...(variables ? { variables } : {}), assertCurrent: async () => {
         await this.assertSchema(descriptor);
         await this.assertCurrent();

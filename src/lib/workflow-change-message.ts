@@ -47,6 +47,7 @@ function labels(document: WorkflowDocument)
     if (node.type === "workflow") return `Workflow ${quote(node.data.name)}${ordinal}`;
     if (node.type === "comment") return `Comment${ordinal}${node.data.text.trim() ? ` ${quote(node.data.text)}` : ""}`;
     if (node.type === "stop") return `Stop${ordinal}`;
+    if (node.type === "chart") return `Chart ${quote(node.data.title)}${ordinal}`;
     if (node.type === "transform" || node.type === "filter" || node.type === "assert") return `${processingDefinition(node.type, node.data).label}${ordinal}`;
     return `${node.type === "file" ? "File upload" : node.type === "vault" ? "Vault variable" : node.type === "switch" ? "Switch" : "Cast"}${ordinal}`;
   };
@@ -68,7 +69,7 @@ function labels(document: WorkflowDocument)
       return `${label} · Input`;
     }
     if (node.type === "cast") return `${label} · ${handle === "result" ? "Result" : "Input"}`;
-    if (node.type === "stop") return `${label} · Input`;
+    if (node.type === "stop" || node.type === "chart") return `${label} · Input`;
     if (node.type === "transform" || node.type === "filter" || node.type === "assert") {
       const parameter = processingDefinition(node.type, node.data).parameters.find(field => field.name === handle && field.connectable);
       if (node.type === "filter" && node.data.operation === "array_filter" && ["item", "success", "failure"].includes(handle))
@@ -160,6 +161,13 @@ export function describeWorkflowChange(before: WorkflowDocument | null, after: W
       if (node.data.width !== old.data.width || node.data.height !== old.data.height) add("Resize", label);
       if (node.data.text !== old.data.text)
         add("Edit comment", `${previous.node(old).replace(/^Comment\s*/, "") || "text"} to ${node.data.text.trim() ? quote(node.data.text) : "empty text"}`);
+    }
+    else if (node.type === "chart" && old.type === "chart")
+    {
+      if (node.data.width !== old.data.width || node.data.height !== old.data.height) add("Resize", label);
+      const { width: _width, height: _height, ...configuration } = node.data;
+      const { width: _oldWidth, height: _oldHeight, ...previousConfiguration } = old.data;
+      if (!same(configuration, previousConfiguration)) add("Configure", label);
     }
     else if ((node.type === "transform" || node.type === "filter" || node.type === "assert") && old.type === node.type)
     {

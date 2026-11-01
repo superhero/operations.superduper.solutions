@@ -12,7 +12,7 @@ import { readVaultPreferences, saveSetting, validateVaultPreferences } from "../
 import { defaultVaultPreferences, VaultError } from "./types.ts";
 import type { VaultPreferences, VaultStatus } from "./types.ts";
 import type { VaultArguments, VaultMethod, VaultReply, VaultResult } from "./protocol.ts";
-import { isResponseProgress, isResponseStreamProfile, streamLimits, type ResponseProgressCallback } from "../workflow-response-stream.ts";
+import { isResponseProgress, isResponseValue, isJsonResponseStream, isResponseStreamProfile, streamLimits, type ResponseProgressCallback, type ResponseValueCallback } from "../workflow-response-stream.ts";
 import type { NativeProgressCallback, NativeDecision } from "../native-agent-contract.ts";
 import { nativeRuntimeLimits } from "../native-runtime-contract.ts";
 
@@ -26,7 +26,7 @@ let ceremony: AbortController | undefined;
 let connectionMetadata = Promise.resolve();
 const listeners = new Set<() => void>();
 const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void;
-  cleanup: () => void; generation: number; method: VaultMethod; nativeProgress: NativeProgressCallback | undefined; progress: ResponseProgressCallback | undefined }>();
+  cleanup: () => void; generation: number; method: VaultMethod; nativeProgress: NativeProgressCallback | undefined; progress: ResponseProgressCallback | undefined; value: ResponseValueCallback | undefined }>();
 const channel = typeof BroadcastChannel === "undefined" ? undefined : new BroadcastChannel("operations-secret-vault");
 const lifecycle = createVaultLifecycle({ now: () => Date.now(), onLock: () => lockVaultLocally(),
   onDeadline: expires => worker?.postMessage({ kind: "policy", expires }), preferences });
@@ -99,6 +99,13 @@ function ensureWorker(): Worker {
           item.progress?.({ bytes: data.progress.bytes, events: data.progress.events });
         }
       }
+      else if (data.event === "response-value") {
+        const item = pending.get(data.id);
+        if (item && item.method === "execute" && item.generation === generation && isResponseValue(data.value)) {
+          if (accessActive && !lifecycle.check()) { lockVaultLocally(); return; }
+          item.value?.(data.value);
+        }
+      }
       else if (data.event === "native-progress") {
         const item = pending.get(data.id);
         if (item && item.generation === generation && ["loginNativeRuntime", "executeNativeRuntime"].includes(item.method)) {
@@ -125,7 +132,7 @@ function ensureWorker(): Worker {
 
 const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeAtprotoOAuth", "completeJiraOAuth", "pairNativeRuntime", "pairDockerHost", "enableNativeWorkflow", "loginNativeRuntime", "restore", "addMethod", "removeMethod", "rotate"]);
 export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArguments<M>, signal?: AbortSignal, onProgress?: ResponseProgressCallback,
-  onNativeProgress?: NativeProgressCallback): Promise<VaultResult<M>> {
+  onNativeProgress?: NativeProgressCallback, onValue?: ResponseValueCallback): Promise<VaultResult<M>> {
   if (signal?.aborted) throw new VaultError("CANCELLED");
   const requestGeneration = generation;
   if (method !== "nativeConnections" && method !== "dockerConnections") await connectionMetadata;
@@ -146,9 +153,10 @@ export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArg
       lockVaultLocally();
     };
     const stream = method === "execute" && isResponseStreamProfile((args[0] as { operation?: { responseStream?: unknown } })?.operation?.responseStream);
-    const timer = setTimeout(() => lockVaultLocally(), native ? nativeRuntimeLimits.sessionMs + 10_000 : stream ? streamLimits.runMs + 30_000 : 30_000);
+    const longLived = method === "execute" && isJsonResponseStream((args[0] as { operation?: { responseStream?: import("../workflow-response-stream.ts").ResponseStreamProfile } })?.operation?.responseStream);
+    const timer = longLived ? undefined : setTimeout(() => lockVaultLocally(), native ? nativeRuntimeLimits.sessionMs + 10_000 : stream ? streamLimits.runMs + 30_000 : 30_000);
     const cleanup = () => { clearTimeout(timer); clearTimeout(cancellationTimer); signal?.removeEventListener("abort", cancel); };
-    pending.set(id, { resolve, reject, cleanup, generation, method, nativeProgress: native ? onNativeProgress : undefined, progress: method === "execute" ? onProgress : undefined });
+    pending.set(id, { resolve, reject, cleanup, generation, method, nativeProgress: native ? onNativeProgress : undefined, progress: method === "execute" ? onProgress : undefined, value: method === "execute" ? onValue : undefined });
     signal?.addEventListener("abort", cancel, { once: true });
     try { target.postMessage({ id, method, args }); }
     catch { pending.delete(id); cleanup(); reject(new VaultError("UNAVAILABLE")); lockVaultLocally(); }

@@ -85,6 +85,7 @@ self.onmessage = async ({ data }) => {
     if (method === "execute") {
       args[3] = controller.signal;
       args[5] = (progress: import("../workflow-response-stream.ts").ResponseProgress) => { assertActive(); send({ event: "response-progress", id, progress }); };
+      args[6] = (value: import("../workflow-response-stream.ts").ResponseValue) => { assertActive(); send({ event: "response-value", id, value }); };
     }
     if (method === "beginJiraOAuth") args[3] = controller.signal;
     if (method === "pollJiraOAuth") args[1] = controller.signal;

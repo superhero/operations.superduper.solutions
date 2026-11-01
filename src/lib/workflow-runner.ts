@@ -25,11 +25,12 @@ import { containsPrivateValue, isPrivateProcessingReference, privateExpressionFo
 import type { ProcessingExecutor } from "./workflow-processing-client.ts";
 import { processingDefinition, processingPreview } from "./workflow-processing.ts";
 import { arrayFilterPlans, type ArrayFilterPlan } from "./workflow-array-filter.ts";
-import type { ResponseProgressCallback } from "./workflow-response-stream.ts";
+import { isJsonResponseStream, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
+import { chartResultKey, emptyChartSnapshot, updateChartSnapshot, type ChartSnapshot } from "./workflow-chart.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
-type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" | "stop" }>;
+type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" | "stop" | "chart" }>;
 type OperationNode = Exclude<Owner, { type: "workflow" }>;
 type RoutingNode = Extract<Node, { type: "switch" | "cast" | "transform" | "filter" | "assert" }>;
 type State = "idle" | "queued" | "running" | "complete" | "skipped";
@@ -53,6 +54,11 @@ export type WorkflowVisit = {
 export type WorkflowStep = WorkflowVisit | { kind: "choice"; workflowName: string; choices: { id: string; label: string }[] }
   | { kind: "complete"; message: string };
 export type WorkflowExecution = AnyWorkflowExecutionResult & { operation: Operation; step: number; workflowName: string };
+export type WorkflowStreamStarted = { kind: "stream"; id: string };
+export type WorkflowSubmission = WorkflowExecution | WorkflowStreamStarted;
+export type WorkflowStream = { id: string; name: string; workflowName: string; state: "connecting" | "running" | "complete" | "stopped" | "error";
+  progress?: ResponseProgress; error?: string; result?: WorkflowExecution };
+
 const port = (node: string, handle: string) => JSON.stringify([node, handle]);
 const inactive = Symbol("inactive branch");
 const unsupplied = Symbol("manual input");
@@ -270,6 +276,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   let step = 0;
   let iterationStartStep = 0;
   let stopped = false;
+  let stepsComplete = false;
   let terminalError: string | undefined;
   let message = "Workflow complete.";
   let pending: AbortController | undefined;
@@ -277,6 +284,35 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   let processingController: AbortController | undefined;
   let advancing: Promise<WorkflowStep> | undefined;
   const processingResults: { nodeId: string; name: string; preview: string; matched?: boolean }[] = [];
+  const chartResults = new Map<string, ChartSnapshot>();
+  const streamingEdges = new Set<string>();
+  const chartListeners = new Set<(results: ChartSnapshot[]) => void>();
+  const activeStreams = new Map<string, AbortController>();
+  const streamResults = new Map<string, WorkflowStream>();
+  const streamListeners = new Set<(streams: WorkflowStream[]) => void>();
+  function publishStreams() {
+    if (!stopped) for (const listener of streamListeners) listener(structuredClone([...streamResults.values()]));
+  }
+
+  let chartTimer: ReturnType<typeof setTimeout> | undefined;
+  function framePath(frame: Frame): string[] {
+    const path: string[] = [];
+    for (let ancestor = frame; ancestor.parent && ancestor.call; ancestor = ancestor.parent) path.unshift(ancestor.call.id);
+    return path;
+  }
+  function captureChart(frame: Frame, edge: Frame["edges"][number], value: unknown, append = false) {
+    const node = frame.nodes.get(edge.target);
+    if (node?.type !== "chart" || node.hidden || value === inactive || value === unsupplied || value === undefined) return;
+    const path = framePath(frame), key = chartResultKey(frame.document.id, node.id, path);
+    const result = containsPrivateValue(value, runId)
+      ? { ...emptyChartSnapshot(node.id, frame.document.id, node.data), errors: { [edge.targetHandle!]: "Private vault values cannot be displayed in charts." }, error: "Private vault values cannot be displayed in charts." }
+      : updateChartSnapshot(chartResults.get(key), node.id, frame.document.id, node.data, edge.targetHandle!, value, append);
+    chartResults.set(key, { ...result, path });
+    if (!chartTimer && chartListeners.size) chartTimer = setTimeout(() => {
+      chartTimer = undefined;
+      if (!stopped) for (const listener of chartListeners) listener(structuredClone([...chartResults.values()]));
+    }, 100);
+  }
   const processor = async () => {
     if (processing) return processing;
     const { createProcessingExecutor } = await import("./workflow-processing-client.ts");
@@ -286,7 +322,12 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function endRun(reason: string) {
     stopped = true;
+    clearTimeout(chartTimer); chartTimer = undefined; chartListeners.clear();
     pending?.abort(); processingController?.abort(); processing?.dispose();
+    for (const [id, controller] of activeStreams) {
+      controller.abort(); const record = streamResults.get(id); if (record) record.state = "stopped";
+    }
+    activeStreams.clear(); streamListeners.clear();
     current = undefined; choice = undefined; terminalError = undefined;
     stack.length = 0; message = reason;
   }
@@ -311,7 +352,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     for (const edge of frame.edges.filter(edge => edge.source === nodeId && (edge.sourceHandle ?? "") === handle))
     {
       const ownerId = targetOwner(frame, edge.target);
-      if (value !== inactive && value !== unsupplied && frame.states.get(ownerId) === "complete")
+      if (value !== inactive && value !== unsupplied && frame.states.get(ownerId) === "complete" && frame.nodes.get(ownerId)?.type !== "chart")
         throw new Error("This workflow loops back to a completed operation. Remove the cycle before running it again.");
       let rowValue = value;
       if (value !== unsupplied && isFileBinaryConnection(edge, frame.document.nodes)) {
@@ -329,10 +370,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         return;
       }
       frame.contributions.set(edge.id, rowValue === inactive ? { state: "inactive" } : rowValue === unsupplied ? { state: "empty" } : { state: "value", value: structuredClone(rowValue) });
+      if (!streamingEdges.has(JSON.stringify([framePath(frame), edge.id]))) captureChart(frame, edge, rowValue);
     }
   }
 
-  function outputs(frame: Frame, node: Owner, response?: WorkflowResponse | NativeResponse, child?: Frame)
+  function outputs(frame: Frame, node: Owner, response?: WorkflowResponse | NativeResponse, child?: Frame, transient = false)
   {
     const http = response && !("protocol" in response) ? response : undefined;
     const selectedStatus = http && selectedResponseStatus(frame, node.id, http.status);
@@ -364,9 +406,15 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           value = group.startsWith("response:") ? readResponse(http, path, mappedOutput(frame, panel.id, field.id) ? headers : undefined)
             : read(http.body, path);
       }
-      emit(frame, panel.id, field.id, value);
+      if (transient) {
+        for (const edge of frame.edges.filter(edge => edge.source === panel.id && edge.sourceHandle === field.id && frame.nodes.get(edge.target)?.type === "chart")) {
+          if (value === inactive || value === undefined) continue;
+          const key = JSON.stringify([framePath(frame), edge.id]);
+          captureChart(frame, edge, value, streamingEdges.has(key)); streamingEdges.add(key);
+        }
+      } else emit(frame, panel.id, field.id, value);
     }
-    emit(frame, node.id, "", response || child ? true : inactive);
+    if (!transient) emit(frame, node.id, "", response || child ? true : inactive);
   }
 
   function settle(frame: Frame)
@@ -399,8 +447,8 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     while (true)
     {
       let changed = false;
-      for (const node of frame.document.nodes.filter((node): node is Owner | RoutingNode =>
-        isOwner(node) || node.type === "switch" || node.type === "cast" || node.type === "transform" || node.type === "filter" || node.type === "assert"))
+      for (const node of frame.document.nodes.filter((node): node is Owner | RoutingNode | Extract<Node, { type: "chart" }> =>
+        isOwner(node) || node.type === "switch" || node.type === "cast" || node.type === "transform" || node.type === "filter" || node.type === "assert" || node.type === "chart"))
       {
         if (stopped) return;
         if (node.hidden || frame.states.get(node.id) !== "idle" || !incoming(frame, node.id).length ||
@@ -419,6 +467,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         frame.states.set(node.id, "complete");
         const value = input.values.get(port(node.id, "value"));
         const mainInactive = input.inactivePorts.has(port(node.id, "value"));
+        if (node.type === "chart") {
+          continue;
+        }
         const emptyProcessingInput = (node.type === "transform" || node.type === "filter" || node.type === "assert") && input.emptyPorts.size > 0;
         if (input.emptyPorts.has(port(node.id, "value")) || emptyProcessingInput) {
           const handles = node.type === "assert" ? ["success", "failure"] : node.type === "switch" ? node.data.gates.map(gate => gate.id) : ["result"];
@@ -602,7 +653,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       while (true)
       {
         const frame = stack.at(-1);
-        if (!frame) { stopped = true; processing?.dispose(); return { kind: "complete", message }; }
+        if (!frame) { stepsComplete = true; processing?.dispose(); return { kind: "complete", message }; }
         settle(frame);
         if (stopped) return { kind: "complete", message };
         if (!frame.started)
@@ -610,7 +661,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => !isStaticSource(frame, edge.source)));
           const candidates = roots.length ? roots : frame.owners;
           if (!candidates.length) {
-            if (frame.document.nodes.some(node => ["transform", "filter", "assert", "stop"].includes(node.type!))) { frame.started = true; continue; }
+            if (frame.document.nodes.some(node => ["transform", "filter", "assert", "stop", "chart"].includes(node.type!))) { frame.started = true; continue; }
             throw new Error("This workflow has no operations to run. Add an operation first.");
           }
           if (candidates.length > 1)
@@ -697,20 +748,50 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       return advancing;
     },
     get processingResults() { return structuredClone(processingResults); },
+    get chartResults() { return structuredClone([...chartResults.values()]); },
+    subscribeCharts(listener: (results: ChartSnapshot[]) => void) {
+      chartListeners.add(listener); listener(structuredClone([...chartResults.values()]));
+      return () => { chartListeners.delete(listener); if (!chartListeners.size) { clearTimeout(chartTimer); chartTimer = undefined; } };
+    },
+    get streams() { return structuredClone([...streamResults.values()]); },
+    subscribeStreams(listener: (streams: WorkflowStream[]) => void) {
+      streamListeners.add(listener); listener(structuredClone([...streamResults.values()]));
+      return () => streamListeners.delete(listener);
+    },
+    stopStream(id: string) {
+      const controller = activeStreams.get(id);
+      if (!controller) return;
+      controller.abort();
+      const record = streamResults.get(id); if (record) record.state = "stopped";
+      publishStreams();
+    },
     async submit(values: InputValues, binding?: CredentialBinding | null, onProgress?: ResponseProgressCallback,
-      nativeBinding?: NativeWorkflowBinding | null, nativeProgress?: NativeProgressCallback, dockerBinding?: DockerBinding | null): Promise<WorkflowExecution>
+      nativeBinding?: NativeWorkflowBinding | null, nativeProgress?: NativeProgressCallback, dockerBinding?: DockerBinding | null): Promise<WorkflowSubmission>
     {
       if (!current || stopped || terminalError) throw new Error("There is no operation ready to run.");
       if (pending) throw new Error("This operation already has a request in progress.");
       for (const key of current.visit.mappedFields)
         if (values[key] !== current.visit.values[key]) throw new InputValidationError(key, "Connected values cannot be changed during a run. Update the workflow connection first.");
       const completed = current;
+      for (const panel of dataNodes(completed.frame, completed.node.id, "outputs")) for (const edge of completed.frame.edges.filter(edge => edge.source === panel.id))
+        streamingEdges.delete(JSON.stringify([framePath(completed.frame), edge.id]));
       const native = completed.visit.operation.protocol === "json-rpc";
       if (native) prepareNativeRequest(completed.visit.operation, values);
       const selectedDocker = dockerBinding === null ? undefined : dockerBinding ?? completed.visit.dockerBinding;
       if (selectedDocker) prepareDockerReadRequest(completed.visit.operation, values);
       const controller = new AbortController();
+      const streaming = !native && !selectedDocker && isJsonResponseStream(completed.visit.operation.responseStream);
+      if (streaming && activeStreams.size >= 8) throw new Error("Stop an active stream before starting another; at most eight streams can run together.");
+      let promoted = false;
+      let started!: (value: WorkflowStreamStarted) => void;
+      const firstSample = new Promise<WorkflowStreamStarted>(resolve => { started = resolve; });
+      if (streaming) {
+        activeStreams.set(completed.visit.id, controller);
+        streamResults.set(completed.visit.id, { id: completed.visit.id, name: completed.node.data.name, workflowName: completed.visit.workflowName, state: "connecting" });
+        publishStreams();
+      }
       pending = controller;
+      const completion = (async (): Promise<WorkflowExecution> => {
       let result: AnyWorkflowExecutionResult;
       // An explicit UI clear must not fall back to a previously saved credential.
       const selectedBinding = binding === null ? undefined : binding ?? completed.visit.credentialBinding;
@@ -730,29 +811,69 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           ? { ...selection, fingerprint: (await approvedOperation(operationForId(completed.visit.operation.id)!, workflowExecutionForOperation(completed.visit.operation).origin)).fingerprint } : undefined);
         result = await execution.execute(completed.visit.operation, values, controller.signal,
           executionBinding ? { binding: executionBinding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined,
-          progress => { if (!stopped && current === completed && !controller.signal.aborted) onProgress?.(progress); });
+          progress => {
+            if (stopped || controller.signal.aborted) return;
+            if (streaming && activeStreams.get(completed.visit.id) !== controller) return;
+            if (streaming) { const record = streamResults.get(completed.visit.id); if (record) { record.progress = progress; publishStreams(); } }
+            if (current === completed) onProgress?.(progress);
+          },
+          sample => {
+            if (stopped || controller.signal.aborted || (streaming ? activeStreams.get(completed.visit.id) !== controller : current !== completed)) return;
+            const response = { status: sample.status, statusText: "", headers: {}, body: sample.body, mediaType: "application/json" };
+            outputs(completed.frame, completed.node, response, undefined, true);
+            if (streaming && !promoted) {
+              promoted = true;
+              completed.frame.states.set(completed.node.id, "complete");
+              current = undefined;
+              if (pending === controller) pending = undefined;
+              try { outputs(completed.frame, completed.node, response); }
+              catch (error) { terminalError = (error as Error).message; }
+              const record = streamResults.get(completed.visit.id); if (record && !stopped) record.state = "running";
+              publishStreams(); started({ kind: "stream", id: completed.visit.id });
+            }
+          });
         }
       }
       catch (error) { if (native && !(error instanceof InputValidationError)) { terminalError = (error as Error).message; current = undefined; } throw error; }
-      finally { pending = undefined; }
-      if (stopped || current !== completed) throw new Error("This run has ended.");
+      finally { if (pending === controller) pending = undefined; }
+      if (stopped || !promoted && current !== completed) throw new Error("This run has ended.");
       if (controller.signal.aborted) throw new Error("The request was cancelled.");
-      current = undefined;
+      if (!promoted) current = undefined;
       completed.frame.states.set(completed.node.id, "complete");
       // Output routing happens after a successful response. A routing error
       // must never make the completed operation available for an accidental retry.
       try {
         if (!("protocol" in result.response) && result.response.redacted) throw new VaultError("REDACTED");
-        outputs(completed.frame, completed.node, result.response);
+        if (!promoted) outputs(completed.frame, completed.node, result.response);
       }
-      catch (error) { terminalError = (error as Error).message; }
+      catch (error) { if (promoted) throw error; terminalError = (error as Error).message; }
       return { ...result, operation: completed.visit.operation, step: completed.visit.step, workflowName: completed.visit.workflowName };
+      })();
+      const observed = completion.then(result => {
+        if (streaming) {
+          activeStreams.delete(completed.visit.id);
+          const record = streamResults.get(completed.visit.id); if (record) { record.state = "complete"; record.result = result; }
+          publishStreams();
+        }
+        return result;
+      }, error => {
+        if (streaming) {
+          activeStreams.delete(completed.visit.id);
+          const record = streamResults.get(completed.visit.id);
+          if (record) { record.state = controller.signal.aborted ? "stopped" : "error"; if (!controller.signal.aborted) record.error = error instanceof Error ? error.message : "The stream ended unexpectedly."; }
+          publishStreams();
+        }
+        throw error;
+      });
+      // Once promoted, completion is observed through stream state instead of the form promise.
+      void observed.catch(() => {});
+      return streaming ? Promise.race([firstSample, observed]) : observed;
     },
     cancelPending() {
       pending?.abort();
       if (processingController) { processingController.abort(); processing?.dispose(); processing = undefined; }
     },
     end() { endRun("Run ended."); },
-    get done() { return stopped; }
+    get done() { return stopped || stepsComplete && activeStreams.size === 0; }
   };
 }

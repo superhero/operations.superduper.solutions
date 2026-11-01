@@ -3,19 +3,22 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { WorkflowBodyError } from "./workflow-body-error.ts";
 
-export type ResponseStreamProfile = "openai-responses" | "ollama-chat" | "ollama-generate";
+export type ResponseStreamProfile = "openai-responses" | "ollama-chat" | "ollama-generate" | "sse-json" | "ndjson";
 export type ResponseProgress = { bytes: number; events: number };
 export type ResponseProgressCallback = (progress: ResponseProgress) => void;
+export type ResponseValue = { body: unknown; status: number };
+export type ResponseValueCallback = (value: ResponseValue) => void;
+export const isJsonResponseStream = (profile: ResponseStreamProfile | undefined) => profile === "sse-json" || profile === "ndjson";
 export const streamLimits = { bytes: 8 * 1024 * 1024, frameCharacters: 1024 * 1024, events: 10_000,
   depth: 64, nodes: 100_000, chunks: 65_536, idleMs: 15_000, runMs: 120_000, progressMs: 500 } as const;
 export const isResponseStreamProfile = (value: unknown): value is ResponseStreamProfile =>
-  value === "openai-responses" || value === "ollama-chat" || value === "ollama-generate";
+  value === "openai-responses" || value === "ollama-chat" || value === "ollama-generate" || value === "sse-json" || value === "ndjson";
 export function responseStreamProfile(value: unknown): ResponseStreamProfile | undefined {
   if (value === undefined) return;
   if (isResponseStreamProfile(value)) return value;
   throw new Error("This response streaming profile is not supported.");
 }
-export const streamMediaType = (profile: ResponseStreamProfile): string => profile === "openai-responses" ? "text/event-stream" : "application/x-ndjson";
+export const streamMediaType = (profile: ResponseStreamProfile): string => profile === "openai-responses" || profile === "sse-json" ? "text/event-stream" : "application/x-ndjson";
 export function responseAccept(profile: ResponseStreamProfile | undefined, fallback: string | undefined, body: unknown): string {
   const stream = object(body) ? body.stream : undefined;
   return profile && stream !== false && (profile !== "openai-responses" || stream === true) ? streamMediaType(profile) : fallback ?? "application/json";
@@ -33,12 +36,12 @@ export function workflowResponseLifetime(external?: AbortSignal) {
   const controller = new AbortController();
   let timer = setTimeout(() => controller.abort(), 15_000);
   return { timeout: controller.signal, signal: external ? AbortSignal.any([external, controller.signal]) : controller.signal,
-    beginStream() { clearTimeout(timer); timer = setTimeout(() => controller.abort(), streamLimits.runMs); },
+    beginStream(longLived = false) { clearTimeout(timer); if (!longLived) timer = setTimeout(() => controller.abort(), streamLimits.runMs); },
     dispose() { clearTimeout(timer); } };
 }
 
 const object = (value: unknown): value is Record<string, any> => !!value && typeof value === "object" && !Array.isArray(value);
-function validJson(value: unknown): void {
+export function validStreamJson(value: unknown): void {
   const stack: [unknown, number][] = [[value, 0]];
   let nodes = 0;
   while (stack.length) {
@@ -47,6 +50,15 @@ function validJson(value: unknown): void {
     if (typeof item === "number" && !Number.isFinite(item)) throw new WorkflowBodyError("FRAME");
     if (item && typeof item === "object") for (const child of Object.values(item)) stack.push([child, depth + 1]);
   }
+}
+
+export function isResponseValue(value: unknown): value is ResponseValue {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const item = value as ResponseValue;
+  if (Object.keys(item).length !== 2 || !Object.hasOwn(item, "body") || !Object.hasOwn(item, "status")
+    || !Number.isInteger(item.status) || item.status < 200 || item.status > 299) return false;
+  try { validStreamJson(item.body); return JSON.stringify(item.body).length <= streamLimits.frameCharacters; }
+  catch { return false; }
 }
 
 /** Frames stay local. Only bounded counts and the assembled terminal JSON can leave this reader. */
@@ -74,7 +86,7 @@ export async function readResponseStream(response: Response, profile: ResponseSt
     // NDJSON lines and accumulated SSE data are bounded before reaching this decoder.
     let value: unknown;
     try { value = JSON.parse(source); } catch { throw new WorkflowBodyError("FRAME"); }
-    validJson(value);
+    validStreamJson(value);
     if (!object(value)) throw new WorkflowBodyError("FRAME");
     if (profile === "openai-responses") {
       if (typeof value.type !== "string" || name && name !== "message" && name !== value.type) throw new WorkflowBodyError("FRAME");
@@ -131,7 +143,7 @@ export async function readResponseStream(response: Response, profile: ResponseSt
       result = profile === "ollama-chat" ? { ...value, model, message: { role: role || "assistant", content: text.join(""),
         ...(thinking.length ? { thinking: thinking.join("") } : {}), ...(tools.length ? { tool_calls: tools } : {}) } }
         : { ...value, model, response: text.join(""), ...(thinking.length ? { thinking: thinking.join("") } : {}) };
-      validJson(result);
+      validStreamJson(result);
     }
   }
   function line(value: string) {

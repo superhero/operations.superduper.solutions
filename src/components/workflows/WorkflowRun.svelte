@@ -21,7 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import VaultVariableAccess from "$lib/components/VaultVariableAccess.svelte";
   import { InputValidationError, prepareRequest, type InputValues } from "$lib/operation-input.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
-  import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
+  import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution, type WorkflowStream } from "$lib/workflow-runner.ts";
   import { WorkflowResponseError, workflowExecutionForOperation, type WorkflowResponse } from "$lib/workflow-execution.ts";
   import type { ResponseProgress } from "$lib/workflow-response-stream.ts";
   import type { NativeRequest, NativeResponse, NativeInteraction } from "$lib/native-agent-contract.ts";
@@ -33,12 +33,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { DockerBinding } from "$lib/secrets/docker-config.ts";
   import { prepareDockerReadRequest } from "$lib/docker-operation-input.ts";
   import OperationCapabilities from "$lib/components/OperationCapabilities.svelte";
+  import { chartResultKey, type ChartData, type ChartSnapshot } from "$lib/workflow-chart.ts";
+  import WorkflowChartView from "./WorkflowChartView.svelte";
+  import { createChartInspection, type ChartInspection } from "$lib/workflow-chart-interaction.ts";
 
   let { document, onClose, startingNodeId, onBindingChange = () => {}, onNativeBindingChange = () => {}, onDockerBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
     startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void;
     onNativeBindingChange?: (path: string[], binding: NativeWorkflowBinding) => void;
     onDockerBindingChange?: (path: string[], binding: DockerBinding | undefined) => void } = $props();
   const operationFormId = $props.id();
+  const inspections = new Map<string, ChartInspection>();
+  function inspectionFor(key: string) {
+    if (!inspections.has(key)) inspections.set(key, createChartInspection());
+    return inspections.get(key)!;
+  }
   let runner: ReturnType<typeof createWorkflowRunner> | undefined;
   let view = $state<WorkflowStep>();
   let values = $state<InputValues>({});
@@ -53,6 +61,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let operationDetails = $state(false);
   let operationDescription = $state(false);
   let executed = $state(false);
+  let currentStreamId = $state("");
+  let streams = $state<WorkflowStream[]>([]);
   let fatal = $state(false);
   let busy = $state(false);
   let sending = $state(false);
@@ -67,6 +77,36 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 
   let processingResults = $state<ReturnType<typeof createWorkflowRunner>["processingResults"]>([]);
+  let chartResults = $state<ChartSnapshot[]>([]);
+  let activeTab = $state("forms");
+  type RunView = { key: string; title: string; data: ChartData };
+  function collectViews(workflow: WorkflowDocument, path: string[] = [], prefix = ""): RunView[] {
+    return workflow.nodes.flatMap(node => node.hidden ? [] : node.type === "chart"
+      ? [{ key: chartResultKey(workflow.id, node.id, path), title: prefix + node.data.title, data: node.data }]
+      : node.type === "workflow" ? collectViews(node.data.snapshot, [...path, node.id], `${prefix}${node.data.name} / `) : []);
+  }
+  const views = $derived(collectViews(document));
+  const activeView = $derived(views.find(item => item.key === activeTab));
+  function wheelTabs(element: HTMLDivElement) {
+    const scroll = (event: WheelEvent) => {
+      // Leave horizontal trackpad input, Shift scrolling and browser zoom native.
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.deltaX || !event.deltaY || element.scrollWidth <= element.clientWidth) return;
+      const unit = event.deltaMode === 1 ? Number.parseFloat(getComputedStyle(element).lineHeight) || 16 : event.deltaMode === 2 ? element.clientWidth : 1;
+      const before = element.scrollLeft;
+      element.scrollLeft += event.deltaY * unit;
+      if (element.scrollLeft !== before) event.preventDefault();
+    };
+    element.addEventListener("wheel", scroll, { passive: false });
+    return { destroy() { element.removeEventListener("wheel", scroll); } };
+  }
+  function tabKeys(event: KeyboardEvent) {
+    const keys = ["forms", ...views.map(item => item.key)], index = keys.indexOf(activeTab);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? keys.length - 1
+      : event.key === "ArrowRight" ? (index + 1) % keys.length : event.key === "ArrowLeft" ? (index + keys.length - 1) % keys.length : -1;
+    if (next < 0) return;
+    event.preventDefault(); activeTab = keys[next]!;
+    (event.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+  }
   let processingLocked = $state(false);
   let resultsOpen = $state(false);
   let advanceRevision = 0;
@@ -82,6 +122,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     operationDetails = false;
     operationDescription = false;
     executed = false;
+    currentStreamId = "";
     retry = false;
     responseProgress = null;
     nativeApprovals = [];
@@ -91,12 +132,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (disposed || request !== advanceRevision) return;
       view = next;
       processingResults = runner!.processingResults;
+      chartResults = runner!.chartResults;
+      streams = runner!.streams;
       credentialBinding = view.kind === "operation" ? view.credentialBinding : undefined;
       nativeBinding = view.kind === "operation" ? view.nativeBinding : undefined;
       dockerBinding = view.kind === "operation" ? view.dockerBinding : undefined; dockerReady = false;
       values = view.kind === "operation" ? { ...view.values } : {};
       selected = view.kind === "choice" ? view.choices[0]?.id ?? "" : "";
-      void tick().then(() => heading?.focus());
+      void tick().then(() => { if (activeTab === "forms") heading?.focus(); });
     }
     catch (cause) {
       if (disposed || request !== advanceRevision) return;
@@ -111,6 +154,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {
     try { runner!.choose(selected); advance(); }
     catch (cause) { error = cause instanceof Error ? cause.message : "Choose a starting operation."; }
+  }
+
+  function recordExecution(result: WorkflowExecution) {
+    if (!history.some(item => item.step === result.step)) history = [...history, result];
   }
 
   async function execute(event: SubmitEvent)
@@ -136,7 +183,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         if (!disposed && view?.kind === "operation" && view.id === visitId && sending && progress.kind === "approval")
           nativeApprovals = [...nativeApprovals, progress.interaction];
       }, dockerBinding ?? null);
-      if (!disposed) { prepared = result.request; history = [...history, result]; executed = true; retry = false; }
+      if (!disposed) {
+        streams = runner!.streams;
+        if ("request" in result) { prepared = result.request; recordExecution(result); }
+        else currentStreamId = result.id;
+        executed = true; retry = false;
+      }
     }
     catch (cause)
     {
@@ -163,9 +215,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function end() { runner?.end(); onClose(); }
 
   onMount(() => {
-    try { runner = createWorkflowRunner(document, startingNodeId); advance(); }
+    let unsubscribe: (() => void) | undefined;
+    let unsubscribeStreams: (() => void) | undefined;
+    try {
+      runner = createWorkflowRunner(document, startingNodeId);
+      unsubscribe = runner.subscribeCharts(results => { if (!disposed) chartResults = results; });
+      unsubscribeStreams = runner.subscribeStreams(results => {
+        if (disposed) return;
+        streams = results;
+        for (const stream of results) if (stream.result) recordExecution(stream.result);
+      });
+      advance();
+    }
     catch (cause) { error = cause instanceof Error ? cause.message : "This workflow cannot be started."; fatal = true; }
-    return () => { disposed = true; runner?.end(); };
+    return () => { disposed = true; unsubscribe?.(); unsubscribeStreams?.(); runner?.end(); };
   });
 </script>
 
@@ -187,6 +250,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {/snippet}
 
 <div class="workflow-run">
+  {#if views.length}
+    <div class="run-tabs" use:wheelTabs role="tablist" aria-label="Workflow run views" tabindex="-1" onkeydown={tabKeys}>
+      <button type="button" role="tab" id={`${operationFormId}-forms-tab`} aria-controls={`${operationFormId}-forms-panel`}
+        aria-selected={activeTab === "forms"} tabindex={activeTab === "forms" ? 0 : -1} onclick={() => activeTab = "forms"}>Forms{error || nativeApprovals.length ? " · Attention" : ""}</button>
+      {#each views as item, index (item.key)}
+        <button type="button" role="tab" id={`${operationFormId}-view-tab-${index}`} aria-controls={`${operationFormId}-view-panel`}
+          aria-selected={activeTab === item.key} tabindex={activeTab === item.key ? 0 : -1} onclick={() => activeTab = item.key}>{item.title}</button>
+      {/each}
+    </div>
+  {/if}
+  <div class="run-forms" hidden={activeTab !== "forms"} role={views.length ? "tabpanel" : undefined}
+    id={`${operationFormId}-forms-panel`} aria-labelledby={views.length ? `${operationFormId}-forms-tab` : undefined}>
   {#if destination}
     <p class="run-endpoint">Server: <strong>{destination.origin}</strong>. Each confirmed step sends a request to this service.</p>
   {/if}
@@ -234,7 +309,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           }} />{/key}
       {/if}
       {#if view.operation.responseStream}
-        <p class="run-stream-progress" role="status" aria-label="Response progress">{sending
+        <p class="run-stream-progress" role="status" aria-label="Response progress">{currentStreamId ? `Stream ${streams.find(stream => stream.id === currentStreamId)?.state ?? "started"}. You can continue the workflow.` : sending
           ? responseProgress ? `Receiving response · ${responseProgress.events} updates` : "Waiting for response…" : ""}</p>
       {/if}
       {#if view.vaultVariables?.length && (!view.operation.security?.length || credentialBinding && view.operation.security[credentialBinding.alternative]?.length === 0)}<VaultVariableAccess disabled={busy || executed} />{/if}
@@ -251,7 +326,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#key view.id}<OperationFields operation={view.operation} {values} {fieldError} idPrefix="run" portalZIndex={90}
           disabled={busy || executed} mappedFields={view.mappedFields} onValueChange={edit} />{/key}
         {#if executed}
-          <p class="run-success" role="status">Operation completed.</p>
+          <p class="run-success" role="status">{currentStreamId ? "Stream started. It will keep updating its views as you continue." : "Operation completed."}</p>
           <button class="run-primary" type="button" onclick={advance}>Next operation</button>
         {/if}
       </form>
@@ -310,25 +385,57 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/each}
     </section>
   {/if}
+  </div>
+  {#if activeView}
+    <div class="run-view-panel" id={`${operationFormId}-view-panel`} role="tabpanel" tabindex="0"
+      aria-labelledby={`${operationFormId}-view-tab-${views.indexOf(activeView)}`}>
+      <h3>{activeView.title}</h3>
+      {#key activeView.key}<WorkflowChartView data={activeView.data} inspection={inspectionFor(activeView.key)}
+        snapshot={chartResults.find(result => chartResultKey(result.workflowId, result.nodeId, result.path) === activeView.key)} />{/key}
+    </div>
+  {/if}
+  {#if streams.length}
+    <section class="run-streams" aria-label="Workflow streams">
+      <h3>Streams · {streams.filter(stream => stream.state === "connecting" || stream.state === "running").length} active</h3>
+      {#each streams as stream (stream.id)}
+        <div class="run-stream">
+          <div><strong>{stream.name}</strong><span class="stream-state">{stream.state}{stream.progress ? ` · ${stream.progress.events} updates` : ""}</span>
+            {#if stream.error}<p class="run-error" role="alert">{stream.error}</p>{/if}</div>
+          {#if stream.state === "running" || stream.state === "connecting"}
+            <button type="button" aria-label={`Stop stream ${stream.name}`} onclick={() => runner?.stopStream(stream.id)}>Stop stream</button>
+          {/if}
+        </div>
+      {/each}
+    </section>
+  {/if}
   <footer>
     <button type="button" class="run-primary run-action run-quit" onclick={end}>
       <MaterialIcon name="backspace" size={20} /><span>Quit</span>
     </button>
     {#if busy}<button type="button" class="run-primary" onclick={() => runner?.cancelPending()}>Cancel request</button>{/if}
-    {#if view?.kind === "choice" && !fatal}
+    {#if activeTab === "forms" && view?.kind === "choice" && !fatal}
       <button type="button" class="run-primary run-action" onclick={start} disabled={!selected}>
         <span>Proceed</span><MaterialIcon name="start" size={20} />
       </button>
-    {:else if view?.kind === "operation" && !fatal && !executed}
+    {:else if activeTab === "forms" && view?.kind === "operation" && !fatal && !executed}
       <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy || view.operation.protocol === "json-rpc" && !nativeBinding || !!view.operation.dockerNative && !dockerReady}>
-        <span>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</span><MaterialIcon name="start" size={20} />
+        <span>{busy ? "Sending request…" : retry ? "Retry operation" : view.step > 1 ? "Run operation" : "Start workflow"}</span><MaterialIcon name="start" size={20} />
       </button>
     {/if}
   </footer>
 </div>
 
 <style>
-  .workflow-run { display: grid; gap: 20px; min-width: 0; }
+  .workflow-run { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; flex: 1; }
+  .run-forms:not([hidden]) { display: grid; gap: 20px; overflow: auto; min-height: 0; flex: 1; }
+  .run-tabs { display: flex; overflow-x: auto; gap: 4px; border-bottom: 1px solid var(--color-border); padding-bottom: 6px; }
+  .run-tabs button { flex-shrink: 0; }
+  .run-tabs button[aria-selected="true"] { background: var(--color-primary); color: var(--color-primary-foreground); }
+  .run-view-panel { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; min-width: 0; }
+  .run-streams { min-width: 0; max-height: 140px; overflow: auto; flex-shrink: 0; }
+  .run-stream { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--color-border); font-size: 12px; }
+  .run-stream > div { min-width: 0; }
+  .stream-state { display: block; opacity: 0.75; }
   .run-stream-progress { min-height: 18px; margin: 0; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .run-endpoint { margin: 0; padding: 12px; border-left: 3px solid var(--color-emphasis); background: var(--color-report-card); font-size: 12px; line-height: 1.6; }
   h3 { margin: 0 0 8px; font-size: 16px; }
@@ -358,5 +465,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-processing-results { min-width: 0; font-size: 12px; }
   .run-processing-results pre { max-height: 240px; padding: 8px; overflow: auto; white-space: pre; background: var(--color-report-card); }
   summary { cursor: pointer; padding: 10px 0; font-size: 12px; font-weight: 700; }
-  footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--color-surface); }
+  footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--color-surface); flex-shrink: 0; }
 </style>

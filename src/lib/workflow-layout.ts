@@ -12,8 +12,8 @@ export type WorkflowLayoutNode = WorkflowDocumentNode & {
 
 function dimensions(node: WorkflowLayoutNode) {
   return {
-    width: node.measured?.width || node.width || (node.type === "data" ? 260 : 160),
-    height: node.measured?.height || node.height || (node.type === "data" ? 64 + Math.max(node.data.fields.length, 1) * 34 : 80)
+    width: node.measured?.width || node.width || (node.type === "chart" ? node.data.width : node.type === "data" ? 260 : 160),
+    height: node.measured?.height || node.height || (node.type === "chart" ? node.data.height : node.type === "data" ? 64 + Math.max(node.data.fields.length, 1) * 34 : 80)
   };
 }
 

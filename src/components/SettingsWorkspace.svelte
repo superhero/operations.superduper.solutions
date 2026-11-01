@@ -46,6 +46,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import KeybindingsSettings from "./settings/KeybindingsSettings.svelte";
   import { defaultKeybindings, type Keybindings } from "$lib/keybindings.ts";
+  import ChartSettingsPanel from "./settings/ChartSettings.svelte";
+  import { defaultChartSettings, type ChartSettings } from "$lib/chart-settings.ts";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
   import SchemaSettings from "./settings/SchemaSettings.svelte";
   import AssistantSettings from "./settings/AssistantSettings.svelte";
@@ -59,6 +61,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { active = true, openSection = $bindable<SettingsSection>(null), dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     toolbarButtons = defaultToolbarButtons, toolbarButtonsError = "", onToolbarButtonsChange = () => {}, onRetryToolbarButtons = () => {},
     keybindings = defaultKeybindings, keybindingsError = "", onKeybindingsChange = () => {}, onRetryKeybindings = () => {},
+    chartSettings = defaultChartSettings, chartSettingsError = "", onChartSettingsChange = () => {}, onRetryChartSettings = () => {},
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
@@ -85,6 +88,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     keybindingsError?: string;
     onKeybindingsChange?: (next: Keybindings) => void;
     onRetryKeybindings?: () => void;
+    chartSettings?: ChartSettings;
+    chartSettingsError?: string;
+    onChartSettingsChange?: (next: ChartSettings) => void;
+    onRetryChartSettings?: () => void;
     locale?: LocalePreferences;
     localeError?: string;
     onLocaleChange?: (next: LocalePreferences) => void;
@@ -391,6 +398,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>
         {/if}
       </fieldset>
+      <ChartSettingsPanel value={chartSettings} onValueChange={onChartSettingsChange} error={chartSettingsError} onRetry={onRetryChartSettings} />
       <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; storageDismissing = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>

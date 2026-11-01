@@ -15,6 +15,7 @@ import { validateDockerBinding, type DockerBinding } from "./secrets/docker-conf
 import { nativeRpcMethod } from "./native-rpc.ts";
 import { processingDefinition, validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
 import { isWorkflowLineStyle, type WorkflowLineStyle } from "./workflow-line-style.ts";
+import { validateChartData, type ChartData } from "./workflow-chart.ts";
 
 export type OperationData = {
   protocol?: "json-rpc";
@@ -60,7 +61,7 @@ export type StopData = Record<string, never>;
 export type VaultVariableData = { credentialId?: string };
 export type CommentData = { text: string; width?: number; height?: number };
 export type WorkflowReferenceData = { workflowId: string; name: string; description: string; snapshot: WorkflowDocument };
-export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | StopData | CommentData | VaultVariableData | WorkflowFileData | WorkflowReferenceData | ProcessingData;
+export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | StopData | CommentData | VaultVariableData | WorkflowFileData | WorkflowReferenceData | ProcessingData | ChartData;
 type ProcessingNode = { type: "transform"; data: ProcessingData } | { type: "filter"; data: ProcessingData } | { type: "assert"; data: ProcessingData };
 export type WorkflowDocumentNode = {
   id: string;
@@ -68,7 +69,7 @@ export type WorkflowDocumentNode = {
   hidden?: boolean;
 } & ({ type?: "operation"; data: OperationData } | { type: "data"; data: WorkflowData } |
   { type: "switch"; data: SwitchData } | { type: "cast"; data: CastData } | { type: "comment"; data: CommentData } |
-  ProcessingNode | { type: "stop"; data: StopData } |
+  ProcessingNode | { type: "stop"; data: StopData } | { type: "chart"; data: ChartData } |
   { type: "workflow"; data: WorkflowReferenceData } | { type: "vault"; data: VaultVariableData } | { type: "file"; data: WorkflowFileData });
 export type WorkflowDocumentEdge = {
   id: string;
@@ -391,6 +392,7 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
         throw new Error("Vault variables require a valid local entry reference.");
       return { ...common, type: "vault", data: data.credentialId === undefined ? {} : { credentialId: data.credentialId } };
     }
+    if (extended && node.type === "chart") return { ...common, type: "chart", data: validateChartData(data) };
     if (extended && node.type === "comment") {
       const size: { width?: number; height?: number } = {};
       for (const key of ["width", "height"] as const) {
