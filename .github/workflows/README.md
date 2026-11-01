@@ -592,11 +592,13 @@ may already be deploying. Merge and production jobs have their own serialization
 
 Preview and production use the tested bundle without rebuilding. Matching
 application HTML, hosting headers, all nine favicon compatibility files and
-optional speech resources reuse the active deployment on the same branch.
-The shared bundle contract requires the eleven base files; a speech bundle
-also requires both workers, shared JavaScript chunks and every license notice.
+reviewed runtime resources reuse the active deployment on the same branch.
+The shared bundle contract requires the eleven base files. Charts require their
+modular engine and notices; speech requires both workers, shared JavaScript chunks
+and every license notice; native AI resources require their complete pinned inventory.
 Missing, empty, unsupported, symlinked and oversized files are rejected; every
 allowed filename and its bytes contribute to the deterministic bundle hash.
+The production build checks this contract before CI can merge a candidate.
 Another branch gets a separate deployment; Wrangler can reuse uploaded assets.
 
 ### Production identity

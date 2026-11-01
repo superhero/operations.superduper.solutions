@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 export const BUNDLE_FILES = ['_headers', 'apple-touch-icon.png', 'favicon.bmp', 'favicon.gif', 'favicon.ico',
   'favicon.jpg', 'favicon.png', 'favicon.ppm', 'favicon.svg', 'favicon.tiff', 'index.html'];
 export const OAUTH_FILES = ['oauth/bluesky-client-metadata.json'];
+export const CHART_FILES = ['charts/engine.js', 'charts/NOTICES.txt'];
 export const SPEECH_FILES = ['speech/worker.js', 'speech/features.js', 'speech/licenses/NOTICES.md',
   'speech/licenses/TEN-VAD-LICENSE', 'speech/licenses/TEN-VAD-NOTICES', 'speech/licenses/parakeet.js-LICENSE',
   'speech/licenses/onnxruntime-LICENSE', 'speech/licenses/onnxruntime-ThirdPartyNotices.txt'];
@@ -125,9 +126,10 @@ const chunk = /^speech\/chunks\/[A-Za-z0-9_-]+\.js$/;
 export function validBundlePaths(paths) {
   if (!Array.isArray(paths) || new Set(paths).size !== paths.length || !BUNDLE_FILES.every(path => paths.includes(path))) return false;
   const assistant = paths.some(path => path.startsWith('assistant-runtime/'));
-  if (!paths.every(path => BUNDLE_FILES.includes(path) || OAUTH_FILES.includes(path) || SPEECH_FILES.includes(path) || chunk.test(path)
+  if (!paths.every(path => BUNDLE_FILES.includes(path) || OAUTH_FILES.includes(path) || CHART_FILES.includes(path) || SPEECH_FILES.includes(path) || chunk.test(path)
     || assistant && (['_worker.js', '_routes.json'].includes(path) || ASSISTANT_FILES.includes(path) || assistantChunk.test(path)))) return false;
   if (assistant && (!['_worker.js', '_routes.json'].every(path => paths.includes(path)) || !ASSISTANT_FILES.every(path => paths.includes(path)) || !paths.some(path => assistantChunk.test(path)))) return false;
+  if (paths.some(path => path.startsWith('charts/')) && !CHART_FILES.every(path => paths.includes(path))) return false;
   return !paths.some(path => path.startsWith('speech/'))
     || SPEECH_FILES.every(path => paths.includes(path)) && paths.some(path => chunk.test(path));
 }

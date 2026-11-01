@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { readFile } from "node:fs/promises";
 import { Given, Then } from "@cucumber/cucumber";
-import { listBundleFiles, OAUTH_FILES } from "../.github/scripts/bundle-contract.mjs";
+import { listBundleFiles, OAUTH_FILES, CHART_FILES } from "../.github/scripts/bundle-contract.mjs";
 
 let html;
 
@@ -75,9 +75,17 @@ Then("the production page contains inline JavaScript", function ()
   assert.match(html, /<script\b(?=[^>]*\btype=["\']module["\'])[^>]*>.+<\/script>/s);
 });
 
-Then("the production page has no external JavaScript source", function ()
+Then("the production page has no external script elements", function ()
 {
   assert.doesNotMatch(html, /<script[^>]+src=/i);
+});
+
+Then('the graph engine and its notices belong to the verified static bundle', async () => {
+  const files = listBundleFiles('dist');
+  for (const file of CHART_FILES) assert.ok(files.includes(file), `The current build must include ${file}.`);
+  assert.match(html, /\bfrom\s*["']\/charts\/engine\.js["']/);
+  assert.doesNotMatch(html, /\bfrom\s*["']echarts\//);
+  assert.equal(await readFile('dist/charts/NOTICES.txt', 'utf8'), await readFile('src/lib/workflow-chart-NOTICES.txt', 'utf8'));
 });
 
 Then("the production page contains inline CSS", function ()

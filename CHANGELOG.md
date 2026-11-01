@@ -31,6 +31,26 @@ upstream defaults and its accepted assistant changes.
 
 ```
 
+<!-- changelog-commit:77e9310ce24516c1fc7002de2ff20f8fd223ed61 -->
+### Commit [`77e9310`](https://github.com/superhero/operations.superduper.solutions/commit/77e9310ce24516c1fc7002de2ff20f8fd223ed61)
+
+```text
+fix(build): keep monitoring runtime within hosting limits
+
+Package the selected ECharts modules and notices as reviewed static assets
+so index.html stays below Cloudflare Pages' 25 MiB per-file limit.
+Preserve development imports and define the graph library's production
+environment without relying on Node globals in the browser.
+
+Require complete chart assets and their hashes in deployment validation.
+Check the complete bundle during build, before integration can merge an
+oversized candidate. Keep size, inventory and symlink guards intact.
+
+Cover chart inventory, hashing and packaging with named scenarios, and
+verify all seven views and wheel zoom against the production module.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.65

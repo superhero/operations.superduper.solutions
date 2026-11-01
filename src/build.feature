@@ -1,6 +1,6 @@
 Feature: Production build
 
-  Scenario: Build produces an embedded application with optional speech resources
+  Scenario: Build produces an embedded core with reviewed static runtimes
     Given the production build has completed
     Then the dist directory contains the application hosting files and optional speech resources
     And the hosting headers enable cross-origin isolation
@@ -14,10 +14,11 @@ Feature: Production build
     And the production page contains the operation catalog and execution results
     And the production page contains the separate example catalogs
 
-  Scenario: JavaScript is embedded in the production page
+  Scenario: JavaScript entry is embedded and the graph engine is a reviewed static module
     Given the production build has completed
     Then the production page contains inline JavaScript
-    And the production page has no external JavaScript source
+    And the production page has no external script elements
+    And the graph engine and its notices belong to the verified static bundle
 
   Scenario: CSS is embedded in the production page
     Given the production build has completed
