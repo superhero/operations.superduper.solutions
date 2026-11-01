@@ -62,7 +62,7 @@ BeforeAll(async function () {
   const icons = new Map(await Promise.all(Object.entries(iconTypes).map(async ([filename, type]) =>
     [`/${filename}`, { type, bytes: await readFile(`dist/${filename}`) }])));
   const runtimeAssets = new Map();
-  for (const folder of ['speech', 'assistant-runtime']) {
+  for (const folder of ['charts', 'speech', 'assistant-runtime']) {
     const root = resolve('dist', folder);
     for (const entry of await readdir(root, {recursive: true, withFileTypes: true})) {
       if (!entry.isFile()) continue;

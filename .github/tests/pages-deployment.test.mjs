@@ -7,7 +7,7 @@ import { mkdirSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from 
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, get, OTHER_SHA, REPOSITORY, SHA } from "./support.mjs";
-import { BUNDLE_FILES, OAUTH_FILES, SPEECH_FILES, ASSISTANT_FILES } from '../scripts/bundle-contract.mjs';
+import { BUNDLE_FILES, OAUTH_FILES, CHART_FILES, SPEECH_FILES, ASSISTANT_FILES, listBundleFiles } from '../scripts/bundle-contract.mjs';
 import { validateArtifactContract, REPORT_FILES } from '../scripts/validation-artifacts.mjs';
 
 const PROJECT = "operations-superduper-solutions";
@@ -21,7 +21,41 @@ const hash = value => createHash("sha256").update(value).digest("hex");
 const bundleHash = files => hash(Object.keys(files).sort().map(name => `${hash(files[name])}  ${name}\n`).join(""));
 const HASH = bundleHash(FILES);
 const SPEECH = Object.fromEntries([...SPEECH_FILES, 'speech/chunks/mel-example.js'].map(path => [path, `Speech resource ${path}\n`]));
+const CHARTS = Object.fromEntries(CHART_FILES.map(path => [path, `Reviewed graph runtime: ${path}\n`]));
 const QUERY = "query($owner: String!, $name: String!, $ref: String!) { repository(owner: $owner, name: $name) { ref(qualifiedName: $ref) { target { oid } } } }";
+
+Then('chart deployment contracts require the graph engine and notices and reject unsafe assets', function () {
+  const bundle = join(this.automation.root, 'charts-dist'); mkdirSync(bundle);
+  const bytes = { ...FILES, ...CHARTS };
+  for (const [path, content] of Object.entries(bytes)) {
+    mkdirSync(join(bundle, path, '..'), { recursive: true }); writeFileSync(join(bundle, path), content);
+  }
+  assert.deepEqual(listBundleFiles(bundle), Object.keys(bytes).sort());
+  const files = { bundle: Object.fromEntries(Object.keys(bytes).map(path => [path, hash(bytes[path])])),
+    coverage: { 'coverage-summary.json': 'hash', 'index.html': 'hash' },
+    'test-report': Object.fromEntries([...REPORT_FILES, 'ui/assets/app.js', 'ui/assets/app.css'].map(path => [path, 'hash'])) };
+  validateArtifactContract(files);
+  for (const path of CHART_FILES) {
+    const broken = structuredClone(files); delete broken.bundle[path]; assert.throws(() => validateArtifactContract(broken), /complete bundle/);
+    unlinkSync(join(bundle, path)); assert.throws(() => listBundleFiles(bundle), /Incomplete/);
+    writeFileSync(join(bundle, path), ''); assert.throws(() => listBundleFiles(bundle), /Invalid bundle file/);
+    unlinkSync(join(bundle, path)); symlinkSync(join(bundle, 'index.html'), join(bundle, path)); assert.throws(() => listBundleFiles(bundle), /symlink/);
+    unlinkSync(join(bundle, path)); writeFileSync(join(bundle, path), Buffer.alloc(25 * 1024 ** 2 + 1, 1)); assert.throws(() => listBundleFiles(bundle), /size limit/);
+    writeFileSync(join(bundle, path), bytes[path]);
+  }
+  writeFileSync(join(bundle, 'charts/unreviewed.js'), 'Unexpected'); assert.throws(() => listBundleFiles(bundle), /unsupported/);
+});
+
+Given('the Pages bundle includes complete chart resources', function () {
+  this.pages.chartFiles = CHARTS;
+  for (const [path, bytes] of Object.entries(CHARTS)) {
+    const target = join(this.pages.bundle, path); mkdirSync(join(target, '..'), { recursive: true }); writeFileSync(target, bytes);
+  }
+  this.pages.initialHash = bundleHash({ ...FILES, ...CHARTS });
+});
+Given('the Pages chart resource {string} has changed', function (path) {
+  assert.ok(CHART_FILES.includes(path)); writeFileSync(join(this.pages.bundle, path), 'Changed chart resource\n');
+});
 
 Given("a tested Pages bundle for {string}", function (branch)
 {
@@ -253,7 +287,7 @@ Then("the Pages decision is deploy {string} and skipped {string}", function (dep
   const output = Object.fromEntries(readFileSync(this.automation.output, "utf8").trim().split("\n")
     .map(line => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
   assert.deepEqual(output, {
-    deploy, skipped, bundle_hash: bundleHash(Object.fromEntries(Object.keys({ ...FILES, ...this.pages.speechFiles, ...this.pages.oauthFiles })
+    deploy, skipped, bundle_hash: bundleHash(Object.fromEntries(Object.keys({ ...FILES, ...this.pages.speechFiles, ...this.pages.oauthFiles, ...this.pages.chartFiles })
       .map(filename => [filename, readFileSync(join(this.pages.bundle, filename))]))), alias_url: this.pages.alias,
     deployment_id: deploy === "false" && skipped === "false" ? ID : "",
     deployment_url: deploy === "false" && skipped === "false" ? `https://12345678.${PROJECT}.pages.dev` : ""

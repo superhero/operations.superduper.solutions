@@ -7,7 +7,7 @@
     "badges:coverage": "bash .github/scripts/generate-coverage-badge.sh tmp/test/coverage/coverage-summary.json tmp/test/badges",
     "badges:dependencies": "bash .github/scripts/generate-dependency-badges.sh package.json .github/badges",
     "badges:scenarios": "bash .github/scripts/generate-scenario-badge.sh tmp/test/badges tmp/test/vitest-source.json tmp/test/vitest-acceptance.json tmp/test/vitest-automation.json tmp/test/vitest-browser-chromium.json tmp/test/vitest-components.json tmp/test/vitest-runner.json",
-    "build": "npm run icons:check && npm run schemas:index:check && vite build && node build/speech-runtime.mjs",
+    "build": "npm run icons:check && npm run schemas:index:check && vite build && node build/chart-runtime.mjs && node build/speech-runtime.mjs && node .github/scripts/bundle-contract.mjs dist > /dev/null",
     "dev": "vite --host 127.0.0.1",
     "report:tests": "node .github/scripts/generate-test-report.mjs",
     "test": "npm run test:acceptance",

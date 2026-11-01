@@ -559,9 +559,10 @@ plugins used to produce the release build.
 
 <a href="https://www.npmjs.com/package/vite-plugin-singlefile"><img src=".github/badges/version-dependency-vite-plugin-singlefile.svg" alt="vite-plugin-singlefile declared version"></a>
 
-Packages the webpage for deployment as one HTML file with embedded JavaScript
-and CSS. The bundle also includes Cloudflare Pages `_headers` and nine favicon
-compatibility files; acceptance and deployment checks verify this exact set.
+Packages the webpage's core as one HTML file with embedded JavaScript and CSS.
+The deployment also includes Cloudflare Pages `_headers`, nine favicon
+compatibility files and reviewed chart, speech and AI runtime assets. Build and
+deployment checks verify their complete inventories and per-file size limits.
 
 ---
 

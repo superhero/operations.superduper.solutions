@@ -117,6 +117,12 @@ export default defineConfig({
   build: {
     target: "es2024",
     outDir: "../dist",
-    emptyOutDir: true
+    emptyOutDir: true,
+    // Keep the modular graph engine below Pages' per-file size limit without
+    // changing development imports or eagerly embedding it in the main HTML.
+    rollupOptions: {
+      external: ["echarts/core", "echarts/charts", "echarts/components", "echarts/renderers", "echarts/features"],
+      output: { paths: id => id.startsWith("echarts/") ? "/charts/engine.js" : id }
+    }
   }
 });

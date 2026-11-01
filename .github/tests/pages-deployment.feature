@@ -213,3 +213,19 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
 
   Scenario: Optional native assistant resources require their pinned bundle inventory
     Then validation manifests require complete native assistant resources and reject unlisted model weights
+
+  Scenario: Chart runtime assets are complete and bounded before publication
+    Then chart deployment contracts require the graph engine and notices and reject unsafe assets
+
+  Scenario Outline: Chart engine and notices participate in the destination hash
+    Given a tested Pages bundle for "develop"
+    And the Pages bundle includes complete chart resources
+    And the Pages destination is "identical"
+    And the Pages chart resource "<path>" has changed
+    When the Pages deployment is prepared
+    Then the Pages decision is deploy "true" and skipped "false"
+
+    Examples:
+      | path              |
+      | charts/engine.js  |
+      | charts/NOTICES.txt |

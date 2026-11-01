@@ -32,6 +32,9 @@ changes and live updates during the run; Reset view restores both.
 ## Inspection controls
 
 Chart action buttons use bundled font icons with tooltips and accessible names.
+Production serves the modular graph engine and its notices under `charts/` to
+keep the main HTML below the hosting file limit. Both files belong to the verified
+static deployment bundle; development resolves the same pinned ECharts modules.
 Pause switches to a resume symbol while frozen; Sankey's clear-selection icon
 retains a visible selection-count badge.
 
