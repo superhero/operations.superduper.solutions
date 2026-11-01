@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.66
+
 <!-- changelog-commit:48dd946031676a430d0f1fec95c9df958b0a4fd2 -->
 ### Commit [`48dd946`](https://github.com/superhero/operations.superduper.solutions/commit/48dd946031676a430d0f1fec95c9df958b0a4fd2)
 
@@ -50,8 +54,6 @@ Cover chart inventory, hashing and packaging with named scenarios, and
 verify all seven views and wheel zoom against the production module.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.65
 
