@@ -222,6 +222,14 @@ without exposing signing credentials to the workflow.
 
 ---
 
+<a href="https://www.npmjs.com/package/echarts"><img src=".github/badges/version-dependency-echarts.svg" alt="echarts declared version"></a>
+
+Renders workflow run Line, Bar, Pie, Area, Scatter and Sankey views. The selected
+modules use the application theme and ship with their distribution notices in the
+verified static graph runtime.
+
+---
+
 <a href="https://www.npmjs.com/package/fast-xml-parser"><img src=".github/badges/version-dependency-fast-xml-parser.svg" alt="fast-xml-parser declared version"></a>
 
 Decodes bounded AWS STS XML responses while retaining native identity fields and
