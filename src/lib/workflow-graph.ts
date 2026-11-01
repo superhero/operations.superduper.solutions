@@ -6,6 +6,7 @@ import type { Operation } from "./catalog.ts";
 import { nativeRpcOperation } from "./native-rpc.ts";
 import { fileValueType } from "./workflow-file.ts";
 import { defaultProcessingData, type ProcessingKind } from "./workflow-processing.ts";
+import { defaultChartData } from "./workflow-chart.ts";
 import { placeUtilityNode, type WorkflowLayoutNode } from "./workflow-layout.ts";
 import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type WorkflowDocument,
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
@@ -730,9 +731,10 @@ export function isWorkflowConnection(connection: { source: string; target: strin
   return isValueConnection(connection, source, target, edges) && isWorkflowConnectionTypeCompatible(connection, nodes, edges);
 }
 
-export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" | "file" | "stop" | ProcessingKind, position: { x: number; y: number }, id: string): WorkflowDocumentNode
+export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" | "file" | "stop" | "chart" | ProcessingKind, position: { x: number; y: number }, id: string): WorkflowDocumentNode
 {
   const common = { id, position: { ...position } };
+  if (type === "chart") return { ...common, type, data: defaultChartData() };
   if (type === "vault" || type === "file" || type === "stop") return { ...common, type, data: {} };
   if (type === "switch") return { ...common, type, data: { gates: [{ id: "gate-1", operator: "==", value: "" }] } };
   if (type === "cast") return { ...common, type, data: { targetType: "Text" } };

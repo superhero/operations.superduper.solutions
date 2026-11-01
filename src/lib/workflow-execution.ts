@@ -14,7 +14,7 @@ import { approvedOperation } from "./secrets/policy.ts";
 import { isBasicCredentialReference, isOAuth1CredentialReference, uploadSessionSelection, cloudflareSessionField, validateCredentialContext } from "./secrets/bindings.ts";
 import { executeVaultOperation } from "./secrets/vault-executor.ts";
 import { readWorkflowResponseBody, WorkflowBodyError } from "./workflow-response-body.ts";
-import { workflowResponseLifetime, responseAccept, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
+import { workflowResponseLifetime, responseAccept, type ResponseProgress, type ResponseProgressCallback, type ResponseValueCallback, isJsonResponseStream } from "./workflow-response-stream.ts";
 import type { NativeExecutionResult, NativeProgressCallback } from "./native-agent-contract.ts";
 import type { NativeWorkflowBinding } from "./secrets/native-runtime-config.ts";
 import type { DockerBinding } from "./secrets/docker-config.ts";
@@ -25,12 +25,12 @@ export type WorkflowResponse = { status: number; statusText: string; headers: Re
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
 export type AnyWorkflowExecutionResult = WorkflowExecutionResult | NativeExecutionResult;
 export type WorkflowExecutor = {
-  execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext, onProgress?: ResponseProgressCallback): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
+  execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext, onProgress?: ResponseProgressCallback, onValue?: ResponseValueCallback): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
   executeNative?(operation: Operation, values: InputValues, binding: NativeWorkflowBinding, signal?: AbortSignal, progress?: NativeProgressCallback): Promise<NativeExecutionResult>;
   executeDocker?(operation: Operation, values: InputValues, binding: DockerBinding, signal?: AbortSignal): Promise<WorkflowExecutionResult>;
 };
 export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: InputValues,
-  context: CredentialExecutionContext, signal?: AbortSignal, onProgress?: ResponseProgressCallback) => Promise<WorkflowExecutionResult>;
+  context: CredentialExecutionContext, signal?: AbortSignal, onProgress?: ResponseProgressCallback, onValue?: ResponseValueCallback) => Promise<WorkflowExecutionResult>;
 
 export class WorkflowResponseError extends Error
 {
@@ -83,7 +83,7 @@ function requestFailure(signal: AbortSignal | undefined, timeout: AbortSignal, m
 export function createWorkflowRequestExecution(fetchRequest: typeof fetch = globalThis.fetch): WorkflowExecutor
 {
   return {
-    async execute(operation, values, signal, context, onProgress)
+    async execute(operation, values, signal, context, onProgress, onValue)
     {
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
@@ -128,7 +128,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         let parsed: Awaited<ReturnType<typeof readWorkflowResponseBody>>;
         let streaming = false;
         try { parsed = await readWorkflowResponseBody(response, canonical, request.method, requestSignal, undefined,
-          { onStart() { streaming = true; lifetime.beginStream(); }, ...(onProgress ? { onProgress } : {}) }); }
+          { onStart() { streaming = true; lifetime.beginStream(isJsonResponseStream(canonical.responseStream)); }, ...(onProgress ? { onProgress } : {}), ...(onValue ? { onValue } : {}) }); }
         catch (error) {
           if (streaming && timeout.aborted && !signal?.aborted)
             throw new WorkflowResponseError("The streamed request timed out. Check the completed request before retrying.", { ...metadata, body: null });
@@ -160,7 +160,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       const { executeDockerWorkflow } = await import("./secrets/docker-client.ts");
       return executeDockerWorkflow(operation, values, binding, signal);
     },
-    async execute(operation, values, signal, context, onProgress) {
+    async execute(operation, values, signal, context, onProgress, onValue) {
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
@@ -173,7 +173,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       const hasVariables = invocation?.variables !== undefined;
       if (invocation?.binding.connection && !canonical.security?.length) throw new VaultError("PERMISSION");
       if (canonical.cloudflareUpload && !canonical.security?.length) throw new VaultError("PERMISSION");
-      if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal, undefined, onProgress);
+      if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal, undefined, onProgress, onValue);
       if (!invocation) throw new VaultError("PERMISSION");
       const submitted = { ...values };
       const { origin } = workflowExecutionForOperation(canonical);
@@ -182,21 +182,21 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
         || invocation.binding.fingerprint !== descriptor.fingerprint) throw new VaultError("PERMISSION");
       if (!canonical.security?.length) {
         if (invocation.binding.alternative !== 0 || Object.keys(invocation.binding.credentials).length) throw new VaultError("PERMISSION");
-        return credentialExecution(descriptor, submitted, invocation, signal, onProgress);
+        return credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue);
       }
       const alternative = canonical.security[invocation.binding.alternative];
       if (!supportedSecurityAlternative(alternative)) throw new VaultError("PERMISSION");
       if (invocation.binding.connection) {
         if (!alternative.length) throw new VaultError("PERMISSION");
-        return credentialExecution(descriptor, submitted, invocation, signal, onProgress);
+        return credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue);
       }
-      if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal, onProgress) : anonymous.execute(operation, submitted, signal, invocation, onProgress);
+      if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue) : anonymous.execute(operation, submitted, signal, invocation, onProgress, onValue);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name)
           || (scheme.kind === "basic" ? !isBasicCredentialReference(invocation.binding.credentials[scheme.name])
             : scheme.kind === "oauth1" ? !isOAuth1CredentialReference(invocation.binding.credentials[scheme.name])
             : typeof invocation.binding.credentials[scheme.name] !== "string"))) throw new VaultError("PERMISSION");
-      return credentialExecution(descriptor, submitted, invocation, signal, onProgress);
+      return credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue);
     }
   };
 }

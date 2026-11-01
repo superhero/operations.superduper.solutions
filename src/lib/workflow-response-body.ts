@@ -7,6 +7,8 @@ import type { Operation } from "./catalog.ts";
 import { encodeWorkflowBinary, maxWorkflowUploadBytes } from "./workflow-binary.ts";
 import { WorkflowBodyError } from "./workflow-body-error.ts";
 import { readResponseStream, responseStreamProfile, streamMediaType, type ResponseStreamProfile, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
+import { isJsonResponseStream, type ResponseValueCallback } from "./workflow-response-stream.ts";
+import { readJsonStream } from "./workflow-json-stream.ts";
 export { WorkflowBodyError } from "./workflow-body-error.ts";
 
 export type ResponseKind = "json" | "text" | "binary" | "stream" | "unsupported";
@@ -110,7 +112,7 @@ export function responseFileName(disposition: string | null): string {
 }
 
 export async function readWorkflowResponseBody(response: Response, operation: Operation, method: string, signal: AbortSignal,
-  textLimit = maxWorkflowResponseBytes, streaming?: { onStart: () => void; onProgress?: ResponseProgressCallback }): Promise<{
+  textLimit = maxWorkflowResponseBytes, streaming?: { onStart: () => void; onProgress?: ResponseProgressCallback; onValue?: ResponseValueCallback }): Promise<{
     body: unknown; bodyType?: "binary"; mediaType?: string; transportMediaType?: string; stream?: ResponseProgress; malformedJson?: boolean }> {
   if (method === "HEAD" || response.status === 204 || response.status === 205) {
     void response.body?.cancel().catch(() => {});
@@ -133,7 +135,9 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
   const profile = responseStreamProfile(operation.responseStream);
   if (response.ok && profile && mediaType === streamMediaType(profile) && selected === "stream" && declared?.["application/json"] === "json") {
     streaming?.onStart();
-    const final = await readResponseStream(response, profile, signal, streaming?.onProgress);
+    const final = isJsonResponseStream(profile)
+      ? await readJsonStream(response, profile === "sse-json", signal, streaming?.onProgress, streaming?.onValue)
+      : await readResponseStream(response, profile, signal, streaming?.onProgress);
     // The terminal value has the existing JSON schema; the transport remains explicit in metadata/headers.
     return { ...final, mediaType: "application/json", transportMediaType: mediaType };
   }

@@ -44,6 +44,7 @@ export async function initializeApplication(): Promise<void> {
       initialEvaluationDetails: settings.evaluationDetails,
       initialTooltips: settings.tooltips,
       initialLocale: settings.locale,
+      initialChartSettings: settings.chartSettings,
       initialKeybindings: settings.keybindings,
       initialToolbarButtons: settings.toolbarButtons,
       initialSettingsPaneWidth: settings.settingsPaneWidth,

@@ -14,6 +14,8 @@
   import { defaultKeybindings, normalizeKeybindings, shortcutAction, type Keybindings } from "$lib/keybindings.ts";
   import { applyLocaleSettings } from "$lib/datetime-state.ts";
   import { logger } from "$lib/logger.ts";
+  import { defaultChartSettings, normalizeChartSettings, type ChartSettings } from "$lib/chart-settings.ts";
+  import { chartSettingsState } from "$lib/chart-settings-state.ts";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
   import WorkflowWorkspace from "./components/WorkflowWorkspace.svelte";
@@ -27,7 +29,7 @@
   import { emptyNavigationState, flushPaneState, readPaneState, savePaneState, type NavigationPaneState, type SettingsSection } from "$lib/pane-state.ts";
   import { flushPaneScroll, rememberPaneScroll } from "$lib/pane-scroll.ts";
 
-  let { initialNavigationPaneWidth = 320, initialSettingsPaneWidth = 900, initialToolbarButtons = defaultToolbarButtons, initialKeybindings = defaultKeybindings, initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+  let { initialNavigationPaneWidth = 320, initialSettingsPaneWidth = 900, initialToolbarButtons = defaultToolbarButtons, initialKeybindings = defaultKeybindings, initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialChartSettings = defaultChartSettings, initialSettingsError = null }: {
     initialNavigationPaneWidth?: number;
     initialSettingsPaneWidth?: number;
     initialWorkflowDefaults: WorkflowDefaults;
@@ -35,6 +37,7 @@
     initialEvaluationDetails?: boolean;
     initialTooltips?: boolean;
     initialLocale?: LocaleSettings;
+    initialChartSettings?: ChartSettings;
     initialKeybindings?: Keybindings;
     initialToolbarButtons?: ToolbarButtons;
     initialSettingsError?: Error | null;
@@ -56,11 +59,15 @@
   let toolbarButtonsSave = 0;
   let keybindingsError = $state("");
   let keybindingsSave = 0;
+  let chartSettings = $state<ChartSettings>(untrack(() => normalizeChartSettings(initialChartSettings)));
+  let chartSettingsError = $state("");
+  let chartSettingsSave = 0;
+  $effect(() => { chartSettingsState.set(chartSettings); });
   let localeError = $state("");
   let localeSave = 0;
   let settingsError = $state(untrack(() => initialSettingsError));
   let settingsRetrying = $state(false);
-  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, tooltips: 0, locale: 0, keybindings: 0, toolbarButtons: 0 };
+  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, tooltips: 0, locale: 0, chartSettings: 0, keybindings: 0, toolbarButtons: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
   const resumedPanes = untrack(() => {
@@ -338,6 +345,20 @@
     });
   }
 
+  function selectChartSettings(next: ChartSettings) {
+    settingsEdits.chartSettings += 1;
+    const normalized = normalizeChartSettings(next);
+    chartSettings = normalized;
+    chartSettingsError = "";
+    const request = ++chartSettingsSave;
+    void saveSetting("chartSettings", normalized).catch(error => {
+      if (request === chartSettingsSave) {
+        chartSettingsError = "Could not save chart patterns. These choices apply only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
   function selectLocale(next: LocaleSettings) {
     settingsEdits.locale += 1;
     locale = normalizeLocaleSettings(next);
@@ -436,6 +457,7 @@
         if (edits.toolbarButtons === settingsEdits.toolbarButtons) toolbarButtons = settings.toolbarButtons;
         if (edits.keybindings === settingsEdits.keybindings) keybindings = settings.keybindings;
         if (edits.locale === settingsEdits.locale) locale = settings.locale;
+        if (edits.chartSettings === settingsEdits.chartSettings) chartSettings = settings.chartSettings;
       }
     } finally {
       settingsRetrying = false;
@@ -545,6 +567,7 @@
       <SettingsWorkspace {assistantHost} bind:openSection={settingsSection} active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {toolbarButtons} {toolbarButtonsError} onToolbarButtonsChange={selectToolbarButtons} onRetryToolbarButtons={() => selectToolbarButtons(toolbarButtons)}
           {keybindings} {keybindingsError} onKeybindingsChange={selectKeybindings} onRetryKeybindings={() => selectKeybindings(keybindings)}
+          {chartSettings} {chartSettingsError} onChartSettingsChange={selectChartSettings} onRetryChartSettings={() => selectChartSettings(chartSettings)}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}

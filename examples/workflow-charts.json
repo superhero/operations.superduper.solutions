@@ -1,0 +1,549 @@
+{
+  "version": 3,
+  "id": "workflow-chart-examples",
+  "name": "Chart examples (illustrative)",
+  "description": "Seven views with named series and table columns. Illustrative file data; no external requests.",
+  "nodes": [
+    {
+      "id": "samples",
+      "type": "file",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "file": {
+          "name": "samples.json",
+          "format": "json",
+          "source": "[{\"time\":0,\"cpu\":18,\"memory\":60,\"label\":\"Sample 1\"},{\"time\":1,\"cpu\":24,\"memory\":61,\"label\":\"Sample 2\"},{\"time\":2,\"cpu\":21,\"memory\":62,\"label\":\"Sample 3\"},{\"time\":3,\"cpu\":34,\"memory\":63,\"label\":\"Sample 4\"},{\"time\":4,\"cpu\":30,\"memory\":64,\"label\":\"Sample 5\"},{\"time\":5,\"cpu\":45,\"memory\":65,\"label\":\"Sample 6\"},{\"time\":6,\"cpu\":39,\"memory\":66,\"label\":\"Sample 7\"},{\"time\":7,\"cpu\":52,\"memory\":67,\"label\":\"Sample 8\"},{\"time\":8,\"cpu\":46,\"memory\":68,\"label\":\"Sample 9\"},{\"time\":9,\"cpu\":58,\"memory\":69,\"label\":\"Sample 10\"},{\"time\":10,\"cpu\":51,\"memory\":70,\"label\":\"Sample 11\"},{\"time\":11,\"cpu\":63,\"memory\":71,\"label\":\"Sample 12\"}]",
+          "value": [
+            {
+              "time": 0,
+              "cpu": 18,
+              "memory": 60,
+              "label": "Sample 1"
+            },
+            {
+              "time": 1,
+              "cpu": 24,
+              "memory": 61,
+              "label": "Sample 2"
+            },
+            {
+              "time": 2,
+              "cpu": 21,
+              "memory": 62,
+              "label": "Sample 3"
+            },
+            {
+              "time": 3,
+              "cpu": 34,
+              "memory": 63,
+              "label": "Sample 4"
+            },
+            {
+              "time": 4,
+              "cpu": 30,
+              "memory": 64,
+              "label": "Sample 5"
+            },
+            {
+              "time": 5,
+              "cpu": 45,
+              "memory": 65,
+              "label": "Sample 6"
+            },
+            {
+              "time": 6,
+              "cpu": 39,
+              "memory": 66,
+              "label": "Sample 7"
+            },
+            {
+              "time": 7,
+              "cpu": 52,
+              "memory": 67,
+              "label": "Sample 8"
+            },
+            {
+              "time": 8,
+              "cpu": 46,
+              "memory": 68,
+              "label": "Sample 9"
+            },
+            {
+              "time": 9,
+              "cpu": 58,
+              "memory": 69,
+              "label": "Sample 10"
+            },
+            {
+              "time": 10,
+              "cpu": 51,
+              "memory": 70,
+              "label": "Sample 11"
+            },
+            {
+              "time": 11,
+              "cpu": 63,
+              "memory": 71,
+              "label": "Sample 12"
+            }
+          ],
+          "options": {
+            "delimiter": "auto",
+            "header": "auto",
+            "quote": "auto"
+          },
+          "delimiter": "",
+          "header": false,
+          "encoding": "utf-8"
+        }
+      }
+    },
+    {
+      "id": "sankey-nodes",
+      "type": "file",
+      "position": {
+        "x": 0,
+        "y": 400
+      },
+      "data": {
+        "file": {
+          "name": "nodes.json",
+          "format": "json",
+          "source": "[\"Source\",\"CPU\",\"Memory\"]",
+          "value": [
+            "Source",
+            "CPU",
+            "Memory"
+          ],
+          "options": {
+            "delimiter": "auto",
+            "header": "auto",
+            "quote": "auto"
+          },
+          "delimiter": "",
+          "header": false,
+          "encoding": "utf-8"
+        }
+      }
+    },
+    {
+      "id": "sankey-links",
+      "type": "file",
+      "position": {
+        "x": 0,
+        "y": 700
+      },
+      "data": {
+        "file": {
+          "name": "links.json",
+          "format": "json",
+          "source": "[{\"source\":\"Source\",\"target\":\"CPU\",\"value\":42},{\"source\":\"Source\",\"target\":\"Memory\",\"value\":68}]",
+          "value": [
+            {
+              "source": "Source",
+              "target": "CPU",
+              "value": 42
+            },
+            {
+              "source": "Source",
+              "target": "Memory",
+              "value": 68
+            }
+          ],
+          "options": {
+            "delimiter": "auto",
+            "header": "auto",
+            "quote": "auto"
+          },
+          "delimiter": "",
+          "header": false,
+          "encoding": "utf-8"
+        }
+      }
+    },
+    {
+      "id": "chart-line",
+      "type": "chart",
+      "position": {
+        "x": 450,
+        "y": 0
+      },
+      "data": {
+        "title": "Line",
+        "kind": "line",
+        "xAxis": "value",
+        "xPath": "",
+        "yPath": "",
+        "series": [
+          {
+            "id": "cpu",
+            "name": "CPU",
+            "xPath": "/time",
+            "yPath": "/cpu"
+          },
+          {
+            "id": "memory",
+            "name": "Memory",
+            "xPath": "/time",
+            "yPath": "/memory"
+          }
+        ],
+        "columns": [],
+        "nodePath": "/name",
+        "sourcePath": "/source",
+        "targetPath": "/target",
+        "weightPath": "/value",
+        "maxPoints": 300,
+        "width": 360,
+        "height": 380
+      }
+    },
+    {
+      "id": "chart-bar",
+      "type": "chart",
+      "position": {
+        "x": 870,
+        "y": 0
+      },
+      "data": {
+        "title": "Bar",
+        "kind": "bar",
+        "xAxis": "value",
+        "xPath": "",
+        "yPath": "",
+        "series": [
+          {
+            "id": "cpu",
+            "name": "CPU",
+            "xPath": "/time",
+            "yPath": "/cpu"
+          },
+          {
+            "id": "memory",
+            "name": "Memory",
+            "xPath": "/time",
+            "yPath": "/memory"
+          }
+        ],
+        "columns": [],
+        "nodePath": "/name",
+        "sourcePath": "/source",
+        "targetPath": "/target",
+        "weightPath": "/value",
+        "maxPoints": 300,
+        "width": 360,
+        "height": 380
+      }
+    },
+    {
+      "id": "chart-pie",
+      "type": "chart",
+      "position": {
+        "x": 1290,
+        "y": 0
+      },
+      "data": {
+        "title": "Pie",
+        "kind": "pie",
+        "xAxis": "value",
+        "xPath": "/label",
+        "yPath": "/cpu",
+        "series": [
+          {
+            "id": "cpu",
+            "name": "CPU",
+            "xPath": "/time",
+            "yPath": "/cpu"
+          },
+          {
+            "id": "memory",
+            "name": "Memory",
+            "xPath": "/time",
+            "yPath": "/memory"
+          }
+        ],
+        "columns": [],
+        "nodePath": "/name",
+        "sourcePath": "/source",
+        "targetPath": "/target",
+        "weightPath": "/value",
+        "maxPoints": 300,
+        "width": 360,
+        "height": 380
+      }
+    },
+    {
+      "id": "chart-area",
+      "type": "chart",
+      "position": {
+        "x": 450,
+        "y": 600
+      },
+      "data": {
+        "title": "Area",
+        "kind": "area",
+        "xAxis": "value",
+        "xPath": "",
+        "yPath": "",
+        "series": [
+          {
+            "id": "cpu",
+            "name": "CPU",
+            "xPath": "/time",
+            "yPath": "/cpu"
+          },
+          {
+            "id": "memory",
+            "name": "Memory",
+            "xPath": "/time",
+            "yPath": "/memory"
+          }
+        ],
+        "columns": [],
+        "nodePath": "/name",
+        "sourcePath": "/source",
+        "targetPath": "/target",
+        "weightPath": "/value",
+        "maxPoints": 300,
+        "width": 360,
+        "height": 380
+      }
+    },
+    {
+      "id": "chart-scatter",
+      "type": "chart",
+      "position": {
+        "x": 870,
+        "y": 600
+      },
+      "data": {
+        "title": "Scatter",
+        "kind": "scatter",
+        "xAxis": "value",
+        "xPath": "",
+        "yPath": "",
+        "series": [
+          {
+            "id": "cpu",
+            "name": "CPU",
+            "xPath": "/time",
+            "yPath": "/cpu"
+          },
+          {
+            "id": "memory",
+            "name": "Memory",
+            "xPath": "/time",
+            "yPath": "/memory"
+          }
+        ],
+        "columns": [],
+        "nodePath": "/name",
+        "sourcePath": "/source",
+        "targetPath": "/target",
+        "weightPath": "/value",
+        "maxPoints": 300,
+        "width": 360,
+        "height": 380
+      }
+    },
+    {
+      "id": "chart-sankey",
+      "type": "chart",
+      "position": {
+        "x": 1290,
+        "y": 600
+      },
+      "data": {
+        "title": "Sankey",
+        "kind": "sankey",
+        "xAxis": "value",
+        "xPath": "",
+        "yPath": "",
+        "series": [
+          {
+            "id": "cpu",
+            "name": "CPU",
+            "xPath": "/time",
+            "yPath": "/cpu"
+          },
+          {
+            "id": "memory",
+            "name": "Memory",
+            "xPath": "/time",
+            "yPath": "/memory"
+          }
+        ],
+        "columns": [],
+        "nodePath": "/name",
+        "sourcePath": "/source",
+        "targetPath": "/target",
+        "weightPath": "/value",
+        "maxPoints": 300,
+        "width": 360,
+        "height": 380
+      }
+    },
+    {
+      "id": "chart-table",
+      "type": "chart",
+      "position": {
+        "x": 450,
+        "y": 1200
+      },
+      "data": {
+        "title": "Table",
+        "kind": "table",
+        "xAxis": "value",
+        "xPath": "",
+        "yPath": "",
+        "series": [
+          {
+            "id": "cpu",
+            "name": "CPU",
+            "xPath": "/time",
+            "yPath": "/cpu"
+          },
+          {
+            "id": "memory",
+            "name": "Memory",
+            "xPath": "/time",
+            "yPath": "/memory"
+          }
+        ],
+        "columns": [
+          {
+            "id": "time",
+            "label": "Time",
+            "path": "/time"
+          },
+          {
+            "id": "cpu",
+            "label": "CPU",
+            "path": "/cpu"
+          },
+          {
+            "id": "memory",
+            "label": "MEMORY",
+            "path": "/memory"
+          }
+        ],
+        "nodePath": "/name",
+        "sourcePath": "/source",
+        "targetPath": "/target",
+        "weightPath": "/value",
+        "maxPoints": 300,
+        "width": 360,
+        "height": 380
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "samples-chart-line-cpu",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-line",
+      "targetHandle": "cpu"
+    },
+    {
+      "id": "samples-chart-line-memory",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-line",
+      "targetHandle": "memory"
+    },
+    {
+      "id": "samples-chart-bar-cpu",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-bar",
+      "targetHandle": "cpu"
+    },
+    {
+      "id": "samples-chart-bar-memory",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-bar",
+      "targetHandle": "memory"
+    },
+    {
+      "id": "samples-chart-pie-value",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-pie",
+      "targetHandle": "value"
+    },
+    {
+      "id": "samples-chart-area-cpu",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-area",
+      "targetHandle": "cpu"
+    },
+    {
+      "id": "samples-chart-area-memory",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-area",
+      "targetHandle": "memory"
+    },
+    {
+      "id": "samples-chart-scatter-cpu",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-scatter",
+      "targetHandle": "cpu"
+    },
+    {
+      "id": "samples-chart-scatter-memory",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-scatter",
+      "targetHandle": "memory"
+    },
+    {
+      "id": "sankey-nodes-chart-sankey-nodes",
+      "kind": "mapping",
+      "source": "sankey-nodes",
+      "sourceHandle": "value",
+      "target": "chart-sankey",
+      "targetHandle": "nodes"
+    },
+    {
+      "id": "sankey-links-chart-sankey-links",
+      "kind": "mapping",
+      "source": "sankey-links",
+      "sourceHandle": "value",
+      "target": "chart-sankey",
+      "targetHandle": "links"
+    },
+    {
+      "id": "samples-chart-table-rows",
+      "kind": "mapping",
+      "source": "samples",
+      "sourceHandle": "value",
+      "target": "chart-table",
+      "targetHandle": "rows"
+    }
+  ],
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 0.6
+  },
+  "snap": true,
+  "curved": true,
+  "dashed": false
+}

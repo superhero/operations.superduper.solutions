@@ -86,7 +86,7 @@ export default defineConfig({
       transformIndexHtml: {
         order: "post",
         handler(html) {
-          const notice = ["./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md"]
+          const notice = ["./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md", "./src/lib/workflow-chart-NOTICES.txt"]
             .map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n\n");
           return html.replace("</head>", `<!--\n${notice.replaceAll("--", "—")}\n-->\n</head>`);
         }

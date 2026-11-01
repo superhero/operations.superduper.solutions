@@ -7,6 +7,7 @@ import { normalizeKeybindings, type Keybindings } from "./keybindings.ts";
 import { logger } from "./logger.ts";
 import { reportStartup } from "./startup-progress.ts";
 import { normalizeLocaleSettings, type LocaleSettings } from "./locale-settings.ts";
+import { normalizeChartSettings, type ChartSettings } from "./chart-settings.ts";
 import { readAppearanceCache, writeAppearanceCache } from "./appearance-cache.ts";
 import { defaultVaultPreferences, VaultError, type VaultPreferences } from "./secrets/types.ts";
 
@@ -58,7 +59,7 @@ export function isValidWorkflowNodeClearance(value: unknown): value is number
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
-type SettingValues = { navigationPaneWidth: number; settingsPaneWidth: number; toolbarButtons: ToolbarButtons; keybindings: Keybindings; theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; tooltips: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
+type SettingValues = { navigationPaneWidth: number; settingsPaneWidth: number; toolbarButtons: ToolbarButtons; keybindings: Keybindings; theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; tooltips: boolean; locale: LocaleSettings; chartSettings: ChartSettings; vaultPreferences?: VaultPreferences };
 
 interface SettingsDatabase extends DBSchema
 {
@@ -182,10 +183,10 @@ async function inStore<Mode extends "readonly" | "readwrite", T>(mode: Mode,
 
 async function readSettings(store: Pick<SettingsStore, "get">): Promise<SavedSettings>
 {
-  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings, toolbarButtons, settingsPaneWidth, navigationPaneWidth] = await Promise.all([
-    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("tooltips"), store.get("locale"), store.get("keybindings"), store.get("toolbarButtons"), store.get("settingsPaneWidth"), store.get("navigationPaneWidth"),
+  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, chartSettings, keybindings, toolbarButtons, settingsPaneWidth, navigationPaneWidth] = await Promise.all([
+    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("tooltips"), store.get("locale"), store.get("chartSettings"), store.get("keybindings"), store.get("toolbarButtons"), store.get("settingsPaneWidth"), store.get("navigationPaneWidth"),
   ]);
-  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings, toolbarButtons, settingsPaneWidth, navigationPaneWidth };
+  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, chartSettings, keybindings, toolbarButtons, settingsPaneWidth, navigationPaneWidth };
 }
 
 function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: readonly string[]): SettingValues
@@ -195,7 +196,7 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
   const palette = typeof candidate === "string" && paletteIds.includes(candidate) ? candidate : "default";
   const workflow = saved.workflowDefaults && typeof saved.workflowDefaults === "object"
     ? saved.workflowDefaults as Partial<WorkflowDefaults> : defaultWorkflowSettings;
-  return { navigationPaneWidth: typeof saved.navigationPaneWidth === "number" && Number.isSafeInteger(saved.navigationPaneWidth) && saved.navigationPaneWidth >= 320 && saved.navigationPaneWidth <= 1440 ? saved.navigationPaneWidth : 320, settingsPaneWidth: typeof saved.settingsPaneWidth === "number" && Number.isSafeInteger(saved.settingsPaneWidth) && saved.settingsPaneWidth >= 360 && saved.settingsPaneWidth <= 1440 ? saved.settingsPaneWidth : 900, theme, palette, toolbarButtons: normalizeToolbarButtons(saved.toolbarButtons), keybindings: normalizeKeybindings(saved.keybindings), developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
+  return { navigationPaneWidth: typeof saved.navigationPaneWidth === "number" && Number.isSafeInteger(saved.navigationPaneWidth) && saved.navigationPaneWidth >= 320 && saved.navigationPaneWidth <= 1440 ? saved.navigationPaneWidth : 320, settingsPaneWidth: typeof saved.settingsPaneWidth === "number" && Number.isSafeInteger(saved.settingsPaneWidth) && saved.settingsPaneWidth >= 360 && saved.settingsPaneWidth <= 1440 ? saved.settingsPaneWidth : 900, theme, palette, toolbarButtons: normalizeToolbarButtons(saved.toolbarButtons), keybindings: normalizeKeybindings(saved.keybindings), developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), chartSettings: normalizeChartSettings(saved.chartSettings), workflowDefaults: {
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
     ...(isWorkflowLineStyle(workflow.lineStyle) ? { lineStyle: workflow.lineStyle, curved: workflow.lineStyle !== "orthogonal" } : {}),

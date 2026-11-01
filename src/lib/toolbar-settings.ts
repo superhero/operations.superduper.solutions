@@ -12,6 +12,7 @@ export const toolbarButtonLabels = {
   "vault": "Add vault variable",
   "file": "Add file",
   "comment": "Comment",
+  "chart": "Add chart",
   "copy": "Copy selection",
   "cut": "Cut selection",
   "paste": "Paste",
@@ -35,7 +36,7 @@ export const toolbarButtonLabels = {
 export type ToolbarButton = keyof typeof toolbarButtonLabels;
 export type ToolbarButtons = Record<ToolbarButton, boolean>;
 export const toolbarButtonGroups = [
-  { label: "Nodes", buttons: ["browse", "switch", "cast", "transform", "filter", "assert", "stop", "vault", "file", "comment"] },
+  { label: "Nodes", buttons: ["browse", "switch", "cast", "transform", "filter", "assert", "stop", "vault", "file", "comment", "chart"] },
   { label: "Clipboard", buttons: ["copy", "cut", "paste", "delete"] },
   { label: "Connections", buttons: ["dashed", "curved", "snap"] },
   { label: "View", buttons: ["zoomIn", "zoomOut", "fit"] },

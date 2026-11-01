@@ -23,4 +23,5 @@ export type VaultFailure = { kind: "vault"; code: VaultErrorCode }
   | { kind: "response"; response: WorkflowResponse; message: string };
 export type VaultReply = { id: number; ok: true; value: unknown } | { id: number; ok: false; error: VaultFailure }
   | { event: "locked" } | { event: "response-progress"; id: number; progress: ResponseProgress }
+  | { event: "response-value"; id: number; value: import("../workflow-response-stream.ts").ResponseValue }
   | { event: "native-progress"; id: number; progress: NativeAgentProgress };
