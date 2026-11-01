@@ -89,3 +89,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Private assertion sessions check values without returning them and respect locking
     Then private assertion session decisions remain guarded by the vault session
+
+  Scenario: Private JSON samples obey session locking
+    Then private JSON stream samples stay bounded by the unlocked session generation

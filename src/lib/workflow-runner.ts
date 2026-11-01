@@ -310,7 +310,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     chartResults.set(key, { ...result, path });
     if (!chartTimer && chartListeners.size) chartTimer = setTimeout(() => {
       chartTimer = undefined;
-      if (!stopped) for (const listener of chartListeners) listener(structuredClone([...chartResults.values()]));
+      for (const listener of chartListeners) listener(structuredClone([...chartResults.values()]));
     }, 100);
   }
   const processor = async () => {
@@ -325,7 +325,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     clearTimeout(chartTimer); chartTimer = undefined; chartListeners.clear();
     pending?.abort(); processingController?.abort(); processing?.dispose();
     for (const [id, controller] of activeStreams) {
-      controller.abort(); const record = streamResults.get(id); if (record) record.state = "stopped";
+      controller.abort(); streamResults.get(id)!.state = "stopped";
     }
     activeStreams.clear(); streamListeners.clear();
     current = undefined; choice = undefined; terminalError = undefined;
@@ -762,7 +762,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const controller = activeStreams.get(id);
       if (!controller) return;
       controller.abort();
-      const record = streamResults.get(id); if (record) record.state = "stopped";
+      streamResults.get(id)!.state = "stopped";
       publishStreams();
     },
     async submit(values: InputValues, binding?: CredentialBinding | null, onProgress?: ResponseProgressCallback,
@@ -783,6 +783,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const streaming = !native && !selectedDocker && isJsonResponseStream(completed.visit.operation.responseStream);
       if (streaming && activeStreams.size >= 8) throw new Error("Stop an active stream before starting another; at most eight streams can run together.");
       let promoted = false;
+      // Completion closes callback delivery before the observer's cleanup
+      // microtask. Stream records remain available as the run's history.
+      let acceptingSamples = true;
       let started!: (value: WorkflowStreamStarted) => void;
       const firstSample = new Promise<WorkflowStreamStarted>(resolve => { started = resolve; });
       if (streaming) {
@@ -812,30 +815,29 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         result = await execution.execute(completed.visit.operation, values, controller.signal,
           executionBinding ? { binding: executionBinding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined,
           progress => {
-            if (stopped || controller.signal.aborted) return;
-            if (streaming && activeStreams.get(completed.visit.id) !== controller) return;
-            if (streaming) { const record = streamResults.get(completed.visit.id); if (record) { record.progress = progress; publishStreams(); } }
+            if (stopped || controller.signal.aborted || !acceptingSamples) return;
+            if (streaming) { streamResults.get(completed.visit.id)!.progress = progress; publishStreams(); }
             if (current === completed) onProgress?.(progress);
           },
           sample => {
-            if (stopped || controller.signal.aborted || (streaming ? activeStreams.get(completed.visit.id) !== controller : current !== completed)) return;
+            if (!streaming || stopped || controller.signal.aborted || !acceptingSamples) return;
             const response = { status: sample.status, statusText: "", headers: {}, body: sample.body, mediaType: "application/json" };
             outputs(completed.frame, completed.node, response, undefined, true);
-            if (streaming && !promoted) {
+            if (!promoted) {
               promoted = true;
               completed.frame.states.set(completed.node.id, "complete");
               current = undefined;
-              if (pending === controller) pending = undefined;
+              pending = undefined;
               try { outputs(completed.frame, completed.node, response); }
               catch (error) { terminalError = (error as Error).message; }
-              const record = streamResults.get(completed.visit.id); if (record && !stopped) record.state = "running";
+              if (!stopped) streamResults.get(completed.visit.id)!.state = "running";
               publishStreams(); started({ kind: "stream", id: completed.visit.id });
             }
           });
         }
       }
       catch (error) { if (native && !(error instanceof InputValidationError)) { terminalError = (error as Error).message; current = undefined; } throw error; }
-      finally { if (pending === controller) pending = undefined; }
+      finally { acceptingSamples = false; if (pending === controller) pending = undefined; }
       if (stopped || !promoted && current !== completed) throw new Error("This run has ended.");
       if (controller.signal.aborted) throw new Error("The request was cancelled.");
       if (!promoted) current = undefined;
@@ -852,15 +854,16 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const observed = completion.then(result => {
         if (streaming) {
           activeStreams.delete(completed.visit.id);
-          const record = streamResults.get(completed.visit.id); if (record) { record.state = "complete"; record.result = result; }
+          const record = streamResults.get(completed.visit.id)!; record.state = "complete"; record.result = result;
           publishStreams();
         }
         return result;
       }, error => {
         if (streaming) {
           activeStreams.delete(completed.visit.id);
-          const record = streamResults.get(completed.visit.id);
-          if (record) { record.state = controller.signal.aborted ? "stopped" : "error"; if (!controller.signal.aborted) record.error = error instanceof Error ? error.message : "The stream ended unexpectedly."; }
+          const record = streamResults.get(completed.visit.id)!;
+          record.state = controller.signal.aborted ? "stopped" : "error";
+          if (!controller.signal.aborted) record.error = error instanceof Error ? error.message : "The stream ended unexpectedly.";
           publishStreams();
         }
         throw error;

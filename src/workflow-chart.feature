@@ -97,3 +97,33 @@ Feature: Workflow chart views
 
   Scenario: A stream failing before its first sample can be retried explicitly
     Then stream connection failure keeps the original form ready without an automatic retry
+
+  Scenario: Worker sample envelopes accept only bounded successful JSON values
+    Then sample envelopes reject malformed statuses bodies and oversized frames
+
+  Scenario: Added graph views align using their configured dimensions
+    Then graph layout aligns new views with the center of a configured chart
+
+  Scenario: View connections honor table Sankey and unknown JSON input types
+    Then chart connections accept their selected view types and unknown JSON fields
+
+  Scenario: Chart subscriptions coalesce updates and release pending timers
+    Then chart subscribers receive independent snapshots and stop after unsubscribe or end
+
+  Scenario: Stream subscriptions retain progress while stale callbacks are ignored
+    Then stream subscribers receive progress until completion and release their subscriptions
+
+  Scenario: Ordinary request callbacks close before completion observers run
+    Then ordinary requests ignore queued late samples and progress before the next form
+
+  Scenario: Eight live streams may run while the ninth form stays ready
+    Then a ninth stream cannot dispatch while eight streams remain active
+
+  Scenario: Missing stream fields remain empty until a matching response supplies them
+    Then undeclared responses and absent fields do not fabricate chart samples
+
+  Scenario: Stream routing failures and terminal private errors remain visible
+    Then stream routing stop and redaction outcomes retain honest final states
+
+  Scenario: Private stream authority is rechecked at every delivery boundary
+    Then private stream delivery rejects expired connections and cancelled reader handoffs

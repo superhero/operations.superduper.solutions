@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { vi } from 'vitest';
 import { readJsonStream } from './lib/workflow-json-stream.ts';
-import { streamLimits } from './lib/workflow-response-stream.ts';
+import { streamLimits, isResponseValue } from './lib/workflow-response-stream.ts';
+import { layoutAddedGraph } from './lib/workflow-layout.ts';
 import { emptyChartSnapshot } from './lib/workflow-chart.ts';
 import { chartPalette, chartIdentityStyle, chartNamedStyles, chartSeriesName } from './lib/workflow-chart-presentation.ts';
 import smallExample from '../examples/workflow-charts.json' with { type: 'json' };
@@ -434,8 +435,12 @@ Then('the expanded chart example preserves small views and executes larger datas
   } finally { runner.end(); }
 });
 
-async function streamRunFixture(count, action) {
+async function streamRunFixture(count, action, { streaming = true, wire = () => {} } = {}) {
   return withJsonStream('ndjson', false, async ({ operation, schema }) => {
+    if (!streaming) {
+      delete operation.responseStream; delete schema.paths['/samples'].get['x-operations-response-stream'];
+      const { updateCatalogs } = await import('./lib/catalog.ts'), { catalogs } = await import('./lib/catalog-registry.ts'); updateCatalogs([...catalogs]);
+    }
     const { createOperationGraph } = await import('./lib/workflow-graph.ts');
     const nodes = [], edges = [];
     for (let index = 0; index < count; index++) {
@@ -450,13 +455,14 @@ async function streamRunFixture(count, action) {
       }
     }
     const requests = [];
-    const executor = { execute(_operation, _values, signal, _binding, _progress, sample) {
+    const executor = { execute(_operation, _values, signal, _binding, progress, sample) {
       let resolve, reject;
       const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
-      const request = { signal, sample, finish(body = { cpu: 99 }) { resolve({ request: { method: 'GET', path: '/samples', query: {} }, response: { status: 200, statusText: '', headers: {}, mediaType: 'application/json', body } }); }, fail: reject };
+      const request = { signal, sample, progress, finish(body = { cpu: 99 }, response = {}) { resolve({ request: { method: 'GET', path: '/samples', query: {} }, response: { status: 200, statusText: '', headers: {}, mediaType: 'application/json', body, ...response } }); }, fail: reject };
       signal.addEventListener('abort', () => reject(new Error('The request was cancelled.')), { once: true });
       requests.push(request); return promise;
     } };
+    wire(nodes, edges);
     const document = doc(nodes, edges), before = JSON.stringify(document), runner = createWorkflowRunner(document, undefined, executor);
     try { await action({ runner, requests, document, before }); }
     finally { runner.end(); }
@@ -518,6 +524,141 @@ Then('a completed stream cannot change its views through a stale callback', asyn
     requests[0].finish(); await vi.waitFor(() => assert.equal(runner.streams[0].state, 'complete'));
     const before = JSON.stringify(runner.chartResults);
     requests[0].sample({ body: { cpu: 999 }, status: 200 }); assert.equal(JSON.stringify(runner.chartResults), before);
+  });
+});
+Then('sample envelopes reject malformed statuses bodies and oversized frames', () => {
+  for (const value of [null, 1, [], { body: 1 }, { status: 200 }, { body: 1, status: 200, extra: 1 },
+    { other: 1, status: 200 }, { body: 1, other: 1 }, ...[1.5, 199, 300].map(status => ({ body: 1, status })),
+    ...[Infinity, undefined, 1n, 'x'.repeat(streamLimits.frameCharacters)].map(body => ({ body, status: 200 }))]) assert.equal(isResponseValue(value), false);
+  for (const body of [null, true, 0, [], { cpu: 2 }, 'x'.repeat(streamLimits.frameCharacters - 2)])
+    for (const status of [200, 299]) assert.equal(isResponseValue({ body, status }), true);
+});
+Then('graph layout aligns new views with the center of a configured chart', () => {
+  const previous = { ...chart('previous', { width: 720, height: 640 }), position: { x: 0, y: 0 } };
+  const next = { ...chart('next', { width: 360, height: 320 }), position: { x: 800, y: 0 } };
+  const before = structuredClone(previous), [placed] = layoutAddedGraph([next], [], [previous], 16, next.id);
+  assert.equal(placed.position.y, 160); assert.deepEqual(previous, before); assert.equal(placed.data.width, 360);
+});
+Then('chart connections accept their selected view types and unknown JSON fields', () => {
+  const source = { id: 'output', type: 'data', position: { x: 0, y: 0 }, data: { ownerId: 'api', direction: 'outputs', fields: [{ id: 'value', type: 'Unknown', connectable: true, jsonValue: true }] } };
+  const target = chart(); assert.equal(isWorkflowConnectionTypeCompatible(edge('output', 'chart'), [source, target], []), true);
+  source.data.fields[0].jsonValue = false;
+  assert.equal(isWorkflowConnectionTypeCompatible(edge('output', 'chart'), [source, target], []), false);
+  const empty = { id: 'empty', type: 'file', position: { x: 0, y: 0 }, data: {} };
+  assert.equal(isWorkflowConnectionTypeCompatible(edge('empty', 'chart'), [empty, target], []), false);
+  for (const type of ['Text', 'Boolean', 'Integer', 'Number', 'Array', 'Object', 'Null']) {
+    source.data.fields[0].type = type;
+    for (const kind of ['table', 'sankey']) {
+      const view = chart('chart', { kind }), handle = kind === 'table' ? 'rows' : 'nodes';
+      assert.equal(isWorkflowConnectionTypeCompatible(edge('output', 'chart', 'value', handle), [source, view], []), kind === 'table' || type === 'Array');
+    }
+  }
+});
+Then('chart subscribers receive independent snapshots and stop after unsubscribe or end', async () => {
+  vi.useFakeTimers(); const runners = [];
+  try {
+    const make = () => { const runner = createWorkflowRunner(doc([file([1, 2]), chart()], [edge('file', 'chart')])); runners.push(runner); return runner; };
+    const runner = make(), first = [], second = [];
+    const unfirst = runner.subscribeCharts(value => first.push(value)), unsecond = runner.subscribeCharts(value => second.push(value));
+    runner.next(); unfirst(); await vi.advanceTimersByTimeAsync(100);
+    assert.equal(first.length, 1); assert.equal(second.length, 2);
+    second[1][0].series[0].points[0].y = 999; assert.equal(runner.chartResults[0].series[0].points[0].y, 1); unsecond();
+    for (const end of [false, true]) {
+      const next = make(), seen = [], unsubscribe = next.subscribeCharts(value => seen.push(value)); next.next();
+      if (end) next.end(); else unsubscribe();
+      await vi.advanceTimersByTimeAsync(100); assert.equal(seen.length, 1);
+    }
+    assert.equal(vi.getTimerCount(), 0);
+  } finally { for (const runner of runners) runner.end(); vi.useRealTimers(); }
+});
+Then('stream subscribers receive progress until completion and release their subscriptions', async () => {
+  await streamRunFixture(1, async ({ runner, requests }) => {
+    const seen = [], ui = [], unsubscribe = runner.subscribeStreams(value => seen.push(value)); runner.stopStream('absent');
+    await runner.nextAsync(); const submitted = runner.submit({ ...runner.next().values }, undefined, value => ui.push(value));
+    requests[0].progress({ bytes: 10, events: 0 }); assert.equal(ui.length, 1);
+    requests[0].sample({ body: { cpu: 1 }, status: 200 }); await submitted;
+    requests[0].progress({ bytes: 20, events: 1 }); assert.equal(ui.length, 1); assert.deepEqual(runner.streams[0].progress, { bytes: 20, events: 1 });
+    seen.at(-1)[0].progress.bytes = 999; assert.equal(runner.streams[0].progress.bytes, 20);
+    requests[0].finish(); queueMicrotask(() => { requests[0].sample({ body: { cpu: 999 }, status: 200 }); requests[0].progress({ bytes: 999, events: 999 }); });
+    await vi.waitFor(() => assert.equal(runner.streams[0].state, 'complete'));
+    assert.deepEqual(runner.chartResults[0].series[0].points.map(point => point.y), [1]); assert.equal(runner.streams[0].progress.bytes, 20);
+    unsubscribe(); const count = seen.length; runner.end(); assert.equal(seen.length, count);
+  });
+});
+Then('ordinary requests ignore queued late samples and progress before the next form', async () => {
+  await streamRunFixture(2, async ({ runner, requests }) => {
+    const ui = []; await runner.nextAsync(); const submitted = runner.submit({ ...runner.next().values }, undefined, value => ui.push(value));
+    requests[0].progress({ bytes: 1, events: 0 }); requests[0].sample({ body: { cpu: 1 }, status: 200 });
+    assert.deepEqual(runner.chartResults, []);
+    requests[0].finish({ cpu: 2 }); queueMicrotask(() => { requests[0].sample({ body: { cpu: 999 }, status: 200 }); requests[0].progress({ bytes: 999, events: 0 }); });
+    await submitted; assert.equal(ui.length, 1); assert.deepEqual(runner.chartResults[0].series[0].points.map(point => point.y), [2]);
+    await runner.nextAsync(); requests[0].sample({ body: { cpu: 888 }, status: 200 });
+    assert.deepEqual(runner.chartResults[0].series[0].points.map(point => point.y), [2]);
+    const next = runner.submit({ ...runner.next().values }); requests[1].finish(); await next;
+  }, { streaming: false });
+});
+Then('a ninth stream cannot dispatch while eight streams remain active', async () => {
+  await streamRunFixture(9, async ({ runner, requests }) => {
+    for (let index = 0; index < 8; index++) {
+      await runner.nextAsync(); const submitted = runner.submit({ ...runner.next().values }); requests[index].sample({ body: { cpu: index }, status: 200 }); await submitted;
+    }
+    const ninth = await runner.nextAsync(); await assert.rejects(runner.submit({ ...ninth.values }), /at most eight streams/);
+    assert.equal(requests.length, 8); assert.equal(runner.next().id, ninth.id);
+  });
+});
+Then('undeclared responses and absent fields do not fabricate chart samples', async () => {
+  await streamRunFixture(1, async ({ runner, requests }) => {
+    await runner.nextAsync(); const submitted = runner.submit({ ...runner.next().values }); requests[0].sample({ body: { time: 1 }, status: 200 }); await submitted;
+    requests[0].sample({ body: { cpu: 99 }, status: 201 }); assert.deepEqual(runner.chartResults, []);
+    requests[0].sample({ body: { cpu: 3 }, status: 200 }); assert.deepEqual(runner.chartResults[0].series[0].points, [{ x: 1, y: 3 }]);
+  });
+});
+Then('stream routing stop and redaction outcomes retain honest final states', async () => {
+  const wire = kind => (nodes, edges) => {
+    const output = nodes.find(node => node.type === 'data' && node.data.direction === 'outputs' && node.data.fields.some(field => field.label === 'cpu'));
+    const field = output.data.fields.find(field => field.label === 'cpu');
+    if (kind === 'cycle') {
+      const input = nodes.find(node => node.type === 'data' && node.data.direction === 'inputs' && node.data.fields.some(field => field.label === 'previous'));
+      edges.push(edge(output.id, input.id, field.id, input.data.fields.find(field => field.label === 'previous').id));
+    } else { nodes.push(createUtilityNode('stop', { x: 800, y: 0 }, 'stop')); edges.push(edge(output.id, 'stop', field.id)); }
+  };
+  for (const kind of ['cycle', 'stop']) await streamRunFixture(1, async ({ runner, requests }) => {
+    await runner.nextAsync(); const submitted = runner.submit({ ...runner.next().values }); requests[0].sample({ body: { cpu: 1 }, status: 200 }); await submitted;
+    if (kind === 'cycle') assert.throws(() => runner.next(), /completed operation/);
+    else { assert.equal(runner.done, true); assert.equal(requests[0].signal.aborted, true); }
+  }, { wire: wire(kind) });
+  for (const failure of ['redacted', 'unknown']) await streamRunFixture(1, async ({ runner, requests }) => {
+    await runner.nextAsync(); const submitted = runner.submit({ ...runner.next().values }); requests[0].sample({ body: { cpu: 1 }, status: 200 }); await submitted;
+    if (failure === 'redacted') requests[0].finish({ cpu: 1 }, { redacted: true }); else requests[0].fail('disconnected');
+    await vi.waitFor(() => assert.equal(runner.streams[0].state, 'error'));
+    assert.match(runner.streams[0].error, failure === 'redacted' ? /Sensitive response data/ : /unexpectedly/);
+  });
+});
+Then('private stream delivery rejects expired connections and cancelled reader handoffs', async () => {
+  await withJsonStream('ndjson', true, async ({ operation }) => {
+    const { approvedOperation } = await import('./lib/secrets/policy.ts'), { executeCredentialed } = await import('./lib/secrets/execution.ts');
+    const { createHttpConnection, httpConnectionReference } = await import('./lib/secrets/http-connections.ts');
+    const descriptor = await approvedOperation(operation, 'https://monitoring.example.test'), id = crypto.randomUUID();
+    const credentials = [{ id, kind: 'secret', label: 'Private account', value: 'private-stream-canary', grants: [] }];
+    const binding = { fingerprint: descriptor.fingerprint, alternative: 0, credentials: { Key: id } };
+    const now = Date.now(), clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+    try {
+      const connection = await createHttpConnection({ label: 'Short lived', account: 'Fixture', format: 'schema', expiresAt: now + 1000 }, descriptor, binding, credentials);
+      credentials[0].connections = [connection];
+      const saved = { fingerprint: descriptor.fingerprint, alternative: 0, credentials: {}, connection: httpConnectionReference(connection) }, seen = [];
+      const options = { assertCurrent() {}, fetchRequest: async () => jsonStreamReply('ndjson', '{"cpu":2}\n'), onValue: value => seen.push(value) };
+      await executeCredentialed(descriptor, {}, saved, credentials, options); assert.equal(seen.length, 1);
+      await assert.rejects(executeCredentialed(descriptor, {}, saved, credentials, { ...options, onProgress() { clock.mockReturnValue(now + 1001); } }), error => error.code === 'PERMISSION');
+      assert.equal(seen.length, 1);
+    } finally { clock.mockRestore(); }
+    const controller = new AbortController(), bodyReader = await import('./lib/workflow-response-body.ts');
+    const read = vi.spyOn(bodyReader, 'readWorkflowResponseBody').mockImplementation(async (...args) => {
+      controller.abort(); args.at(-1).onValue({ body: { cpu: 3 }, status: 200 }); assert.fail('Cancelled reader handoff escaped the private boundary');
+    });
+    try {
+      await assert.rejects(executeCredentialed(descriptor, {}, binding, credentials, { assertCurrent() {}, signal: controller.signal,
+        fetchRequest: async () => new Response('{}'), onValue: () => assert.fail('Cancelled sample was delivered') }), error => error.code === 'CANCELLED');
+    } finally { read.mockRestore(); }
   });
 });
 Then('stream connection failure keeps the original form ready without an automatic retry', async () => {

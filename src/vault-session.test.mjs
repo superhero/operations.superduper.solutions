@@ -11,6 +11,24 @@ import { sealSnapshot } from './lib/secrets/format.ts';
 import { VaultError, vaultLimits } from './lib/secrets/types.ts';
 
 const code = expected => error => error instanceof VaultError && error.code === expected && !Object.hasOwn(error, 'cause');
+Then('private JSON stream samples stay bounded by the unlocked session generation', { timeout: 90_000 }, async () => {
+  const { session, proof } = await created(), previous = globalThis.fetch;
+  try {
+    const records = await session.put(null, { label: 'Monitoring', kind: 'bearer', value: 'PRIVATE-SESSION-MONITORING-CANARY' });
+    const approval = await approvedOperation({ id: 'session:monitoring', name: 'Monitor', method: 'GET', path: '/samples', fields: [],
+      responseMediaType: 'application/json', responseStream: 'ndjson', responseContent: { '200': { 'application/x-ndjson': 'stream', 'application/json': 'json' } },
+      security: [[{ name: 'service', kind: 'bearer', header: 'Authorization' }]] }, 'https://vault-test.example');
+    await session.grant(proof, records[0].id, 'service', approval);
+    globalThis.fetch = async () => new Response('{"cpu":1}\n{"cpu":2}\n', { headers: { 'Content-Type': 'application/x-ndjson' } });
+    const binding = { alternative: 0, fingerprint: approval.fingerprint, credentials: { service: records[0].id } }, seen = [];
+    await session.execute(approval, {}, binding, undefined, undefined, undefined, value => seen.push(value));
+    assert.deepEqual(seen, [{ body: { cpu: 1 }, status: 200 }, { body: { cpu: 2 }, status: 200 }]);
+    const after = [];
+    await assert.rejects(session.execute(approval, {}, binding, undefined, undefined, undefined, value => { after.push(value); session.lock(); }),
+      error => error instanceof VaultError && ['LOCKED', 'CANCELLED'].includes(error.code));
+    assert.equal(after.length, 1); assert.equal(JSON.stringify([...seen, ...after]).includes('PRIVATE-SESSION-MONITORING-CANARY'), false);
+  } finally { globalThis.fetch = previous; session.lock(); }
+});
 Then('private session progress publishes only counts while preserving one terminal response', { timeout: 90_000 }, async () => {
   const { session, proof } = await created();
   const records = await session.put(null, { label: 'Private stream account', kind: 'bearer', value: 'SESSION-STREAM-SYNTHETIC-TOKEN' });
