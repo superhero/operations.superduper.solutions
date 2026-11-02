@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { defaultKeybindings } from "../../../src/lib/keybindings.ts";
 import { defaultToolbarButtons } from "../../../src/lib/toolbar-settings.ts";
+import { defaultChartSettings } from "../../../src/lib/chart-settings.ts";
 import { resolve } from "node:path";
 import { createFixtureServer, ownedBrowser } from './support.mjs';
 
@@ -268,7 +269,7 @@ try {
 
   const migrated = await loadDefaults(page);
   const expectedSettings = { ...savedSettings, navigationPaneWidth: 320, settingsPaneWidth: 900,
-    keybindings: defaultKeybindings, toolbarButtons: defaultToolbarButtons, evaluationDetails: false, tooltips: true,
+    keybindings: defaultKeybindings, toolbarButtons: defaultToolbarButtons, chartSettings: defaultChartSettings, evaluationDetails: false, tooltips: true,
     locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null };
   assert.deepEqual(migrated.settings, expectedSettings);
   assert.deepEqual(migrated.workflow, expected.workflow);

@@ -193,9 +193,10 @@ Then('schema action hints take priority over the disclosure hint', async functio
 Then('scrolling cancels a pending operation tooltip', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 1280, height: 400 });
-  const dialog = workspace(page);
+  const scroller = workspace(page).locator('.run-forms');
   const help = page.getByRole('button', { name: 'Review operation details', exact: true });
   await help.scrollIntoViewIfNeeded();
+  await expect.poll(() => scroller.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await help.hover();
   await expect(page.getByRole('tooltip')).toHaveText('Details');
@@ -206,9 +207,9 @@ Then('scrolling cancels a pending operation tooltip', async function () {
   await help.hover();
   await page.waitForTimeout(100);
   await expect(page.getByRole('tooltip')).toHaveCount(0);
-  const before = await dialog.evaluate(element => element.scrollTop);
+  const before = await scroller.evaluate(element => element.scrollTop);
   await page.mouse.wheel(0, 150);
-  await expect.poll(() => dialog.evaluate(element => element.scrollTop)).toBeGreaterThan(before);
+  await expect.poll(() => scroller.evaluate(element => element.scrollTop)).toBeGreaterThan(before);
   // Observe beyond the 400ms hover delay; an immediate absence would miss this bug.
   await page.waitForTimeout(450);
   await expect(page.getByRole('tooltip')).toHaveCount(0);
