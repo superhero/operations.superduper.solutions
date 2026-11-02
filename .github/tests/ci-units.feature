@@ -91,14 +91,14 @@ Feature: Incremental CI retains only independently verified feature results
     And the standalone browser launcher preserves the same host-aware resource boundary
 
   Scenario Outline: Browser containers use runner capacity while preserving host headroom
-    Then a "<profile>" browser job on <cpus> CPUs and <ram> GiB of RAM uses <allocated_cpu> CPUs and <allocated_ram> GiB
+    Then a "<profile>" browser job on <cpus> CPUs and <ram> GiB of RAM uses <allocated_cpu> CPUs and <allocated_ram> GiB with a <heap> MiB Node heap
     Examples:
-      | profile | cpus | ram | allocated_cpu | allocated_ram |
-      | CI      | 4    | 16  | 4             | 14            |
-      | CI      | 2    | 8   | 2             | 6             |
-      | CI      | 1    | 4   | 1             | 2             |
-      | CI      | 16   | 64  | 4             | 14            |
-      | desktop | 16   | 32  | 2             | 2             |
+      | profile | cpus | ram | allocated_cpu | allocated_ram | heap |
+      | CI      | 4    | 16  | 4             | 14            | 1024 |
+      | CI      | 2    | 8   | 2             | 6             | 1024 |
+      | CI      | 1    | 4   | 1             | 2             | 512  |
+      | CI      | 16   | 64  | 4             | 14            | 1024 |
+      | desktop | 16   | 32  | 2             | 2             | 512  |
 
   Scenario: Browser container allocation rejects insufficient or invalid capacity
     Then invalid capacity cannot allocate browser resources

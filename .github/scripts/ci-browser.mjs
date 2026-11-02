@@ -139,7 +139,7 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
         `--pids-limit=${resources.pids}`, '--cap-drop=ALL', '--security-opt=no-new-privileges',
         '--user', `${uid}:${gid}`, '--env', 'HOME=/tmp', '--env', 'XDG_DATA_HOME=/tmp/data', '--env', 'CI=true',
         '--env', 'GITHUB_ACTIONS=true', '--env', `GITHUB_RUN_ID=${plan.runId}`, '--env', `GITHUB_RUN_ATTEMPT=${environment.GITHUB_RUN_ATTEMPT}`,
-        '--env', `CI_WORKFLOW_FILE=${environment.CI_WORKFLOW_FILE}`, '--env', 'NODE_OPTIONS=--max-old-space-size=512',
+        '--env', `CI_WORKFLOW_FILE=${environment.CI_WORKFLOW_FILE}`, '--env', `NODE_OPTIONS=--max-old-space-size=${resources.nodeHeapMiB}`,
         '--env', `BROWSER_TEST_IMAGE=${plan.shared.image}`, '--tmpfs', '/tmp:rw,nosuid,nodev,size=512m',
         '--mount', `type=bind,source=${root},target=/workspace,readonly`,
         '--mount', `type=bind,source=${root}/tmp/test,target=/workspace/tmp/test`,

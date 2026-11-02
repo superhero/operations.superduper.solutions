@@ -26,7 +26,7 @@ version="$(node --input-type=module -e '
 image="mcr.microsoft.com/playwright:v${version}-noble"
 node_binary="$(readlink -f "$(command -v node)")"
 resource_budget="$(node .github/scripts/ci-browser-resources.mjs)" || fail 'Cannot allocate a safe browser resource budget.'
-read -r cpus memory processes <<< "$resource_budget"
+read -r cpus memory processes node_heap <<< "$resource_budget"
 runner_arguments=()
 if (( $# == 0 )) && [[ "${BROWSER_ENGINE:-chromium}" == chromium && "${OPERATIONS_BROWSER_PROFILE:-browser}" == browser ]]; then runner_arguments+=(--with-components); fi
 echo "Browser tests: image=$image, output=tmp/test, cpus=$cpus, memoryBytes=$memory."
@@ -38,7 +38,7 @@ docker run --rm --init --network=none --read-only --shm-size=1g \
   --cpus="$cpus" --memory="$memory" --memory-swap="$memory" --pids-limit="$processes" \
   --cap-drop=ALL --security-opt=no-new-privileges \
   --user "$(id -u):$(id -g)" --env HOME=/tmp --env CI=true \
-  --env NODE_OPTIONS=--max-old-space-size=512 \
+  --env "NODE_OPTIONS=--max-old-space-size=$node_heap" \
   --env GITHUB_ACTIONS --env GITHUB_RUN_ID --env GITHUB_RUN_ATTEMPT \
   --env OPERATIONS_TEST_WORKERS --env OPERATIONS_BROWSER_PROFILE \
   --env TMPDIR=/workspace/tmp/test/browser/.runtime \

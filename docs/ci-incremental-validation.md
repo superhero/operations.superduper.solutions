@@ -112,7 +112,10 @@ container startup. Both browser launchers share this policy. The declared policy
 is part of feature cache identity, and batch metrics record the actual allocation.
 Containers allow no extra swap and at most 512 processes. Application batches
 run at most two feature processes; the library batch runs one. Node heaps are capped at
-512 MiB per process. Source is mounted read-only, container networking is
+1,024 MiB per process, further limited to one quarter of container RAM on smaller
+hosts. This accommodates the legacy development feature's two application graphs;
+the ordinary 2-GiB desktop allocation retains its 512-MiB heap cap.
+Source is mounted read-only, container networking is
 disabled, and GitHub artifact credentials stay on the host.
 
 Set `OPERATIONS_TEST_RESOURCE_PROFILE=ci` to use the same browser allocation

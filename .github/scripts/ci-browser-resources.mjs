@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const GiB = 1024 ** 3, MiB = 1024 ** 2;
 export const browserResourcePolicy = Object.freeze({
-  cpu: 4, jobMemoryGiB: 16, hostReserveGiB: 2, memoryGiB: 14, pids: 512, nodeHeapMiB: 512,
+  cpu: 4, jobMemoryGiB: 16, hostReserveGiB: 2, memoryGiB: 14, pids: 512, nodeHeapMiB: 1024,
 });
 
 /** The VM also runs the OS, Actions runner and artifact controller outside Docker. */
@@ -17,11 +17,14 @@ export function browserResources({ ci = process.env.GITHUB_ACTIONS === 'true' ||
   const memory = Math.floor(Math.min((ci ? browserResourcePolicy.memoryGiB : 2) * GiB,
     memoryBytes - browserResourcePolicy.hostReserveGiB * GiB) / MiB) * MiB;
   if (memory < GiB) throw new Error('Browser runner needs at least 1 GiB after the host reserve.');
+  // The legacy diagnostics feature compiles two application graphs. Give it
+  // room without letting parallel Node workers consume browser/native memory.
   return { cpus: Math.min(ci ? browserResourcePolicy.cpu : 2, cpus), memoryBytes: memory,
-    pids: ci ? browserResourcePolicy.pids : 256 };
+    pids: ci ? browserResourcePolicy.pids : 256,
+    nodeHeapMiB: Math.min(browserResourcePolicy.nodeHeapMiB, Math.floor(memory / (4 * MiB))) };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const resources = browserResources();
-  console.log(`${resources.cpus} ${resources.memoryBytes} ${resources.pids}`);
+  console.log(`${resources.cpus} ${resources.memoryBytes} ${resources.pids} ${resources.nodeHeapMiB}`);
 }

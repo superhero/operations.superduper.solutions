@@ -254,15 +254,16 @@ Then('the browser controller publishes completed evidence and closes its contain
   assert.ok(start.includes('--network=none')); assert.ok(start.includes('--cpus=4'));
   assert.ok(start.includes('--memory=15032385536')); assert.ok(start.includes('--memory-swap=15032385536'));
   assert.ok(start.includes('--pids-limit=512'));
-  assert.deepEqual(summary.resourceBudget, { cpus: 4, memoryBytes: 14 * 1024 ** 3, pids: 512 });
+  assert.ok(start.includes('NODE_OPTIONS=--max-old-space-size=1024'));
+  assert.deepEqual(summary.resourceBudget, { cpus: 4, memoryBytes: 14 * 1024 ** 3, pids: 512, nodeHeapMiB: 1024 });
   assert.deepEqual(plan.shared.runtime, { ...browserResourcePolicy, timezone: 'UTC', locale: 'en-US', capture: 'full' });
   assert.ok(!start.some(argument => argument.includes('GH_TOKEN') || argument.includes('ACTIONS_RUNTIME_TOKEN')));
 });
 
-Then('a {string} browser job on {int} CPUs and {int} GiB of RAM uses {int} CPUs and {int} GiB', (profile, cpus, ram, allocatedCpu, allocatedRam) => {
+Then('a {string} browser job on {int} CPUs and {int} GiB of RAM uses {int} CPUs and {int} GiB with a {int} MiB Node heap', (profile, cpus, ram, allocatedCpu, allocatedRam, nodeHeapMiB) => {
   assert.ok(['CI', 'desktop'].includes(profile));
   assert.deepEqual(browserResources({ ci: profile === 'CI', cpus, memoryBytes: ram * 1024 ** 3 }),
-    { cpus: allocatedCpu, memoryBytes: allocatedRam * 1024 ** 3, pids: profile === 'CI' ? 512 : 256 });
+    { cpus: allocatedCpu, memoryBytes: allocatedRam * 1024 ** 3, pids: profile === 'CI' ? 512 : 256, nodeHeapMiB });
 });
 Then('invalid capacity cannot allocate browser resources', () => {
   for (const capacity of [{ cpus: 0, memoryBytes: 16 * 1024 ** 3 }, { cpus: NaN, memoryBytes: 16 * 1024 ** 3 },
@@ -287,7 +288,7 @@ Then('the standalone browser launcher preserves the same host-aware resource bou
     assert.ifError(result.error);
     assert.equal(result.status, 0, result.stdout + result.stderr);
     const args = readFileSync(output, 'utf8').trim().split('\n'), resources = browserResources({ ci: true });
-    for (const arg of [`--cpus=${resources.cpus}`, `--memory=${resources.memoryBytes}`, `--memory-swap=${resources.memoryBytes}`, '--pids-limit=512', '--network=none'])
+    for (const arg of [`--cpus=${resources.cpus}`, `--memory=${resources.memoryBytes}`, `--memory-swap=${resources.memoryBytes}`, '--pids-limit=512', '--network=none', `NODE_OPTIONS=--max-old-space-size=${resources.nodeHeapMiB}`])
       assert.ok(args.includes(arg), arg);
     assert.ok(!args.some(arg => /GH_TOKEN|ACTIONS_RUNTIME_TOKEN|--gpus/.test(arg)));
   }
