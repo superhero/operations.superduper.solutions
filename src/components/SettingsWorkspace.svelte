@@ -109,7 +109,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let workspace: HTMLElement;
   let storageBuilt = $state(false);
   let storageReady = $state(false);
-  let assistantBuilt = $state(false);
   const assistantMode = $derived(Boolean(assistantHost) && openSection === "assistant");
   let previousSettingsSection = $state<SettingsSection>(null);
   export function showView(view: "assistant" | "settings"): void {
@@ -122,7 +121,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function togglePaneView(): void {
     showView(assistantMode ? "settings" : "assistant");
   }
-  $effect(() => { if (active && openSection === "assistant") assistantBuilt = true; });
+  async function showAssistantConfiguration() {
+    openSection = "ai";
+    previousSettingsSection = "ai";
+    await tick();
+    workspace.querySelector<HTMLElement>('summary[aria-label="AI"]')?.focus();
+  }
   $effect(() => {
     if (!active || openSection !== "storage" || storageBuilt) return;
     let cancelled = false;
@@ -272,7 +276,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </HintButton>
     </div>
   </div>
-  <div class="settings-sections" hidden={assistantMode} inert={assistantMode}>
+  <div class="settings-sections" class:assistant-mode={assistantMode}>
     <Disclosure lazy class="catalog-group settings-section" label="Application" tooltipEnabled={false} open={active && openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Application</h2><span class="section-subtitle">Configure UI defaults</span></div>
@@ -390,6 +394,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <ChartSettingsPanel value={chartSettings} onValueChange={onChartSettingsChange} error={chartSettingsError} onRetry={onRetryChartSettings} />
       <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
+    {#if assistantHost}
+      <AssistantSettings host={assistantHost} visible={active && assistantMode} configurationOpen={active && openSection === "ai"}
+        onConfigurationToggle={next => openSection = next ? "ai" : null} onConfigure={showAssistantConfiguration} />
+    {/if}
     <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; } openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
@@ -508,11 +516,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </fieldset>
     </Disclosure>
   </div>
-  {#if assistantHost && assistantBuilt}
-    <div hidden={!assistantMode} inert={!assistantMode}>
-      <AssistantSettings host={assistantHost} visible={active && assistantMode} />
-    </div>
-  {/if}
 </section>
 
 <style>
@@ -530,6 +533,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   @keyframes building-wave { 0%, 100% { transform: scale(0.7); } 50% { transform: scale(1.35); } }
   @media (prefers-reduced-motion: reduce) { .building-dots > span { animation: none; } }
   .settings-sections { display: grid; gap: 12px; }
+  .settings-sections.assistant-mode > :global(.settings-section) { display: none; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
   .settings-sections :global(.settings-section > summary) { background: var(--color-muted); color: var(--color-catalog-foreground); transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }

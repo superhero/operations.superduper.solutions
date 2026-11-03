@@ -17,6 +17,14 @@ fix(settings): prevent browser dashboard opening flicker
 Merge branch 'develop' into bugfix/browser-settings-flicker
 ```
 
+<!-- changelog-commit:63920ebed6cc55a9c8deb390e14b214223fae893 -->
+### Commit [`63920eb`](https://github.com/superhero/operations.superduper.solutions/commit/63920ebed6cc55a9c8deb390e14b214223fae893)
+
+```text
+feat(settings): move AI configuration into normal settings
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66

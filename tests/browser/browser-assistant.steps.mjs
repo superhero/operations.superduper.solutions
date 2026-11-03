@@ -14,11 +14,14 @@ async function openAssistant(page) {
   return page.getByRole('region', { name: 'Browser assistant', exact: true });
 }
 async function openConfiguration(panel) {
-  const toggle = panel.getByRole('button', { name: 'Assistant configuration', exact: true });
-  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
-  const summary = panel.locator('summary').filter({ hasText: /^Configuration/ });
-  if (await summary.locator('..').getAttribute('open') !== '') await summary.click();
+  const page = panel.page();
+  await panel.getByRole('button', { name: 'Assistant configuration', exact: true }).click();
+  await expect(page.getByRole('switch', { name: 'AI assistant', exact: true })).toHaveAttribute('aria-checked', 'false');
+  const configuration = page.locator('#assistant-configuration-panel');
+  await expect(configuration).toBeVisible();
+  return configuration;
 }
+
 async function graph(page) {
   await loadGraphFixture(page, { version: 3, id: 'assistant-test', name: 'Assistant test', nodes: [
     { id: 'assistant-cast', type: 'cast', position: { x: 100, y: 100 }, data: { targetType: 'Text' } },
@@ -120,6 +123,79 @@ Then('the pane switches between settings and assistant without losing its sessio
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
 });
 
+Then('AI settings preserve drafts attachments and streamed replies across pane navigation', async function() {
+  const page = this.page;
+  await page.addInitScript(() => {
+    const native = IDBFactory.prototype.open;
+    window.aiSettingsHydration = { opens: 0 };
+    IDBFactory.prototype.open = function(name, ...args) {
+      if (name === 'v1/speech/recordings') window.aiSettingsHydration.opens++;
+      return native.call(this, name, ...args);
+    };
+  });
+  await installAssistantFixture(page);
+  await setMode(page, 'settings');
+  const mode = page.getByRole('switch', { name: 'AI assistant', exact: true });
+  if (await mode.getAttribute('aria-checked') === 'true') await mode.click();
+  const heading = page.locator('summary[aria-label="AI"]');
+  await expect(heading).toBeVisible();
+  expect(await page.evaluate(() => window.aiSettingsHydration.opens)).toBe(0);
+  await heading.click();
+  const configuration = page.locator('#assistant-configuration-panel');
+  await expect(configuration).toBeVisible();
+  await expect(configuration.getByRole('combobox', { name: 'Language model', exact: true })).toBeEnabled();
+  await expect.poll(() => page.evaluate(() => window.aiSettingsHydration.opens)).toBe(1);
+  await expect(configuration.locator('.speech-settings > summary')).toBeVisible();
+  await expect(configuration.locator('.decision-settings > summary')).toBeVisible();
+  expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
+  const panel = await openAssistant(page);
+  await loadAssistantModel(page);
+  const draft = panel.getByRole('textbox', { name: 'Message', exact: true });
+  await draft.fill('Keep this draft and image');
+  const image = Buffer.from(await page.evaluate(() => { const canvas = document.createElement('canvas'); canvas.width = canvas.height = 8; return canvas.toDataURL().split(',')[1]; }), 'base64');
+  await panel.getByLabel('Attach assistant image', { exact: true }).setInputFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: image });
+  await expect(panel.getByRole('img', { name: 'Attachment ready to send', exact: true })).toBeVisible();
+  await openConfiguration(panel);
+  await expect(panel).toBeHidden();
+  await expect(configuration.getByRole('combobox', { name: 'Language model', exact: true })).toBeDisabled();
+  await expect(configuration.getByRole('checkbox', { name: 'Application tools', exact: true })).toBeDisabled();
+  await expect(configuration.getByRole('button', { name: 'Unload language model', exact: true })).toBeVisible();
+  const loaded = await page.evaluate(() => structuredClone(window.assistantFixture.settings));
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(await page.locator('#settings-panel').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.screenshot({ path: `${this.artifactDirectory}/normal-ai-settings-${width}.png` });
+  }
+  await page.getByRole('switch', { name: 'Dark theme', exact: true }).click();
+  await page.screenshot({ path: `${this.artifactDirectory}/normal-ai-settings-other-theme.png` });
+  await openAssistant(page);
+  await expect(draft).toHaveValue('Keep this draft and image');
+  await expect(panel.getByRole('img', { name: 'Attachment ready to send', exact: true })).toBeVisible();
+  await page.evaluate(() => window.assistantFixture.behavior = 'manual');
+  await draft.press('Enter');
+  await page.evaluate(() => window.assistantFixture.emit({ type: 'update', messages: [{ role: 'user', text: 'Keep this draft and image', imageCount: 1 }, { role: 'assistant', text: 'Still working' }], error: '' }));
+  await openConfiguration(panel);
+  await expect(configuration.getByRole('button', { name: 'Stop and unload language model', exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    window.assistantFixture.emit({ type: 'update', messages: [{ role: 'user', text: 'Keep this draft and image', imageCount: 1 }, { role: 'assistant', text: 'Finished while Settings was open' }], error: '' });
+    window.assistantFixture.emit({ type: 'done' });
+  });
+  await expect(configuration.getByRole('button', { name: 'Unload language model', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.assistantFixture.settings)).toEqual(loaded);
+  expect(await page.evaluate(() => [window.assistantFixture.workers, window.assistantFixture.terminated])).toEqual([1, 0]);
+  await openAssistant(page);
+  await expect(panel.getByRole('log')).toContainText('Finished while Settings was open');
+  expect(await page.evaluate(() => window.aiSettingsHydration.opens)).toBe(1);
+  await openConfiguration(panel);
+  await configuration.getByRole('button', { name: 'Unload language model', exact: true }).click();
+  await expect(configuration.getByRole('combobox', { name: 'Language model', exact: true })).toBeEnabled();
+  expect(await page.evaluate(() => window.assistantFixture.terminated)).toBe(1);
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await expect(heading).toHaveAttribute('aria-expanded', 'true');
+  await expect(configuration).toBeVisible();
+});
+
 Then('the assistant settings expose accepted local models and remember configuration', async function() {
   const page = this.page; await installAssistantFixture(page);
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
@@ -128,7 +204,7 @@ Then('the assistant settings expose accepted local models and remember configura
   const composer = panel.locator('form.composer');
   await expect(panel.getByRole('button', { name: 'Load model', exact: true })).toHaveCount(0);
   await expect(panel.getByRole('textbox', { name: 'Message', exact: true })).toHaveAttribute('placeholder', 'Prompt');
-  await expect(panel.locator('.assistant-configuration')).toBeHidden();
+  await expect(page.locator('.assistant-configuration')).toBeHidden();
   expect((await panel.locator('.conversation').boundingBox()).height).toBe(0);
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 844 });
@@ -152,10 +228,11 @@ Then('the assistant settings expose accepted local models and remember configura
   expect(await page.evaluate(() => window.assistantFixture.settings.model)).toBe('2b');
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(1);
   await panel.getByRole('button', { name: 'Unload model', exact: true }).click();
-  await openConfiguration(panel);
-  await panel.getByLabel('Workspace editing', { exact: true }).focus();
+  let configuration = await openConfiguration(panel);
+  await configuration.getByLabel('Workspace editing', { exact: true }).focus();
   await page.keyboard.press('Space');
-  await expect(panel.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
+  await expect(configuration.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
+  await openAssistant(page);
   await picker.click();
   await page.getByRole('option', { name: 'Bonsai 2 · 4B', exact: true }).click();
   await expect(panel.getByRole('button', { name: 'Unload model', exact: true })).toBeVisible();
@@ -169,8 +246,9 @@ Then('the assistant settings expose accepted local models and remember configura
   await page.reload(); panel = await openAssistant(page);
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
   await expect(panel.getByRole('combobox', { name: 'Local model', exact: true }).locator('.field-select-value')).toHaveText('Bonsai 2 · 4B');
-  await openConfiguration(panel);
-  await expect(panel.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
+  configuration = await openConfiguration(panel);
+  await expect(configuration.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
+  await openAssistant(page);
   picker = panel.getByRole('combobox', { name: 'Local model', exact: true });
   await picker.focus(); await picker.press('Enter'); await picker.press('Enter');
   expect(await page.evaluate(() => window.assistantFixture.settings.model)).toBe('4b');
@@ -213,8 +291,9 @@ Then('the assistant can inspect add move and connect through the workspace UI bo
 Then('assistant read only mode and unload prevent further workspace edits', async function() {
   const page = this.page; await installAssistantFixture(page); await graph(page);
   const panel = await openAssistant(page);
-  await openConfiguration(panel);
-  await panel.getByLabel('Workspace editing', { exact: true }).uncheck();
+  const configuration = await openConfiguration(panel);
+  await configuration.getByLabel('Workspace editing', { exact: true }).uncheck();
+  await openAssistant(page);
   await loadAssistantModel(page);
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Inspect but do not edit');
   await panel.getByRole('textbox', { name: 'Message', exact: true }).press('Enter');
@@ -460,36 +539,38 @@ Then('Gemma MiniCPM and Ornith load on selection with their supported settings',
     if(id.startsWith('ornith'))expect(settings.executionMode).toBe('gpu');
     await panel.getByRole('button',{name:'Unload model',exact:true}).click();
     if(id==='minicpm5-2b') {
-      await openConfiguration(panel);
-      await panel.getByRole('combobox',{name:'Execution',exact:true}).click();await page.getByRole('option',{name:'CPU',exact:true}).click();
+      const configuration = await openConfiguration(panel);
+      await configuration.getByRole('combobox',{name:'Execution',exact:true}).click();await page.getByRole('option',{name:'CPU',exact:true}).click();
+      await openAssistant(page);
       await picker.click();await page.getByRole('option',{name:label,exact:true}).click();
       await expect(panel.getByRole('button',{name:'Unload model',exact:true})).toBeVisible();
       expect(await page.evaluate(()=>window.assistantFixture.settings.executionMode)).toBe('cpu');
       await panel.getByRole('button',{name:'Unload model',exact:true}).click();
     }
     if(id==='gemma-e2b') {
-      await openConfiguration(panel);
-      for(const name of ['Reasoning','Sample responses','Prefix cache'])await expect(panel.getByRole('checkbox',{name,exact:true})).toBeDisabled();
+      const configuration = await openConfiguration(panel);
+      for(const name of ['Reasoning','Sample responses','Prefix cache'])await expect(configuration.getByRole('checkbox',{name,exact:true})).toBeDisabled();
+      await openAssistant(page);
     }
   }
   expect(await page.evaluate(()=>window.assistantFixture.terminated)).toBe(6);
 });
 Then('decision controls preserve native results and release their exclusive model session', async function() {
-  const page=this.page;await installDecisionFixture(page);const panel=await openAssistant(page);await openConfiguration(panel);
-  await panel.locator('.decision-settings > summary').click();
-  const section=panel.locator('.decision-settings'), picker=section.getByRole('combobox',{name:'Decision model',exact:true});
+  const page=this.page;await installDecisionFixture(page);const panel=await openAssistant(page);const configuration=await openConfiguration(panel);
+  await configuration.locator('.decision-settings > summary').click();
+  const section=configuration.locator('.decision-settings'), picker=section.getByRole('combobox',{name:'Decision model',exact:true});
   await picker.click();await expect(page.getByRole('option')).toHaveCount(9);await page.keyboard.press('Escape');
   expect(await page.evaluate(()=>window.decisionFixture.workers)).toBe(0);
   await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 CPU',exact:true}).click();
   await expect(section.getByRole('button',{name:'Score decision',exact:true})).toBeEnabled();
-  await expect(panel.getByRole('combobox',{name:'Local model',exact:true})).toBeDisabled();
+  await expect(configuration.getByRole('combobox',{name:'Language model',exact:true})).toBeDisabled();
   expect(await page.evaluate(()=>window.decisionFixture.messages.map(row=>row.type))).toEqual(['load']);
   await section.getByRole('button',{name:'Score decision',exact:true}).click();
   const output=section.getByRole('region',{name:'Decision result',exact:true});await expect(output).toContainText('0.85');
   await output.locator('summary').click();await expect(output).toContainText('native_fixture');await expect(output).toContainText('rendered_tokens');
   const messages=await page.evaluate(()=>window.decisionFixture.messages);expect(messages[0].profile).toBe('strands-cpu');expect(messages[1].request.questions.q.type).toBe('noul');
   await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
-  await expect(panel.getByRole('combobox',{name:'Local model',exact:true})).toBeEnabled();
+  await expect(configuration.getByRole('combobox',{name:'Language model',exact:true})).toBeEnabled();
   expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(1);
 });
 Then('native runtime modules and compressed Wasm load in real browser workers', {timeout:90000}, async function() {
