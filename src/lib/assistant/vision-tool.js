@@ -146,7 +146,7 @@ export function createVisionTool({assetBase, profile, getImage, suspendText, res
       })), limits.generate, 'Image inspection', operation);
       throwIfAborted(signal);
       output = resultFor(raw, args, image);
-    } catch (error) { failure = asError(error); }
+    } catch (error) { failure = asError(error); if (failure.cleanupUnconfirmed === true) unsafe = true; }
     finally {
       if (loadPending) {
         // Owned-worker cancellation settles promptly; briefly drain that result

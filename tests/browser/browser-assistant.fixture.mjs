@@ -54,6 +54,7 @@ export async function installAssistantFixture(page) {
       worker.postMessage = message => queueMicrotask(() => {
         if (stopped) return;
         if (message.type === 'tool_result') { pending.get(message.id)?.(message); pending.delete(message.id); }
+        else if (message.type === 'dispose') emit({type:'disposed'});
         else if (message.type === 'check') emit({ type: 'compatibility', value: { ready: true, summary: 'WebGPU compute verified.', fp32: true, fp16: true, adapter: 'Scripted test GPU', detail: '' } });
         else if (message.type === 'load') {
           record.settings = message.settings;
@@ -84,6 +85,7 @@ export async function installDecisionFixture(page) {
       postMessage(data) {
         window.decisionFixture.messages.push(structuredClone(data));
         const emit=value=>queueMicrotask(()=>{const event=new MessageEvent('message',{data:value});this.onmessage?.(event);this.dispatchEvent(event);});
+        if(data.type==='dispose')emit({type:'disposed'});
         if(data.type==='check')emit({type:'compatibility',value:{ready:true,summary:'Synthetic CPU compatibility'}});
         if(data.type==='load'){this.profile=data.profile;emit({type:'ready'});}
         if(data.type==='decide')emit({type:'result',value:{profile:this.profile,answers:{q:{type:'noul',noul:0.85,probabilities:{true:0.85,false:0.15},confidence:0.2}},raw:{native_fixture:true},prepared:{rendered_tokens:42}}});

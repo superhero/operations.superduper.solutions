@@ -55,10 +55,12 @@ export class LiveDecoder {
       speech: { state: extra.paused ? 'pause' : 'speech', intervals: this.activity.segments.length,
         completedIntervals: this.segmentIndex, inferenceCalls: this.calls }, ...extra };
   }
+  async cancel() { this.ended = true; await this.idle; }
   async pump() {
     if (this.running || this.ended) return;
     const job = this.job(); if (!job) return;
     this.running = true;
+    let drained; this.idle = new Promise(resolve => { drained = resolve; });
     try {
       if (job.kind === 'finish') {
         const state = this.merger.update([], { final: true }); this.ended = true;
@@ -69,6 +71,7 @@ export class LiveDecoder {
       } else {
         const began = performance.now();
         const result = await this.infer(this.audio.slice(job.start, job.end), job.start / RATE);
+        if (this.ended) return;
         const decodeMs = performance.now() - began; this.elapsed += decodeMs / 1000; this.calls++;
         const state = this.merger.update(result.words || [], { pause: job.pause, windowStart: job.start / RATE });
         this.lastCount = job.end;
@@ -77,6 +80,6 @@ export class LiveDecoder {
           paused: job.pause, preprocessing: result.preprocessing }));
       }
     } catch (e) { this.ended = true; this.error(e); }
-    finally { this.running = false; this.schedule(); }
+    finally { this.running = false; drained(); this.schedule(); }
   }
 }

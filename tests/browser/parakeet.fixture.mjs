@@ -20,6 +20,8 @@ export async function installSpeechFixture(page, { slow = false } = {}) {
       fixture.emit = emit;
       worker.postMessage = data => queueMicrotask(() => {
         if (stopped) return;
+        if (data.type === 'dispose') emit({type:'disposed'});
+        if (data.type === 'streamPrepare') emit({type:'prepared',sessionId:data.sessionId});
         if (data.type === 'load') { fixture.mode = data.mode; emit({ type: 'initializing', text: 'Creating encoder session…' }); if (!fixture.slow) emit({ type: 'ready', runtime: { parakeetJs: '1.4.4', ort: '1.30.0' } }); }
         if (data.type === 'streamStart') { sessionId = data.sessionId; port = data.featurePort; fixture.starts.push(sessionId); fixture.sessionId = sessionId; }
         if (data.type === 'streamEnd') { fixture.ends.push(data); port.close(); emit({ type: 'result', sessionId, text: fixture.finalText ?? 'First sentence. Second sentence.', seconds: data.pcm.length / 16000 }); }

@@ -7,10 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only -->
   import MaterialIcon from '$lib/components/MaterialIcon.svelte';
   import {decisionModels, decisionProfile, validateDecisionRequest, type DecisionRequest, type DecisionResult} from '$lib/assistant/decision-models.ts';
   import DecisionWorker from '$lib/assistant/decision.worker.ts?worker&inline';
+  import {disposeWorker} from '$lib/assistant/worker-shutdown.js';
   import {trackApplicationWorker} from '$lib/application-workers.ts';
   import {decodeError} from '$lib/worker-rpc.ts';
   import {logger} from '$lib/logger.ts';
-  let {languageActive = false, speechBusy = false, onActivity = (_active: boolean, _busy: boolean) => {}}: {languageActive?: boolean; speechBusy?: boolean; onActivity?: (active: boolean, busy: boolean) => void} = $props();
+  let {speechBusy = false, onActivity = (_active: boolean, _busy: boolean) => {}}: {speechBusy?: boolean; onActivity?: (active: boolean, busy: boolean) => void} = $props();
   let selected = $state('d3-lite'), phase = $state<'unloaded' | 'checking' | 'loading' | 'ready' | 'deciding'>('unloaded');
   let decisionState = $state('The status card is blue.'), question = $state('Is the status card blue?'), kind = $state('noul');
   let criteria = $state('translate: Translate between languages\nsummarize: Shorten a document\ncode: Write software');
@@ -19,15 +20,15 @@ SPDX-License-Identifier: AGPL-3.0-only -->
   const profile = $derived(decisionProfile(selected));
   const working = $derived(['checking', 'loading', 'deciding'].includes(phase));
   $effect(() => onActivity(phase !== 'unloaded', working));
-  function terminate() {clearTimeout(timer); worker?.terminate(); release?.(); worker = undefined; release = undefined;}
-  function unload() {terminate(); phase = 'unloaded'; result = null; status = 'Decision model unloaded.';}
+  function terminate(graceful = false) {clearTimeout(timer); const current = worker, untrack = release; worker = undefined; release = undefined; if (current && graceful) void disposeWorker(current).finally(() => untrack?.()); else {current?.terminate(); untrack?.();}}
+  function unload() {terminate(true); phase = 'unloaded'; result = null; status = 'Decision model unloaded.';}
   function fail(value: unknown) {
     const native = value instanceof Error ? value : new Error(String(value));
     logger.scope('assistant').scope('decision').error(native);
     error = native.message; terminate(); phase = 'unloaded';
   }
   function start(type: 'check' | 'load') {
-    if (languageActive || speechBusy || phase !== 'unloaded') return;
+    if (speechBusy || phase !== 'unloaded') return;
     error = ''; result = null; phase = type === 'check' ? 'checking' : 'loading';
     status = type === 'check' ? 'Checking decision runtime requirements…' : 'Loading the selected native decision model…';
     const instance = new DecisionWorker({name: 'operations-native-decision'});
@@ -38,9 +39,10 @@ SPDX-License-Identifier: AGPL-3.0-only -->
       if (data.type === 'compatibility') {
         status = data.value.summary;
         if (phase === 'checking') {terminate(); phase = 'unloaded';}
-      } else if (data.type === 'progress') status = String(data.value.message ?? data.value.phase ?? 'Loading native model…');
-      else if (data.type === 'ready') {clearTimeout(timer); phase = 'ready'; status = 'Ready for an explicit local decision.';}
-      else if (data.type === 'result') {clearTimeout(timer); result = data.value; phase = 'ready'; status = 'Native decision complete.';}
+      } else if (data.type === 'suspended') status = 'Decision model paused. It will restore before your next score.';
+      else if (data.type === 'progress') status = String(data.value.message ?? data.value.phase ?? 'Loading native model…');
+      else if (data.type === 'ready') {clearTimeout(timer); phase = 'ready'; status = data.suspended ? 'Decision model paused. It will restore before scoring.' : 'Ready for an explicit local decision.';}
+      else if (data.type === 'result') {clearTimeout(timer); result = data.value; phase = 'ready'; status = data.suspended ? 'Decision complete; model paused for another local model.' : 'Native decision complete.';}
       else if (data.type === 'error') {
         const native = decodeError(data.error);
         if (phase === 'deciding' && native.name === 'InputPreflightError') {clearTimeout(timer); error = native.message; phase = 'ready';}
@@ -51,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only -->
     instance.onmessageerror = () => fail(new Error('Could not read the decision worker response.'));
     instance.postMessage({type, profile: selected, assetBase: new URL('./assistant-runtime/', document.baseURI).href});
   }
-  function select(value: string) {if (languageActive || speechBusy || phase !== 'unloaded') return; selected = value; start('load');}
+  function select(value: string) {if (speechBusy || phase !== 'unloaded') return; selected = value; start('load');}
   function decide() {
     if (phase !== 'ready' || speechBusy) return;
     try {
@@ -69,19 +71,18 @@ SPDX-License-Identifier: AGPL-3.0-only -->
       worker!.postMessage({type: 'decide', request});
     } catch (problem) {error = problem instanceof Error ? problem.message : String(problem);}
   }
-  onDestroy(() => {terminate(); onActivity(false, false);});
+  onDestroy(() => {terminate(true); onActivity(false, false);});
 </script>
 
 <details class="decision-settings">
   <summary>Decision models<MaterialIcon name="chevron_forward" size={16} /></summary>
   <p>Score a state against an explicit question. These models do not write chat replies or run workflows.</p>
   {#if speechBusy}<p>Stop dictation before computing a decision.</p>{/if}
-  {#if languageActive}<p>Unload the language model to use a decision model.</p>{/if}
   <FieldSelect id="decision-model" label="Decision model" options={decisionModels.map(model => ({value: model.id, label: model.label}))}
-    value={selected} includePlaceholder={false} disabled={languageActive || speechBusy || phase !== 'unloaded'} onValueChange={select} onReselect={select} />
+    value={selected} includePlaceholder={false} disabled={speechBusy || phase !== 'unloaded'} onValueChange={select} onReselect={select} />
   <div class="decision-actions">
     {#if phase === 'unloaded'}
-      <HintButton type="button" class="decision-action" label="Check decision compatibility" disabled={languageActive || speechBusy} onclick={() => start('check')}><MaterialIcon name="fact_check" size={18} /></HintButton>
+      <HintButton type="button" class="decision-action" label="Check decision compatibility" disabled={speechBusy} onclick={() => start('check')}><MaterialIcon name="fact_check" size={18} /></HintButton>
     {:else}
       <HintButton type="button" class="decision-action" label={working ? 'Stop decision model' : 'Unload decision model'} onclick={unload}><MaterialIcon name="power_settings_new" size={18} /></HintButton>
     {/if}
