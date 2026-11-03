@@ -397,6 +397,20 @@ Then('the same compatibility check succeeds in a development worker', { timeout:
       worker.postMessage({type:'check',profile:'strands-cpu'});
     }));
     expect(decision.ready).toBe(true);expect(decision.summary).toContain('CPU Wasm');
+    const image = await this.page.evaluate(async () => {
+      const factory = await import(new URL('./assistant-runtime/vision-engine.js', location.href).href);
+      const pin = factory.resolveVisionPin({model:'LiquidAI/LFM2.5-VL-1.6B-ONNX',settings:{precision_variant:'official-q4-fp32-compatible-v1'}});
+      if (pin.precisionVariant !== 'official-q4-fp32-compatible-v1') throw Error('Development served a stale image factory');
+      return new Promise((resolve,reject) => {
+        const worker = new Worker(new URL('./assistant-runtime/vision-worker.js',location.href),{type:'module'});
+        const timer=setTimeout(()=>{worker.terminate();reject(Error('Development image worker startup timed out'));},15000);
+        worker.onerror=event=>{event.preventDefault();clearTimeout(timer);worker.terminate();reject(Error(event.message));};
+        worker.onmessage=({data})=>{if(data.type==='error'){clearTimeout(timer);worker.terminate();resolve(data.message+(data.stack?'\n'+data.stack:''));}};
+        // Reject in the current device selector before any model download.
+        worker.postMessage({id:1,type:'load',pin:{precisionVariant:'not-a-qualified-variant'}});
+      });
+    });
+    expect(image).toContain('Unqualified vision precision variant');
   } finally { await this.context.unroute(`${url}/**`, allowDevelopment); }
 });
 
@@ -638,4 +652,31 @@ Then('assistant context feedback preserves drafts and successful messages on ove
   await expect(panel.locator('.context-budget')).toHaveCount(0);
   await expect(draft).toBeDisabled();
   consumeExpectedError(this, 'Synthetic context-device failure');
+});
+
+Then('image runtime preferences select the served compatible model without changing text placement', async function() {
+  const page=this.page;await installAssistantFixture(page);const panel=await openAssistant(page), configuration=await openConfiguration(panel);
+  const picker=configuration.getByRole('combobox',{name:'Image runtime',exact:true});
+  await expect(picker.locator('.field-select-value')).toHaveText('Original FP16/Q4');
+  await picker.click();await page.getByRole('option',{name:'Compatible FP32/Q4',exact:true}).click();
+  expect(await page.evaluate(()=>window.assistantFixture.workers)).toBe(0);
+  await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});
+  await expect(picker.locator('.field-select-value')).toHaveText('Compatible FP32/Q4');
+  const language=configuration.getByRole('combobox',{name:'Language model',exact:true});await language.click();await page.getByRole('option',{name:'Bonsai 2 · 2B',exact:true}).click();
+  await expect(picker).toBeDisabled();expect(await page.evaluate(()=>window.assistantFixture.settings.visionMode)).toBe('compatible');
+  expect(await page.evaluate(()=>window.assistantFixture.settings.executionMode)).toBe('auto');
+  const served=await page.evaluate(async()=>{
+    const module=await import(new URL('./assistant-runtime/vision-engine.js',document.baseURI).href);
+    const previousHandler=window.onmessage;
+    const worker=await import(new URL('./assistant-runtime/vision-worker.js',document.baseURI).href);
+    if(window.onmessage!==previousHandler)throw Error('Inspecting worker exports changed the page handler');
+    if(typeof worker.bindVisionSessionOptions!=='function'||typeof worker.configureVisionDevice!=='function')throw Error('Built image worker is missing compatible session helpers');
+    let request;
+    const fake={terminate(){},postMessage(value){if(value.type==='load')request=value;queueMicrotask(()=>fake.onmessage({data:{id:value.id,type:'result',result:{}}}));}};
+    const profile={model:'LiquidAI/LFM2.5-VL-1.6B-ONNX',revision:'d0e00ca26cc42892d9f3c4380faa631927218209',settings:{precision_variant:'official-q4-fp32-compatible-v1',max_new_tokens:128,context_tokens:1024}};
+    const engine=await module.createVisionEngine(profile,{createWorker:()=>fake});await engine.dispose();
+    return {variant:request.pin.precisionVariant,dtype:request.pin.dtype,external:request.pin.externalData,output:request.outputTokens};
+  });
+  expect(served).toEqual({variant:'official-q4-fp32-compatible-v1',dtype:{embed_tokens:'fp32',vision_encoder:'q4',decoder_model_merged:'q4'},external:{embed_tokens:false,vision_encoder:true,decoder_model_merged:true},output:128});
+  await configuration.getByRole('button',{name:'Unload language model',exact:true}).click();
 });

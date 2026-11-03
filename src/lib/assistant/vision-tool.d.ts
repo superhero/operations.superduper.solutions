@@ -4,4 +4,5 @@ export function createVisionTool(options: {assetBase: string; profile: unknown; 
   suspendText: (options: {signal: AbortSignal}) => Promise<void>; resumeText: (options: {signal: AbortSignal}) => Promise<void>;
   onState?: (state: {phase: string; status?: string; busy: boolean; error: string | null}) => void;
   loadVision?: (profile: unknown, options: unknown) => Promise<unknown>; timeouts?: Record<string, number>;
+  preflight?: (operation: {signal: AbortSignal; profile: unknown; image_id: string; question: string}) => unknown | Promise<unknown>;
 }): {tool: AgentTool; readonly state: Record<string, unknown>; dispose(): Promise<void>};

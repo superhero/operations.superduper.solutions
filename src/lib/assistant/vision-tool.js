@@ -56,10 +56,18 @@ function validateImage(record) {
 
 /** Pi tool that swaps model allocations while its caller keeps the agent alive. */
 export function createVisionTool({assetBase, profile, getImage, suspendText, resumeText, onState = () => {}, loadVision = defaultLoadVision,
-  timeouts = {}}) {
+  preflight = () => {}, timeouts = {}}) {
   if (profile?.model !== MODEL || profile.revision !== REVISION || profile.engine !== 'transformers' || profile.kind !== 'vision' ||
       profile.settings?.preprocessing !== 'letterbox-white-square-v1' || profile.settings?.text_only === true) throw new Error('inspect_image requires the verified LFM2.5-VL 1.6B letterbox profile.');
-  for (const [name, callback] of Object.entries({getImage, suspendText, resumeText, loadVision})) if (typeof callback !== 'function') throw new Error(`${name} must be a function.`);
+  const variant = profile.settings?.precision_variant;
+  if (variant != null && variant !== 'official-q4-fp32-compatible-v1') throw new Error('Unqualified image precision variant.');
+  const outputTokens = profile.settings?.max_new_tokens ?? VISION_TOOL_LIMITS.outputTokens;
+  const contextTokens = profile.settings?.context_tokens ?? VISION_TOOL_LIMITS.contextTokens;
+  const qualifiedOutput = variant === 'official-q4-fp32-compatible-v1' ? 128 : VISION_TOOL_LIMITS.outputTokens;
+  if (!Number.isInteger(outputTokens) || outputTokens < 1 || outputTokens > qualifiedOutput
+      || !Number.isInteger(contextTokens) || contextTokens < 1 || contextTokens > VISION_TOOL_LIMITS.contextTokens)
+    throw new Error('Image budgets exceed the selected profile qualification.');
+  for (const [name, callback] of Object.entries({getImage, suspendText, resumeText, loadVision, preflight})) if (typeof callback !== 'function') throw new Error(`${name} must be a function.`);
   const limits = {validate: 5000, suspend: 30000, load: Math.min(profile.settings.load_timeout_ms || 1200000, 1200000),
     generate: Math.min(profile.settings.response_timeout_ms || 180000, 180000), release: 10000, resume: 1200000, ...timeouts};
   for (const value of Object.values(limits)) if (!Number.isInteger(value) || value < 1) throw new Error('Vision tool deadlines must be positive integer milliseconds.');
@@ -106,6 +114,7 @@ export function createVisionTool({assetBase, profile, getImage, suspendText, res
       publish({phase: 'validating', busy: true, error: null, cleanup_failed: false, image_id: args.image_id, question: args.question,
         status: 'Checking the local image…'});
       const image = validateImage(await deadline(Promise.resolve().then(() => getImage(args.image_id)), limits.validate, 'Local image lookup', operation));
+      await deadline(Promise.resolve().then(() => preflight({signal, profile, ...args})), limits.validate, 'Image runtime preflight', operation);
       throwIfAborted(signal);
       publish({phase: 'suspending', text_ready: false, status: 'Releasing the text model before image inspection…'});
       await deadline(Promise.resolve().then(() => suspendText({signal, ...args})), limits.suspend, 'Text model suspension', operation);
@@ -115,7 +124,7 @@ export function createVisionTool({assetBase, profile, getImage, suspendText, res
       publish({phase: 'loading', status: 'Loading the local vision model…'});
       loadPending = true;
       loading = Promise.resolve().then(() => loadVision(profile, {assetBase,signal,
-        contextTokens: VISION_TOOL_LIMITS.contextTokens, outputTokens: VISION_TOOL_LIMITS.outputTokens,
+        contextTokens, outputTokens,
         onProgress: progress => { if (active === operation) publish({status: progress?.message || progress?.status || 'Loading the local vision model…'}); },
       })).then(async engine => {
         loadPending = false; heldVision = engine;
@@ -133,7 +142,7 @@ export function createVisionTool({assetBase, profile, getImage, suspendText, res
       if (!engine || typeof engine.generate !== 'function' || typeof engine.dispose !== 'function') throw new Error('The vision loader returned an invalid engine.');
       publish({phase: 'inspecting', status: 'Inspecting local image pixels…'});
       const raw = await deadline(Promise.resolve().then(() => engine.generate([{role: 'user', content: args.question}], {
-        image: image.image, maxTokens: VISION_TOOL_LIMITS.outputTokens, tools: [], signal, enableThinking: false, temperature: 0,
+        image: image.image, maxTokens: outputTokens, tools: [], signal, enableThinking: false, temperature: 0,
       })), limits.generate, 'Image inspection', operation);
       throwIfAborted(signal);
       output = resultFor(raw, args, image);

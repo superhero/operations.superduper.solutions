@@ -33,6 +33,28 @@ feat(assistant): budget requests without trimming history
 
 ```
 
+<!-- changelog-commit:0ca0cadf9b60a2bb66b981e7071a4d7a3cdca607 -->
+### Commit [`0ca0cad`](https://github.com/superhero/operations.superduper.solutions/commit/0ca0cadf9b60a2bb66b981e7071a4d7a3cdca607)
+
+```text
+feat(assistant): add a compatible local image runtime
+
+Offer the pinned official FP32/Q4 image profile without changing the FP16 default or text placement choices. Reject insufficient device limits before releasing text and bind each compatible session to its owned GPU device.
+
+Keep development workers isolated from page-only diagnostics and load tokenizer metadata from the exact publisher revision. Record native execution, tool restoration and model-quality failures separately; the Bonsai2B combined-answer check remains unqualified.
+
+```
+
+<!-- changelog-commit:70dd352df837c19482ce241685096ec3ca1fab59 -->
+### Commit [`70dd352`](https://github.com/superhero/operations.superduper.solutions/commit/70dd352df837c19482ce241685096ec3ca1fab59)
+
+```text
+style(assistant): remove extra trailing whitespace
+
+Keep the new helper clean under diff --check and record the formatting-only difference from its native qualification snapshot.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66

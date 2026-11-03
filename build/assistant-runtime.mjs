@@ -3,6 +3,7 @@
 // Build optional engines separately so opening Assistant never loads native runtimes.
 import { build } from 'vite';
 import { nativeWasmWorker } from './native-wasm-worker.mjs';
+import { assistantWorkerBuildOptions } from './assistant-worker-build.mjs';
 import { cp, mkdir, readFile, readdir, writeFile, rm, stat } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
@@ -23,14 +24,8 @@ for (const file of decisionSources.files) {
 }
 await mkdir(output, {recursive: true});
 await cp(publicRoot, output, {recursive: true});
-await build({configFile: false, publicDir: false,
-  resolve: {conditions: ['onnxruntime-web-use-extern-wasm', 'module', 'browser', 'production']},
-  build: {target: 'es2024', outDir: output, emptyOutDir: false,
-    lib: {entry: {'gemma-worker': resolve('src/lib/assistant/runtime/litert-worker.js'),
-      'vision-worker': resolve('src/lib/assistant/runtime/vision-worker.js')}, formats: ['es']},
-    rollupOptions: {output: {entryFileNames: '[name].js', chunkFileNames: 'chunks/[name]-[hash].js', assetFileNames: 'assets/[name]-[hash][extname]'}},
-  },
-});
+await build(assistantWorkerBuildOptions(output, {'gemma-worker': resolve('src/lib/assistant/runtime/litert-worker.js'),
+  'vision-worker': resolve('src/lib/assistant/runtime/vision-worker.js')}));
 const lite = dirname(require.resolve('@litert-lm/core/package.json'));
 const hf = dirname(dirname(require.resolve('@huggingface/transformers')));
 const hfRequire = createRequire(`${hf}/package.json`);

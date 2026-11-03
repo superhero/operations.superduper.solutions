@@ -29,6 +29,8 @@ Feature: Browser assistant in Settings
     Then assistant attachments and new conversation respect asynchronous image cleanup
   Scenario: Native language profiles load on selection and preserve engine constraints
     Then Gemma MiniCPM and Ornith load on selection with their supported settings
+  Scenario: Image runtime selection persists and uses the served optional factory
+    Then image runtime preferences select the served compatible model without changing text placement
   Scenario: Decision models are separate explicit native requests
     Then decision controls preserve native results and release their exclusive model session
   Scenario: Optional runtime artifacts load without model weights
