@@ -21,6 +21,8 @@ Feature: Browser assistant in Settings
     And the same compatibility check succeeds in a development worker
   Scenario: The message input grows with drafts and pane width
     Then assistant drafts expand the message input without internal scrolling
+  Scenario: Context feedback distinguishes native counts from estimates
+    Then assistant context feedback preserves drafts and successful messages on overflow
   Scenario: Streamed conversations preserve drafts and the reader's scroll position
     Then assistant streaming keeps drafts focus and readable tool details
   Scenario: Attachments remain visible in chat and obsolete image preparation is discarded

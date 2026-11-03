@@ -25,7 +25,10 @@ export async function loadWllama(profile, onProgress, options = {}) {
   Object.assign(info, {engine: 'wllama', requested_engine: profile.engine, family: profile.family ?? (profile.engine === 'ornith' ? 'ornith' : null),
     runtime_source: JSON.parse(JSON.stringify(profile.runtime_source ?? null))});
   try {
-    return {kind: 'wllama', info, invalidated: false, reset() {}, logs: () => base.logs.slice(),
+    const loadedContext = base.raw.getLoadedContextInfo?.()?.n_ctx;
+    if (loadedContext !== undefined && (!Number.isSafeInteger(loadedContext) || loadedContext < 1)) throw Error('Invalid native context capacity.');
+    const contextLimit = Math.min(profile.settings.context_tokens, loadedContext ?? profile.settings.context_tokens);
+    return {kind: 'wllama', info, contextLimit, invalidated: false, reset() {}, logs: () => base.logs.slice(),
       async generate(messages, {tools, signal, maxTokens, onText, onThinking = () => {}, generation = profile.settings}) {
         const calls = []; let text = '', reasoning = '', finish = null, usage, timings;
         const start = performance.now(); let first = null;
@@ -54,7 +57,7 @@ export async function loadGemma(profile, onProgress, options = {}) {
     throw Error('Gemma requires text-only GPU greedy decoding with reasoning and prefix cache off.');
   const base = await createTextEngine(profile, {assetBase: options.assetBase, onProgress,
     contextTokens: settings.context_tokens, outputTokens: settings.max_new_tokens});
-  return {kind: 'litert-lm', reset: async () => base.reset(), dispose: () => base.dispose(),
+  return {kind: 'litert-lm', contextLimit: settings.context_tokens, reset: async () => base.reset(), dispose: () => base.dispose(),
     async generate(messages, {tools, signal, maxTokens, onText, onThinking}) {
       const result = await base.generate(messages, {tools, signal, maxTokens, onText, onThinking, temperature: 0, enableThinking: false});
       return {...result, message: {role: 'assistant', content: result.text || '',

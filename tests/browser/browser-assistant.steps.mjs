@@ -604,3 +604,38 @@ Then('native runtime modules and compressed Wasm load in real browser workers', 
   });
   expect(result.compressed).toBeGreaterThan(0);expect(result.imports).toBeGreaterThanOrEqual(2);expect(requests).toEqual([]);
 });
+
+Then('assistant context feedback preserves drafts and successful messages on overflow', async function() {
+  const page = this.page; await installAssistantFixture(page);
+  const panel = await openAssistant(page); await loadAssistantModel(page);
+  const draft = panel.getByRole('textbox', { name: 'Message', exact: true });
+  await draft.fill('Keep my next draft');
+  await page.evaluate(() => {
+    window.assistantFixture.emit({ type: 'context', value: { inputTokens: 2300, contextTokens: 4096, reserveTokens: 128, maxTokens: 256, kind: 'native', method: 'fixture native counter' } });
+    window.assistantFixture.emit({ type: 'update', messages: [{ role: 'user', text: 'Earlier message' }, { role: 'assistant', text: 'Earlier successful answer' }], error: '' });
+  });
+  await expect(panel.locator('.context-budget')).toContainText('native count');
+  await expect(panel.locator('.context-budget')).not.toContainText('estimate');
+  await page.evaluate(() => {
+    window.assistantFixture.emit({ type: 'context', value: { inputTokens: 5000, contextTokens: 4096, reserveTokens: 128, maxTokens: 0, kind: 'estimate', method: 'fixture estimate' } });
+    window.assistantFixture.emit({ type: 'update', messages: [{ role: 'user', text: 'Earlier message' }, { role: 'assistant', text: 'Earlier successful answer' }], error: 'The estimated prompt has no room for a reply. No messages were removed.' });
+    window.assistantFixture.emit({ type: 'done' });
+  });
+  await expect(panel.locator('.context-budget')).toContainText('estimate');
+  await expect(panel.locator('.context-budget')).toContainText('0 output tokens');
+  await expect(panel.locator('.context-budget')).toContainText('native template and tokenizer may use a different count');
+  await expect(panel.getByRole('alert')).toContainText('No messages were removed');
+  await expect(panel.getByRole('log')).toContainText('Earlier successful answer');
+  await expect(draft).toHaveValue('Keep my next draft');
+  await panel.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await expect(panel.locator('.context-budget')).toHaveCount(0);
+  await expect(panel.getByRole('log')).not.toContainText('Earlier successful answer');
+  await page.evaluate(() => {
+    window.assistantFixture.emit({ type: 'context', value: { inputTokens: 100, contextTokens: 4096, reserveTokens: 128, maxTokens: 256, kind: 'native', method: 'fixture' } });
+  });
+  await expect(panel.locator('.context-budget')).toBeVisible();
+  await page.evaluate(() => window.assistantFixture.emit({ type: 'error', operation: 'worker', error: { name: 'DeviceLostError', message: 'Synthetic context-device failure' } }));
+  await expect(panel.locator('.context-budget')).toHaveCount(0);
+  await expect(draft).toBeDisabled();
+  consumeExpectedError(this, 'Synthetic context-device failure');
+});
