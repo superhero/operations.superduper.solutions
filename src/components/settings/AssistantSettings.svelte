@@ -9,6 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import Disclosure from "$lib/components/Disclosure.svelte";
   import WorkflowCommentPreview from "../workflows/WorkflowCommentPreview.svelte";
   import { assistantSettingsKey, assistantModels, settingsForAssistantModel, defaultAssistantSettings, validateAssistantSettings, type AssistantSettings as Preferences } from "$lib/assistant/config.ts";
   import { enabledAssistantTools, executeAssistantTool, type AssistantHost } from "$lib/assistant/tools.ts";
@@ -24,7 +25,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { encodeError, decodeError } from "$lib/worker-rpc.ts";
   import { logger } from "$lib/logger.ts";
 
-  let { host, visible = true }: { host: AssistantHost; visible?: boolean } = $props();
+  let { host, visible = true, configurationOpen = false, onConfigurationToggle = () => {}, onConfigure = () => {} }: {
+    host: AssistantHost; visible?: boolean; configurationOpen?: boolean;
+    onConfigurationToggle?: (open: boolean) => void; onConfigure?: () => void;
+  } = $props();
   let preferenceError = $state("");
   function readPreferences() {
     try { return validateAssistantSettings(JSON.parse(localStorage.getItem(assistantSettingsKey) ?? "{}")); }
@@ -62,12 +66,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return { update: () => queueMicrotask(resize), destroy: () => { active = false; observer.disconnect(); } };
   }
   let speechReady = $state(false), speechBusy = $state(false), speechRecording = $state(false);
-  let speechSettings: SpeechSettings;
-  let configurationOpen = $state(false);
+  let speechBuilt = $state(false);
+  $effect(() => { if (visible || configurationOpen) speechBuilt = true; });
+  let speechSettings = $state<SpeechSettings>();
   async function toggleDictation() {
-    if (!speechReady) configurationOpen = true;
+    if (!speechReady) onConfigure();
     await tick();
-    await speechSettings.toggleDictation();
+    await speechSettings?.toggleDictation();
   }
   let speechSession = "", confirmedSpeech = "";
   let dictationWarning = $state("");
@@ -239,7 +244,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   onDestroy(() => { alive = false; imageGeneration++; terminate(); });
 </script>
 
-<section class="assistant-settings" aria-label="Browser assistant">
+<section class="assistant-settings" aria-label="Browser assistant" hidden={!visible} inert={!visible}>
   <div class="assistant-chat">
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (The conversation can receive keyboard focus for reading.) -->
   <div class="conversation" class:empty={!messages.length && phase !== "generating"} role="log" aria-label="Assistant conversation" aria-live="off" bind:this={conversation} tabindex={messages.length ? 0 : -1}>
@@ -282,7 +287,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <HintButton type="button" class="composer-action attach-action" label="Attach image" disabled={phase !== "ready" || imagePreparing} onclick={() => imageInput.click()}><MaterialIcon name="attach_file" size={16} /><span class="attach-label">Attach image</span></HintButton>
       <div class="composer-tools">
         <HintButton type="button" class={speechRecording ? "composer-action recording" : "composer-action"} label={speechRecording ? "Stop dictation" : "Dictate"} aria-pressed={speechRecording} disabled={(speechBusy || busy) && !speechRecording} onclick={() => void toggleDictation()}><MaterialIcon name={speechRecording ? "stop" : "mic"} size={16} /><span>{speechRecording ? "Stop" : "Dictate"}</span></HintButton>
-        <HintButton type="button" class="composer-action" label="Assistant configuration" aria-expanded={configurationOpen} aria-controls="assistant-configuration-panel" onclick={() => configurationOpen = !configurationOpen}><MaterialIcon name="tune" size={18} /></HintButton>
+        <HintButton type="button" class="composer-action" label="Assistant configuration" aria-controls="assistant-configuration-panel" onclick={onConfigure}><MaterialIcon name="tune" size={18} /></HintButton>
       </div>
       <input hidden aria-label="Attach assistant image" type="file" accept="image/png,image/jpeg,image/webp" disabled={phase !== "ready" || imagePreparing} bind:this={imageInput} onchange={event => void prepareImage(event.currentTarget.files?.[0])} />
     </div>
@@ -292,11 +297,27 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if preferenceError}<p class="error" role="alert">{preferenceError}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if dictationWarning}<p class="error" role="status">{dictationWarning}</p>{/if}
-  <div id="assistant-configuration-panel" class="assistant-configuration" hidden={!configurationOpen} inert={!configurationOpen}>
-  <SpeechSettings bind:this={speechSettings} {visible} externalBusy={busy} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
-  <DecisionSettings languageActive={languageLocked} {speechBusy} onActivity={(active, working) => { decisionActive = active; decisionBusy = working; }} />
-  <details class="assistant-details">
-    <summary>Configuration<MaterialIcon name="chevron_forward" size={16} /></summary>
+</section>
+<Disclosure class="catalog-group settings-section" label="AI" tooltipEnabled={false} open={configurationOpen} onToggle={onConfigurationToggle}>
+  {#snippet summary()}
+    <div class="section-heading"><h2>AI</h2><span>Configure local models, dictation and assistant tools</span></div>
+    <MaterialIcon name="chevron_forward" size={17} />
+  {/snippet}
+  <div id="assistant-configuration-panel" class="assistant-configuration">
+  <details class="assistant-details" open>
+    <summary>Language model<MaterialIcon name="chevron_forward" size={16} /></summary>
+    <div class="configuration-model">
+      <FieldSelect id="assistant-settings-model" label="Language model" options={modelOptions} includePlaceholder={false} value={preferences.model} disabled={locked} active={configurationOpen}
+        onValueChange={selectModel} onReselect={selectModel} />
+      {#if languageLocked}
+        <HintButton type="button" class="configuration-action" label={busy ? "Stop and unload language model" : "Unload language model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
+      {:else}
+        <HintButton type="button" class="configuration-action" label="Check language compatibility" disabled={decisionActive} onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
+      {/if}
+    </div>
+    {#if status}<p class="status" role="status">{status}</p>{/if}
+    {#if preferenceError}<p class="error" role="alert">{preferenceError}</p>{/if}
+    {#if error}<p class="error" role="alert">{error}</p>{/if}
     <p>{locked ? "Unload the model to change configuration. " : ""}Preferences are saved on this browser.</p>
     <fieldset disabled={locked} aria-label="Assistant configuration">
       <div class="options">
@@ -327,6 +348,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
     </fieldset>
   </details>
+  {#if speechBuilt}
+    <SpeechSettings bind:this={speechSettings} visible={visible || configurationOpen} externalBusy={busy} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
+  {/if}
+  <DecisionSettings languageActive={languageLocked} {speechBusy} onActivity={(active, working) => { decisionActive = active; decisionBusy = working; }} />
   <details class="assistant-details">
     <summary>Tools and skills<MaterialIcon name="chevron_forward" size={16} /></summary>
     <p>Reads cover catalogs, operation schemas, settings, saved workflows and current ports. Workspace edits add operations, move nodes and connect ports. Changes use normal save history and Undo.</p>
@@ -345,13 +370,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </details>
 
   </div>
-</section>
+</Disclosure>
 
 <style>
   .assistant-settings { padding: 16px 0; display: grid; gap: 12px; min-width: 0; container-type: inline-size; color: var(--color-foreground); font-size: 12px; }
+  .assistant-settings[hidden] { display: none; }
+  .section-heading { display: grid; gap: 2px; }
+  .section-heading h2 { margin: 0; font-size: 18px; font-weight: 700; }
+  .section-heading > span { font-size: 12px; font-weight: 400; }
   .assistant-details { padding: 12px; border-radius: 4px; background: var(--color-surface); min-width: 0; }
-  .assistant-configuration { display: grid; gap: 12px; min-width: 0; }
-  .assistant-configuration[hidden] { display: none; }
+  .assistant-configuration { display: grid; gap: 12px; min-width: 0; padding: 16px; container-type: inline-size; color: var(--color-foreground); font-size: 12px; }
+  .configuration-model { display: flex; align-items: center; gap: 8px; margin: 12px 0; min-width: 0; }
+  .configuration-model :global(.field-select-trigger) { flex: 1; min-width: 0; }
+  .configuration-model :global(.configuration-action) { display: grid; place-items: center; flex-shrink: 0; min-width: 36px; min-height: 36px; padding: 6px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); cursor: pointer; }
   .assistant-chat { min-width: 0; }
   .composer { padding: 0; border: 2px solid var(--color-muted); border-radius: 4px; background: var(--color-background); min-width: 0; overflow: clip; }
   .composer-header, .composer-toolbar { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--color-surface); }

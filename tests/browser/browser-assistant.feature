@@ -4,6 +4,8 @@
 Feature: Browser assistant in Settings
   Scenario: The pane switch preserves settings and a live assistant session
     Then the pane switches between settings and assistant without losing its session
+  Scenario: AI configuration uses normal Settings and preserves live chat state
+    Then AI settings preserve drafts attachments and streamed replies across pane navigation
   Scenario: Local model controls are lazy and preferences survive a reload
     Then the assistant settings expose accepted local models and remember configuration
   Scenario: Application tools edit the real workspace without executing it
