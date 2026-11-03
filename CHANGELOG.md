@@ -2,6 +2,21 @@
 
 ## Latest
 
+<!-- changelog-commit:20c4fbe8215f52f1acc68538692ab859056d51c6 -->
+### Commit [`20c4fbe`](https://github.com/superhero/operations.superduper.solutions/commit/20c4fbe8215f52f1acc68538692ab859056d51c6)
+
+```text
+fix(settings): prevent browser dashboard opening flicker
+
+```
+
+<!-- changelog-commit:2fdd3fa62638fd9f8a845368c0bd91ac9b1b6805 -->
+### Commit [`2fdd3fa`](https://github.com/superhero/operations.superduper.solutions/commit/2fdd3fa62638fd9f8a845368c0bd91ac9b1b6805)
+
+```text
+Merge branch 'develop' into bugfix/browser-settings-flicker
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66
