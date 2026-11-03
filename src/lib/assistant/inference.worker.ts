@@ -43,6 +43,8 @@ const images = new Map<string, StoredImage>();
 let vision: ReturnType<typeof createVisionTool> | undefined;
 let assetBase = "";
 const facade: LocalEngine = {
+  get contextMode() { return engine?.contextMode; },
+  get contextLimit() { return engine?.contextLimit; },
   async generate(messages, options) { if (!engine) throw new Error("The text model is not ready."); return engine.generate(messages, options); },
   async reset() { if (!engine) throw new Error("The text model is not ready."); await engine.reset(); },
 };
@@ -88,7 +90,8 @@ scope.onmessage = event => {
           onState: state => { if (state.status) progress(state.status); },
         });
         session = createAssistantSession(facade, settings, invoke, async () => { throw new Error("Use inspect_image for local image pixels."); }, publish, schedule,
-          error => post({ type: "diagnostic", operation: "send", error: encodeError(error) }), [vision.tool]);
+          error => post({ type: "diagnostic", operation: "send", error: encodeError(error) }), [vision.tool],
+          value => post({ type: "context", value }));
         post({ type: "ready" });
       } else if (message.type === "send") {
         if (!session) throw new Error("Load a model first.");

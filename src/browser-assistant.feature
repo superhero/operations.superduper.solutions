@@ -23,5 +23,11 @@ Feature: Browser-local assistant boundaries
     Then the local Pi agent streams answers and uses fresh application tool results
   Scenario: Pi requests remain cancellable and bounded
     Then the local Pi agent reports parser failures cancellation and request limits
+  Scenario: Context budgets include complete requests and output headroom
+    Then assistant context budgets distinguish estimates and reject requests without reply capacity
+  Scenario: Native prompt counting shares the generating session
+    Then Bonsai counts complete prompts atomically before native generation
+  Scenario: Tool results recheck context without losing completed effects
+    Then assistant context overflow preserves tool results and never reexecutes completed tools
   Scenario: Token bursts defer transcript projection without losing image or final state
     Then assistant publication coalesces token bursts and retains image message identity

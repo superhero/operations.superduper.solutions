@@ -9,13 +9,16 @@ import type { AssistantMessage, ImageContent, TextContent, Message, ToolCall } f
 import { assistantModels, type AssistantSettings } from "./config.ts";
 import { enabledAssistantTools, validateToolObject } from "./tools.ts";
 import { assistantSkills } from "./skills.ts";
+import { budgetContext, ContextLimitError, estimateRequestContext, type ContextBudget } from "./context-budget.ts";
 
 export type NativeMessage = { role: string; content: unknown; tool_call_id?: string; reasoning_content?: string; tool_calls?: unknown[] };
 export type NativeResult = { message: { content?: string; reasoning_content?: string; tool_calls?: { id?: string; function: { name: string; arguments: string | Record<string, unknown> }; errors?: string[] }[] };
   finish_reason?: string; usage?: { prompt_tokens?: number; completion_tokens?: number; cached_tokens?: number } };
 export type LocalEngine = {
+  contextMode?: "native" | undefined;
+  contextLimit?: number | undefined;
   generate(messages: NativeMessage[], options: { tools: unknown[]; signal: AbortSignal; maxTokens: number;
-    onText: (text: string) => void; onThinking: (text: string) => void }): Promise<NativeResult>;
+    onText: (text: string) => void; onThinking: (text: string) => void; onContext?: (budget: ContextBudget) => void }): Promise<NativeResult>;
   reset: () => Promise<void>;
 };
 export type AssistantMessageView = { role: "user" | "assistant" | "tool"; text: string; thinking?: string; tool?: string; failed?: boolean; imageCount?: number };
@@ -55,7 +58,7 @@ export function nativeToolCalls(calls: NonNullable<NativeResult["message"]["tool
 }
 
 export function localAssistantStream(engine: LocalEngine, settings: AssistantSettings, image: (part: ImageContent) => Promise<unknown>,
-  onError: (error: unknown) => void = () => {}): StreamFn {
+  onError: (error: unknown) => void = () => {}, onContext: (budget: ContextBudget) => void = () => {}): StreamFn {
   return (model, context, options) => {
     const stream = createAssistantMessageEventStream();
     const output: AssistantMessage = { role: "assistant", content: [], api: model.api, provider: model.provider, model: model.id, timestamp: Date.now(), stopReason: "stop",
@@ -77,9 +80,19 @@ export function localAssistantStream(engine: LocalEngine, settings: AssistantSet
           else (part as { thinking: string }).thinking += delta;
           stream.push(kind === "text" ? { type: "text_delta", contentIndex: index, delta, partial: output } : { type: "thinking_delta", contentIndex: index, delta, partial: output });
         };
-        const native = await engine.generate(await nativeMessages(context.messages, image), {
-          tools: getCurrentTools(context.messages).map(tool => ({ type: "function", function: { name: tool.name, description: tool.description, parameters: tool.parameters } })),
-          signal, maxTokens: settings.maxTokens, onText: text => append("text", text), onThinking: text => append("thinking", text),
+        const messages = await nativeMessages(context.messages, image);
+        const tools = getCurrentTools(context.messages).map(tool => ({ type: "function", function: { name: tool.name, description: tool.description, parameters: tool.parameters } }));
+        signal.throwIfAborted();
+        let maxTokens = settings.maxTokens;
+        if (engine.contextMode !== "native") {
+          const limit = Math.min(settings.context, engine.contextLimit ?? settings.context);
+          const budget = budgetContext(estimateRequestContext(messages, tools, limit, settings.thinking), maxTokens);
+          maxTokens = budget.maxTokens;
+          onContext(budget);
+        }
+        signal.throwIfAborted();
+        const native = await engine.generate(messages, {
+          tools, signal, maxTokens, onContext, onText: text => append("text", text), onThinking: text => append("thinking", text),
         });
         signal.throwIfAborted();
         if (native.finish_reason === "cancelled") throw new Error("Generation cancelled.");
@@ -93,7 +106,9 @@ export function localAssistantStream(engine: LocalEngine, settings: AssistantSet
         output.stopReason = calls.length ? "toolUse" : native.finish_reason === "length" ? "length" : "stop";
         stream.push({ type: "done", reason: output.stopReason, message: output });
       } catch (error) {
-        if (!options?.signal?.aborted) onError(error);
+        if (error instanceof ContextLimitError && !options?.signal?.aborted)
+          onContext({ ...error.measurement, reserveTokens: error.reserveTokens, maxTokens: 0 });
+        if (!options?.signal?.aborted && !(error instanceof ContextLimitError)) onError(error);
         output.stopReason = options?.signal?.aborted ? "aborted" : "error";
         output.errorMessage = error instanceof Error ? error.message : String(error);
         stream.push({ type: "error", reason: output.stopReason, error: output });
@@ -105,7 +120,8 @@ export function localAssistantStream(engine: LocalEngine, settings: AssistantSet
 
 export function createAssistantSession(engine: LocalEngine, settings: AssistantSettings, invoke: ToolInvoker,
   image: (part: ImageContent) => Promise<unknown>, publish: (state: SessionUpdate) => void,
-  schedule: (snapshot: () => void) => void = snapshot => snapshot(), onError: (error: unknown) => void = () => {}, extraTools: AgentTool[] = []) {
+  schedule: (snapshot: () => void) => void = snapshot => snapshot(), onError: (error: unknown) => void = () => {}, extraTools: AgentTool[] = [],
+  onContext: (budget: ContextBudget) => void = () => {}) {
   const tools: AgentTool[] = enabledAssistantTools(settings).map(tool => ({ ...tool, label: tool.name,
     parameters: tool.parameters as AgentTool["parameters"],
     execute: async (_id, args: unknown, signal) => {
@@ -116,7 +132,7 @@ export function createAssistantSession(engine: LocalEngine, settings: AssistantS
   const skills = settings.tools && settings.skills ? assistantSkills.map(({ name, description, path }) => ({ name, description, path })) : [];
   if (settings.tools) tools.push(...extraTools);
   const localImages = new Map<string, {text: string; count: number}>();
-  const agent = new Agent({ streamFn: localAssistantStream(engine, settings, image, onError), toolExecution: "sequential", initialState: {
+  const agent = new Agent({ streamFn: localAssistantStream(engine, settings, image, onError, onContext), toolExecution: "sequential", initialState: {
     model: { id: settings.model, name: assistantModels.find(model => model.id === settings.model)!.label, api: "browser-local", provider: "browser-local", baseUrl: "", input: ["text"],
       reasoning: settings.thinking, contextWindow: settings.context, maxTokens: settings.maxTokens, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } },
     tools, thinkingLevel: "off", systemPrompt: "You are the Operations browser assistant. Answer concisely. Use tools to inspect the application before editing. Never invent tool results. " +

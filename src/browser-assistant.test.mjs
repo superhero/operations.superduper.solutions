@@ -11,6 +11,7 @@ import { editAssistantWorkspace } from './lib/assistant/workspace.ts';
 import { fetchBonsaiRuntime, loadBonsaiEngine } from './lib/assistant/engine.ts';
 import { probeAssistantCompatibility, probeCompute } from './lib/assistant/compatibility.ts';
 import { localAssistantStream, nativeMessages, nativeToolCalls, createAssistantSession } from './lib/assistant/pi-session.ts';
+import { budgetContext, ContextLimitError, estimateRequestContext } from './lib/assistant/context-budget.ts';
 import { encodeError, decodeError } from './lib/worker-rpc.ts';
 import { readWorkflowFile } from './lib/workflow-file.ts';
 import { renderMarkdown } from './lib/markdown.ts';
@@ -221,7 +222,7 @@ Then('assistant model loading verifies runtime integrity and forwards pinned nat
     await reject(() => fetchBonsaiRuntime(signal(), async () => response(), async () => { throw Error('module failure'); }), /module failure/);
   } finally { spy.mockRestore(); }
   const events = [], captured = {}, record = { resets: 0, sessionDisposed: 0, rawDisposed: 0 };
-  const fakeSession = { async reset() { record.resets++; }, async dispose() { record.sessionDisposed++; }, generate(messages, options) {
+  const fakeSession = { max_length: 4096, count_tokens() { return { prompt_tokens: 100, image_tokens: 0 }; }, async reset() { record.resets++; }, async dispose() { record.sessionDisposed++; }, generate(messages, options) {
     captured.generation = options;
     return Object.assign((async function* () { yield { type: 'text', text: 'Hello' }; yield { type: 'reasoning', text: 'Think' }; yield { type: 'other' }; })(), { result: Promise.resolve(okResult('Hello')) });
   } };
@@ -376,4 +377,71 @@ Then('the local Pi agent reports parser failures cancellation and request limits
     const deadline = createAssistantSession({ ...engine, async generate(_messages, { signal }) { await new Promise(resolve => signal.addEventListener('abort', resolve, { once: true })); signal.throwIfAborted(); } }, { ...settings(), requestTimeout: 1000 }, async () => ({}), async () => ({}), state => updates.push(state));
     const request = deadline.send('Deadline'); await vi.advanceTimersByTimeAsync(1001); await request; assert.match(updates.at(-1).error, /deadline|abort/i);
   } finally { vi.useRealTimers(); }
+});
+
+Then('assistant context budgets distinguish estimates and reject requests without reply capacity', () => {
+  const measured = { inputTokens: 200, contextTokens: 512, kind: 'native', method: 'fixture native counter' };
+  assert.equal(budgetContext(measured, 1000).maxTokens, 184);
+  assert.equal(budgetContext(measured, 10).maxTokens, 10);
+  assert.equal(budgetContext({ ...measured, inputTokens: 383 }, 10).maxTokens, 1);
+  assert.throws(() => budgetContext({ ...measured, inputTokens: 384 }, 10), error => error instanceof ContextLimitError && /native.*No messages were removed/s.test(error.message));
+  for (const inputTokens of [-1, 1.2, NaN, Infinity]) assert.throws(() => budgetContext({ ...measured, inputTokens }, 10), /invalid context/);
+  const messages = [{ role: 'system', content: 'Follow these rules' }, { role: 'assistant', reasoning_content: 'Prior reasoning', tool_calls: [{ id: 'a', function: { name: 'read_skill', arguments: { path: '/skill' } } }] }, { role: 'tool', tool_call_id: 'a', content: 'Loaded skill' }];
+  const tools = [{ type: 'function', function: { name: 'read_skill', description: 'Read a skill', parameters: { type: 'object', properties: { path: { type: 'string' } } } } }];
+  const estimated = estimateRequestContext(messages, tools, 4096, true);
+  assert.equal(estimated.kind, 'estimate'); assert.match(estimated.method, /native template\/tokenizer unavailable/);
+  assert.ok(estimated.inputTokens > estimateRequestContext(messages, [], 4096, true).inputTokens);
+  for (const index of [0, 1, 2]) {
+    const changed = structuredClone(messages); changed[index].content = 'Large multilingual result 漢字 '.repeat(150);
+    assert.ok(estimateRequestContext(changed, tools, 4096, true).inputTokens > estimated.inputTokens);
+  }
+  assert.throws(() => budgetContext({ ...estimated, contextTokens: 128 }, 10), /estimated prompt/);
+});
+
+Then('Bonsai counts complete prompts atomically before native generation', async () => {
+  const events = [], budgets = [], messages = [{ role: 'system', content: 'System' }, { role: 'tool', tool_call_id: 'a', content: 'Fresh result' }], tools = [{ type: 'function', function: { name: 'read_application' } }];
+  let inputTokens = 200, fail = false, cancelled = false, cancel, entered, finish;
+  const native = { max_length: 512, async reset() { events.push('reset'); }, async dispose() {}, count_tokens(candidate, template) {
+    events.push('count'); assert.equal(candidate, messages); assert.equal(template.tools, tools); assert.equal(template.enable_thinking, true);
+    cancel?.(); return { prompt_tokens: inputTokens, image_tokens: 80 };
+  }, generate(candidate, options) {
+    events.push('generate'); assert.equal(candidate, messages); assert.equal(options.tools, tools); assert.equal(options.enable_thinking, true);
+    assert.equal(options.max_new_tokens, 184, 'Image tokens are already in the native prompt; cached tokens never reduce occupancy.');
+    if (fail) throw Error('Native failure');
+    return Object.assign((async function* () { if (entered) { entered(); await new Promise(resolve => finish = resolve); } yield { type: 'text', text: 'Answer' }; })(), { result: Promise.resolve({ ...okResult('Answer'), finish_reason: cancelled ? 'cancelled' : 'stop', usage: { prompt_tokens: 200, cached_tokens: 199 } }) });
+  } };
+  const runtime = async () => ({ Qwen3_5ForConditionalGeneration: { async from_pretrained() { return { create_session: () => native, async dispose() {} }; } } });
+  const create = prefixCache => loadBonsaiEngine({ ...settings(), thinking: true, prefixCache }, () => {}, signal(), { fp16: true }, runtime);
+  const options = () => ({ tools, signal: signal(), maxTokens: 1000, onText() {}, onThinking() {}, onContext: value => budgets.push(value) });
+  let engine = await create(false); await engine.generate(messages, options());
+  assert.deepEqual(events.splice(0), ['reset', 'count', 'generate']); assert.equal(budgets.at(-1).kind, 'native'); assert.equal(budgets.at(-1).contextTokens, 512);
+  await engine.dispose(); engine = await create(true);
+  await engine.generate(messages, options()); assert.deepEqual(events.splice(0), ['count', 'generate']);
+  inputTokens = 384; await assert.rejects(engine.generate(messages, options()), error => error instanceof ContextLimitError);
+  assert.deepEqual(events.splice(0), ['count']); inputTokens = 200;
+  fail = true; await assert.rejects(engine.generate(messages, options()), /Native failure/); assert.deepEqual(events.splice(0), ['count', 'generate']);
+  fail = false; await engine.generate(messages, options()); assert.deepEqual(events.splice(0), ['reset', 'count', 'generate']);
+  cancelled = true; assert.equal((await engine.generate(messages, options())).finish_reason, 'cancelled'); assert.deepEqual(events.splice(0), ['count', 'generate']);
+  cancelled = false; await engine.generate(messages, options()); assert.deepEqual(events.splice(0), ['reset', 'count', 'generate']);
+  const abort = controller(); cancel = () => abort.abort();
+  await assert.rejects(engine.generate(messages, { ...options(), signal: abort.signal }), /abort/i); assert.deepEqual(events.splice(0), ['count']); cancel = undefined;
+  const started = new Promise(resolve => entered = resolve); const pending = engine.generate(messages, options()); await started;
+  await assert.rejects(engine.generate(messages, options()), /One native/); await assert.rejects(engine.reset(), /Stop the current/);
+  finish(); await pending; await engine.dispose();
+});
+
+Then('assistant context overflow preserves tool results and never reexecutes completed tools', async () => {
+  let forwards = 0, effects = 0; const updates = [], diagnostics = [], budgets = [];
+  const engine = { async reset() {}, async generate(messages, options) {
+    forwards++; assert.ok(options.tools.some(tool => tool.function.name === 'read_application'));
+    return callResult('read_application', { section: 'summary' });
+  } };
+  const session = createAssistantSession(engine, settings(), async () => { effects++; return { marker: 'PRESERVED-EFFECT', result: 'x'.repeat(11000) }; }, async () => ({}), value => updates.push(value), callback => callback(), error => diagnostics.push(error), [], value => budgets.push(value));
+  await session.send('Read the application');
+  assert.equal(forwards, 1); assert.equal(effects, 1); assert.equal(budgets[0].kind, 'estimate');
+  assert.match(updates.at(-1).error, /estimated prompt.*No messages were removed/s);
+  assert.ok(updates.at(-1).messages.some(message => message.role === 'tool' && message.text.includes('PRESERVED-EFFECT')));
+  await session.send('Continue'); assert.equal(forwards, 1); assert.equal(effects, 1); assert.equal(diagnostics.length, 0);
+  assert.equal(updates.at(-1).messages.filter(message => message.role === 'tool').length, 1);
+  await session.reset(); assert.deepEqual(updates.at(-1).messages, []); assert.equal(effects, 1);
 });

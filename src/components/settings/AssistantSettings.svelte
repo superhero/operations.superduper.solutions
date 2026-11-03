@@ -16,6 +16,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { assistantSkills } from "$lib/assistant/skills.ts";
   import type { AssistantCompatibility } from "$lib/assistant/compatibility.ts";
   import type { AssistantMessageView } from "$lib/assistant/pi-session.ts";
+  import type { ContextBudget } from "$lib/assistant/context-budget.ts";
   import InferenceWorker from "$lib/assistant/inference.worker.ts?worker&inline";
   import { trackApplicationWorker } from "$lib/application-workers.ts";
   import SpeechSettings from "./SpeechSettings.svelte";
@@ -44,6 +45,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let status = $state("");
   let error = $state("");
   let compatibility = $state<AssistantCompatibility>();
+  let contextBudget = $state<ContextBudget>();
   let messages = $state.raw<AssistantMessageView[]>([]);
   const messageFields = ["role", "text", "thinking", "tool", "failed", "imageCount"] as const;
   let prompt = $state("");
@@ -118,6 +120,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     catch (problem) { preferenceError = report(problem, "settings"); }
   }
   function terminate() {
+    contextBudget = undefined;
     clearTimeout(timer); timer = undefined; toolAbort.abort();
     worker?.terminate(); worker = undefined; release?.(); release = undefined;
   }
@@ -145,7 +148,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     instance.onmessage = event => {
       if (worker !== instance) return;
       const message = event.data;
-      if (message.type === "compatibility") {
+      if (message.type === "context") contextBudget = message.value;
+      else if (message.type === "compatibility") {
         compatibility = message.value;
         if (phase === "checking") { terminate(); phase = "unloaded"; status = message.value.summary; }
       } else if (message.type === "progress") {
@@ -198,6 +202,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   function load() {
     if (locked) return;
+    contextBudget = undefined;
     try {
       loadedSettings = validateAssistantSettings(preferences); savePreferences();
       clearAttachment();
@@ -207,6 +212,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   function send() {
     if (phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)) return;
+    contextBudget = undefined;
     phase = "generating"; error = ""; status = "The assistant is working…";
     followNextUpdate = true;
     toolAbort.abort(); toolAbort = new AbortController();
@@ -216,6 +222,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   function reset() {
     if (phase !== "ready" || speechBusy) return;
+    contextBudget = undefined;
     phase = "generating"; error = ""; prompt = ""; dictationWarning = ""; clearAttachment(); deadline(10000); worker!.postMessage({ type: "reset" });
   }
   function clearAttachment() {
@@ -294,6 +301,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </form>
   </div>
   <p class="status" class:sr-only={!status} role="status">{status}</p>
+  {#if contextBudget}<p class="context-budget">Last prompt: {contextBudget.inputTokens.toLocaleString()} tokens ({contextBudget.kind === "native" ? "native count" : "estimate"}) · up to {contextBudget.maxTokens.toLocaleString()} output tokens. {#if contextBudget.kind === "estimate"}The native template and tokenizer may use a different count.{/if}</p>{/if}
   {#if preferenceError}<p class="error" role="alert">{preferenceError}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if dictationWarning}<p class="error" role="status">{dictationWarning}</p>{/if}
@@ -408,6 +416,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   details[open] > summary :global(.material-symbols-rounded) { transform: rotate(90deg); }
   p { margin: 8px 0; line-height: 1.6; overflow-wrap: anywhere; }
   .status { margin: 0; color: var(--color-muted-foreground); }
+  .context-budget { margin: 0; color: var(--color-muted-foreground); font-size: 11px; }
   fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
   .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
   .option { display: grid; gap: 8px; padding: 10px; border-radius: 4px; min-width: 0; background: var(--color-background); }

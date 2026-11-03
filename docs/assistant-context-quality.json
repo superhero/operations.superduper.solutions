@@ -1,0 +1,96 @@
+{
+  "date": "2026-11-03",
+  "status": "passed",
+  "scope": "Actual Operations loadBonsaiEngine adapter in a dedicated browser page: Bonsai2B,4096 context,32output,greedy,thinkingoff; prefix cache off/on. Production Pi/worker/UI composition covered separately with controlled inference fixtures. No larger-model/mobile or quiet performance qualification.",
+  "native_run": "ops-context-native-1793743514618109921",
+  "checks_passed": 18,
+  "browser": "154.0.8037.98",
+  "gpu": {
+    "vendor": "nvidia",
+    "architecture": "ampere"
+  },
+  "source_sha256": {
+    "engine.ts": "17f1dc0e9262b3a29cdc50141abf010c7baec50e34c48f0c1a2235cdbb4116ee",
+    "config.ts": "fe4331aa673e7256d8ae40b4331a75edc3af04d0292f4f82b2da6dd129eb4e25",
+    "context-budget.ts": "9a7f62f1f89f50524d1c0a5ccd469a0dc36bb9ef4984884b157869125815491d",
+    "language-profiles.json": "dfac64fd47e860d6711beb197560b9fc1bc9771e9f0780e64899f5f78b5c5158"
+  },
+  "native_evidence": {
+    "raw_reference": "llm-sds-01/inference/.runtime/operations-context-qa-20261103/runs/ops-context-native-1793743514618109921/evidence/browser.json",
+    "sha256": "9d8e8681329dbbe93093a85d404d8aae6bcd8f32faa75b66b42c984a06339109",
+    "count_only_samples": 14,
+    "all_count_samples_zero_gpu_submissions_and_dispatches": true,
+    "real_forwards": 12,
+    "all_counts_match_full_native_prompt_usage": true,
+    "modes": [
+      {
+        "prefix_cache": false,
+        "prompt_tokens": {
+          "text": 34,
+          "native-tool-history": 428,
+          "warm-continuation": 461,
+          "after-overflow": 461,
+          "cancellation": 461,
+          "restart": 461
+        },
+        "cached_tokens": {
+          "text": 0,
+          "native-tool-history": 0,
+          "warm-continuation": 0,
+          "after-overflow": 0,
+          "cancellation": 0,
+          "restart": 0
+        },
+        "overflow_rejected_before_native_generate": 6466,
+        "cancel_after_text_then_restart": true,
+        "all_owned_buffers_and_devices_released": true
+      },
+      {
+        "prefix_cache": true,
+        "prompt_tokens": {
+          "text": 34,
+          "native-tool-history": 426,
+          "warm-continuation": 459,
+          "after-overflow": 459,
+          "cancellation": 459,
+          "restart": 459
+        },
+        "cached_tokens": {
+          "text": 0,
+          "native-tool-history": 0,
+          "warm-continuation": 281,
+          "after-overflow": 281,
+          "cancellation": 281,
+          "restart": 0
+        },
+        "overflow_rejected_before_native_generate": 6464,
+        "cancel_after_text_then_restart": true,
+        "all_owned_buffers_and_devices_released": true
+      }
+    ]
+  },
+  "resources": {
+    "cpu.max": "400000 100000",
+    "memory.max": "17179869184",
+    "memory.swap.max": "0",
+    "pids.max": "512"
+  },
+  "peak_ram_bytes": 2618068992,
+  "peak_pids": 166,
+  "oom_kills": 0,
+  "owned_services_removed": true,
+  "focused_checks": {
+    "source_cases": 10,
+    "native_recovery_cases_rerun_after_correction": 2,
+    "browser_cases": 2,
+    "context_ui_case_repeated_after_settings_integration": 1,
+    "typecheck_errors": 0,
+    "existing_warnings": "WorkflowVaultNode pointer interaction ARIA warning",
+    "production_build": "passed"
+  },
+  "limitations": [
+    "Gemma and Wllama prospective counts remain explicit estimates; exact native request counting is not available in their current bindings.",
+    "The128-token reserve is application policy. Native counter-only proof excludes cache reset, which may clear GPU state.",
+    "Controlled Pi tools/skills checks do not qualify general model accuracy or grant workflow/credential access."
+  ]
+}

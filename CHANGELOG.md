@@ -25,6 +25,14 @@ feat(settings): move AI configuration into normal settings
 
 ```
 
+<!-- changelog-commit:561e7db81813251647fe8ce9744e1310ca18707d -->
+### Commit [`561e7db`](https://github.com/superhero/operations.superduper.solutions/commit/561e7db81813251647fe8ce9744e1310ca18707d)
+
+```text
+feat(assistant): budget requests without trimming history
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66

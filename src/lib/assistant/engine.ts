@@ -4,9 +4,11 @@
 import { bonsaiRuntime, bonsaiModels, assistantProfile, type AssistantSettings } from "./config.ts";
 import type { AssistantCompatibility } from "./compatibility.ts";
 import type { LocalEngine, NativeMessage, NativeResult } from "./pi-session.ts";
+import { budgetContext } from "./context-budget.ts";
 
 export type WebMLModel = {
-  create_session(): { reset(): Promise<void>; dispose(): Promise<void>;
+  create_session(): { readonly max_length: number; count_tokens(messages: NativeMessage[], options: Record<string, unknown>): { prompt_tokens: number; image_tokens: number };
+    reset(): Promise<void>; dispose(): Promise<void>;
     generate(messages: NativeMessage[], options: Record<string, unknown>): AsyncIterable<{ type: string; text: string }> & { result: Promise<NativeResult> } };
   dispose(): Promise<void>;
 };
@@ -62,18 +64,44 @@ export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: 
   let session: ReturnType<WebMLModel["create_session"]>;
   try { signal.throwIfAborted(); session = raw.create_session(); }
   catch (error) { await raw.dispose(); throw error; }
+  let generating = false, needsReset = false;
   return {
-    reset: () => session.reset(),
-    async generate(messages, { tools, signal, maxTokens, onText, onThinking }) {
-      if (!settings.prefixCache) await session.reset();
-      const turn = session.generate(messages, { tools, signal, max_new_tokens: maxTokens, do_sample: settings.sampling,
-        temperature: settings.sampling ? settings.temperature : 0, top_k: settings.topK, top_p: settings.topP, min_p: settings.minP, seed: settings.seed,
-        enable_thinking: settings.thinking });
-      for await (const event of turn) {
-        if (event.type === "text") onText(event.text);
-        if (event.type === "reasoning") onThinking(event.text);
-      }
-      return turn.result;
+    contextMode: "native",
+    get contextLimit() { return Math.min(settings.context, session.max_length); },
+    async reset() {
+      if (generating) throw new Error("Stop the current request before resetting its context.");
+      await session.reset(); needsReset = false;
+    },
+    async generate(messages, { tools, signal, maxTokens, onText, onThinking, onContext }) {
+      if (generating) throw new Error("One native assistant request at a time.");
+      generating = true;
+      try {
+        signal.throwIfAborted();
+        if (!settings.prefixCache || needsReset) { await session.reset(); needsReset = false; }
+        signal.throwIfAborted();
+        const template = { tools, enable_thinking: settings.thinking };
+        // This pinned counter uses generation's trained formatter and ledger,
+        // includes images, and performs no forward. Keep count/generate atomic.
+        const count = session.count_tokens(messages, template);
+        const budget = budgetContext({ inputTokens: count.prompt_tokens, contextTokens: Math.min(settings.context, session.max_length),
+          kind: "native", method: "Bonsai ChatSession.count_tokens; pinned native template and tokenizer" }, maxTokens);
+        signal.throwIfAborted();
+        onContext?.(budget);
+        signal.throwIfAborted();
+        try {
+          const turn = session.generate(messages, { ...template, signal, max_new_tokens: budget.maxTokens, do_sample: settings.sampling,
+            temperature: settings.sampling ? settings.temperature : 0, top_k: settings.topK, top_p: settings.topP, min_p: settings.minP, seed: settings.seed });
+          // Iteration and result can reject together on native cancellation.
+          void turn.result.catch(() => {});
+          for await (const event of turn) {
+            if (event.type === "text") onText(event.text);
+            if (event.type === "reasoning") onThinking(event.text);
+          }
+          const result = await turn.result;
+          if (result.finish_reason === "cancelled") needsReset = true;
+          return result;
+        } catch (error) { needsReset = true; throw error; }
+      } finally { generating = false; }
     },
     async dispose() { try { await session.dispose(); } finally { await raw.dispose(); } },
   };
