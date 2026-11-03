@@ -13,21 +13,36 @@ export const VISION_MODEL_PINS = Object.freeze({
   }),
 });
 
+export const COMPATIBLE_VARIANT = 'official-q4-fp32-compatible-v1';
+export const COMPATIBLE_PIN = Object.freeze({...VISION_MODEL_PINS['LiquidAI/LFM2.5-VL-1.6B-ONNX'],
+  precisionVariant: COMPATIBLE_VARIANT,
+  dtype: Object.freeze({embed_tokens: 'fp32', vision_encoder: 'q4', decoder_model_merged: 'q4'}),
+  artifactBytes: 2024081183, textArtifactBytes: 1754690977,
+  externalData: Object.freeze({embed_tokens: false, vision_encoder: true, decoder_model_merged: true}),
+  sessionOptions: Object.freeze({enableGraphCapture: false, logSeverityLevel: 3, logVerbosityLevel: 0,
+    extra: Object.freeze({session: Object.freeze({disable_cpu_ep_fallback: '0'})})}),
+});
+
 export function resolveVisionPin(profile) {
   const pin = VISION_MODEL_PINS[profile.model || profile.repo];
-  if (!pin) throw Error('This vision adapter accepts only the two pinned official LiquidAI ONNX repositories.');
+  if (!pin) throw Error('This vision adapter accepts only the pinned official LiquidAI ONNX export.');
   if (profile.revision && profile.revision !== pin.revision) throw Error(`Unqualified model revision: ${profile.revision}`);
+  const variant = profile.settings?.precision_variant;
+  if (variant != null && variant !== COMPATIBLE_VARIANT) throw Error(`Unqualified vision precision variant: ${variant}`);
+  if (variant === COMPATIBLE_VARIANT) return COMPATIBLE_PIN;
   return pin;
 }
 
 function abortError(message = 'Vision generation cancelled.') { return Object.assign(Error(message), {name: 'AbortError'}); }
 
 export async function createVisionEngine(profile, {
-  onProgress = () => {}, onLog = () => {}, contextTokens = 1024, outputTokens = 256,
+  onProgress = () => {}, onLog = () => {}, contextTokens = profile.settings?.context_tokens ?? 1024,
+  outputTokens = profile.settings?.max_new_tokens ?? (profile.settings?.precision_variant === COMPATIBLE_VARIANT ? 128 : 256),
   createWorker = () => new Worker(new URL('./vision-worker.js', import.meta.url), {type: 'module'}),
 } = {}) {
   const pin = resolveVisionPin(profile);
   if (!Number.isInteger(contextTokens) || contextTokens < 1 || !Number.isInteger(outputTokens) || outputTokens < 1) throw Error('Context and output budgets must be positive integers.');
+  if (pin.precisionVariant === COMPATIBLE_VARIANT && (contextTokens > 1024 || outputTokens > 128)) throw Error('Compatible vision is qualified for at most 1024 context and 128 output tokens.');
   const preprocessing = profile.settings?.preprocessing ?? 'native';
   if (!['native', 'letterbox-white-square-v1'].includes(preprocessing)) throw Error(`Unqualified vision preprocessing: ${preprocessing}`);
   const textOnly = profile.settings?.text_only === true || profile.input_mode === 'text' || profile.kind === 'text';
@@ -56,7 +71,7 @@ export async function createVisionEngine(profile, {
     else if (data.type === 'log') onLog(data.message);
     else if (data.type === 'text') { if (!request.aborted) request.onText?.(data.text); }
     else if (data.type === 'result') settle(data.id, request.aborted ? abortError() : null, data.result);
-    else if (data.type === 'error') settle(data.id, Object.assign(Error(data.message || 'Vision worker failed.'), {name: data.name || 'Error'}));
+    else if (data.type === 'error') settle(data.id, Object.assign(Error(data.message || 'Vision worker failed.'), {name: data.name || 'Error', ...(data.stack ? {stack: data.stack} : {})}));
   };
   worker.onerror = event => { event.preventDefault?.(); invalidate(Error(event.message || 'Vision worker failed.')); };
   worker.onmessageerror = () => invalidate(Error('The vision worker returned an unreadable message.'));

@@ -1,0 +1,159 @@
+{
+  "reviewed": "2026-11-04",
+  "scope": "Desktop functional qualification of Operations compatible image runtime; source controls and native model quality are separate.",
+  "product_source_manifest_sha256": "46d3c0ab401c5328afd35bc9ac9bcd068f321ebbae05d6f1029a3a3344dfbc30",
+  "profile": {
+    "model": "LiquidAI/LFM2.5-VL-1.6B-ONNX",
+    "revision": "d0e00ca26cc42892d9f3c4380faa631927218209",
+    "variant": "official-q4-fp32-compatible-v1",
+    "context": 1024,
+    "output_limit": 128,
+    "preprocessing": "letterbox-white-square-v1",
+    "transformers": "4.3.1",
+    "ort": "1.31.0-dev.20260914-8d85527a0"
+  },
+  "development_checks": {
+    "source": "Seven selected source scenarios plus two development routing/cache scenarios passed; the two affected loader scenarios passed again after the tokenizer pin correction.",
+    "build": "Final typecheck and production build passed; optional image worker rebuilt after tokenizer correction. One pre-existing WorkflowVaultNode accessibility warning remains.",
+    "browser": "Three selected Chromium scenarios passed: compatible selection/persistence and actual built exports, actual development compatibility/worker import, integrated context feedback.",
+    "native_transport": "All fifteen model/runtime artifacts had exact size and complete SHA256 verified by independent QA; production whole-file model installation is not thereby qualified."
+  },
+  "direct_native": {
+    "cases": [
+      {
+        "name": "eight-buffer-before-text-unload",
+        "passed": true
+      },
+      {
+        "name": "explicit-owned-device-binding",
+        "passed": true
+      },
+      {
+        "name": "colored-shapes",
+        "passed": true,
+        "category": "direct-semantics",
+        "expected": "red circle then blue square",
+        "actual_text": "The image displays two colored shapes arranged from left to right. The first shape is a red circle, which is a perfect round shape with no corners or edges. The second shape is a blue square, characterized by its four equal sides and four right angles. The red circle is larger than the blue square, and both shapes",
+        "completed_device_dispatches": 15490
+      },
+      {
+        "name": "fresh-ocr",
+        "passed": false,
+        "category": "direct-semantics",
+        "expected": "1198",
+        "actual_text": "None",
+        "completed_device_dispatches": 1044
+      },
+      {
+        "name": "conditional-blank",
+        "passed": false,
+        "category": "direct-semantics",
+        "expected": "NONE",
+        "actual_text": "None",
+        "completed_device_dispatches": 1044
+      },
+      {
+        "name": "native-token-cancellation",
+        "passed": true
+      },
+      {
+        "name": "native-cancel-recovery",
+        "passed": true,
+        "actual_text": "None",
+        "completed_device_dispatches": 1044
+      },
+      {
+        "name": "direct-worker-disposal",
+        "passed": true
+      },
+      {
+        "name": "tool-settings-transcript-release-order",
+        "passed": true,
+        "category": "plumbing-with-scripted-text-callbacks"
+      }
+    ],
+    "runtime_plumbing": "passed",
+    "model_quality": "Shape recognition passed; fresh four-digit OCR failed; blank abstained but returned None instead of exact NONE. These failures remain recorded.",
+    "resource_peak_bytes": 8411111424,
+    "oom_kills": 0,
+    "cleanup_errors": []
+  },
+  "application_native": {
+    "text_model": "Bonsai2B",
+    "settings": {
+      "model": "2b",
+      "context": 4096,
+      "maxTokens": 1024,
+      "sampling": false,
+      "thinking": false,
+      "prefixCache": false,
+      "tools": true,
+      "editing": false,
+      "skills": true
+    },
+    "ordered_tools": [
+      {
+        "name": "read_skill",
+        "failed": false
+      },
+      {
+        "name": "read_application",
+        "failed": false
+      },
+      {
+        "name": "inspect_image",
+        "failed": false
+      }
+    ],
+    "vision_observation": "PINE-8321",
+    "text_restoration_observed": true,
+    "expected": "QAAPP-98FC03|PINE-8321",
+    "actual_final": "NO TEXT\n|c9e1a750-386f-4fba-83e2-644acaabca78|ae9216a2-ab73-48fd-a893-96934d6520b2|",
+    "semantic_passed": false,
+    "classification": "The real skill/application/image tool sequence and text restoration completed; the language model failed to use correct tool observations in its final answer.",
+    "earlier_restricted_attempt": "The earlier 128-output QA attempt stopped at length before any tool calls. The actual product profile allows1024; that corrected configuration completed all three calls. Neither failed answer is counted as a successful mixed task.",
+    "resource_peak_bytes": 9413795840,
+    "oom_kills": 0,
+    "cleanup_errors": []
+  },
+  "resource_boundary": {
+    "host": "sds-01",
+    "cpus": 4,
+    "ram_bytes": 17179869184,
+    "swap_bytes": 0,
+    "pids": 512,
+    "gpu": "NVIDIA Ampere / RTX3060",
+    "concurrent_models": 1,
+    "services_removed": true
+  },
+  "evidence": [
+    {
+      "repository": "llm-sds-01",
+      "run": "ops-vision-native-1793747909074557336",
+      "path": "inference/.runtime/operations-vision-qa-20261103/runs/ops-vision-native-1793747909074557336/evidence/browser.json",
+      "sha256": "d99886d69e0f740362c0cad1273f4d96ebc8a40d5233d6016476b99ef1f0a585"
+    },
+    {
+      "repository": "llm-sds-01",
+      "run": "ops-vision-native-1793748321076683820",
+      "path": "inference/.runtime/operations-vision-qa-20261103/runs/ops-vision-native-1793748321076683820/evidence/browser.json",
+      "sha256": "8dd2ed531f1da05d7e48d1ed44265c487abbe2a7921aba2322065fb9d41d0817"
+    },
+    {
+      "repository": "llm-sds-01",
+      "run": "ops-vision-native-1793748809254256661",
+      "path": "inference/.runtime/operations-vision-qa-20261103/runs/ops-vision-native-1793748809254256661/evidence/browser.json",
+      "sha256": "4e4cb8308abb3237761ec19ed345e58c7a9faaf11ca0b92a3730eecdc6dc717d"
+    }
+  ],
+  "limits": [
+    "Positive completed dispatches on the owned device are not per-operator placement or proof of CPU-free execution.",
+    "No isolated performance, general OCR, phone/tablet, all text models or installer/offline acceptance is claimed.",
+    "The combined answer remains unqualified for Bonsai2B; retain the failed trace and qualify the stronger compatible text stage separately."
+  ],
+  "review_triggers": [
+    "Model/runtime hashes, precision or processor changes",
+    "Device/session binding, image geometry or cancellation changes",
+    "Pi tools, physical text restoration or native request budgeting changes"
+  ]
+}

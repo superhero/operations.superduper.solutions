@@ -3,12 +3,22 @@
 import assert from 'node:assert/strict';
 import {Then} from '@cucumber/cucumber';
 import {vi} from 'vitest';
+import {createServer} from 'node:http';
+import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,dirname} from 'node:path';
+import {assistantRuntimeDevelopment} from '../build/assistant-plugin.mjs';
+import {createDevelopmentVisionWorker} from '../build/assistant-development-worker.mjs';
 import {loadAssistantEngine} from './lib/assistant/engine.ts';
 import {probeAssistantCompatibility} from './lib/assistant/compatibility.ts';
-import {assistantProfile, defaultAssistantSettings, settingsForAssistantModel} from './lib/assistant/config.ts';
+import {assistantProfile, defaultAssistantSettings, settingsForAssistantModel, validateAssistantSettings} from './lib/assistant/config.ts';
 import {createAssistantSession} from './lib/assistant/pi-session.ts';
 import {createVisionTool} from './lib/assistant/vision-tool.js';
 import visionProfile from './lib/assistant/vision-profile.json';
+import compatibleVision from './lib/assistant/vision-compatible-profile.json';
+import {visionProfileFor, preflightVision} from './lib/assistant/vision-profiles.ts';
+import {COMPATIBLE_PIN, resolveVisionPin} from './lib/assistant/runtime/vision-engine.js';
+import {loadVisionRuntime, bindVisionSessionOptions, configureVisionDevice, releaseVisionRuntime} from './lib/assistant/runtime/vision-runtime.js';
 import {decisionModels, decisionProfile, validateDecisionRequest, validateDecisionResult, checkDecisionCompatibility} from './lib/assistant/decision-models.ts';
 import {loadWllama, loadGemma} from './public/assistant-runtime/load-language.mjs';
 import {litertMessages, checkedToolCalls} from './lib/assistant/runtime/text-protocol.js';
@@ -187,4 +197,132 @@ Then('native runtime checks distinguish CPU placement from missing GPU and Wasm 
   finally {globalThis.WebAssembly=saved;}
   for(const id of ['strands-gpu','d3-lite'])assert.equal((await checkDecisionCompatibility(id,nativeEnvironment())).ready,true);
   assert.equal((await checkDecisionCompatibility('strands-gpu',nativeEnvironment({fp16:false}))).ready,false);
+});
+
+Then('compatible image loaders bind each official session to the verified owned device', async () => {
+  assert.equal(visionProfileFor('fp16').id, visionProfile.id);
+  assert.equal(visionProfileFor('compatible').id, compatibleVision.id);
+  assert.equal(resolveVisionPin(compatibleVision), COMPATIBLE_PIN);
+  for (const precision_variant of ['official-q4-fp32-no-f16-v1', 'official-q4-fp32-placement-audit-v1', 'unknown'])
+    assert.throws(() => resolveVisionPin({...compatibleVision, settings:{...compatibleVision.settings, precision_variant}}), /Unqualified vision precision/);
+  const files = compatibleVision.files.filter(file => file.file.startsWith('onnx/'));
+  assert.equal(files.length, 5); assert.equal(files.reduce((sum, file) => sum + file.bytes, 0), COMPATIBLE_PIN.artifactBytes);
+  assert.ok(!files.some(file => file.file === 'onnx/embed_tokens.onnx_data'));
+  const events = [], device = {features:new Set(),limits:{maxStorageBuffersPerShaderStage:16},destroy(){events.push('destroy');},
+    createComputePipeline(){return {};},createCommandEncoder(){return {beginComputePass(){return {dispatchWorkgroups(){},dispatchWorkgroupsIndirect(){}};},finish(){return {};}};},
+    queue:{submit(){},async onSubmittedWorkDone(){events.push('drain');}}};
+  let requested;
+  const adapter = {features:new Set(['shader-f16']), limits:{maxStorageBuffersPerShaderStage:16}, async requestDevice(options){requested=options;return device;}};
+  const library = {env:{backends:{onnx:{webgpu:{}}}}};
+  const selection = await configureVisionDevice(library,COMPATIBLE_PIN,{gpu:{requestAdapter:async()=>adapter},isSecureContext:true});
+  assert.equal(selection.device,device); assert.deepEqual(requested.requiredFeatures,[]); assert.equal(requested.requiredLimits.maxStorageBuffersPerShaderStage,16);
+  const sessionOptions = bindVisionSessionOptions(COMPATIBLE_PIN,device), captured=[];
+  assert.equal(sessionOptions.executionProviders[0].device,device);
+  assert.equal(sessionOptions.extra.session.disable_cpu_ep_fallback,'0');
+  Object.assign(library,{
+    AutoConfig:{from_pretrained:async()=>({})},TokenizersBackend:class{constructor(json,config){assert.deepEqual(json,{tokens:'pinned'});assert.equal(config.tokenizer_class,'TokenizersBackend');}},
+    Lfm2VlImageProcessor:class{},Lfm2VlProcessor:class{},
+    PreTrainedModel:{async from_pretrained(repo,options){captured.push({repo,...options});return {sessions:{model:{outputNames:[options.model_file_name==='embed_tokens'?'inputs_embeds':options.model_file_name==='embed_images'?'image_features':'logits']}}};}},
+    Lfm2VlForConditionalGeneration:class{constructor(config,sessions){this.sessions=sessions;}async dispose(){events.push('dispose-model');}},
+  });
+  const metadataURLs=[];
+  const runtime = await loadVisionRuntime(library,COMPATIBLE_PIN,{sessionOptions,fetchText:async()=>'template',fetchJSON:async url=>{metadataURLs.push(url);return url.endsWith('/tokenizer_config.json')?{tokenizer_class:'TokenizersBackend'}:url.endsWith('/tokenizer.json')?{tokens:'pinned'}:{image_processor:{}};}});
+  assert.ok(metadataURLs.every(url=>url.startsWith(`https://huggingface.co/${COMPATIBLE_PIN.repo}/resolve/${COMPATIBLE_PIN.revision}/`)));
+  assert.deepEqual(metadataURLs.map(url=>url.split('/').at(-1)),['generation_config.json','tokenizer.json','tokenizer_config.json','processor_config.json']);
+  assert.deepEqual(captured.map(value=>[value.model_file_name,value.dtype,value.use_external_data_format]),[['embed_tokens','fp32',false],['embed_images','q4',true],['decoder','q4',true]]);
+  assert.ok(captured.every(value=>value.revision===compatibleVision.revision && value.session_options.executionProviders[0].device===device));
+  const encoder = device.createCommandEncoder();encoder.beginComputePass().dispatchWorkgroups(1);device.queue.submit([encoder.finish()]);
+  const metrics = await selection.placementAudit.drain();assert.equal(metrics.queue_drained_dispatches,1);assert.equal(metrics.queue_drain,'complete');
+  await releaseVisionRuntime(runtime,device);assert.deepEqual(events.slice(-3),['dispose-model','drain','destroy']);
+});
+
+Then('incompatible image adapters leave the existing text model loaded', async () => {
+  const capabilities={fp16:false,fp32:true};let devices=0;
+  const gpu = buffers => ({requestAdapter:async()=>({features:new Set(),limits:{maxStorageBuffersPerShaderStage:buffers},requestDevice:async()=>{devices++;throw Error('No device should be allocated during preflight');}})});
+  await assert.rejects(preflightVision('fp16',capabilities,gpu(16)),/requires verified WebGPU shader-f16/);
+  await assert.rejects(preflightVision('compatible',capabilities,gpu(8)),/at least 9 storage/);
+  await preflightVision('compatible',capabilities,gpu(16));assert.equal(devices,0);
+  const library={env:{backends:{onnx:{webgpu:{}}}}};
+  await assert.rejects(configureVisionDevice(library,COMPATIBLE_PIN,{gpu:gpu(8),isSecureContext:true}),/at least 9 storage/);assert.equal(devices,0);
+  const events=[];
+  const tool=createVisionTool({assetBase,profile:compatibleVision,getImage:()=>image,preflight:()=>preflightVision('compatible',capabilities,gpu(8)),
+    suspendText:async()=>events.push('suspend'),resumeText:async()=>events.push('resume'),loadVision:async()=>{throw Error('Must not load image weights');}});
+  await assert.rejects(tool.tool.execute('call',{image_id:'local',question:'Describe this image'},signal()),/at least 9 storage/);
+  assert.deepEqual(events,[]);assert.equal(tool.state.text_ready,true);assert.equal(tool.state.cleanup_failed,false);await tool.dispose();
+  assert.throws(()=>createVisionTool({assetBase,profile:{...compatibleVision,settings:{...compatibleVision.settings,max_new_tokens:256}},getImage:()=>image,suspendText:async()=>{},resumeText:async()=>{}}),/budgets exceed/);
+  const supported=createVisionTool({assetBase,profile:compatibleVision,getImage:()=>image,preflight:()=>preflightVision('compatible',capabilities,gpu(16)),
+    suspendText:async()=>events.push('suspend'),resumeText:async()=>events.push('resume'),loadVision:async(_profile,options)=>{
+      assert.equal(options.contextTokens,1024);assert.equal(options.outputTokens,128);
+      return {info:{device:'webgpu'},async generate(_messages,request){assert.equal(request.maxTokens,128);events.push('generate');return {text:'A red square.'};},async dispose(){events.push('dispose');}};
+    }});
+  await supported.tool.execute('call',{image_id:'local',question:'Describe this image'},signal());
+  assert.deepEqual(events,['suspend','generate','dispose','resume']);await supported.dispose();
+});
+
+Then('compatible image setup failures destroy owned devices and release partial sessions', async () => {
+  for(const fault of ['device','logLevel','instrumentation']) {
+    let destroyed=0;
+    const device={features:new Set(),limits:{maxStorageBuffersPerShaderStage:16},destroy(){destroyed++;},createComputePipeline(){},createCommandEncoder(){},queue:{submit(){}}};
+    const onnx={webgpu:{}};
+    if(fault==='instrumentation')Object.defineProperty(device,'createCommandEncoder',{value(){},configurable:false,writable:false});
+    else Object.defineProperty(fault==='device'?onnx.webgpu:onnx,fault,{set(){throw Error('setup rejected');}});
+    const gpu={requestAdapter:async()=>({features:new Set(),limits:{maxStorageBuffersPerShaderStage:16},requestDevice:async()=>device})};
+    await assert.rejects(configureVisionDevice({env:{backends:{onnx}}},COMPATIBLE_PIN,{gpu,isSecureContext:true}),/setup rejected|redefine|define property/i);
+    assert.equal(destroyed,1,'Every post-allocation setup failure destroys the owned device once.');
+  }
+  const released=[];
+  const library={AutoConfig:{from_pretrained:async()=>({})},TokenizersBackend:class{},Lfm2VlImageProcessor:class{},Lfm2VlProcessor:class{},
+    PreTrainedModel:{async from_pretrained(_repo,{model_file_name}){
+      if(model_file_name==='embed_images')throw Error('second graph failed');
+      return {sessions:{model:{outputNames:['inputs_embeds'],async release(){released.push(model_file_name);}}}};
+    }}};
+  await assert.rejects(loadVisionRuntime(library,COMPATIBLE_PIN,{fetchText:async()=>'template',fetchJSON:async()=>({image_processor:{},tokenizer_class:'TokenizersBackend'})}),/second graph failed/);
+  assert.deepEqual(released,['embed_tokens']);
+  for(const executionMode of ['cpu','hybrid']) {
+    const preferences=validateAssistantSettings({...defaultAssistantSettings,model:'minicpm5-2b',executionMode,visionMode:'compatible'});
+    assert.equal(preferences.executionMode,executionMode);assert.equal(preferences.visionMode,'compatible');
+  }
+  assert.throws(()=>validateAssistantSettings({...defaultAssistantSettings,visionMode:'failed-precision-variant'}),/available image runtime/);
+});
+
+Then('development image requests use current source beside older built runtime assets', async () => {
+  const root=await mkdtemp(join(tmpdir(),'operations-image-route-')), builtRoot=join(root,'built'),sourceRoot=join(root,'source');
+  await mkdir(builtRoot);await mkdir(sourceRoot);
+  await writeFile(join(builtRoot,'vision-engine.js'),'export const marker="stale";');
+  await writeFile(join(builtRoot,'vision-worker.js'),'export const marker="stale-worker";');
+  await writeFile(join(sourceRoot,'vision-engine.js'),'export const marker="current-compatible";');
+  await writeFile(join(builtRoot,'native.wasm'),new Uint8Array([0,97,115,109]));
+  let handler;
+  assistantRuntimeDevelopment({builtRoot,sourceRoot,bundleVisionWorker:async()=>({code:'export const marker="current-worker";',assets:new Map()})}).configureServer({config:{server:{headers:{'Cross-Origin-Opener-Policy':'same-origin'}}},middlewares:{use(route,callback){assert.equal(route,'/assistant-runtime');handler=callback;}}});
+  const server=createServer((request,response)=>{
+    request.url=request.url.slice('/assistant-runtime'.length);
+    void handler(request,response,error=>{response.statusCode=error?500:404;response.end(error?String(error):'missing');});
+  });
+  try {
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base=`http://127.0.0.1:${server.address().port}/assistant-runtime/`;
+    const factory=await fetch(base+'vision-engine.js');assert.equal(await factory.text(),'export const marker="current-compatible";');assert.equal(factory.headers.get('cross-origin-opener-policy'),'same-origin');
+    const worker=await fetch(base+'vision-worker.js');assert.equal(await worker.text(),'export const marker="current-worker";');assert.equal(worker.headers.get('cross-origin-opener-policy'),'same-origin');
+    const native=await fetch(base+'native.wasm');assert.equal(native.status,200);assert.equal(native.headers.get('content-type'),'application/wasm');assert.deepEqual(new Uint8Array(await native.arrayBuffer()),new Uint8Array([0,97,115,109]));
+  } finally {await new Promise(resolve=>server.close(resolve));await rm(root,{recursive:true,force:true});}
+});
+
+Then('development image compilation is cached refreshed and retried without stale fallback', async () => {
+  const root=await mkdtemp(join(tmpdir(),'operations-image-build-'));
+  const inputs=['src/lib/assistant/runtime/vision-worker.js','src/lib/assistant/runtime/vision-runtime.js','src/public/assistant-runtime/vision-engine.js','build/assistant-worker-build.mjs','package-lock.json'];
+  try {
+    for(const file of inputs){await mkdir(dirname(join(root,file)),{recursive:true});await writeFile(join(root,file),'initial');}
+    let builds=0,fail=false;
+    const bundle=createDevelopmentVisionWorker({async buildWorker(options){
+      builds++;assert.equal(options.configFile,false);assert.equal(options.build.write,false);
+      assert.deepEqual(options.resolve.conditions,['onnxruntime-web-use-extern-wasm','module','browser','production']);
+      if(fail){fail=false;throw Error('compiler failed');}
+      return {output:[{type:'chunk',isEntry:true,code:`worker-${builds}`,fileName:'vision-worker.js'}]};
+    }});
+    const server={config:{root:join(root,'src'),cacheDir:join(root,'cache')}};
+    const [first,second]=await Promise.all([bundle(server),bundle(server)]);assert.equal(builds,1);assert.equal(first,second);
+    await writeFile(join(root,inputs[1]),'updated helper');assert.equal((await bundle(server)).code,'worker-2');assert.equal(builds,2);
+    await writeFile(join(root,inputs[0]),'updated worker');fail=true;
+    await assert.rejects(bundle(server),/compiler failed/);
+    assert.equal((await bundle(server)).code,'worker-4');assert.equal(builds,4);
+  } finally {await rm(root,{recursive:true,force:true});}
 });

@@ -8,7 +8,7 @@ import { loadAssistantEngine } from "./engine.ts";
 import { encodeError } from "../worker-rpc.ts";
 import { createAssistantSession, type SessionUpdate, type ToolInvoker } from "./pi-session.ts";
 import { createVisionTool } from "./vision-tool.js";
-import visionProfile from "./vision-profile.json";
+import { visionProfileFor, preflightVision } from "./vision-profiles.ts";
 import type { LocalEngine } from "./pi-session.ts";
 import type { ImageContent } from "@earendil-works/pi-ai";
 
@@ -84,7 +84,8 @@ scope.onmessage = event => {
         const progress = (value: unknown) => post({ type: "progress", value });
         const loadText = (signal: AbortSignal) => loadAssistantEngine(settings, progress, signal, compatibility, assetBase);
         engine = await loadText(AbortSignal.timeout(settings.loadTimeout));
-        vision = createVisionTool({assetBase, profile: visionProfile, getImage: id => { if (!compatibility.fp16) throw new Error("Local image interpretation requires verified WebGPU shader-f16."); return images.get(id); },
+        vision = createVisionTool({assetBase, profile: visionProfileFor(settings.visionMode), getImage: id => images.get(id),
+          preflight: () => preflightVision(settings.visionMode, compatibility),
           async suspendText() { const current = engine; if (!current) throw new Error("Text model is already unloaded."); await current.dispose(); engine = undefined; },
           async resumeText({signal}) { engine = await loadText(signal); },
           onState: state => { if (state.status) progress(state.status); },

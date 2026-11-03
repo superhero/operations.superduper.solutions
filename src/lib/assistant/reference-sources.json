@@ -116,5 +116,28 @@
     "Image tool uses the existing application JSON-schema convention; runtime/source behavior remains native.",
     "LFM450M is excluded; only accepted LFM1.6B is offered.",
     "Large Wasm binaries use transparent gzip transport without changing the decoded bytes."
-  ]
+  ],
+  "compatible_vision": {
+    "reviewed": "2026-11-03",
+    "variant": "official-q4-fp32-compatible-v1",
+    "sources": [
+      {
+        "source": "inference/evaluations/brave-vision-gpu/runtime/pins.js",
+        "sha256": "266b8f2904a468c4c4848db7c3bab4aca03292c4e79a14af74953b186fbd65a5"
+      },
+      {
+        "source": "inference/evaluations/mobile-candidates/runtime/vision-worker.js",
+        "sha256": "18664df2da9d649cb2ca78336c24853920d070b7a8f814bd9702e93c19551a72"
+      },
+      {
+        "source": "inference/attempts/ox-browser-lfm25-vision-compatible/attempt.json",
+        "sha256": "5e0f8aa6c21c2a4233dd5abdef1ec88f5f868a2b58c4f2f4c6895c588fac750e"
+      }
+    ],
+    "adaptations": [
+      "Construct the public TokenizersBackend directly from exact-revision tokenizer JSON/config; Transformers4.3.1 AutoTokenizer discovery otherwise probes main. Port public loader/device/session binding/release/audit helpers into the existing owned Operations worker; never import reference self.onmessage entry point.",
+      "Accept only compatible FP32/Q4 variant; keep original FP16 default. Reject 8-buffer adapters before text unload and recheck actual device limits.",
+      "Keep Operations ./vision-ort/ URL, same pinned Transformers/ORT pair and serialized Pi/text restoration. Positive completed dispatches prove owned-device work, not per-node placement or absence of CPU operators."
+    ]
+  }
 }

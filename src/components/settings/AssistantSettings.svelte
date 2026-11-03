@@ -14,6 +14,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { assistantSettingsKey, assistantModels, settingsForAssistantModel, defaultAssistantSettings, validateAssistantSettings, type AssistantSettings as Preferences } from "$lib/assistant/config.ts";
   import { enabledAssistantTools, executeAssistantTool, type AssistantHost } from "$lib/assistant/tools.ts";
   import { assistantSkills } from "$lib/assistant/skills.ts";
+  import { visionModes } from "$lib/assistant/vision-profiles.ts";
   import type { AssistantCompatibility } from "$lib/assistant/compatibility.ts";
   import type { AssistantMessageView } from "$lib/assistant/pi-session.ts";
   import type { ContextBudget } from "$lib/assistant/context-budget.ts";
@@ -329,6 +330,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p>{locked ? "Unload the model to change configuration. " : ""}Preferences are saved on this browser.</p>
     <fieldset disabled={locked} aria-label="Assistant configuration">
       <div class="options">
+        <div class="option"><label for="assistant-vision">Image runtime</label>
+          <FieldSelect id="assistant-vision" label="Image runtime" value={preferences.visionMode} options={visionModes.map(({ value, label }) => ({ value, label }))}
+            disabled={locked} onValueChange={value => { preferences.visionMode = value; savePreferences(); }} />
+        </div>
         <div class="option"><label for="assistant-execution">Execution</label>
           <FieldSelect id="assistant-execution" label="Execution" value={preferences.executionMode}
             options={model.engine === "wllama" ? [{value: "auto", label: "Auto"}, {value: "gpu", label: "GPU"}, {value: "hybrid", label: "Partial GPU"}, ...(model.bytes < 4294967296 ? [{value: "cpu", label: "CPU"}] : [])] : [{value: "auto", label: "GPU"}]}

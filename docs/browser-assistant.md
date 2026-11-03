@@ -1,58 +1,54 @@
 # Browser-local assistant
 
-Settings → Assistant offers Bonsai 2 **2B, 4B and 9B**. Load one model, send
-messages or an image, and inspect its tool results in the conversation. Closing
-the pane keeps the model and tab-local conversation alive. Stop/unload terminates
-the worker; loading again starts a new conversation. Preferences persist locally;
-chat and images are not persisted. No account or API key is required.
+The AI pane provides browser-local chat. Open **Settings → AI** for language,
+image and speech models, decisions, tools and compatibility. Selecting a language
+model loads it; opening Settings does not download weights. Closing the pane
+keeps the loaded model and tab-local conversation alive. Preferences persist;
+chat and images remain tab-local. No account or API key is required.
 
-The first integration follows the Pi browser handoff in
-`llm-sds-01/inference/evaluations/pi-browser/HANDOFF.md`, from session
-`01a12fd0-d517-7480-8b57-dd6dea35769d`. Its combined example is
-[the preferred-engine collection](https://192.168.1.173:8444/jb-browser-pi-preferred-engines/).
-`src/lib/assistant/config.ts` preserves the selected official model and projector
-revisions, filenames, byte counts, runtime URL/checksum and original evidence IDs.
+The canonical [model-family guide](assistant-models.md) lists the current text,
+vision and decision profiles. Exact source revisions, formats and original
+acceptance attempts live in the catalogs and
+[source provenance](../src/lib/assistant/reference-sources.json). Reference
+acceptance and Operations qualification are separate records.
 
 ## Runtime and limits
 
-Inference uses **Pi 1.3.0 + WebML WebGPU**, routed by the chosen engine. The native
-message/tool transcript, streaming events, sequential Pi agent loop, progressive
-skill reads, sampling and prefix-cache options adapt the reference implementation.
-Ornith/Wllama and Bonsai 27B are intentionally outside this integration.
+Pi 1.3.0 coordinates streaming, sequential tools and progressive skill reads.
+Bonsai uses the verified WebML runtime, Ornith/MiniCPM use native Wllama and Gemma
+uses LiteRT-LM. CPU and partial GPU execution remain explicit where supported.
+Capability checks test actual computation before model loading; successful small
+probes do not establish model memory fit or mobile support.
 
-A worker is created only for a compatibility check or explicit model load. It
-verifies a real FP32 shader computation and readback, and probes optional FP16
-with a fresh adapter. Model loading disables `shader-f16` in the native runtime
-unless that FP16 computation passed; advertised support alone does not enable it.
-The probe verifies a small computation, not model-size allocations or kernel
-warmup. A successful check therefore does not guarantee that a model can load.
-The selected WebML runtime is GPU-only; it has no CPU
-fallback or Wllama/JSPI/Memory64 requirement. The UI reports missing capabilities
-and does not guess driver versions, free memory or mobile support. It limits
-context configuration to 512–32768 tokens, defaults to the reference 4096, and
-requires an output budget smaller than context. Allocation can still fail.
+Each text forward budgets the complete prompt, history and tool results.
+Bonsai uses its native counter on the generating session; current Gemma/Wllama
+bindings use a clearly labeled estimate. Output is capped by available context
+and an explicit application reserve. Overflow preserves history and completed
+tool effects. See [context evidence](assistant-context-quality.json) for the
+qualified native scope and estimation limits.
 
-The runtime downloads directly from its immutable upstream Hugging Face URL.
-Both its exact byte count and SHA-256 are checked before module import. Its
-redistribution license was not established in the source handoff: the runtime is
-not vendored, mirrored or placed in a build artifact. Pi's MIT notices accompany
-the application. Official model weights/projectors remain remote and are loaded
-at their pinned revisions; model cache and prefix snapshots on disk stay disabled.
-The declared weight hashes in the original evaluation are not a claim that this
-integration verifies whole multi-gigabyte model downloads.
+Images use the separate pinned LFM2.5-VL1.6B tool. Original FP16/Q4 remains the
+default. Compatible FP32/Q4 is opt-in, requires at least nine storage buffers per
+shader stage and is checked before releasing text. Its sessions bind an owned
+GPU device; CPU shape/indexing/preprocessing operators remain possible. The
+compatible profile uses context1024, greedy output128 and white-square
+letterboxing. Native execution does not guarantee reliable OCR or general image
+answers; [vision evidence](assistant-vision-quality.json) records the actual
+checks and failures.
 
-Language plus vision downloads are approximately 0.79 GB (2B), 1.32 GB (4B) and
-2.62 GB (9B). These are file sizes, not measured RAM/VRAM requirements. All three
-selected source profiles passed their recorded text/tool/skill checks and failed
-the OCR cards. Image support does not establish reliable text extraction. Desktop
-source-run throughput is provisional; mobile and tablet inference are unqualified.
-New sampling/context choices do not inherit the baseline's results.
+The image tool releases physical text allocations while retaining Pi/history,
+then disposes vision before restoring the exact text settings. Conversations
+retain at most three local PNG/JPEG/WebP images, each up to10MiB/16MP and8192
+pixels per side. New conversation clears them. Worker operations have bounded
+deadlines; unknown or failed cleanup can leave text unloaded.
 
-Attachments retain the reference limits: one PNG/JPEG/WebP up to 10 MiB and
-16 megapixels, downscaled without upsampling to the configured pixel budget.
-The source and decoded bitmaps are released after conversion. Generation and
-loading have bounded deadlines; the UI also enforces a hard worker deadline.
-Stop/unload aborts pending tool dispatch and terminates worker-owned GPU work.
+WebML's runtime source is fetched from its immutable upstream URL and checked
+for exact byte count and SHA256 before import. Its redistribution license was
+not established in the source handoff, so that runtime is not vendored or bundled.
+Other runtime packages and notices are pinned in the application distribution.
+Publisher model files remain remote. Declared model hashes and QA's verified
+fixture transport do not establish a production whole-file installation guarantee.
+Model disk caching and prefix snapshots remain disabled for WebML.
 
 ## Error diagnostics
 
@@ -124,7 +120,9 @@ browser UI contracts. The engine, probes, Pi adapter, tools and graph logic rema
 in the source coverage gate.
 
 Full source, acceptance, automation, component and browser validation remains
-required on release/main. sds-01 is excluded from this task's local test workloads.
+owned by CI. Development checks select affected cases under the project resource
+boundary; sds-01 is preferred when it has headroom. Controlled inference fixtures
+are distinct from the separately recorded real-model qualification.
 
 ## Rendering and interaction review
 

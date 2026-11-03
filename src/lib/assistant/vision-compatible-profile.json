@@ -1,0 +1,141 @@
+{
+  "kind": "vision",
+  "engine": "transformers",
+  "model": "LiquidAI/LFM2.5-VL-1.6B-ONNX",
+  "revision": "d0e00ca26cc42892d9f3c4380faa631927218209",
+  "dtype": {
+    "embed_tokens": "fp32",
+    "vision_encoder": "q4",
+    "decoder_model_merged": "q4"
+  },
+  "session_files": {
+    "embed_tokens": "embed_tokens",
+    "vision_encoder": "embed_images",
+    "decoder_model_merged": "decoder"
+  },
+  "weight_bytes": 2024081183,
+  "files": [
+    {
+      "file": "onnx/decoder_q4.onnx",
+      "bytes": 169018,
+      "sha256": "44bbb840012f64393e74c6c3fa48d22c2d03317a71e3de882b1115daab028480"
+    },
+    {
+      "file": "onnx/decoder_q4.onnx_data",
+      "bytes": 1217650688,
+      "sha256": "144e30048e0de1af8b9524fc4bdca99286090ff92c0f12792ccedd31804f2d73"
+    },
+    {
+      "file": "onnx/embed_images_q4.onnx",
+      "bytes": 293054,
+      "sha256": "d947bc20232590cad6807164b8857f83feacbfce92e7c78114cd9ec62c9053a6"
+    },
+    {
+      "file": "onnx/embed_images_q4.onnx_data",
+      "bytes": 269097152,
+      "sha256": "78ad0694364f0b9c0d3b3a5b0d2f57c402dc676e75aacdf79f67e02b1d458b25"
+    },
+    {
+      "file": "onnx/embed_tokens.onnx",
+      "bytes": 536871271,
+      "sha256": "489b999a0862f14342d20e38f3ed33df91a4fda7476b44dd4d65531a57fc1b9a"
+    },
+    {
+      "file": "LICENSE",
+      "bytes": 10556,
+      "sha256": "55a61add48383d18363d9c80355acc747a1b0fb2bdb527964ce0583bb54b689d"
+    },
+    {
+      "file": "README.md",
+      "bytes": 11517,
+      "sha256": "06231f941873e0fe4e5902e32be8d4642f9f017a503a67f856e8c340acc8dc9a"
+    },
+    {
+      "file": "chat_template.jinja",
+      "bytes": 434,
+      "sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b"
+    },
+    {
+      "file": "config.json",
+      "bytes": 2376,
+      "sha256": "fbda22b139d38119d8548135b115ec5ec980202392d237267b9cd210da24a51e"
+    },
+    {
+      "file": "generation_config.json",
+      "bytes": 131,
+      "sha256": "0b428903afb9a1cc2d4993f806c6e4689360fa557d31343ffce31f341619528f"
+    },
+    {
+      "file": "processor_config.json",
+      "bytes": 1110,
+      "sha256": "6e5aeb6c21672704caea51fcf932e1a513311a80f0d5134abc3b4305fe3db8a3"
+    },
+    {
+      "file": "tokenizer.json",
+      "bytes": 4733383,
+      "sha256": "2221c71b5dce048a8abae62843b92bd7deec13cc153f95fa6e3327a47b79a7da"
+    },
+    {
+      "file": "tokenizer_config.json",
+      "bytes": 605,
+      "sha256": "83108b3b57db5030463d876e7bb316c579846da398875f407d77f6c79966c166"
+    }
+  ],
+  "runtime_source": {
+    "package": "@huggingface/transformers",
+    "version": "4.3.1",
+    "release": "https://github.com/huggingface/transformers.js/releases/tag/4.3.1",
+    "onnxruntimeWeb": "1.31.0-dev.20260914-8d85527a0",
+    "wasmThreads": 1
+  },
+  "format": "Publisher Q4 vision/decoder matrices and FP32 token embeddings; FP32 activations/KV; no conversion",
+  "precision": "Official Q4 vision + Q4 decoder + FP32 embeddings/activations",
+  "processor_metadata": {
+    "chat_template": {
+      "file": "chat_template.jinja",
+      "bytes": 434,
+      "sha256": "cf0af741b36248dfe460af825b0b3acb3c651cf7dd40a74c29447f60b75d2b9b",
+      "revision": "d0e00ca26cc42892d9f3c4380faa631927218209",
+      "source": "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/d0e00ca26cc42892d9f3c4380faa631927218209/chat_template.jinja"
+    }
+  },
+  "license": {
+    "id": "other",
+    "name": "lfm1.0",
+    "file": "LICENSE",
+    "url": "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/blob/d0e00ca26cc42892d9f3c4380faa631927218209/LICENSE"
+  },
+  "input": [
+    "text",
+    "image"
+  ],
+  "id": "lfm25-vl16b-compatible",
+  "title": "LFM2.5-VL \u00b7 1.6B \u00b7 compatible FP32/Q4",
+  "projector": null,
+  "settings": {
+    "context_tokens": 1024,
+    "max_new_tokens": 128,
+    "load_timeout_ms": 1200000,
+    "response_timeout_ms": 300000,
+    "thinking": false,
+    "temperature": 0,
+    "wasm_threads": 1,
+    "nvidia_f16_override": false,
+    "device": "webgpu",
+    "image_fixture_size": [
+      384,
+      240
+    ],
+    "preprocessing": "letterbox-white-square-v1",
+    "precision_variant": "official-q4-fp32-compatible-v1",
+    "cpu_model_fallback": true,
+    "quality_protocol": "image-questions-v2-conditional-ocr-and-blank-abstention"
+  },
+  "status": "reference-qualified; Operations qualification tracked separately",
+  "whole_file_checksum_verified": false,
+  "reference": {
+    "attempt": "ox-browser-lfm25-vision-compatible",
+    "attempt_sha256": "5e0f8aa6c21c2a4233dd5abdef1ec88f5f868a2b58c4f2f4c6895c588fac750e",
+    "scope": "Unmodified publisher files; compatible FP32 activations/state and Q4 matrices; CPU shape/indexing/preprocessing remains. Operations verifies downloaded bytes separately."
+  }
+}

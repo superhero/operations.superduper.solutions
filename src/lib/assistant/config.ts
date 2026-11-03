@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import languageProfiles from "./language-profiles.json";
+import { visionProfileFor } from "./vision-profiles.ts";
 
 /** Accepted text-only profiles from llm-sds-01; exact provenance is retained beside this catalog. */
 export const bonsaiRuntime = {
@@ -21,7 +22,7 @@ export function assistantProfile(id: string): AssistantModel {
 }
 export const assistantSettingsKey = "v1/settings/assistant";
 export const defaultAssistantSettings = {
-  model: "2b", executionMode: "auto", gpuLayers: 8, cpuThreads: 4, context: 4096, maxTokens: 1024, sampling: false, temperature: 0.7, topK: 20, topP: 0.8, minP: 0, seed: 42,
+  model: "2b", visionMode: "fp16", executionMode: "auto", gpuLayers: 8, cpuThreads: 4, context: 4096, maxTokens: 1024, sampling: false, temperature: 0.7, topK: 20, topP: 0.8, minP: 0, seed: 42,
   thinking: false, prefixCache: true, imagePixels: 262144, tools: true, editing: true, skills: true,
   maxTurns: 6, maxToolCalls: 8, responseTimeout: 180000, requestTimeout: 600000, loadTimeout: 1200000,
 };
@@ -34,6 +35,7 @@ export function validateAssistantSettings(value: unknown): AssistantSettings {
   if (Object.keys(input).some(key => !Object.hasOwn(defaultAssistantSettings, key))) throw new Error("Unknown assistant setting.");
   const next = { ...defaultAssistantSettings, ...input } as AssistantSettings;
   const profile = assistantProfile(next.model);
+  visionProfileFor(next.visionMode);
   if (!["auto", "gpu", "hybrid", "cpu"].includes(next.executionMode)) throw new Error("Choose Auto, GPU, partial GPU or CPU execution.");
   if (profile.engine === "webml" && !["auto", "gpu"].includes(next.executionMode)) throw new Error("Bonsai requires WebGPU execution.");
   if (profile.engine === "litert-lm" && (next.sampling || next.thinking || next.prefixCache || !["auto", "gpu"].includes(next.executionMode)))
