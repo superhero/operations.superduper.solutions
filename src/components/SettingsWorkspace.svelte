@@ -109,7 +109,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let workspace: HTMLElement;
   let storageBuilt = $state(false);
   let storageReady = $state(false);
-  let storageDismissing = $state(false);
   let assistantBuilt = $state(false);
   const assistantMode = $derived(Boolean(assistantHost) && openSection === "assistant");
   let previousSettingsSection = $state<SettingsSection>(null);
@@ -142,20 +141,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!active || !storageBuilt || openSection !== "storage") return;
     let cancelled = false;
     let frame = 0;
-    // Keep the prepared dashboard hidden until the dots have slid fully closed.
+    // Reveal the prepared dashboard without collapsing the loading panel first.
     void tick().then(() => {
       if (cancelled) return;
-      frame = requestAnimationFrame(() => {
-        storageDismissing = true;
-        // Let the disclosure's resize observer start its closing animation.
-        frame = requestAnimationFrame(() => {
-          frame = requestAnimationFrame(async () => {
-            const panel = workspace.querySelector('summary[aria-label="Browser"]')?.nextElementSibling;
-            await Promise.allSettled(panel?.getAnimations().map(animation => animation.finished) ?? []);
-            if (!cancelled) storageReady = true;
-          });
-        });
-      });
+      frame = requestAnimationFrame(() => { if (!cancelled) storageReady = true; });
     });
     return () => { cancelled = true; cancelAnimationFrame(frame); };
   });
@@ -401,7 +390,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <ChartSettingsPanel value={chartSettings} onValueChange={onChartSettingsChange} error={chartSettingsError} onRetry={onRetryChartSettings} />
       <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; storageDismissing = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>
+    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; } openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -415,7 +404,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       <div class="browser-content">
         {#if !storageReady}
-          <div class="storage-indicator" class:dismissing={storageDismissing}>
+          <div class="storage-indicator">
             <p class="storage-building" role="status" aria-label="Building"><span class="building-dots" aria-hidden="true">{#each [0, 1, 2] as dot (dot)}<span>·</span>{/each}</span></p>
           </div>
         {/if}
@@ -533,8 +522,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; font-weight: 700; color: var(--color-catalog-active-foreground); text-align: center; }
   .browser-content { position: relative; }
-  /* Preserve the dots as overflow while the enclosing disclosure clips its slide. */
-  .storage-indicator.dismissing { height: 0; }
   .storage-staging { position: absolute; inset: 0 0 auto; visibility: hidden; pointer-events: none; }
   .building-dots { display: inline-flex; font-size: 20px; line-height: 1; }
   .building-dots > span { width: 0.8em; text-align: center; animation: building-wave 1200ms ease-in-out infinite; }

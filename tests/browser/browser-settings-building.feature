@@ -16,3 +16,6 @@ Feature: Browser settings construction
 
   Scenario: Browser expands smoothly through its initial dots pane
     Then Browser slides from its initial dots pane into the constructed dashboard
+
+  Scenario: Browser dashboard handoff retains the open panel
+    Then Browser dashboard handoff never collapses the already open loading panel
