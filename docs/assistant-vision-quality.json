@@ -155,5 +155,8 @@
     "Model/runtime hashes, precision or processor changes",
     "Device/session binding, image geometry or cancellation changes",
     "Pi tools, physical text restoration or native request budgeting changes"
+  ],
+  "post_qualification_changes": [
+    "Removed an extra trailing blank line in vision-runtime.js after native qualification; executable behavior is unchanged. Documentation records the retained functional and quality results."
   ]
 }

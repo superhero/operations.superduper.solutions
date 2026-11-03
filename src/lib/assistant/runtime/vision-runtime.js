@@ -304,4 +304,3 @@ async function generateFromInputs(library, runtime, inputs, {
     image: imageInfo, input_mode: imageInfo ? 'image' : 'text',
     effective_max_new_tokens: budget};
 }
-
