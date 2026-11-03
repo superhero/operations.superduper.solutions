@@ -560,3 +560,30 @@ close/reversal, reduced motion, keyboard focus, teardown and comparison/conflict
 review. Desktop/mobile screenshots retain the existing layout. Typecheck had
 zero errors; production build passed with the existing vault-node ARIA warning.
 No full suite or coverage run was performed for this correction.
+
+## Browser dashboard handoff (2 November 2026)
+
+Opening Browser settings retains its compact loading indicator until the lazy
+dashboard is prepared, then expands directly into the dashboard. It no longer
+closes the loading panel first. Resizable disclosures begin their height animation
+inside the resize observation, before paint; delaying that animation until the
+next frame briefly exposed the full natural height and then jumped backwards.
+Open idle panels still use natural height so later content remains reachable.
+
+Three sequential instrumented Chromium openings on each revision reproduced a
+50 → 0 → 1,579 px baseline sequence and roughly 1,564 px backwards frame steps.
+Removing only the closing stage still left roughly 1,515 px backwards steps.
+With both corrections the sequence is 50 → 1,579 px and all three captures contain
+no backwards height step after the loading panel opens. These are layout/frame
+observations, not field interaction latency or physical display/GPU qualification.
+
+Baseline source: `80c8540`; the candidate changes the Browser handoff and shared
+disclosure resize scheduling.
+
+Conditions: production bundle, 1,280 × 844 viewport, normal motion, Node 26.7.0,
+Playwright 1.63.0/Chromium 153, one sds-01 Swarm job capped at 4 CPUs, 16 GiB RAM,
+zero additional swap and 512 processes, with no GPU. The focused Gherkin case is
+`Browser dashboard handoff retains the open panel` in
+`tests/browser/browser-settings-building.feature`. Raw baseline, intermediate and
+corrected captures and resource receipts are retained under the ignored
+`.agents/tmp/browser-settings-flicker-20261102/` run directory.

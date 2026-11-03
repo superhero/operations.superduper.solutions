@@ -68,22 +68,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   $effect(() => {
     if (!animateSize || !content) return;
     const observed = content;
-    let frame = 0;
     // Open idle panels use natural height so late content cannot remain clipped.
-    // Animate changes from the last measured height when the panel is idle.
+    // Start the resize before paint: deferring it to another frame flashes the
+    // new natural height before jumping back to the animation's starting height.
     const observer = new ResizeObserver(() => {
-      if (!frame) frame = requestAnimationFrame(() => {
-        frame = 0;
-        if (!open || !content) return;
-        // CSS heights use layout pixels; client rectangles include canvas zoom.
-        const height = content.offsetHeight;
-        if (height === targetHeight) return;
-        if (reduced) settle();
-        else animateHeight(panel.style.height === "auto" ? targetHeight : panel.offsetHeight, height);
-      });
+      if (!open || !content) return;
+      const height = content.offsetHeight;
+      if (height === targetHeight) return;
+      if (reduced) settle();
+      else animateHeight(panel.style.height === "auto" ? targetHeight : panel.offsetHeight, height);
     });
     observer.observe(observed);
-    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
+    return () => observer.disconnect();
   });
   $effect.pre(() => {
     const next = open;

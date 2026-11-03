@@ -109,7 +109,6 @@ Then('Browser slides from its initial dots pane into the constructed dashboard',
   await setMode(page, 'settings');
   const section = browserSection(page);
   const panel = section.locator(':scope > .disclosure-panel');
-  // The cheap indicator is already mounted before the first click.
   await expect(section.locator('.building-dots > span')).toHaveCount(3);
   await expect(section.locator('.storage-dashboard')).toHaveCount(0);
   const restore = await holdHeightAnimations(panel);
@@ -125,23 +124,10 @@ Then('Browser slides from its initial dots pane into the constructed dashboard',
     await expect(section.locator('.storage-building')).toBeVisible();
     await expect(section.locator('.storage-dashboard')).toHaveCount(0);
     await finishHeightAnimations(panel);
-    await expect.poll(() => panel.evaluate(el => el.getAnimations().some(animation => {
-      const frames = animation.effect.getKeyframes();
-      return parseFloat(frames[0].height) > 0 && parseFloat(frames.at(-1).height) === 0;
-    }))).toBe(true);
-    const closing = await seekHeightAnimation(panel, 0.5);
-    expect(closing.from).toBeCloseTo(initial.to, 0);
-    expect(closing.to).toBe(0);
-    expect(closing.height).toBeGreaterThan(0);
-    expect(closing.height).toBeLessThan(closing.from);
-    await expect(section.locator('.storage-building')).toBeVisible();
-    await expect(section.locator('.storage-dashboard')).not.toBeVisible();
-    await expect(section.getByRole('region', { name: 'Usage history' })).not.toBeVisible();
-    await finishHeightAnimations(panel);
     await expect.poll(() => panel.evaluate(el => el.getAnimations().some(animation =>
       parseFloat(animation.effect.getKeyframes().at(-1).height) > 100))).toBe(true);
     const full = await seekHeightAnimation(panel, 0.5);
-    expect(full.from).toBe(0);
+    expect(full.from).toBeCloseTo(initial.to, 0);
     expect(full.to).toBeGreaterThan(full.from);
     expect(full.height).toBeGreaterThan(full.from);
     expect(full.height).toBeLessThan(full.to);
@@ -149,4 +135,51 @@ Then('Browser slides from its initial dots pane into the constructed dashboard',
     await expect(section.locator('.storage-dashboard')).toBeVisible();
     await expect(section.locator('.storage-building')).toHaveCount(0);
   } finally { await restore(); }
+});
+
+Then('Browser dashboard handoff never collapses the already open loading panel', async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await setMode(page, 'settings');
+  const section = browserSection(page), panel = section.locator(':scope > .disclosure-panel');
+  const samples = [];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await panel.evaluate(element => {
+      const recording = window.browserHandoff = { animations: [], frames: [], watching: true };
+      const original = element.animate.bind(element);
+      element.animate = (...args) => {
+        const animation = original(...args), keys = animation.effect.getKeyframes();
+        recording.animations.push({ from: parseFloat(keys[0].height), to: parseFloat(keys.at(-1).height) });
+        return animation;
+      };
+      const sample = () => {
+        if (!recording.watching) return;
+        recording.frames.push({ time: performance.now(), height: element.getBoundingClientRect().height });
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await section.locator('summary').first().click();
+    await expect(section.locator('.storage-dashboard')).toBeVisible();
+    await expect(section.locator('.storage-building')).toHaveCount(0);
+    await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBe(0);
+    samples.push(await panel.evaluate(element => {
+      window.browserHandoff.watching = false;
+      delete element.animate;
+      return window.browserHandoff;
+    }));
+    await section.locator('summary').first().click();
+    await expect.poll(() => panel.evaluate(element => element.getBoundingClientRect().height)).toBe(0);
+  }
+  await this.attach(JSON.stringify({ description: 'Instrumented real Browser opening geometry, three sequential samples', samples }), 'application/json');
+  const handoffs = samples.map(sample => sample.animations.slice(1));
+  expect(handoffs.every(animations => animations.length > 0)).toBe(true);
+  expect(handoffs.flat().filter(animation => animation.to === 0)).toEqual([]);
+  expect(handoffs.flat().every(animation => animation.from > 0)).toBe(true);
+  const reversals = samples.flatMap(sample => {
+    const start = sample.frames.findIndex(frame => frame.height >= sample.animations[0].to - 1);
+    const frames = sample.frames.slice(start);
+    return frames.slice(1).map((frame, index) => frame.height - frames[index].height).filter(delta => delta < -1);
+  });
+  expect(reversals).toEqual([]);
 });
