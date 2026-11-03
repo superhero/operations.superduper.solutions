@@ -55,6 +55,20 @@ Keep the new helper clean under diff --check and record the formatting-only diff
 
 ```
 
+<!-- changelog-commit:80dfaa7f49a90f84e9105e7b989e60052808211f -->
+### Commit [`80dfaa7`](https://github.com/superhero/operations.superduper.solutions/commit/80dfaa7f49a90f84e9105e7b989e60052808211f)
+
+```text
+feat(assistant): coordinate local model ownership
+
+Serialize resident model work across same-origin tabs while retaining the full Pi conversation and frozen settings through physical handoff. Hold each chat turn through tools and image cleanup, and let paused text and decision models restore before their next request.
+
+Reserve GPU speech before microphone permission and retain its scope through final inference and recording storage. Keep explicit CPU speech independent, cancel queued work without interrupting another owner, and drain late audio failures before disposing native sessions.
+
+Await normal worker disposal with bounded termination fallback. Treat unconfirmed cleanup as unsafe until the owned worker is torn down, and preserve the development-safe dynamic import form.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66

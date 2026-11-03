@@ -5,6 +5,7 @@ import { LiveFeatures } from './live-features.js';
 import { wav, signalStats } from './diagnostics.js';
 import { speechPreferenceKey, speechPreferences, recordingLimit, initializationDeadline, downloadDeadline, downloadIdleDeadline } from './config.js';
 import { listRecordings, saveRecording } from './storage.js';
+import { disposeWorker } from '../assistant/worker-shutdown.js';
 import { trackApplicationWorker } from '../application-workers.ts';
 
 export class SpeechController {
@@ -35,6 +36,19 @@ export class SpeechController {
     const terminate = worker.terminate.bind(worker); worker.terminate = () => { release(); terminate(); };
     return worker;
   }
+  attachWorker() {
+    const worker = this.worker = this.workerFactory('worker');
+    worker.onmessage = ({ data }) => { if (this.worker === worker) this.message(data); };
+    worker.onerror = event => { if (this.worker === worker) { event.preventDefault(); this.fail(event.message || 'The speech worker stopped unexpectedly.'); } };
+    worker.onmessageerror = () => { if (this.worker === worker) this.fail('Could not read the speech worker response.'); };
+    return worker;
+  }
+  retireSuspended() {
+    if (!this.needsFreshWorker || this.state.phase !== 'ready') return;
+    this.needsFreshWorker = false;
+    const current = this.worker; this.worker = undefined;
+    if (current) void disposeWorker(current);
+  }
   timeout(ms, message) { clearTimeout(this.timer); this.timer = setTimeout(() => this.fail(message), ms); }
   load() {
     if (this.state.phase !== 'unloaded') return;
@@ -43,26 +57,32 @@ export class SpeechController {
     this.loadStages = [];
     this.timeout(downloadIdleDeadline, 'Speech download stopped making progress. Retry to resume cached files.');
     try {
-      const worker = this.worker = this.workerFactory('worker');
-      worker.onmessage = ({ data }) => { if (this.worker === worker) this.message(data); };
-      worker.onerror = event => { if (this.worker === worker) { event.preventDefault(); this.fail(event.message || 'The speech worker stopped unexpectedly.'); } };
-      worker.onmessageerror = () => { if (this.worker === worker) this.fail('Could not read the speech worker response.'); };
+      const worker = this.attachWorker();
       worker.postMessage({ type: 'load', mode: this.preferences.mode });
     } catch (error) { this.fail(error.message); }
   }
   message(data) {
-    if (data.type === 'progress') {
+    if (data.type === 'runtime-status') { this.update({status: data.text});
+    } else if (data.type === 'suspended') { this.needsFreshWorker = data.recreate === true; this.update({status: 'Speech model paused. It will restore before dictation.'}); this.retireSuspended();
+    } else if (data.type === 'prepared') {
+      if (data.sessionId === this.preparing?.sessionId) {if (data.runtime) {this.runtime = data.runtime; if (this.record?.id === data.sessionId) this.record.metadata.runtime = data.runtime;} this.preparing.resolve();}
+    } else if (data.type === 'drained') {
+      if (data.sessionId === this.record?.id && this.state.phase === 'finalizing') {
+        clearTimeout(this.timer);
+        this.update({phase: 'ready', status: this.record.final?.text ? 'Transcript added to your draft.' : 'No speech detected. Your draft is unchanged.'}); this.retireSuspended();
+      }
+    } else if (data.type === 'progress') {
       if (Date.now() - this.downloadStarted >= downloadDeadline) { this.fail('Speech download deadline reached. Retry to resume cached files.'); return; }
       this.timeout(downloadIdleDeadline, 'Speech download stopped making progress. Retry to resume cached files.');
       this.update({ status: data.text || `Downloading ${data.file}… ${Math.round(100 * data.loaded / data.total)}%` });
     } else if (data.type === 'initializing') {
       this.loadStages.push({ stage: data.text, atMs: Date.now() - this.downloadStarted });
-      this.update({ phase: 'initializing', status: data.text });
+      this.update({ phase: this.preparing ? 'requesting' : 'initializing', status: data.text });
       this.timeout(initializationDeadline, 'Speech initialization exceeded 120 seconds. Retry creates a fresh worker.');
     } else if (data.type === 'stage') { this.loadStages.push({ stage: data.text, atMs: Date.now() - this.downloadStarted }); this.update({ status: data.text }); }
     else if (data.type === 'ready') {
       clearTimeout(this.timer); this.runtime = data.runtime;
-      this.preferencesChanged({ loaded: true }); this.update({ phase: 'ready', status: 'Speech ready · audio and transcription stay in this browser.' });
+      this.preferencesChanged({ loaded: true }); this.update({ phase: 'ready', status: data.suspended ? 'Speech model paused. It will restore before dictation.' : 'Speech ready · audio and transcription stay in this browser.' }); this.retireSuspended();
     } else if (data.type === 'partial' || data.type === 'result') {
       if (data.sessionId !== this.record?.id) return;
       const final = data.type === 'result';
@@ -73,9 +93,14 @@ export class SpeechController {
       if (!this.preferences.refine || final) this.text({ sessionId: data.sessionId, confirmed: final ? data.text : data.stableText || '', final });
       if (final) {
         clearTimeout(this.timer); this.features?.close(); this.features = undefined;
-        this.update({ phase: 'ready', status: data.text ? 'Transcript added to your draft.' : 'No speech detected. Your draft is unchanged.' });
+        this.update({ phase: data.needsArchiveAck ? 'finalizing' : 'ready', status: data.needsArchiveAck ? 'Saving the completed recording…' : data.text ? 'Transcript added to your draft.' : 'No speech detected. Your draft is unchanged.' });
       }
       this.persist();
+      if (final && data.needsArchiveAck) {
+        this.timeout(initializationDeadline, 'Saving the completed recording timed out. Export local diagnostics before retrying.');
+        const current = this.worker;
+        void this.flushStorage().then(() => {if (current === this.worker) current.postMessage({type: 'archive_done', sessionId: data.sessionId});});
+      }
     } else if (data.type === 'error') {
       if (data.sessionId && data.sessionId !== this.record?.id) return;
       this.fail(data.message);
@@ -106,13 +131,27 @@ export class SpeechController {
     if (Math.floor(seconds) > this.savedSecond) { this.savedSecond = Math.floor(seconds); this.persist(); }
     if (seconds >= recordingLimit && this.state.phase === 'recording') void this.stopRecording();
   }
+  async prepareStream(sessionId) {
+    const pending = new Promise((resolve, reject) => {this.preparing = {sessionId, resolve, reject};});
+    void pending.catch(() => {});
+    try {
+      const current = this.worker || this.attachWorker();
+      current.postMessage({type: 'streamPrepare', sessionId, mode: this.preferences.mode});
+      await pending;
+    } finally {if (this.preparing?.sessionId === sessionId) this.preparing = undefined;}
+  }
   async startRecording() {
     if (this.state.phase !== 'ready') return;
     const generation = ++this.generation;
-    this.startRecord(); this.update({ phase: 'requesting', status: 'Allow microphone access to start dictation…' });
-    this.timeout(30000, 'Microphone permission timed out. Retry when you are ready.');
-    let stream;
+    this.startRecord(); this.update({ phase: 'requesting', status: 'Preparing the local speech runtime…' });
+    this.downloadStarted = Date.now();
+    this.timeout(initializationDeadline, 'Speech preparation timed out. Retry creates a fresh worker.');
+    let stream, capturePrepared = false;
     try {
+      await this.prepareStream(this.record.id); capturePrepared = true;
+      if (!this.alive || generation !== this.generation) return;
+      this.update({status: 'Allow microphone access to start dictation…'});
+      this.timeout(30000, 'Microphone permission timed out. Retry when you are ready.');
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Microphone capture requires HTTPS and browser permission. You can also choose an audio file.');
       stream = await (this.dependencies.microphone || (constraints => navigator.mediaDevices.getUserMedia(constraints)))({ audio: true });
       if (!this.alive || generation !== this.generation) { stream.getTracks().forEach(track => track.stop()); return; }
@@ -143,6 +182,8 @@ export class SpeechController {
       this.autoStop = setTimeout(() => void this.stopRecording(), recordingLimit * 1000);
     } catch (error) {
       if (generation === this.generation) {
+        if (!capturePrepared) {this.fail(error.message); return;}
+        this.worker?.postMessage({type: 'streamCancel', sessionId: this.record.id});
         this.generation++; await this.closeCapture(); clearTimeout(this.timer);
         this.record.status = 'error'; this.record.events.push({ type: 'error', message: error.message }); this.persist();
         this.update({ phase: 'ready', error: error.message, status: 'Speech is ready. Retry microphone access or choose a file.' });
@@ -159,6 +200,8 @@ export class SpeechController {
   }
   async stopRecording() {
     if (this.state.phase === 'requesting') {
+      this.preparing?.reject(new DOMException('Microphone request cancelled.', 'AbortError'));
+      this.worker?.postMessage({type: 'streamCancel', sessionId: this.record.id});
       this.generation++; clearTimeout(this.timer); await this.closeCapture();
       this.record.status = 'cancelled'; this.persist();
       this.update({ phase: 'ready', status: 'Microphone request cancelled.' }); return;
@@ -198,13 +241,17 @@ export class SpeechController {
         const values = audio.getChannelData(channel); for (let i = 0; i < pcm.length; i++) pcm[i] += values[i] / audio.numberOfChannels;
       }
       this.chunks = [pcm]; this.persist();
-      const copy = pcm.slice(); this.worker.postMessage({ type: 'transcribe', sessionId: this.record.id, pcm: copy }, [copy.buffer]);
+      const current = this.worker || this.attachWorker();
+      const copy = pcm.slice(); current.postMessage({ type: 'transcribe', sessionId: this.record.id, mode: this.preferences.mode, pcm: copy }, [copy.buffer]);
     } catch (error) { if (generation === this.generation) this.fail(error.message); }
   }
   fail(message) { this.unload(false, message); this.update({ error: message, status: 'Speech stopped. Retry creates a fresh worker and reuses cached downloads.' }); }
-  unload(forget = true, reason = 'Speech unloaded.') {
+  unload(forget = true, reason = 'Speech unloaded.', graceful = forget) {
+    this.needsFreshWorker = false;
+    this.preparing?.reject(new DOMException('Speech unloaded.', 'AbortError'));
     this.generation++; clearTimeout(this.timer); void this.closeCapture();
-    this.features?.close(); this.features = undefined; this.worker?.terminate(); this.worker = undefined;
+    this.features?.close(); this.features = undefined; const current = this.worker; this.worker = undefined;
+    if (current && graceful) void disposeWorker(current); else current?.terminate();
     if (this.record && !['complete', 'cancelled', 'error'].includes(this.record.status)) {
       this.record.status = 'error'; this.record.events.push({ type: 'reset', message: reason }); this.persist();
     }
@@ -212,5 +259,5 @@ export class SpeechController {
     this.update({ phase: 'unloaded', status: reason, provisional: '' });
   }
   hidden() { if (['recording', 'requesting'].includes(this.state.phase)) void this.stopRecording(); }
-  destroy() { this.alive = false; this.unload(false, 'Page closed.'); }
+  destroy() { this.alive = false; this.unload(false, 'Page closed.', true); }
 }

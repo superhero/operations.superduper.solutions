@@ -7,6 +7,7 @@ import { probeAssistantCompatibility } from "./compatibility.ts";
 import { loadAssistantEngine } from "./engine.ts";
 import { encodeError } from "../worker-rpc.ts";
 import { createAssistantSession, type SessionUpdate, type ToolInvoker } from "./pi-session.ts";
+import { BrowserRuntimeOwner } from "./runtime-ownership.js";
 import { createVisionTool } from "./vision-tool.js";
 import { visionProfileFor, preflightVision } from "./vision-profiles.ts";
 import type { LocalEngine } from "./pi-session.ts";
@@ -42,6 +43,27 @@ type StoredImage = { id: string; data: string; mimeType: string; width: number; 
 const images = new Map<string, StoredImage>();
 let vision: ReturnType<typeof createVisionTool> | undefined;
 let assetBase = "";
+let loadText: ((signal: AbortSignal) => Promise<NonNullable<typeof engine>>) | undefined;
+let commandAbort: AbortController | undefined;
+let unconfirmedAllocation: unknown;
+const owner = new BrowserRuntimeOwner({
+  async suspend() {
+    if (unconfirmedAllocation) throw new Error("Language initialization cleanup is unconfirmed; terminate this worker.", {cause: unconfirmedAllocation});
+    if (!engine) return;
+    await engine.dispose(); engine = undefined;
+    post({type: "suspended"});
+  },
+  status: value => post({type: "progress", value}),
+  onError: error => post({type: "error", operation: "handoff", error: encodeError(error)}),
+});
+async function ensureText(signal: AbortSignal) {
+  if (unconfirmedAllocation) throw new Error("Local model cleanup is unconfirmed; reload the assistant.", {cause: unconfirmedAllocation});
+  if (!engine) {
+    if (!loadText) throw new Error("Load a model first.");
+    post({type: "progress", value: "Restoring the language model with the saved conversation…"});
+    engine = await loadText(AbortSignal.any([signal, AbortSignal.timeout(settings.loadTimeout)]));
+  }
+}
 const facade: LocalEngine = {
   get contextMode() { return engine?.contextMode; },
   get contextLimit() { return engine?.contextLimit; },
@@ -67,14 +89,22 @@ scope.onmessage = event => {
     if (message.error) pending?.reject(new Error(message.error)); else pending?.resolve(message.value);
     return;
   }
+  if (message.type === "stop") { session?.stop(); commandAbort?.abort(new DOMException("Model operation cancelled.", "AbortError")); return; }
+  if (message.type === "dispose") {
+    session?.stop(); commandAbort?.abort(new DOMException("Model unloaded.", "AbortError"));
+    void owner.close().then(() => post({type: "disposed"}), error => post({type: "error", operation: "dispose", error: encodeError(error)}));
+    return;
+  }
   void (async () => {
     if (busy) throw new Error("The assistant is busy.");
     busy = true;
+    const controller = commandAbort = new AbortController();
     try {
+      const reply = await owner.run(async () => {
       if (message.type === "check" || message.type === "load") {
         const compatibility = await probeAssistantCompatibility(scope, message.settings);
+        if (message.type === "check") return {type: "compatibility", value: compatibility};
         post({ type: "compatibility", value: compatibility });
-        if (message.type === "check") return;
         if (!compatibility.ready) throw new Error(compatibility.summary + " " + compatibility.detail);
         if (engine) throw new Error("Unload the current model before loading another.");
         settings = validateAssistantSettings(message.settings);
@@ -82,30 +112,39 @@ scope.onmessage = event => {
         if (!["https:", "http:"].includes(assetURL.protocol) || assetURL.origin !== scope.location.origin) throw new Error("Assistant runtime assets must come from this application.");
         assetBase = assetURL.href;
         const progress = (value: unknown) => post({ type: "progress", value });
-        const loadText = (signal: AbortSignal) => loadAssistantEngine(settings, progress, signal, compatibility, assetBase);
-        engine = await loadText(AbortSignal.timeout(settings.loadTimeout));
+        const restoreText = async (signal: AbortSignal) => {
+          signal.throwIfAborted();
+          try {return await loadAssistantEngine(settings, progress, signal, compatibility, assetBase);}
+          catch (error) {unconfirmedAllocation = error instanceof Error ? error : new Error("Native allocation failed.", {cause: error}); throw error;}
+        };
+        loadText = restoreText;
+        engine = await loadText(AbortSignal.any([controller.signal, AbortSignal.timeout(settings.loadTimeout)]));
         vision = createVisionTool({assetBase, profile: visionProfileFor(settings.visionMode), getImage: id => images.get(id),
           preflight: () => preflightVision(settings.visionMode, compatibility),
           async suspendText() { const current = engine; if (!current) throw new Error("Text model is already unloaded."); await current.dispose(); engine = undefined; },
-          async resumeText({signal}) { engine = await loadText(signal); },
-          onState: state => { if (state.status) progress(state.status); },
+          async resumeText({signal}) { engine = await restoreText(signal); },
+          onState: state => { if (state.cleanup_failed) unconfirmedAllocation = new Error("Vision cleanup is unconfirmed; reload the assistant."); if (state.status) progress(state.status); },
         });
         session = createAssistantSession(facade, settings, invoke, async () => { throw new Error("Use inspect_image for local image pixels."); }, publish, schedule,
           error => post({ type: "diagnostic", operation: "send", error: encodeError(error) }), [vision.tool],
           value => post({ type: "context", value }));
-        post({ type: "ready" });
+        return {type: "ready"};
       } else if (message.type === "send") {
         if (!session) throw new Error("Load a model first.");
+        await ensureText(controller.signal);
         const incoming = message.images ?? [];
         if (!Array.isArray(incoming) || incoming.length > 1) throw new Error("Attach at most one image per message.");
         if (incoming.length && !settings.tools) throw new Error("Enable application tools to inspect local images.");
         const attached = await Promise.all(incoming.map((part: ImageContent) => storeImage(part)));
         await session.send(message.text, [], attached.map(({id, width, height}) => ({id, width, height})));
-        flush(); post({ type: "done" });
+        flush(); return {type: "done"};
       } else if (message.type === "reset") {
         if (!session) throw new Error("Load a model first.");
-        await session.reset(); images.clear(); flush(); post({ type: "done" });
+        await ensureText(controller.signal);
+        await session.reset(); images.clear(); flush(); return {type: "done"};
       } else throw new Error("Unknown assistant command.");
-    } finally { busy = false; }
+      }, {signal: controller.signal, resident: message.type !== "check"});
+      post({...reply, suspended: !engine});
+    } finally { busy = false; if (commandAbort === controller) commandAbort = undefined; }
   })().catch(error => { flush(); post({ type: "error", operation: message.type, error: encodeError(error) }); });
 };

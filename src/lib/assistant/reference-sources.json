@@ -139,5 +139,25 @@
       "Accept only compatible FP32/Q4 variant; keep original FP16 default. Reject 8-buffer adapters before text unload and recheck actual device limits.",
       "Keep Operations ./vision-ort/ URL, same pinned Transformers/ORT pair and serialized Pi/text restoration. Positive completed dispatches prove owned-device work, not per-node placement or absence of CPU operators."
     ]
+  },
+  "runtime_ownership": {
+    "reviewed": "2026-11-04",
+    "source_repository": "code.superduper.solutions",
+    "sources": [
+      {
+        "source": "src/lib/assistant/browser/queue.ts",
+        "sha256": "54317933ad7a270d041a03d05bc26e9971f56999cfd343e84672975d1ef7dcac"
+      },
+      {
+        "source": "src/lib/assistant/browser/ownership.ts",
+        "sha256": "dcd931bf95de5879c34a3ec59ca9f04762e832275da3da572de973ca37903cb3"
+      }
+    ],
+    "adaptations": [
+      "Operations worker-resident runtime lease and channel namespace; canceled waiters never cancel an active owner.",
+      "Hold the whole Pi/tool/image operation, preserving logical history and frozen settings over physical unload. Image workers borrow the parent scope.",
+      "GPU speech holds ownership through capture, forward and archive acknowledgement; CPU speech bypasses the GPU handoff. Restore speech in a fresh worker after device teardown.",
+      "Failed native cleanup retains ownership until the owned worker is terminated; normal unload waits for disposal acknowledgement with a bounded fallback."
+    ]
   }
 }

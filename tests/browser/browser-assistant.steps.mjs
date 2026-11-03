@@ -577,7 +577,7 @@ Then('decision controls preserve native results and release their exclusive mode
   expect(await page.evaluate(()=>window.decisionFixture.workers)).toBe(0);
   await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 CPU',exact:true}).click();
   await expect(section.getByRole('button',{name:'Score decision',exact:true})).toBeEnabled();
-  await expect(configuration.getByRole('combobox',{name:'Language model',exact:true})).toBeDisabled();
+  await expect(configuration.getByRole('combobox',{name:'Language model',exact:true})).toBeEnabled();
   expect(await page.evaluate(()=>window.decisionFixture.messages.map(row=>row.type))).toEqual(['load']);
   await section.getByRole('button',{name:'Score decision',exact:true}).click();
   const output=section.getByRole('region',{name:'Decision result',exact:true});await expect(output).toContainText('0.85');
@@ -679,4 +679,59 @@ Then('image runtime preferences select the served compatible model without chang
   });
   expect(served).toEqual({variant:'official-q4-fp32-compatible-v1',dtype:{embed_tokens:'fp32',vision_encoder:'q4',decoder_model_merged:'q4'},external:{embed_tokens:false,vision_encoder:true,decoder_model_merged:true},output:128});
   await configuration.getByRole('button',{name:'Unload language model',exact:true}).click();
+});
+
+Then('local model leases coordinate browser tabs cancellation and owner worker death', {timeout:90000}, async function() {
+  const {createFixtureServer,waitForApplicationReady}=await import('./legacy-smoke/support.mjs');
+  const server=await createFixtureServer({}),url=`http://127.0.0.1:${server.httpServer.address().port}`;
+  const allow=route=>route.continue();await this.context.route(`${url}/**`,allow);
+  const other=await this.context.newPage();
+  try {
+    for(const page of [this.page,other]) {
+      await page.goto(url,{waitUntil:'networkidle',timeout:60000});await waitForApplicationReady(page);
+      await page.addScriptTag({type:'module',content:`import {BrowserRuntimeOwner} from ${JSON.stringify(url+'/lib/assistant/runtime-ownership.js')};window.RuntimeOwner=BrowserRuntimeOwner;`});
+      await page.waitForFunction(()=>!!window.RuntimeOwner);
+    }
+    await this.page.evaluate(async()=>{
+      window.ownEvents=[];
+      window.own=new window.RuntimeOwner({suspend:async()=>{window.ownEvents.push('dispose-start');await new Promise(resolve=>window.finishDispose=resolve);window.ownEvents.push('dispose-end');}});
+      await window.own.run(async()=>window.ownEvents.push('loaded'));
+      window.turn=window.own.run(async()=>{window.ownEvents.push('turn');await new Promise(resolve=>window.finishTool=resolve);window.ownEvents.push('tool-result');});
+    });
+    await other.evaluate(()=>{
+      window.ownEvents=[];window.own=new window.RuntimeOwner({suspend:async()=>window.ownEvents.push('disposed')});
+      window.pending=window.own.run(async()=>window.ownEvents.push('acquired'));
+    });
+    expect(await other.evaluate(()=>window.ownEvents)).toEqual([]);
+    await this.page.evaluate(()=>window.finishTool());
+    await expect.poll(()=>this.page.evaluate(()=>window.ownEvents.includes('dispose-start'))).toBe(true);
+    expect(await other.evaluate(()=>window.ownEvents)).toEqual([]);
+    await this.page.evaluate(()=>window.finishDispose());await other.evaluate(()=>window.pending);
+    expect(await this.page.evaluate(()=>window.ownEvents)).toEqual(['loaded','turn','tool-result','dispose-start','dispose-end']);
+    await other.evaluate(()=>{window.turn=window.own.run(async()=>new Promise(resolve=>window.finishTurn=resolve));});
+    await this.page.evaluate(()=>{
+      window.cancelled=new AbortController();window.cancelRan=false;
+      window.waiter=new window.RuntimeOwner({suspend:async()=>{}});
+      window.cancelResult=window.waiter.run(async()=>{window.cancelRan=true;},{signal:window.cancelled.signal}).then(()=>'',error=>error.name);
+      window.cancelled.abort(new DOMException('Queued turn cancelled.','AbortError'));
+    });
+    expect(await this.page.evaluate(()=>window.cancelResult)).toBe('AbortError');
+    expect(await this.page.evaluate(()=>window.cancelRan)).toBe(false);
+    expect(await other.evaluate(()=>window.ownEvents)).toEqual(['acquired']);
+    await other.evaluate(()=>window.finishTurn());await other.evaluate(async()=>{await window.turn;await window.own.close();});
+    await this.page.evaluate(async()=>{await window.turn;await window.own.close();await window.waiter.close();});
+    await this.page.evaluate(async moduleUrl=>{
+      const source=`import {BrowserRuntimeOwner} from ${JSON.stringify(moduleUrl)};const owner=new BrowserRuntimeOwner({suspend:async()=>{}});owner.run(async()=>{postMessage('held');await new Promise(()=>{});});`;
+      const blob=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
+      window.ownerWorker=new Worker(blob,{type:'module'});
+      try {await new Promise((resolve,reject)=>{window.ownerWorker.onmessage=()=>resolve();window.ownerWorker.onerror=event=>reject(Error(event.message));});}
+      finally {URL.revokeObjectURL(blob);}
+      window.afterDeath=false;window.successor=new window.RuntimeOwner({suspend:async()=>{}});
+      window.successorRun=window.successor.run(async()=>{window.afterDeath=true;});
+    },url+'/lib/assistant/runtime-ownership.js');
+    expect(await this.page.evaluate(()=>window.afterDeath)).toBe(false);
+    await this.page.evaluate(()=>window.ownerWorker.terminate());
+    await this.page.evaluate(()=>window.successorRun);expect(await this.page.evaluate(()=>window.afterDeath)).toBe(true);
+    await this.page.evaluate(()=>window.successor.close());
+  } finally {await other.close();await this.context.unroute(`${url}/**`,allow);}
 });

@@ -19,6 +19,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { AssistantMessageView } from "$lib/assistant/pi-session.ts";
   import type { ContextBudget } from "$lib/assistant/context-budget.ts";
   import InferenceWorker from "$lib/assistant/inference.worker.ts?worker&inline";
+  import { disposeWorker } from "$lib/assistant/worker-shutdown.js";
   import { trackApplicationWorker } from "$lib/application-workers.ts";
   import SpeechSettings from "./SpeechSettings.svelte";
   import DecisionSettings from "./DecisionSettings.svelte";
@@ -40,9 +41,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let phase = $state<"unloaded" | "checking" | "loading" | "ready" | "generating">("unloaded");
   let decisionBusy = $state(false);
   const busy = $derived(["checking", "loading", "generating"].includes(phase) || decisionBusy);
-  let decisionActive = $state(false);
   const languageLocked = $derived(phase !== "unloaded");
-  const locked = $derived(languageLocked || decisionActive);
+  const locked = $derived(languageLocked);
   let status = $state("");
   let error = $state("");
   let compatibility = $state<AssistantCompatibility>();
@@ -120,13 +120,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try { localStorage.setItem(assistantSettingsKey, JSON.stringify(validateAssistantSettings(preferences))); preferenceError = ""; }
     catch (problem) { preferenceError = report(problem, "settings"); }
   }
-  function terminate() {
+  function terminate(graceful = false) {
     contextBudget = undefined;
     clearTimeout(timer); timer = undefined; toolAbort.abort();
-    worker?.terminate(); worker = undefined; release?.(); release = undefined;
+    const current = worker, untrack = release; worker = undefined; release = undefined;
+    if (current && graceful) void disposeWorker(current).finally(() => untrack?.());
+    else {current?.terminate(); untrack?.();}
   }
   function stop() {
-    terminate(); clearAttachment(); phase = "unloaded";
+    terminate(true); clearAttachment(); phase = "unloaded";
     status = "Model unloaded. Load a model to start a new conversation.";
   }
   function report(problem: unknown, operation: string) {
@@ -157,7 +159,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         const value = message.value;
         status = typeof value === "string" ? value : String(value?.message ?? value?.status ?? "Loading model…");
         if (typeof value?.progress === "number") status += ` ${Math.round(value.progress * 100)}%`;
-      } else if (message.type === "ready") { clearTimeout(timer); phase = "ready"; status = "Ready · inference stays in this browser."; }
+      } else if (message.type === "suspended") { contextBudget = undefined; status = "Language model paused for another local model. Your conversation is kept."; }
+      else if (message.type === "ready") { clearTimeout(timer); phase = "ready"; status = message.suspended ? "Language model paused. It will restore before your next message." : "Ready · inference stays in this browser."; }
       else if (message.type === "update") {
         const pane = conversation?.closest<HTMLElement>("#settings-panel");
         const atBottom = visible && (followNextUpdate || !pane || pane.scrollHeight - pane.scrollTop - pane.clientHeight < 50);
@@ -170,7 +173,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         });
         error = message.error;
         if (atBottom) void tick().then(() => { if (alive && visible && pane) pane.scrollTop = pane.scrollHeight; });
-      } else if (message.type === "done") { clearTimeout(timer); phase = "ready"; status = "Ready for your next message."; }
+      } else if (message.type === "done") { clearTimeout(timer); phase = "ready"; status = message.suspended ? "Language model paused. Your conversation is kept." : "Ready for your next message."; }
       else if (message.type === "error") failure(decodeError(message.error), message.operation);
       else if (message.type === "diagnostic") report(decodeError(message.error), message.operation);
       else if (message.type === "tool") {
@@ -249,7 +252,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } catch (problem) { if (alive && generation === imageGeneration) { error = report(problem, "image"); imageInput.value = ""; } }
     finally { if (alive && generation === imageGeneration) imagePreparing = false; }
   }
-  onDestroy(() => { alive = false; imageGeneration++; terminate(); });
+  onDestroy(() => { alive = false; imageGeneration++; terminate(true); });
 </script>
 
 <section class="assistant-settings" aria-label="Browser assistant" hidden={!visible} inert={!visible}>
@@ -282,7 +285,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <HintButton type="button" class="composer-action" label="New conversation" disabled={phase !== "ready" || speechBusy} onclick={reset}><MaterialIcon name="add_comment" size={18} /></HintButton>
           <HintButton type="button" class="composer-action" label={busy ? "Stop and unload" : "Unload model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
         {:else}
-          <HintButton type="button" class="composer-action" label="Check compatibility" disabled={decisionActive} onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
+          <HintButton type="button" class="composer-action" label="Check compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
         {/if}
       </div>
     </div>
@@ -321,7 +324,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if languageLocked}
         <HintButton type="button" class="configuration-action" label={busy ? "Stop and unload language model" : "Unload language model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
       {:else}
-        <HintButton type="button" class="configuration-action" label="Check language compatibility" disabled={decisionActive} onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
+        <HintButton type="button" class="configuration-action" label="Check language compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
       {/if}
     </div>
     {#if status}<p class="status" role="status">{status}</p>{/if}
@@ -364,7 +367,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if speechBuilt}
     <SpeechSettings bind:this={speechSettings} visible={visible || configurationOpen} externalBusy={busy} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
   {/if}
-  <DecisionSettings languageActive={languageLocked} {speechBusy} onActivity={(active, working) => { decisionActive = active; decisionBusy = working; }} />
+  <DecisionSettings {speechBusy} onActivity={(_active, working) => { decisionBusy = working; }} />
   <details class="assistant-details">
     <summary>Tools and skills<MaterialIcon name="chevron_forward" size={16} /></summary>
     <p>Reads cover catalogs, operation schemas, settings, saved workflows and current ports. Workspace edits add operations, move nodes and connect ports. Changes use normal save history and Undo.</p>

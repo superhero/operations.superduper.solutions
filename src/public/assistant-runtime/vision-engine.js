@@ -61,6 +61,7 @@ export async function createVisionEngine(profile, {
   }
   function invalidate(error) {
     engine.invalidated = true;
+    error.cleanupUnconfirmed = true;
     worker.terminate();
     for (const id of [...pending.keys()]) settle(id, error);
   }
@@ -115,7 +116,10 @@ export async function createVisionEngine(profile, {
     if (disposed) return;
     disposed = true;
     for (const id of [...pending.keys()]) settle(id, abortError('Vision model disposed.'));
-    try { if (!engine.invalidated) await request('dispose', {}, {timeout: 5000}); }
+    try {
+      if (engine.invalidated) throw Object.assign(Error('Vision worker cleanup is unconfirmed; reload before allocating another model.'), {cleanupUnconfirmed: true});
+      await request('dispose', {}, {timeout: 5000});
+    }
     finally { worker.terminate(); worker.onmessage = worker.onerror = worker.onmessageerror = null; }
   };
   return engine;

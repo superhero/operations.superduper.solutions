@@ -35,3 +35,5 @@ Feature: Browser assistant in Settings
     Then decision controls preserve native results and release their exclusive model session
   Scenario: Optional runtime artifacts load without model weights
     Then native runtime modules and compressed Wasm load in real browser workers
+  Scenario: Runtime ownership coordinates real tabs and worker death
+    Then local model leases coordinate browser tabs cancellation and owner worker death
