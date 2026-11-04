@@ -316,7 +316,9 @@ Then('validation manifests require complete native assistant resources and rejec
     coverage: { 'coverage-summary.json': 'hash', 'index.html': 'hash' },
     'test-report': Object.fromEntries([...REPORT_FILES, 'ui/assets/app.js', 'ui/assets/app.css'].map(path => [path, 'hash'])) };
   validateArtifactContract(files);
-  for (const path of [...ASSISTANT_FILES, '_worker.js', '_routes.json', 'assistant-runtime/chunks/vision-fixture.js']) {
+  const generatedChunk = structuredClone(files); delete generatedChunk.bundle['assistant-runtime/chunks/vision-fixture.js'];
+  validateArtifactContract(generatedChunk);
+  for (const path of [...ASSISTANT_FILES, '_worker.js', '_routes.json']) {
     const broken = structuredClone(files); delete broken.bundle[path];
     assert.throws(() => validateArtifactContract(broken), /complete bundle/, path);
   }
