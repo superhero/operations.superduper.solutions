@@ -93,6 +93,14 @@ feat(assistant): complete compatible native text choices
 
 ```
 
+<!-- changelog-commit:30c7101a2efce7985600962a11bb4cfcdb213954 -->
+### Commit [`30c7101`](https://github.com/superhero/operations.superduper.solutions/commit/30c7101a2efce7985600962a11bb4cfcdb213954)
+
+```text
+feat(assistant): add compatible native decision models
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66
