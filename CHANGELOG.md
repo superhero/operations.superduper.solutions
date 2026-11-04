@@ -101,6 +101,14 @@ feat(assistant): add compatible native decision models
 
 ```
 
+<!-- changelog-commit:f1e5fa61ebf28b6e8502fb404766a0b338e152f4 -->
+### Commit [`f1e5fa6`](https://github.com/superhero/operations.superduper.solutions/commit/f1e5fa61ebf28b6e8502fb404766a0b338e152f4)
+
+```text
+feat(assistant): integrate compatible Strands decisions
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66
