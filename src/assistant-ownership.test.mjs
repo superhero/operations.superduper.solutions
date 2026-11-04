@@ -75,6 +75,7 @@ Then('the assistant worker owns the complete tool loop and restores text without
   };};
   vi.doMock('./lib/assistant/engine.ts',()=>({loadAssistantEngine:fakeLoad}));
   vi.doMock('./lib/assistant/compatibility.ts',()=>({probeAssistantCompatibility:async()=>({ready:true,fp32:true,fp16:true,summary:'Controlled source device'})}));
+  let assetReleases=0;vi.doMock('./lib/assistant/model-storage/runtime.ts',()=>({prepareModelAssets:async()=>async()=>{assetReleases++;},modelAssetFetch:()=>globalThis.fetch}));
   const prior=globalThis.onmessage;
   vi.stubGlobal('navigator',{locks:env.locks});vi.stubGlobal('BroadcastChannel',class{constructor(){return env.channel();}});
   vi.stubGlobal('location',{origin:'https://example.com'});vi.stubGlobal('postMessage',data=>posts.push(data));
@@ -96,10 +97,10 @@ Then('the assistant worker owns the complete tool loop and restores text without
     assert.equal(loads,3);assert.deepEqual(frozen[0],frozen[2]);assert.equal(posts.filter(row=>row.type==='tool').length,1);
     const view=posts.filter(row=>row.type==='update').at(-1).messages;
     assert.equal(view.filter(row=>row.role==='user').length,3);assert.equal(view.filter(row=>row.role==='tool').length,1);
-    assert.match(view.at(-1).text,/Application verified/);
-    send({type:'dispose'});await until(()=>posts.some(row=>row.type==='disposed'));
+    assert.match(view.at(-1).text,/Application verified/);assert.equal(assetReleases,0,'Physical handoff preserves logical asset use');
+    send({type:'dispose'});await until(()=>posts.some(row=>row.type==='disposed'));assert.equal(assetReleases,1);
   } finally {
-    await next?.close();globalThis.onmessage=prior;vi.unstubAllGlobals();vi.doUnmock('./lib/assistant/engine.ts');vi.doUnmock('./lib/assistant/compatibility.ts');
+    await next?.close();globalThis.onmessage=prior;vi.unstubAllGlobals();vi.doUnmock('./lib/assistant/engine.ts');vi.doUnmock('./lib/assistant/compatibility.ts');vi.doUnmock('./lib/assistant/model-storage/runtime.ts');
   }
 });
 

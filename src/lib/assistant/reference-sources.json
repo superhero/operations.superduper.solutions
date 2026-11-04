@@ -183,5 +183,40 @@
       "Complete messages/native tool arguments use the trained formatter and parser. Context stays a labeled estimate with actual loaded capacity; native overflow rejects before prefill with ctx_shift:false, no truncation/resubmission.",
       "Abort invalidates and awaits disposal; a failed disposal promise stays rejected. Bounded raw diagnostics retain placement proofs and cumulative native audit totals."
     ]
+  },
+  "model_storage": {
+    "reviewed": "2026-11-04",
+    "repository": "code.superduper.solutions",
+    "sources": [
+      {
+        "source": "src/lib/assistant/browser/storage.ts",
+        "sha256": "ab238c60de273561d0d2cd4ece9ccb8bf9a0882def78af82a9f54bb0bbea019d"
+      },
+      {
+        "source": "src/lib/assistant/browser/installer.ts",
+        "sha256": "3a6a4431bec7d1b5265f3c9e042359aa6b33e596fb7252f915a9f4f4ab8c5213"
+      },
+      {
+        "source": "src/lib/assistant/browser/ownership.ts",
+        "sha256": "dcd931bf95de5879c34a3ec59ca9f04762e832275da3da572de973ca37903cb3"
+      },
+      {
+        "source": "src/lib/packages/registry.ts",
+        "sha256": "605ce8eb1833eed86c4e8032d2a30978b34d59a1328ee831d59126f9b4886634"
+      }
+    ],
+    "adaptations": [
+      "Operations-owned IndexedDB/Web Lock/channel namespace; language selection and first image use automatically save and verify immutable publisher files before native initialization.",
+      "Eight-MiB blocks and whole-file SHA before complete markers; bounded retry, exact ranges, cancellation/quota cleanup and shared artifact references.",
+      "Shared logical model-use claims survive physical GPU handoff and vision restoration; exclusive removal cannot delete files used by any tab.",
+      "Use actual injected WebML/GGUF fetch readers; initialize Gemma and vision worker-local readers before library import. Local data images and same-origin application runtime resources use the native reader.",
+      "Pinned remote reads stay in installed storage; optional unpinned probes receive local404 and missing required blocks fail without publisher fallback.",
+      "Original FP16 image allowlist combines its six pinned ONNX files with the eight identical metadata files from the same immutable compatible-profile revision."
+    ],
+    "boundaries": [
+      "Installation-time whole-file verification does not rehash every model block on each read.",
+      "Application/runtime assets are still served by the same origin; cached model files do not establish fully offline SPA support.",
+      "Decision and speech installation remain separate integration work."
+    ]
   }
 }

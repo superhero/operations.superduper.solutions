@@ -31,3 +31,9 @@ Feature: Accepted native assistant and decision engines
     Then compatible text refuses unproved or CPU model placement after log rollover
   Scenario: Compatible text cancellation awaits native disposal
     Then compatible text cancellation drains and failed cleanup stays failed
+  Scenario: Installed catalogs contain complete immutable language and image files
+    Then installed model catalogs retain exact language files and both complete image variants
+  Scenario: Installed text uses the cache reader at every native loading seam
+    Then all language adapters receive the installed reader without changing model placement
+  Scenario: Failed installation releases its own logical use claim
+    Then model asset preparation retains successful claims and releases failed or canceled ones

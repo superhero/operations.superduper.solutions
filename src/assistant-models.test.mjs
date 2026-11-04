@@ -309,7 +309,7 @@ Then('development image requests use current source beside older built runtime a
 
 Then('development image compilation is cached refreshed and retried without stale fallback', async () => {
   const root=await mkdtemp(join(tmpdir(),'operations-image-build-'));
-  const inputs=['src/lib/assistant/runtime/vision-worker.js','src/lib/assistant/runtime/vision-runtime.js','src/public/assistant-runtime/vision-engine.js','build/assistant-worker-build.mjs','package-lock.json'];
+  const inputs=['src/lib/assistant/runtime/vision-worker.js','src/lib/assistant/runtime/vision-runtime.js','src/public/assistant-runtime/vision-engine.js','build/assistant-worker-build.mjs','package-lock.json','src/lib/assistant/model-storage/runtime.ts','src/lib/assistant/model-storage/storage.ts','src/lib/assistant/model-storage/catalog.ts','src/lib/assistant/model-storage/events.ts','src/lib/assistant/language-profiles.json','src/lib/assistant/vision-profile.json','src/lib/assistant/vision-compatible-profile.json'];
   try {
     for(const file of inputs){await mkdir(dirname(join(root,file)),{recursive:true});await writeFile(join(root,file),'initial');}
     let builds=0,fail=false;
@@ -372,7 +372,7 @@ Then('compatible MiniCPM preserves legacy placement and caps its qualified setti
   assert.equal(calls.length,1);assert.equal(calls[0].profile.engine,'wllama-fp32');assert.equal(calls[0].profile.settings.cache_type_k,'f32');assert.equal(calls[0].options.mode,'gpu');
 });
 Then('compatible native text binds the pinned ABI and streams original tool calls',async()=>{
-  const fixture=strictFixture(),engine=await loadFp32Chat(strictProfile(),()=>{},fixture.options);
+  const fixture=strictFixture();fixture.options.fetch=async()=>new Response('installed GGUF');const engine=await loadFp32Chat(strictProfile(),()=>{},fixture.options);assert.equal(fixture.record.source.options.fetch,fixture.options.fetch);
   assert.match(fixture.record.paths.default,/text-fp32\/upstream\/wllama.wasm$/);
   const request=fixture.record.loads[0];assert.equal(request.settings.n_ctx,4096);assert.equal(request.settings.n_gpu_layers,99);assert.equal(request.settings.n_batch,128);assert.equal(request.settings.n_ubatch,64);
   assert.equal(request.settings.cache_type_k,'f32');assert.equal(request.settings.cache_type_v,'f32');assert.equal(request.settings.ctx_shift,false);assert.equal(request.settings.flash_attn,false);assert.equal(request.settings.jinja,true);
@@ -403,4 +403,49 @@ Then('compatible text cancellation drains and failed cleanup stays failed',async
   fixture.exit.resolve();await generation;assert.equal(fixture.record.exits,1);await engine.dispose();
   const broken=strictFixture({exitFails:true}),failed=await loadFp32Chat(strictProfile(),()=>{},broken.options);
   await assert.rejects(failed.dispose(),/native disposal failed/);await assert.rejects(failed.dispose(),/native disposal failed/);assert.equal(broken.record.exits,1);
+});
+
+Then('installed model catalogs retain exact language files and both complete image variants',async()=>{
+  const {storageProfiles,artifactsFor,profileById}=await import('./lib/assistant/model-storage/catalog.ts');
+  assert.equal(storageProfiles.length,11);
+  for(const profile of storageProfiles){const files=artifactsFor(profile);assert.ok(files.length);for(const file of files){assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(Number.isSafeInteger(file.bytes)&&file.bytes>0);assert.match(file.url,/\/resolve\/[a-f0-9]{40}\//);}}
+  const fp16=artifactsFor(profileById('image:fp16')),fp32=artifactsFor(profileById('image:compatible'));
+  assert.equal(fp16.length,14);assert.equal(fp32.length,13);
+  assert.deepEqual(fp16.filter(file=>!file.id.startsWith('onnx/')),fp32.filter(file=>!file.id.startsWith('onnx/')));
+  assert.deepEqual(artifactsFor({...profileById('2b'),model:'untrusted',file:'other',revision:'bad'}),artifactsFor(profileById('2b')));
+  assert.throws(()=>profileById('unregistered'),/not available/);
+  assert.equal(artifactsFor(profileById('minicpm5-2b'))[0].sha256,artifactsFor(profileById('minicpm5-fp32'))[0].sha256);
+});
+Then('all language adapters receive the installed reader without changing model placement',async()=>{
+  const {loadAssistantEngine,loadBonsaiEngine}=await import('./lib/assistant/engine.ts');
+  const {settingsForAssistantModel,defaultAssistantSettings}=await import('./lib/assistant/config.ts');
+  const reader=async()=>new Response('cached'),calls=[];
+  const native=Object.fromEntries(['loadWllama','loadGemma','loadFp32Chat'].map(name=>[name,async(profile,_progress,options)=>{calls.push({name,profile,options});return{async dispose(){}};}]));
+  for(const model of ['minicpm5-2b','minicpm5-fp32','gemma-e2b']){
+    const settings=settingsForAssistantModel(model,defaultAssistantSettings);
+    await loadAssistantEngine(settings,()=>{},signal(),{fp32:true,fp16:true},assetBase,native,{fetch:reader,modelId:model});
+    assert.equal(calls.at(-1).options.fetch,reader);assert.equal(calls.at(-1).options.installedModel,model);assert.equal(calls.at(-1).options.mode,settings.executionMode);
+  }
+  assert.deepEqual(calls.map(row=>row.name),['loadWllama','loadFp32Chat','loadGemma']);
+  let request;
+  const engine=await loadBonsaiEngine(defaultAssistantSettings,()=>{},signal(),{fp16:true},async()=>({Qwen3_5ForConditionalGeneration:{async from_pretrained(_model,options){request=options;return{create_session:()=>({max_length:4096,async dispose(){}}),async dispose(){}};}}}),reader);
+  assert.equal(request.fetch,reader);assert.equal(request.mmproj,null);await engine.dispose();
+});
+Then('model asset preparation retains successful claims and releases failed or canceled ones',async()=>{
+  const {vi}=await import('vitest'),events=[];let fail=false;
+  vi.doMock('./lib/assistant/model-storage/storage.ts',()=>({
+    acquireModelUse:async(_id,signal)=>{signal.throwIfAborted();events.push('claim');return async()=>events.push('release');},
+    installModel:async(_id,_progress,signal,_base,fetcher)=>{events.push('install');assert.equal(fetcher,reader);signal.throwIfAborted();if(fail)throw Error('Checksum mismatch');},
+    installedFetch:()=>reader,
+  }));
+  const reader=async()=>new Response('local');
+  try{
+    const {prepareModelAssets,modelAssetFetch}=await import('./lib/assistant/model-storage/runtime.ts?preparation-case');
+    const imageReader=modelAssetFetch('minicpm5-fp32',async()=>new Response('local image bytes'));
+    assert.equal(await(await imageReader('data:image/png;base64,AA==')).text(),'local image bytes');
+    assert.equal(await(await imageReader('https://unregistered.invalid/model')).text(),'local');
+    const release=await prepareModelAssets('minicpm5-fp32',signal(),()=>{},reader);assert.deepEqual(events,['claim','install']);await release();assert.equal(events.at(-1),'release');
+    fail=true;await assert.rejects(prepareModelAssets('minicpm5-fp32',signal(),()=>{},reader),/Checksum mismatch/);assert.deepEqual(events.slice(-3),['claim','install','release']);
+    const abort=new AbortController();abort.abort();const before=events.length;await assert.rejects(prepareModelAssets('minicpm5-fp32',abort.signal,()=>{},reader),/abort/i);assert.equal(events.length,before);
+  } finally{vi.doUnmock('./lib/assistant/model-storage/storage.ts');}
 });

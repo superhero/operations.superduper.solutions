@@ -1,4 +1,6 @@
 import {checkedToolCalls, litertAssetBase, litertMessages, nativeTools, textMessages} from './text-protocol.js';
+import {modelAssetFetch} from '../model-storage/runtime.ts';
+const networkFetch = globalThis.fetch.bind(globalThis);
 
 let runtime, engine, profile, contextTokens, outputTokens, busy = false;
 const post = (id, type, fields) => self.postMessage({id, type, ...fields});
@@ -9,6 +11,10 @@ async function load(data) {
   if (engine) throw Error('Unload the current text model first');
   profile = {...data.profile, file: data.profile.file ?? data.profile.files?.[0]?.file}; contextTokens = data.contextTokens; outputTokens = data.outputTokens;
   if (!/^[a-f0-9]{40}$/.test(profile.revision ?? '') || !profile.file?.endsWith('-web.litertlm')) throw Error('A pinned browser-compatible LiteRT-LM artifact is required');
+  if (data.installedModel) {
+    if (data.installedModel !== 'gemma-e2b') throw Error('The installed text model does not match this runtime.');
+    globalThis.fetch = modelAssetFetch(data.installedModel, networkFetch);
+  }
   progress(data.id, 'loading-runtime', {runtime: '@litert-lm/core', version: '0.18.0'});
   runtime = await import('@litert-lm/core');
   await runtime.loadLiteRtLm(litertAssetBase(import.meta.url));

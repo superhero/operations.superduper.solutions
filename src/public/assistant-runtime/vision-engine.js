@@ -36,6 +36,7 @@ export function resolveVisionPin(profile) {
 function abortError(message = 'Vision generation cancelled.') { return Object.assign(Error(message), {name: 'AbortError'}); }
 
 export async function createVisionEngine(profile, {
+  installedModel,
   onProgress = () => {}, onLog = () => {}, contextTokens = profile.settings?.context_tokens ?? 1024,
   outputTokens = profile.settings?.max_new_tokens ?? (profile.settings?.precision_variant === COMPATIBLE_VARIANT ? 128 : 256),
   createWorker = () => new Worker(new URL('./vision-worker.js', import.meta.url), {type: 'module'}),
@@ -95,7 +96,7 @@ export async function createVisionEngine(profile, {
     });
   }
   try {
-    engine.info = await request('load', {pin, contextTokens, outputTokens, preprocessing, textOnly}, {timeout: loadTimeout});
+    engine.info = await request('load', {pin, installedModel, contextTokens, outputTokens, preprocessing, textOnly}, {timeout: loadTimeout});
   } catch (error) { invalidate(error); throw error; }
   engine.generate = async (messages, {
     maxTokens = outputTokens, tools = [], signal, onText = () => {}, image, enableThinking = false, temperature = 0,

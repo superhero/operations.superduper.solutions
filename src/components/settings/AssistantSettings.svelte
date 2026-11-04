@@ -23,6 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { trackApplicationWorker } from "$lib/application-workers.ts";
   import SpeechSettings from "./SpeechSettings.svelte";
   import DecisionSettings from "./DecisionSettings.svelte";
+  import AssistantModelStorage from "./AssistantModelStorage.svelte";
   import { appendDictation } from "$lib/speech/config.js";
   import type { Dictation } from "$lib/speech/controller.js";
   import { encodeError, decodeError } from "$lib/worker-rpc.ts";
@@ -382,8 +383,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p>{model.engine === "wllama" ? "Native Wasm supports explicit CPU or GPU placement. Ornith cannot fit the 4 GiB CPU heap; partial offload still needs a supported GPU." : "GPU only; no CPU fallback."} Images require verified WebGPU shader-f16. Free RAM and VRAM are not exposed by browsers. Download size is not a measured memory requirement. Mobile and tablet inference are not qualified.</p>
     <p>These pinned language profiles passed the reference text, tool and skill checks. Images use the separate LFM2.5-VL 1.6B tool; model observations can be wrong. Desktop acceptance does not qualify phones or guarantee memory fit.</p>
     <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run}<br />Runtime: {model.engine} · Pi 1.3.0</p>
-    <p>Model files load from their pinned publishers when requested. Optional runtime code loads with the selected engine. Inference and application tool data stay in this browser. Chat lasts for this tab; a new model load starts a new conversation.</p>
+    <p>Language and image files are saved from their pinned publishers and verified before initialization. Optional runtime code loads with the selected engine. Inference and application tool data stay in this browser. Chat lasts for this tab; a new model load starts a new conversation.</p>
   </details>
+  <AssistantModelStorage visible={configurationOpen}/>
 
   </div>
 </Disclosure>

@@ -3,9 +3,11 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 // Pure runtime helpers are shared without installing a worker message handler.
 import {configureVisionDevice, bindVisionSessionOptions, summarizeVisionSessionOptions, loadVisionRuntime, releaseVisionRuntime, generateLfmChat} from './vision-runtime.js';
+import {modelAssetFetch} from '../model-storage/runtime.ts';
 export * from './vision-runtime.js';
 
 if (typeof self !== 'undefined' && typeof document === 'undefined') {
+  const networkFetch = globalThis.fetch.bind(globalThis);
   let library, runtime, ownedDevice, placementAudit, contextTokens, outputTokens, preprocessing, active, queue = Promise.resolve();
   const send = (id, type, data = {}) => self.postMessage({id, type, ...data});
   self.onmessage = ({data}) => {
@@ -15,6 +17,11 @@ if (typeof self !== 'undefined' && typeof document === 'undefined') {
       try {
         if (data.type === 'load') {
           const started = performance.now();
+          if (data.installedModel) {
+            const expected = data.pin.precisionVariant === 'official-q4-fp32-compatible-v1' ? 'image:compatible' : 'image:fp16';
+            if (data.installedModel !== expected) throw Error('The installed image model does not match this runtime.');
+            globalThis.fetch = modelAssetFetch(data.installedModel, networkFetch);
+          }
           library = await import('@huggingface/transformers');
           if (library.env.version !== '4.3.1') throw Error(`Unqualified Transformers.js version: ${library.env.version}`);
           const selection = await configureVisionDevice(library, data.pin);
@@ -23,6 +30,7 @@ if (typeof self !== 'undefined' && typeof document === 'undefined') {
           placementAudit = selection.placementAudit;
           library.env.allowLocalModels = false;
           library.env.useFSCache = false;
+          if (data.installedModel) { library.env.fetch = globalThis.fetch; library.env.useBrowserCache = false; }
           library.env.backends.onnx.wasm.numThreads = 1;
           library.env.backends.onnx.wasm.wasmPaths = new URL('./vision-ort/', self.location.href).href;
           const sessionOptions = bindVisionSessionOptions(data.pin, ownedDevice);

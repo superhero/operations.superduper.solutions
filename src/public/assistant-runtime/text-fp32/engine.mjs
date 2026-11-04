@@ -47,7 +47,7 @@ export async function loadFp32Chat(profile,onProgress=()=>{},options={}){
  const abort=new AbortController(),s=profile.settings;
  const source=new RangeSource(`https://huggingface.co/${profile.model}/resolve/${profile.revision}/${profile.file}`,
   profile.weight_bytes,{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(s.load_timeout_ms),...(options.signal?[options.signal]:[])]),
-   chunkBytes:s.range_chunk_bytes,cacheBytes:s.range_lru_bytes_per_file,parallel:s.range_parallel,
+   fetch:options.fetch,chunkBytes:s.range_chunk_bytes,cacheBytes:s.range_lru_bytes_per_file,parallel:s.range_parallel,
    onProgress:event=>onProgress({phase:'weights',message:'Streaming official GGUF ranges',...event})});
  sources.push(source);
  let disposed=false,disposal;

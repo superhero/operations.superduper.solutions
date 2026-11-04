@@ -18,7 +18,7 @@ export async function loadWllama(profile, onProgress, options = {}) {
   const plans = executionPlans(profile, options.capabilities, options);
   const {instance: base, info} = await loadWithFallback(plans, (plan, remaining) => new BrowserGGUF({...profile,
     settings: {...profile.settings, ...plan, load_timeout_ms: remaining,
-      flash_attention: plan.mode === 'cpu' ? false : profile.settings.flash_attention}}, onProgress), onProgress, profile.settings.load_timeout_ms);
+      flash_attention: plan.mode === 'cpu' ? false : profile.settings.flash_attention}}, onProgress, {fetch: options.fetch}), onProgress, profile.settings.load_timeout_ms);
   info.execution.cpu_threads = profile.settings.cpu_threads;
   info.execution.flash_attention = info.execution.mode === 'cpu' ? false : profile.settings.flash_attention;
   info.execution.placement_log = base.logs.filter(line => /offload|model buffer|compute buffer/.test(line));
@@ -55,7 +55,7 @@ export async function loadGemma(profile, onProgress, options = {}) {
   const settings = profile.settings;
   if (profile.projector !== null || settings.thinking || settings.prefix_cache || settings.sampling_mode !== 'greedy')
     throw Error('Gemma requires text-only GPU greedy decoding with reasoning and prefix cache off.');
-  const base = await createTextEngine(profile, {assetBase: options.assetBase, onProgress,
+  const base = await createTextEngine(profile, {assetBase: options.assetBase, installedModel: options.installedModel, onProgress,
     contextTokens: settings.context_tokens, outputTokens: settings.max_new_tokens});
   return {kind: 'litert-lm', contextLimit: settings.context_tokens, reset: async () => base.reset(), dispose: () => base.dispose(),
     async generate(messages, {tools, signal, maxTokens, onText, onThinking}) {
