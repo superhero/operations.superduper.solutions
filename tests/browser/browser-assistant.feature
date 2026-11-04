@@ -33,6 +33,8 @@ Feature: Browser assistant in Settings
     Then image runtime preferences select the served compatible model without changing text placement
   Scenario: Decision models are separate explicit native requests
     Then decision controls preserve native results and release their exclusive model session
+  Scenario: Compatible decisions retain the real shared native artifact
+    Then the shared FP32 decision artifact retains all native readout APIs
   Scenario: Optional runtime artifacts load without model weights
     Then native runtime modules and compressed Wasm load in real browser workers
   Scenario: Runtime ownership coordinates real tabs and worker death

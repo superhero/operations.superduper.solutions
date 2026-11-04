@@ -17,7 +17,7 @@ export function createDevelopmentVisionWorker({buildWorker} = {}) {
         'src/public/assistant-runtime/vision-engine.js', 'build/assistant-worker-build.mjs', 'package-lock.json',
         'src/lib/assistant/model-storage/runtime.ts', 'src/lib/assistant/model-storage/storage.ts',
         'src/lib/assistant/model-storage/catalog.ts', 'src/lib/assistant/model-storage/events.ts',
-        'src/lib/assistant/language-profiles.json', 'src/lib/assistant/vision-profile.json', 'src/lib/assistant/vision-compatible-profile.json'];
+        'src/lib/assistant/language-profiles.json', 'src/lib/assistant/vision-profile.json', 'src/lib/assistant/vision-compatible-profile.json', 'src/lib/assistant/decision-profiles.json'];
       const signature = async () => {
         const hash = createHash('sha256');
         for (const file of inputs) {hash.update(file); hash.update(await readFile(resolve(root, file)));}

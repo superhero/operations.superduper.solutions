@@ -4,11 +4,14 @@
 import {decisionProfile, checkDecisionCompatibility, validateDecisionRequest, validateDecisionResult} from './decision-models.ts';
 import {BrowserRuntimeOwner} from './runtime-ownership.js';
 import {encodeError} from '../worker-rpc.ts';
+import {prepareModelAssets, modelAssetFetch} from './model-storage/runtime.ts';
 const scope = globalThis as unknown as DedicatedWorkerGlobalScope;
-let engine: {decide(value: unknown): Promise<unknown>; dispose(): Promise<void>} | undefined;
+const networkFetch = globalThis.fetch.bind(globalThis);
+let releaseAssets: (() => Promise<void>) | undefined;
+let engine: {decide(value: unknown, signal?: AbortSignal): Promise<unknown>; dispose(): Promise<void>} | undefined;
 let busy = false, controller: AbortController | undefined;
 let unconfirmedAllocation: unknown;
-let loadEngine: (() => Promise<NonNullable<typeof engine>>) | undefined;
+let loadEngine: ((signal: AbortSignal) => Promise<NonNullable<typeof engine>>) | undefined;
 const owner = new BrowserRuntimeOwner({
   async suspend() { if (unconfirmedAllocation) throw new Error('Decision initialization cleanup is unconfirmed; terminate this worker.', {cause: unconfirmedAllocation}); if (engine) {await engine.dispose(); engine = undefined; scope.postMessage({type: 'suspended'});} },
   status: message => scope.postMessage({type: 'progress', value: {message}}),
@@ -17,7 +20,7 @@ const owner = new BrowserRuntimeOwner({
 scope.onmessage = ({data}) => {
   if (data.type === 'dispose') {
     controller?.abort(new DOMException('Decision model unloaded.', 'AbortError'));
-    void owner.close().then(() => scope.postMessage({type: 'disposed'}), error => scope.postMessage({type: 'error', error: encodeError(error)}));
+    void owner.close().then(async () => {await releaseAssets?.(); releaseAssets = undefined; scope.postMessage({type: 'disposed'});}).catch(error => scope.postMessage({type: 'error', error: encodeError(error)}));
     return;
   }
   void (async () => {
@@ -35,18 +38,25 @@ scope.onmessage = ({data}) => {
           const base = new URL(data.assetBase);
           if (!['http:', 'https:'].includes(base.protocol) || base.origin !== scope.location.origin) throw new Error('Decision assets must come from this application.');
           const profile = decisionProfile(data.profile);
+          const stored = profile.native_variant === 'shared-fp32-gpu-v1';
+          const modelId = 'decision:' + profile.id;
+          if (stored) releaseAssets = await prepareModelAssets(modelId,
+            AbortSignal.any([active.signal, AbortSignal.timeout(profile.settings.load_timeout_ms)]),
+            value => scope.postMessage({type: 'progress', value}), networkFetch);
+          const cachedFetch = stored ? modelAssetFetch(modelId, networkFetch) : undefined;
           // Keep an identifier template so Vite does not inject its page-only query helper.
           const url = new URL('decision/engine.mjs', base).href;
-          const runtime = await import(/* @vite-ignore */ `${url}`) as {loadDecisionEngine(profile: unknown, onProgress: (value: unknown) => void): Promise<NonNullable<typeof engine>>};
-          loadEngine = async () => {try {return await runtime.loadDecisionEngine(profile, value => scope.postMessage({type: 'progress', value}));} catch (error) {unconfirmedAllocation = error instanceof Error ? error : new Error("Native allocation failed.", {cause: error}); throw error;}};
-          engine = await loadEngine(); active.signal.throwIfAborted();
+          const runtime = await import(/* @vite-ignore */ `${url}`) as {loadDecisionEngine(profile: unknown, onProgress: (value: unknown) => void, options?: unknown): Promise<NonNullable<typeof engine>>};
+          loadEngine = async signal => {try {return await runtime.loadDecisionEngine(profile, value => scope.postMessage({type: 'progress', value}),
+            {fetch: cachedFetch, signal: AbortSignal.any([signal, AbortSignal.timeout(profile.settings.load_timeout_ms)])});} catch (error) {unconfirmedAllocation = error instanceof Error ? error : new Error("Native allocation failed.", {cause: error}); throw error;}};
+          engine = await loadEngine(active.signal); active.signal.throwIfAborted();
           return {type: 'ready'};
         } else if (data.type === 'decide') {
           if (!loadEngine) throw new Error('Choose and load a decision model.');
           const request = validateDecisionRequest(data.request);
-          if (!engine) engine = await loadEngine();
+          if (!engine) engine = await loadEngine(active.signal);
           active.signal.throwIfAborted();
-          return {type: 'result', value: validateDecisionResult(request, await engine.decide(request))};
+          return {type: 'result', value: validateDecisionResult(request, await engine.decide(request, active.signal))};
         }
         throw new Error('Unknown decision command.');
       }, {signal: active.signal, resident: data.type !== 'check'});

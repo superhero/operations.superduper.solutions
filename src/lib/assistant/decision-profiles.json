@@ -1528,5 +1528,1788 @@
     "label": "Strands \u00b7 2B INT4 WebGPU",
     "attempt": "kx-browser-decision-strands-portable-matmul",
     "category": "decision"
+  },
+  {
+    "id": "d3-lite-fp32",
+    "title": "D3-lite \u00b7 upstream BF16 GGUF",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-lite-GGUF",
+    "revision": "d4d6ebde7717eb37014a1c7401127fb48f26da42",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-lite-BF16.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/resolve/d4d6ebde7717eb37014a1c7401127fb48f26da42/vllm-d3-lite-BF16.gguf",
+        "bytes": 2025305664,
+        "sha256": "21603acb3dfad2ba50b7b16979298c54e8d3f52267fa930269aefd7c5e36c903"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/resolve/d4d6ebde7717eb37014a1c7401127fb48f26da42/README.md",
+        "bytes": 546,
+        "sha256": "11726e9bfb287914718096f7d89c8ac20720373742815881c1172c59ae6949c8"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 2025305664,
+    "precision": "Upstream ggml-org BF16 GGUF: BF16 backbone and BF16 expanded output/readout, with FP32 scalar/norm tensors. The converter casts the original FP32 readout to BF16; this is not bit-identical to the publisher BF16-backbone/FP32-head reference. No local conversion.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested investigation and resolution of other D3 browser paths on 2026-10-25. Named official runtime upstream ggml-org is allowed by select-model-experiments; this is an upstream conversion, not the original publisher safetensors.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "variant": "shared-fp32",
+      "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+      "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+      "build_receipt_sha256": "7d2a3961a5f42c95e84b4fb4557d1afe00b0078fba05f973d4c3778c83ee9fbe",
+      "license": "MIT",
+      "execution": "FP32 GPU backbone; CPU input embedding and small host readout may remain."
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native decisions passed the small smoke; deeper quality, native-reference parity and phones remain untested."
+    },
+    "status": "Reference FP32 GPU accepted; Operations native qualification pending",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Planned visiting-browser inference with static Docker Swarm and Playwright pinned to sds-01. No inference backend, remote API or Python model execution qualifies as local-browser acceptance.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/tree/d4d6ebde7717eb37014a1c7401127fb48f26da42",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/raw/d4d6ebde7717eb37014a1c7401127fb48f26da42/.src_sha"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-lite-GGUF",
+      "revision": "d4d6ebde7717eb37014a1c7401127fb48f26da42",
+      "file": "vllm-d3-lite-BF16.gguf",
+      "weight_bytes": 2025305664,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false,
+        "cache_type_k": "f32",
+        "cache_type_v": "f32"
+      },
+      "required_decision_type": "vllm-d3",
+      "device": "webgpu",
+      "runtime_folder": "fp32-shared-gpu",
+      "require_adapter_without_f16": true,
+      "require_native_fp32_gpu": true,
+      "storage_precision": "BF16",
+      "compute_precision": "float32",
+      "expected_weight_kernel": "bf16",
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-lite",
+      "revision": "03560c26f5199c3c04129a2ccb38960c913635e0",
+      "verified_by": ".src_sha at the pinned ggml-org revision"
+    },
+    "baseline": "kl-browser-decision-d3-lite",
+    "comparison": "Same publisher checkpoint in upstream BF16 GGUF rather than native safetensors, using existing native Wllama D3/SystemOne support; no custom head or weight conversion.",
+    "precision_audit": {
+      "source": "ggml-org conversion log at the pinned revision",
+      "output.weight": "torch.float32 -> BF16, expanded to vocabulary slots",
+      "difference_from_reference": "Original separate FP32 head is rounded to BF16 in this upstream GGUF."
+    },
+    "measured_run_id": "browser-decisions-1792919408113293110",
+    "measured_evidence": {
+      "path": ".runtime/browser-decisions/browser-decisions-1792919408113293110/browser.json",
+      "sha256": "b99f8e1079e64a39b8f8d26d57446a57c2d494a1aba2c4584604407d8178bbb3"
+    },
+    "measured_date": "2026-10-25 Europe/Madrid",
+    "label": "D3 lite \u00b7 0.8B \u00b7 FP32",
+    "attempt": "kt-browser-decision-d3-lite-gguf-bf16",
+    "category": "decision",
+    "template_pin_evidence": {
+      "attempt": "kt-browser-decision-d3-lite-gguf-bf16",
+      "run_id": "browser-decisions-1792919408113293110",
+      "source": "inference/attempts/kt-browser-decision-d3-lite-gguf-bf16/results.jsonl"
+    },
+    "native_variant": "shared-fp32-gpu-v1",
+    "cache_files": [
+      {
+        "id": "vllm-d3-lite-BF16.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/resolve/d4d6ebde7717eb37014a1c7401127fb48f26da42/vllm-d3-lite-BF16.gguf",
+        "bytes": 2025305664,
+        "sha256": "21603acb3dfad2ba50b7b16979298c54e8d3f52267fa930269aefd7c5e36c903",
+        "kind": "weights"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-lite-GGUF/resolve/d4d6ebde7717eb37014a1c7401127fb48f26da42/README.md",
+        "bytes": 546,
+        "sha256": "11726e9bfb287914718096f7d89c8ac20720373742815881c1172c59ae6949c8",
+        "kind": "notice"
+      }
+    ],
+    "reference": {
+      "attempt": "ne-browser-decision-d3-lite-fp32-gpu",
+      "attempt_sha256": "562e72c96860342fbb99e28e5bb6bd9bf58fed8d17b94efd497621f7e06b0bdb",
+      "editor_profile": "kt-browser-decision-d3-lite-gguf-bf16"
+    }
+  },
+  {
+    "id": "d3-nano-fp32",
+    "title": "D3-nano \u00b7 2B upstream Q8_0",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-nano-GGUF",
+    "revision": "50dea2057df10c4b393559a155ab3bf0bc7532c6",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-nano-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/resolve/50dea2057df10c4b393559a155ab3bf0bc7532c6/vllm-d3-nano-Q8_0.gguf",
+        "bytes": 2552358464,
+        "sha256": "4867d306fd22aec8c5ebd1851b7f1074f480702655e8000ceedf0c47c6a6f337"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/resolve/50dea2057df10c4b393559a155ab3bf0bc7532c6/README.md",
+        "bytes": 546,
+        "sha256": "addbae9b023d58a0b01c8be3af9669bc32a3817c36dd1d8e1b7cdf072f57bbc9"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 2552358464,
+    "precision": "Upstream ggml-org GGUF: 188 Q8_0 and 133 FP32 tensors; Q8_0 output.weight and token_embd.weight, FP32 norms. INT8 blocks with FP16 scales, not FP8. Expanded output head differs from publisher's separate FP32 readout; BF16-reference probability parity untested.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested browser support for current D3 sizes 2B/4B/9B on 2026-10-25, deferring 27B. Named official runtime upstream ggml-org is permitted by select-model-experiments; these are upstream conversions, not publisher safetensors or local requantizations.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "variant": "shared-fp32",
+      "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+      "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+      "build_receipt_sha256": "7d2a3961a5f42c95e84b4fb4557d1afe00b0078fba05f973d4c3778c83ee9fbe",
+      "license": "MIT",
+      "execution": "FP32 GPU backbone; CPU input embedding and small host readout may remain."
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native text decisions and source/template/dimension/calibration checks passed. Images, larger contexts, grouped questions, phones and publisher BF16 probability parity remain unqualified."
+    },
+    "status": "Reference FP32 GPU accepted; Operations native qualification pending",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/?case=kz-browser-decision-d3-nano-q8",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual native D3 decisions in Chromium 149 on sds-01 using pinned Wllama WebGPU/Wasm. GET/HEAD-only unauthenticated assets, no inference backend, WebSocket or generated-text decision parser.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/tree/50dea2057df10c4b393559a155ab3bf0bc7532c6",
+      "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/raw/50dea2057df10c4b393559a155ab3bf0bc7532c6/.src_sha",
+      "https://huggingface.co/vllm-sr/d3-nano/tree/462efc366229ea268cf4eed3738b3fc4415e4817",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://ollama.com/library/d3"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-nano-GGUF",
+      "revision": "50dea2057df10c4b393559a155ab3bf0bc7532c6",
+      "file": "vllm-d3-nano-Q8_0.gguf",
+      "weight_bytes": 2552358464,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false,
+        "cache_type_k": "f32",
+        "cache_type_v": "f32"
+      },
+      "required_decision_type": "vllm-d3",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "expected_context": {
+        "n_layer": 24,
+        "n_embd": 2048,
+        "n_vocab": 248320,
+        "n_ctx": 1024
+      },
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e",
+      "required_temperatures": {
+        "choice": 1,
+        "score": 1,
+        "noul": 1
+      },
+      "device": "webgpu",
+      "runtime_folder": "fp32-shared-gpu",
+      "require_adapter_without_f16": true,
+      "require_native_fp32_gpu": true,
+      "storage_precision": "Q8_0",
+      "compute_precision": "float32",
+      "expected_weight_kernel": "q8_0"
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-nano",
+      "revision": "462efc366229ea268cf4eed3738b3fc4415e4817",
+      "verified_by": ".src_sha at the pinned ggml-org revision",
+      "text_config_max_position_embeddings": 262144,
+      "original_backbone_dtype": "bfloat16"
+    },
+    "baseline": "kt-browser-decision-d3-lite-gguf-bf16",
+    "comparison": "Extend verified native D3 SystemOne browser support to this current larger checkpoint, using upstream Q8_0 consistently across 2B/4B/9B. No local conversion or older Decision-2.0 replacement.",
+    "precision_audit": {
+      "path": ".runtime/browser-decisions/d3-family-source/nano-gguf-audit.json",
+      "sha256": "1a655c035696f5ff27142a3ebb21309f4d85b9200368770ad893ba55539c2b2e",
+      "host": "sds-01",
+      "tensor_type_counts": {
+        "Q8_0": 188,
+        "F32": 133
+      },
+      "output_weight": "Q8_0",
+      "token_embedding": "Q8_0",
+      "norms": "FP32",
+      "tensor_bytes_fetched": 0,
+      "publisher_codebook_verified": true,
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792932812100126414",
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792932812100126414/browser.json",
+      "raw_sha256": "ff7dd9afe356ca69287b9ba2038668d5fa048d15e3272b8a0c26a6bbe4d65877",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792932812100126414/receipt.json",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "url_selected_profile_verified": true,
+      "loaded_context_verified": true,
+      "native_template_calibration_verified": true,
+      "metrics": {
+        "cold_load_ms": 203604,
+        "first_decision_from_load_start_ms": 204219.47500002384,
+        "warm_repeat_ms": 441.0400000214577,
+        "later_decision_min_ms": 423.81999999284744,
+        "later_decision_max_ms": 441.0400000214577,
+        "maximum_sampled_whole_device_gpu_mib": 2001,
+        "native_buffers": {
+          "CPU_model_mib": 515.31,
+          "WebGPU_model_mib": 1908.36,
+          "CPU_output_mib": 0.95,
+          "WebGPU_KV_mib": 12.0,
+          "WebGPU_RS_mib": 19.27,
+          "WebGPU_compute_mib": 112.03,
+          "CPU_compute_mib": 40.04
+        },
+        "offloaded_layers": [
+          25,
+          25
+        ],
+        "rendered_tokens_min": 96,
+        "rendered_tokens_max": 123,
+        "allocator_peak_verified": false
+      }
+    },
+    "label": "D3 nano \u00b7 2B \u00b7 FP32",
+    "attempt": "kz-browser-decision-d3-nano-q8",
+    "category": "decision",
+    "native_variant": "shared-fp32-gpu-v1",
+    "cache_files": [
+      {
+        "id": "vllm-d3-nano-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/resolve/50dea2057df10c4b393559a155ab3bf0bc7532c6/vllm-d3-nano-Q8_0.gguf",
+        "bytes": 2552358464,
+        "sha256": "4867d306fd22aec8c5ebd1851b7f1074f480702655e8000ceedf0c47c6a6f337",
+        "kind": "weights"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-nano-GGUF/resolve/50dea2057df10c4b393559a155ab3bf0bc7532c6/README.md",
+        "bytes": 546,
+        "sha256": "addbae9b023d58a0b01c8be3af9669bc32a3817c36dd1d8e1b7cdf072f57bbc9",
+        "kind": "notice"
+      }
+    ],
+    "reference": {
+      "attempt": "my-browser-decision-d3-nano-fp32-gpu",
+      "attempt_sha256": "8387795c3462e0b97ea122b0c56c04b77b6ebbb92992f7d7071f87cc7b8f397c",
+      "editor_profile": "kz-browser-decision-d3-nano-q8"
+    }
+  },
+  {
+    "id": "d3-mini-fp32",
+    "title": "D3-mini \u00b7 4B upstream Q8_0",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-mini-GGUF",
+    "revision": "e7230e2309c186c80182fbeed6fef70680b20c64",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-mini-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/resolve/e7230e2309c186c80182fbeed6fef70680b20c64/vllm-d3-mini-Q8_0.gguf",
+        "bytes": 5157835232,
+        "sha256": "f9f99be46b7ce1e5a5f09ed620de89106447646b34f7d2993e7563b48feb2858"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/resolve/e7230e2309c186c80182fbeed6fef70680b20c64/README.md",
+        "bytes": 546,
+        "sha256": "1e5966bc48b0a7c9ba458d7c2d32c6390e23bcf4482970de5d374815360b75c2"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 5157835232,
+    "precision": "Upstream ggml-org GGUF: 250 Q8_0 and 177 FP32 tensors; Q8_0 output.weight and token_embd.weight, FP32 norms. INT8 blocks with FP16 scales, not FP8. Expanded output head differs from publisher's separate FP32 readout; BF16-reference probability parity untested.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested browser support for current D3 sizes 2B/4B/9B on 2026-10-25, deferring 27B. Named official runtime upstream ggml-org is permitted by select-model-experiments; these are upstream conversions, not publisher safetensors or local requantizations.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "variant": "shared-fp32",
+      "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+      "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+      "build_receipt_sha256": "7d2a3961a5f42c95e84b4fb4557d1afe00b0078fba05f973d4c3778c83ee9fbe",
+      "license": "MIT",
+      "execution": "FP32 GPU backbone; CPU input embedding and small host readout may remain."
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native text decisions and source/template/dimension/calibration checks passed. Images, larger contexts, grouped questions, phones and publisher BF16 probability parity remain unqualified."
+    },
+    "status": "Reference FP32 GPU accepted; Operations native qualification pending",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/?case=la-browser-decision-d3-mini-q8",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual native D3 decisions in Chromium 149 on sds-01 using pinned Wllama WebGPU/Wasm. GET/HEAD-only unauthenticated assets, no inference backend, WebSocket or generated-text decision parser.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/tree/e7230e2309c186c80182fbeed6fef70680b20c64",
+      "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/raw/e7230e2309c186c80182fbeed6fef70680b20c64/.src_sha",
+      "https://huggingface.co/vllm-sr/d3-mini/tree/bd0090dd758d32ba59ef5c749910a8e87fc4391f",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://ollama.com/library/d3"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-mini-GGUF",
+      "revision": "e7230e2309c186c80182fbeed6fef70680b20c64",
+      "file": "vllm-d3-mini-Q8_0.gguf",
+      "weight_bytes": 5157835232,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false,
+        "cache_type_k": "f32",
+        "cache_type_v": "f32"
+      },
+      "required_decision_type": "vllm-d3",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "expected_context": {
+        "n_layer": 32,
+        "n_embd": 2560,
+        "n_vocab": 248320,
+        "n_ctx": 1024
+      },
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e",
+      "required_temperatures": {
+        "choice": 1,
+        "score": 1,
+        "noul": 1
+      },
+      "device": "webgpu",
+      "runtime_folder": "fp32-shared-gpu",
+      "require_adapter_without_f16": true,
+      "require_native_fp32_gpu": true,
+      "storage_precision": "Q8_0",
+      "compute_precision": "float32",
+      "expected_weight_kernel": "q8_0"
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-mini",
+      "revision": "bd0090dd758d32ba59ef5c749910a8e87fc4391f",
+      "verified_by": ".src_sha at the pinned ggml-org revision",
+      "text_config_max_position_embeddings": 262144,
+      "original_backbone_dtype": "bfloat16"
+    },
+    "baseline": "kt-browser-decision-d3-lite-gguf-bf16",
+    "comparison": "Extend verified native D3 SystemOne browser support to this current larger checkpoint, using upstream Q8_0 consistently across 2B/4B/9B. No local conversion or older Decision-2.0 replacement.",
+    "precision_audit": {
+      "path": ".runtime/browser-decisions/d3-family-source/mini-gguf-audit.json",
+      "sha256": "4d302598fa63127c47821fac41f7b47bcb54466f2920c39e83bfba0b6e09953c",
+      "host": "sds-01",
+      "tensor_type_counts": {
+        "Q8_0": 250,
+        "F32": 177
+      },
+      "output_weight": "Q8_0",
+      "token_embedding": "Q8_0",
+      "norms": "FP32",
+      "tensor_bytes_fetched": 0,
+      "publisher_codebook_verified": true,
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792933208087621897",
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792933208087621897/browser.json",
+      "raw_sha256": "8d840c55d12ee4ae28f9b5b5cf972648479e72207e85cbd2a51ffb94dad05e9a",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792933208087621897/receipt.json",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "url_selected_profile_verified": true,
+      "loaded_context_verified": true,
+      "native_template_calibration_verified": true,
+      "metrics": {
+        "cold_load_ms": 384599.74500000477,
+        "first_decision_from_load_start_ms": 385467.6100000143,
+        "warm_repeat_ms": 1008.1700000166893,
+        "later_decision_min_ms": 1005.6199999451637,
+        "later_decision_max_ms": 1035.0550000071526,
+        "maximum_sampled_whole_device_gpu_mib": 4608,
+        "native_buffers": {
+          "CPU_model_mib": 644.14,
+          "WebGPU_model_mib": 4264.3,
+          "CPU_output_mib": 0.95,
+          "WebGPU_KV_mib": 32.0,
+          "WebGPU_RS_mib": 50.25,
+          "WebGPU_compute_mib": 164.03,
+          "CPU_compute_mib": 52.04
+        },
+        "offloaded_layers": [
+          33,
+          33
+        ],
+        "rendered_tokens_min": 96,
+        "rendered_tokens_max": 123,
+        "allocator_peak_verified": false
+      }
+    },
+    "label": "D3 mini \u00b7 4B \u00b7 FP32",
+    "attempt": "la-browser-decision-d3-mini-q8",
+    "category": "decision",
+    "native_variant": "shared-fp32-gpu-v1",
+    "cache_files": [
+      {
+        "id": "vllm-d3-mini-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/resolve/e7230e2309c186c80182fbeed6fef70680b20c64/vllm-d3-mini-Q8_0.gguf",
+        "bytes": 5157835232,
+        "sha256": "f9f99be46b7ce1e5a5f09ed620de89106447646b34f7d2993e7563b48feb2858",
+        "kind": "weights"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/resolve/e7230e2309c186c80182fbeed6fef70680b20c64/README.md",
+        "bytes": 546,
+        "sha256": "1e5966bc48b0a7c9ba458d7c2d32c6390e23bcf4482970de5d374815360b75c2",
+        "kind": "notice"
+      }
+    ],
+    "reference": {
+      "attempt": "mz-browser-decision-d3-mini-fp32-gpu",
+      "attempt_sha256": "61d6f5ce5d95d5808cafce01a48570aa9f19abd57e649825a9ac084438ad170e",
+      "editor_profile": "la-browser-decision-d3-mini-q8"
+    }
+  },
+  {
+    "id": "d3-flash-fp32",
+    "title": "D3-flash \u00b7 9B upstream Q8_0",
+    "kind": "decision",
+    "engine": "wllama",
+    "model": "ggml-org/vllm-d3-flash-GGUF",
+    "revision": "50a0b7585fb8732fce67a921fab83ed2ac6e2fcb",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "vllm-d3-flash-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/resolve/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb/vllm-d3-flash-Q8_0.gguf",
+        "bytes": 9527503328,
+        "sha256": "14c3e70f5fce941698cb55f6bc670f2de1146f709e9252ee04bc9d4f56315d19"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/resolve/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb/README.md",
+        "bytes": 550,
+        "sha256": "7ba338e9904a8669853e289ff15b85074b12222aa9c996155f38a48ccda7f133"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 9527503328,
+    "precision": "Upstream ggml-org GGUF: 250 Q8_0 and 177 FP32 tensors; Q8_0 output.weight and token_embd.weight, FP32 norms. INT8 blocks with FP16 scales, not FP8. Expanded output head differs from publisher's separate FP32 readout; BF16-reference probability parity untested.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested browser support for current D3 sizes 2B/4B/9B on 2026-10-25, deferring 27B. Named official runtime upstream ggml-org is permitted by select-model-experiments; these are upstream conversions, not publisher safetensors or local requantizations.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "variant": "shared-fp32",
+      "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+      "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+      "build_receipt_sha256": "7d2a3961a5f42c95e84b4fb4557d1afe00b0078fba05f973d4c3778c83ee9fbe",
+      "license": "MIT",
+      "execution": "FP32 GPU backbone; CPU input embedding and small host readout may remain."
+    },
+    "browser_adapter": {
+      "state": "native-browser-decisions-verified",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Existing native D3 handler; preserve systemone template, last-token code readout, native temperatures and noncausal full attention. Entire prompt in one microbatch.",
+      "gap": "Six native text decisions and source/template/dimension/calibration checks passed. Images, larger contexts, grouped questions, phones and publisher BF16 probability parity remain unqualified."
+    },
+    "status": "Reference FP32 GPU accepted; Operations native qualification pending",
+    "test_status": "browser-decision-smoke-passed",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/?case=lb-browser-decision-d3-flash-q8",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual native D3 decisions in Chromium 149 on sds-01 using pinned Wllama WebGPU/Wasm. GET/HEAD-only unauthenticated assets, no inference backend, WebSocket or generated-text decision parser.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/tree/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb",
+      "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/raw/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb/.src_sha",
+      "https://huggingface.co/vllm-sr/d3-flash/tree/13dc1cc8ef23caefa765907e1d764751e5629f7d",
+      "https://github.com/ggml-org/llama.cpp/pull/30383",
+      "https://ollama.com/library/d3"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "ggml-org/vllm-d3-flash-GGUF",
+      "revision": "50a0b7585fb8732fce67a921fab83ed2ac6e2fcb",
+      "file": "vllm-d3-flash-Q8_0.gguf",
+      "weight_bytes": 9527503328,
+      "kind": "native-systemone",
+      "required_protocol_version": "d3-code-readout-v1",
+      "runtime_protocol_version": "d3-code-readout-v1",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false,
+        "cache_type_k": "f32",
+        "cache_type_v": "f32"
+      },
+      "required_decision_type": "vllm-d3",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "expected_context": {
+        "n_layer": 32,
+        "n_embd": 4096,
+        "n_vocab": 248320,
+        "n_ctx": 1024
+      },
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e",
+      "required_temperatures": {
+        "choice": 1,
+        "score": 1,
+        "noul": 1
+      },
+      "device": "webgpu",
+      "runtime_folder": "fp32-shared-gpu",
+      "require_adapter_without_f16": true,
+      "require_native_fp32_gpu": true,
+      "storage_precision": "Q8_0",
+      "compute_precision": "float32",
+      "expected_weight_kernel": "q8_0"
+    },
+    "original_source": {
+      "model": "vllm-sr/d3-flash",
+      "revision": "13dc1cc8ef23caefa765907e1d764751e5629f7d",
+      "verified_by": ".src_sha at the pinned ggml-org revision",
+      "text_config_max_position_embeddings": 262144,
+      "original_backbone_dtype": "bfloat16"
+    },
+    "baseline": "kt-browser-decision-d3-lite-gguf-bf16",
+    "comparison": "Extend verified native D3 SystemOne browser support to this current larger checkpoint, using upstream Q8_0 consistently across 2B/4B/9B. No local conversion or older Decision-2.0 replacement.",
+    "precision_audit": {
+      "path": ".runtime/browser-decisions/d3-family-source/flash-gguf-audit.json",
+      "sha256": "d60d2c639a849f905cea60a14864073afbe45395345e9314fcfc4dbd88869859",
+      "host": "sds-01",
+      "tensor_type_counts": {
+        "Q8_0": 250,
+        "F32": 177
+      },
+      "output_weight": "Q8_0",
+      "token_embedding": "Q8_0",
+      "norms": "FP32",
+      "tensor_bytes_fetched": 0,
+      "publisher_codebook_verified": true,
+      "systemone_template_sha256": "2645b3dbffb2075c0270fd9416e3d6e75a4eb31f292e4ee33dd1a080ecee856e"
+    },
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792933758928131038",
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792933758928131038/browser.json",
+      "raw_sha256": "8fa4d9c257992158adad5179f7e78770668f2f4369120a917285e2f4a59661ea",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792933758928131038/receipt.json",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "url_selected_profile_verified": true,
+      "loaded_context_verified": true,
+      "native_template_calibration_verified": true,
+      "metrics": {
+        "cold_load_ms": 684947.0400000215,
+        "first_decision_from_load_start_ms": 686525.8149999976,
+        "warm_repeat_ms": 1975.7050000429153,
+        "later_decision_min_ms": 1961.1100000143051,
+        "later_decision_max_ms": 2012.6949999928474,
+        "maximum_sampled_whole_device_gpu_mib": 8443,
+        "native_buffers": {
+          "CPU_model_mib": 1030.62,
+          "WebGPU_model_mib": 8045.05,
+          "CPU_output_mib": 0.95,
+          "WebGPU_KV_mib": 32.0,
+          "WebGPU_RS_mib": 50.25,
+          "WebGPU_compute_mib": 220.03,
+          "CPU_compute_mib": 76.04
+        },
+        "offloaded_layers": [
+          33,
+          33
+        ],
+        "rendered_tokens_min": 96,
+        "rendered_tokens_max": 123,
+        "allocator_peak_verified": false
+      }
+    },
+    "label": "D3 flash \u00b7 9B \u00b7 FP32",
+    "attempt": "lb-browser-decision-d3-flash-q8",
+    "category": "decision",
+    "native_variant": "shared-fp32-gpu-v1",
+    "cache_files": [
+      {
+        "id": "vllm-d3-flash-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/resolve/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb/vllm-d3-flash-Q8_0.gguf",
+        "bytes": 9527503328,
+        "sha256": "14c3e70f5fce941698cb55f6bc670f2de1146f709e9252ee04bc9d4f56315d19",
+        "kind": "weights"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/ggml-org/vllm-d3-flash-GGUF/resolve/50a0b7585fb8732fce67a921fab83ed2ac6e2fcb/README.md",
+        "bytes": 550,
+        "sha256": "7ba338e9904a8669853e289ff15b85074b12222aa9c996155f38a48ccda7f133",
+        "kind": "notice"
+      }
+    ],
+    "reference": {
+      "attempt": "na-browser-decision-d3-flash-fp32-gpu",
+      "attempt_sha256": "68dfbbb3dc3638cc5be706493c34879cb99fdb5b75743833b0b6cc15b880b4f7",
+      "editor_profile": "lb-browser-decision-d3-flash-q8"
+    }
+  },
+  {
+    "id": "knowline-fp32",
+    "title": "KnowLine Gen5.5 \u00b7 Q8_0 bounded raw label readout",
+    "kind": "decision",
+    "engine": "wllama-knowline",
+    "model": "mradermacher/KnowLine-4B-Gen5.5-GGUF",
+    "revision": "d95d0de41cd9c2b813535c9fead6f7a29c07052a",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "KnowLine-4B-Gen5.5.Q8_0.gguf",
+        "url": "https://huggingface.co/mradermacher/KnowLine-4B-Gen5.5-GGUF/resolve/d95d0de41cd9c2b813535c9fead6f7a29c07052a/KnowLine-4B-Gen5.5.Q8_0.gguf",
+        "bytes": 4610580896,
+        "sha256": "6970db55cca4fd7d8e4c9d73af6c63a8a7dfe602706c4c3a23f93bcad2b0370d"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/mradermacher/KnowLine-4B-Gen5.5-GGUF/resolve/d95d0de41cd9c2b813535c9fead6f7a29c07052a/README.md",
+        "bytes": 4098,
+        "sha256": "963c765f755c7da65410cd52fc95a7b15489d0677e02512702a8a5d0d6edad27"
+      },
+      {
+        "file": "LICENSE",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/LICENSE",
+        "bytes": 11343,
+        "sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/README.md",
+        "bytes": 14987,
+        "sha256": "e67f63f5724952994612ab49a510c1622c16fa12033e1dadccf519e07783a92b"
+      },
+      {
+        "file": "chat_template.jinja",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/chat_template.jinja",
+        "bytes": 7756,
+        "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+      },
+      {
+        "file": "config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/config.json",
+        "bytes": 3161,
+        "sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670"
+      },
+      {
+        "file": "configuration.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/configuration.json",
+        "bytes": 73,
+        "sha256": "f888421726665e8a84b738eed42a64875aed79de8be7daade851ac8bf4c0cef9"
+      },
+      {
+        "file": "model.safetensors.index.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/model.safetensors.index.json",
+        "bytes": 67355,
+        "sha256": "48b56300c2b19dcd9a43001c9098098e7eaf4c6bc9f5cdd108148611fdfdca56"
+      },
+      {
+        "file": "preprocessor_config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/preprocessor_config.json",
+        "bytes": 390,
+        "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"
+      },
+      {
+        "file": "tokenizer.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/tokenizer.json",
+        "bytes": 12807982,
+        "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+      },
+      {
+        "file": "tokenizer_config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/tokenizer_config.json",
+        "bytes": 16710,
+        "sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8"
+      },
+      {
+        "file": "video_preprocessor_config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/video_preprocessor_config.json",
+        "bytes": 385,
+        "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13"
+      },
+      {
+        "file": "vocab.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/vocab.json",
+        "bytes": 6722759,
+        "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 4610580896,
+    "precision": "Actual loader: 257 Q8_0 and 184 FP32 tensors. INT8 blocks of 32 with FP16 scales; unused MTP tensors ignored, no vision execution. Community conversion, not FP8 or native publisher BF16.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User instructed proceeding with KnowLine after the specifically recommended mradermacher Gen5.5 Q8_0 candidate and disclosed contributor-source exception on 2026-10-25. This records authorization to test that named community artifact separately, not blanket approval for other conversions.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "variant": "shared-fp32",
+      "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+      "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+      "build_receipt_sha256": "7d2a3961a5f42c95e84b4fb4557d1afe00b0078fba05f973d4c3778c83ee9fbe",
+      "license": "MIT",
+      "execution": "FP32 GPU backbone; CPU input embedding and small host readout may remain."
+    },
+    "browser_adapter": {
+      "state": "browser-verified-original-label-readout",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Compare JavaScript prompt/token/label IDs with pinned native Python on sds-01. Preserve Gen5.5 read-twice <=3000 once-tokens and folded calibration T1. Full original label logprobs, one prefill, sampled token discarded.",
+      "gap": "Complete offered-label coverage required within returned top 64; arbitrary prompts/options, publisher BF16 probability parity and physical phones remain unqualified."
+    },
+    "status": "Reference FP32 GPU accepted; Operations native qualification pending",
+    "test_status": "browser-tested",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual browser decisions on sds-01 Chromium 149, Wllama WebGPU/Wasm. No inference backend; only unauthenticated GET downloads and no WebSockets.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/mradermacher/KnowLine-4B-Gen5.5-GGUF/tree/d95d0de41cd9c2b813535c9fead6f7a29c07052a",
+      "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/tree/779944d2cc8ffa19cef386aee83c83bcb967ade2"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "mradermacher/KnowLine-4B-Gen5.5-GGUF",
+      "revision": "d95d0de41cd9c2b813535c9fead6f7a29c07052a",
+      "file": "KnowLine-4B-Gen5.5.Q8_0.gguf",
+      "weight_bytes": 4610580896,
+      "kind": "knowline-causal-label-logprobs",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false,
+        "cache_type_k": "f32",
+        "cache_type_v": "f32"
+      },
+      "prompt_model": "PelaAI/KnowLine-4B-Gen5.5",
+      "prompt_revision": "779944d2cc8ffa19cef386aee83c83bcb967ade2",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "read_twice": true,
+      "twice_max_tokens": 3000,
+      "label_temperature": 1,
+      "calibration_folded_into_norm": true,
+      "raw_full_vocabulary": false,
+      "sampled_tokens_per_request": 1,
+      "sampled_text_used": false,
+      "logprobs_output_limit": 64,
+      "require_offered_label_coverage": true,
+      "device": "webgpu",
+      "runtime_folder": "fp32-shared-gpu",
+      "require_adapter_without_f16": true,
+      "require_native_fp32_gpu": true,
+      "storage_precision": "Q8_0",
+      "compute_precision": "float32",
+      "expected_weight_kernel": "q8_0"
+    },
+    "original_source": {
+      "model": "PelaAI/KnowLine-4B-Gen5.5",
+      "prompt_revision": "779944d2cc8ffa19cef386aee83c83bcb967ade2",
+      "quantizer_source_revision": "not supplied; the pinned quantizer card names this source model"
+    },
+    "baseline": "ku-browser-decision-knowline-gen55-q8",
+    "comparison": "Same weights/runtime/prompt; return original top 64 logprobs with strict complete label coverage, avoiding invalid UTF-8 vocabulary tail serialization. No missing-label estimates or generated-answer parser.",
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792923992623330923",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "native_python_js_prompt_parity": true,
+      "native_label_coverage": true,
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792923992623330923/browser.json",
+      "raw_sha256": "a7e45e0d02b74dfd731a5c04db738d1696303f3b0e36f75ed98c01a4e9459be1",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792923992623330923/receipt.json"
+    },
+    "label": "KnowLine Gen5.5 \u00b7 4B \u00b7 FP32",
+    "attempt": "kv-browser-decision-knowline-gen55-top64",
+    "category": "decision",
+    "native_variant": "shared-fp32-gpu-v1",
+    "cache_files": [
+      {
+        "id": "KnowLine-4B-Gen5.5.Q8_0.gguf",
+        "url": "https://huggingface.co/mradermacher/KnowLine-4B-Gen5.5-GGUF/resolve/d95d0de41cd9c2b813535c9fead6f7a29c07052a/KnowLine-4B-Gen5.5.Q8_0.gguf",
+        "bytes": 4610580896,
+        "sha256": "6970db55cca4fd7d8e4c9d73af6c63a8a7dfe602706c4c3a23f93bcad2b0370d",
+        "kind": "weights"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/mradermacher/KnowLine-4B-Gen5.5-GGUF/resolve/d95d0de41cd9c2b813535c9fead6f7a29c07052a/README.md",
+        "bytes": 4098,
+        "sha256": "963c765f755c7da65410cd52fc95a7b15489d0677e02512702a8a5d0d6edad27",
+        "kind": "notice"
+      },
+      {
+        "id": "LICENSE",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/LICENSE",
+        "bytes": 11343,
+        "sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+        "kind": "notice"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/README.md",
+        "bytes": 14987,
+        "sha256": "e67f63f5724952994612ab49a510c1622c16fa12033e1dadccf519e07783a92b",
+        "kind": "notice"
+      },
+      {
+        "id": "chat_template.jinja",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/chat_template.jinja",
+        "bytes": 7756,
+        "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+        "kind": "data"
+      },
+      {
+        "id": "config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/config.json",
+        "bytes": 3161,
+        "sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+        "kind": "data"
+      },
+      {
+        "id": "configuration.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/configuration.json",
+        "bytes": 73,
+        "sha256": "f888421726665e8a84b738eed42a64875aed79de8be7daade851ac8bf4c0cef9",
+        "kind": "data"
+      },
+      {
+        "id": "model.safetensors.index.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/model.safetensors.index.json",
+        "bytes": 67355,
+        "sha256": "48b56300c2b19dcd9a43001c9098098e7eaf4c6bc9f5cdd108148611fdfdca56",
+        "kind": "data"
+      },
+      {
+        "id": "preprocessor_config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/preprocessor_config.json",
+        "bytes": 390,
+        "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+        "kind": "data"
+      },
+      {
+        "id": "tokenizer.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/tokenizer.json",
+        "bytes": 12807982,
+        "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+        "kind": "data"
+      },
+      {
+        "id": "tokenizer_config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/tokenizer_config.json",
+        "bytes": 16710,
+        "sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8",
+        "kind": "data"
+      },
+      {
+        "id": "video_preprocessor_config.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/video_preprocessor_config.json",
+        "bytes": 385,
+        "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+        "kind": "data"
+      },
+      {
+        "id": "vocab.json",
+        "url": "https://huggingface.co/PelaAI/KnowLine-4B-Gen5.5/resolve/779944d2cc8ffa19cef386aee83c83bcb967ade2/vocab.json",
+        "bytes": 6722759,
+        "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003",
+        "kind": "data"
+      }
+    ],
+    "reference": {
+      "attempt": "nb-browser-decision-knowline-fp32-gpu",
+      "attempt_sha256": "b1525fe8fe0f0425edbca57295438adba21f9db71ffc66905010d5ed6f118bbf",
+      "editor_profile": "kv-browser-decision-knowline-gen55-top64"
+    }
+  },
+  {
+    "id": "elephant-fp32",
+    "title": "Elephant-1 \u00b7 community Q4_K_M two-block readout",
+    "kind": "decision",
+    "engine": "wllama-elephant",
+    "model": "mradermacher/elephant-1-GGUF",
+    "revision": "247371a14d51cb5af533fcaf93485048a4db3ac4",
+    "license": "mit",
+    "files": [
+      {
+        "file": "elephant-1.Q4_K_M.gguf",
+        "url": "https://huggingface.co/mradermacher/elephant-1-GGUF/resolve/247371a14d51cb5af533fcaf93485048a4db3ac4/elephant-1.Q4_K_M.gguf",
+        "bytes": 5629109824,
+        "sha256": "10c77ea2339ffe7e012db453e77fa30762ba27377b117985db5141743ad17939"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/README.md",
+        "bytes": 5475,
+        "sha256": "0c1f7c170191d0906218c3b34ad7a11ae4bc49a04d210eb12e5bb7a5461648f7"
+      },
+      {
+        "file": "chat_template.jinja",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/chat_template.jinja",
+        "bytes": 7756,
+        "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+      },
+      {
+        "file": "config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/config.json",
+        "bytes": 3146,
+        "sha256": "f26324589d15932e2742dbb13dbc7c561865ce4f80990af3b7dff05efe4dadab"
+      },
+      {
+        "file": "generation_config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/generation_config.json",
+        "bytes": 116,
+        "sha256": "290866a6d7d4a4442fe83ba2434a31517446f40a01de500ff97b4354e7e5d082"
+      },
+      {
+        "file": "processor_config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/processor_config.json",
+        "bytes": 1220,
+        "sha256": "bfbc24af59a3e73a9cd0653b8d4ae758dfaec4e3e6c15dfb1c6c8ee8d5683c85"
+      },
+      {
+        "file": "readout.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/readout.json",
+        "bytes": 63,
+        "sha256": "96ea8a5c6ecfc30c20cdd369762db5997c5f4fb9821ce0a0318941343eb5e8ba"
+      },
+      {
+        "file": "tokenizer.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/tokenizer.json",
+        "bytes": 19989339,
+        "sha256": "a5cd9732badce41de57e6efce8302930ded1c1188c5f81feb2bd6c24c4a1941f"
+      },
+      {
+        "file": "tokenizer_config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/tokenizer_config.json",
+        "bytes": 1505,
+        "sha256": "2984c03425a28d242744e234a5003786fd289b3713db79fe0958c65eb59d85b2"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 5629109376,
+    "precision": "Community Q4_K_M: 217 Q4_K, 33 Q6_K and 177 FP32 tensors. Output head Q6_K, final norm FP32, input embedding Q4_K. Native selected logits FP32; distinct from publisher BF16 weights/upcast FP32 head reference.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User explicitly selected Test the community Q4_K_M export after the named prithivMLmods candidate, size and publisher-source exception were disclosed on 2026-10-25.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "variant": "shared-fp32",
+      "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+      "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+      "build_receipt_sha256": "7d2a3961a5f42c95e84b4fb4557d1afe00b0078fba05f973d4c3778c83ee9fbe",
+      "license": "MIT",
+      "execution": "FP32 GPU backbone; CPU input embedding and small host readout may remain."
+    },
+    "browser_adapter": {
+      "state": "browser-verified-native-two-block-readout",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Exact publisher qev-labels-v2 prompt/token/block-boundary parity, full noncausal prefix then suffix at continuing positions; causal GatedDeltaNet. Read final suffix slot logits, T1 and native answer/confidence normalization. No sampling; fresh hybrid memory per request.",
+      "gap": "Text-only, one question/request, at least two options and <=1024 tokens. Publisher BF16 numerical equivalence, multi-question shared-prefix branches, images, phones and deeper calibration/quality remain unqualified."
+    },
+    "status": "Reference FP32 GPU accepted; Operations native qualification pending",
+    "test_status": "browser-tested",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual Chromium149 browser decisions on sds-01 through isolated Wllama WebGPU/Wasm two-block RPC. Zero sampling; GET-only unauthenticated downloads and no inference WebSockets.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/baselabs/elephant-1/tree/b3f8a93462fb1051a9de031e94a7ff380e254072",
+      "https://huggingface.co/prithivMLmods/elephant-1-GGUF/tree/77d938a13309d7b3da168d87abf5589f9329b122",
+      "https://github.com/OmniJev/OneJev/tree/81ce62f1597c91e46767d4d02d6ac2e18534fe94"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "mradermacher/elephant-1-GGUF",
+      "revision": "247371a14d51cb5af533fcaf93485048a4db3ac4",
+      "file": "elephant-1.Q4_K_M.gguf",
+      "weight_bytes": 5629109824,
+      "kind": "elephant-two-block-slot-lm",
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "runtime_folder": "fp32-shared-gpu",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false,
+        "cache_type_k": "f32",
+        "cache_type_v": "f32"
+      },
+      "prompt_model": "baselabs/elephant-1",
+      "prompt_revision": "b3f8a93462fb1051a9de031e94a7ff380e254072",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "prompt_style": "qev-labels-v2",
+      "label_temperature": 1,
+      "calibration": "No calibration.json at pinned publisher release; native fallback T1",
+      "full_attention": "block_bidirectional: prefix sees prefix; suffix sees prefix+suffix",
+      "linear_attention": "causal GatedDeltaNet, source-derived; not a sampled mask getter",
+      "native_decode_calls_per_request": 2,
+      "sampled_tokens_per_request": 0,
+      "application_prefix_cache": false,
+      "minimum_options": 2,
+      "device": "webgpu",
+      "weight_sha256": "10c77ea2339ffe7e012db453e77fa30762ba27377b117985db5141743ad17939",
+      "require_adapter_without_f16": true,
+      "require_native_fp32_gpu": true,
+      "storage_precision": "Q4_K_M",
+      "compute_precision": "float32",
+      "expected_weight_kernel": "q4_k|q6_k"
+    },
+    "original_source": {
+      "model": "baselabs/elephant-1",
+      "prompt_revision": "b3f8a93462fb1051a9de031e94a7ff380e254072",
+      "quantizer_source_revision": "Not supplied; pinned card identifies baselabs/elephant-1",
+      "onejev_revision": "81ce62f1597c91e46767d4d02d6ac2e18534fe94",
+      "serve_patch_sha256": "f234c125f1d38d82104b9e1f24e75bde51e4401928acfba2fbf5c59ef2fb46b8"
+    },
+    "baseline": "ko-browser-decision-elephant1",
+    "comparison": "Replace native-safetensors format probe with the named community GGUF and an exact two-block native slot-logit RPC. Retain official BF16 baseline and disclose quantized head/probability drift; no plain causal-generation substitution.",
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792926063835373379",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "native_python_js_prompt_boundary_parity": true,
+      "unicode_layout_only": true,
+      "synthetic_native_answer_parity_cases": 6,
+      "decode_calls_per_request": 2,
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792926063835373379/browser.json",
+      "raw_sha256": "5c9284f2f9e1feb5cabf603572767e428b0a489c41fccaebe97e66a139a72d45",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792926063835373379/receipt.json",
+      "tensor_header_audit": ".runtime/browser-decisions/browser-decisions-1792926063835373379/gguf-head-audit.json",
+      "tensor_header_audit_sha256": "de1b9bd025f47169244276755c41ef7f1c98a94ac254a51c76712c35e9b88e36"
+    },
+    "label": "Elephant-1 \u00b7 9B \u00b7 FP32",
+    "attempt": "kw-browser-decision-elephant1-q4",
+    "category": "decision",
+    "native_variant": "shared-fp32-gpu-v1",
+    "cache_files": [
+      {
+        "id": "elephant-1.Q4_K_M.gguf",
+        "url": "https://huggingface.co/mradermacher/elephant-1-GGUF/resolve/247371a14d51cb5af533fcaf93485048a4db3ac4/elephant-1.Q4_K_M.gguf",
+        "bytes": 5629109824,
+        "sha256": "10c77ea2339ffe7e012db453e77fa30762ba27377b117985db5141743ad17939",
+        "kind": "weights"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/README.md",
+        "bytes": 5475,
+        "sha256": "0c1f7c170191d0906218c3b34ad7a11ae4bc49a04d210eb12e5bb7a5461648f7",
+        "kind": "notice"
+      },
+      {
+        "id": "chat_template.jinja",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/chat_template.jinja",
+        "bytes": 7756,
+        "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+        "kind": "data"
+      },
+      {
+        "id": "config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/config.json",
+        "bytes": 3146,
+        "sha256": "f26324589d15932e2742dbb13dbc7c561865ce4f80990af3b7dff05efe4dadab",
+        "kind": "data"
+      },
+      {
+        "id": "generation_config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/generation_config.json",
+        "bytes": 116,
+        "sha256": "290866a6d7d4a4442fe83ba2434a31517446f40a01de500ff97b4354e7e5d082",
+        "kind": "data"
+      },
+      {
+        "id": "processor_config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/processor_config.json",
+        "bytes": 1220,
+        "sha256": "bfbc24af59a3e73a9cd0653b8d4ae758dfaec4e3e6c15dfb1c6c8ee8d5683c85",
+        "kind": "data"
+      },
+      {
+        "id": "readout.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/readout.json",
+        "bytes": 63,
+        "sha256": "96ea8a5c6ecfc30c20cdd369762db5997c5f4fb9821ce0a0318941343eb5e8ba",
+        "kind": "data"
+      },
+      {
+        "id": "tokenizer.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/tokenizer.json",
+        "bytes": 19989339,
+        "sha256": "a5cd9732badce41de57e6efce8302930ded1c1188c5f81feb2bd6c24c4a1941f",
+        "kind": "data"
+      },
+      {
+        "id": "tokenizer_config.json",
+        "url": "https://huggingface.co/baselabs/elephant-1/resolve/b3f8a93462fb1051a9de031e94a7ff380e254072/tokenizer_config.json",
+        "bytes": 1505,
+        "sha256": "2984c03425a28d242744e234a5003786fd289b3713db79fe0958c65eb59d85b2",
+        "kind": "data"
+      }
+    ],
+    "reference": {
+      "attempt": "nc-browser-decision-elephant-fp32-gpu",
+      "attempt_sha256": "de147ff847bb8740624ac769877baac1b3ae2eba69ee078e7b895c20010adbb4",
+      "editor_profile": "kw-browser-decision-elephant1-q4"
+    }
+  },
+  {
+    "id": "perplexity-fp32",
+    "title": "Perplexity Decider Flash \u00b7 official Q8_0 protocol-v3 readout",
+    "kind": "decision",
+    "engine": "wllama-pplx",
+    "model": "perplexity-ai/pplx-decider-flash-gguf-v1.2",
+    "revision": "2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc",
+    "license": "apache-2.0",
+    "files": [
+      {
+        "file": "decider-flash-v1.2-q8_0.gguf",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/decider-flash-v1.2-q8_0.gguf",
+        "bytes": 5157837472,
+        "sha256": "ffb27ade8976765b0e6943a0b7f5f3fd0f7042d45ad90256a76d608bcd3942c2"
+      },
+      {
+        "file": "LICENSE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/LICENSE",
+        "bytes": 11544,
+        "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+      },
+      {
+        "file": "NOTICE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/NOTICE",
+        "bytes": 132,
+        "sha256": "381fb81e814716a5ef8e5eae26a08607d052cf12f019dba9da9e81298ef5cb75"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/README.md",
+        "bytes": 14169,
+        "sha256": "04c994d3e5196b344e550ba1df4026035cf048e47346a75d29118be78841246f"
+      },
+      {
+        "file": "LICENSE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/LICENSE",
+        "bytes": 11544,
+        "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+      },
+      {
+        "file": "NOTICE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/NOTICE",
+        "bytes": 132,
+        "sha256": "381fb81e814716a5ef8e5eae26a08607d052cf12f019dba9da9e81298ef5cb75"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/README.md",
+        "bytes": 12521,
+        "sha256": "7428a155aa3484065fa97a43322a485e851f31e1eb6ea973dfec05ff224a71ad"
+      },
+      {
+        "file": "chat_template.jinja",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/chat_template.jinja",
+        "bytes": 7756,
+        "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+      },
+      {
+        "file": "config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/config.json",
+        "bytes": 2898,
+        "sha256": "1bdb718faa99e32673f1622ea2f536affe20867bcb4703888aac9a030ec59e22"
+      },
+      {
+        "file": "decision_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/decision_config.json",
+        "bytes": 5435,
+        "sha256": "6d59a4e66f459596cad6f3ff932c635e379f1dc1c49819357869de8abe01722f"
+      },
+      {
+        "file": "joint_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/joint_config.json",
+        "bytes": 248,
+        "sha256": "ecc88efc2a8ebd81ddf93f7d722e35b2829fd7526b5ce754db53395aa49fb510"
+      },
+      {
+        "file": "model.safetensors.index.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/model.safetensors.index.json",
+        "bytes": 61898,
+        "sha256": "0597ef32377f77ec490bbce02e5e3fd1d0b8e3b00b2ef500cd9306d445ab0f5c"
+      },
+      {
+        "file": "processor_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/processor_config.json",
+        "bytes": 1219,
+        "sha256": "b4b905eee2d1cf96dcbdac1c68b35113c8151958a4c1f76667242b01168572cd"
+      },
+      {
+        "file": "release-manifest.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/release-manifest.json",
+        "bytes": 4215,
+        "sha256": "b92d6898a1a0cebeec8573c3ba34cfbb810a2920fc49da60097f3a8e2de24ebc"
+      },
+      {
+        "file": "tokenizer.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/tokenizer.json",
+        "bytes": 19989492,
+        "sha256": "6f32ce20dc35f57a7f9ad1eac03525bd7d30f9df8cea6507e958279cc3657706"
+      },
+      {
+        "file": "tokenizer_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/tokenizer_config.json",
+        "bytes": 1268,
+        "sha256": "188cf0b9db5cfd6e92f1b63c646f5975be6f8383c6c9a2fa5dc2b48a8b229402"
+      }
+    ],
+    "dependency_models": [],
+    "weight_bytes": 5157837472,
+    "precision": "Publisher GGUF Q8_0 backbone/readout; mixed tensor types, not uniform INT8 arithmetic. Exclude the separate F16 vision projector.",
+    "whole_file_checksum_verified": false,
+    "source_authorization": "User requested separate preparation for the current decision-model families. Only publisher artifacts are pinned; no local export, requantization or community replacement is authorized by this record.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "variant": "shared-fp32",
+      "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+      "llama_cpp": "970b51ce7c9ba5fff0726c5e9994f1c2f0e4eedc",
+      "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+      "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+      "build_receipt_sha256": "7d2a3961a5f42c95e84b4fb4557d1afe00b0078fba05f973d4c3778c83ee9fbe",
+      "license": "MIT",
+      "execution": "FP32 GPU backbone; CPU input embedding and small host readout may remain."
+    },
+    "browser_adapter": {
+      "state": "browser-verified-native-protocol-v3",
+      "entry": "evaluations/browser-decisions/runtime/engine.mjs",
+      "requirements": "Exact publisher Python/JS prompt, token, codebook and interior-marker parity; entire prompt in one noncausal full-attention batch with causal GatedDeltaNet. Read offered raw slot logits at marker, apply exact FLOAT64 publisher temperature and native answer normalization; no sampling.",
+      "gap": "All six native browser decisions passed. Text only, one question per request, 2\u2013255 options, <=1024 tokens. Structured JSON numeric values restricted to finite safe integers; arbitrary text accepted. Images, phones, grouped questions and broad quality/calibration remain unqualified."
+    },
+    "status": "Reference FP32 GPU accepted; Operations native qualification pending",
+    "test_status": "browser-tested",
+    "demo_url": "https://192.168.1.173:8444/kl-browser-decision-d3-lite/",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "host": {
+      "static_host": "sds-01",
+      "test_browser_host": "sds-01",
+      "gpu": "RTX3060 12GiB",
+      "ram": "64GiB",
+      "browser_image": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6"
+    },
+    "execution": "Verified six actual Chromium 149 browser decisions on sds-01 through isolated Wllama WebGPU/Wasm protocol-v3 inline-marker RPC. Zero sampling; GET/HEAD-only unauthenticated assets, no inference backend or WebSockets. Python reference prepares tokenizer/protocol fixtures only.",
+    "isolation": "Browser-trial exception: one owned model at a time; inspect/record other workloads, alert new Docker starts, never stop foreign work; timings nonisolated.",
+    "sources": [
+      "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/tree/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc",
+      "https://huggingface.co/api/models/perplexity-ai/pplx-decider-flash-gguf-v1.2/revision/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc?blobs=true",
+      "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2#gguf-files",
+      "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/tree/9ff7cf9838e59df461c276b7699d56b244d2af58/source"
+    ],
+    "prepared_at": "2026-10-25",
+    "model_downloaded_during_preparation": false,
+    "browser_probe": {
+      "model": "perplexity-ai/pplx-decider-flash-gguf-v1.2",
+      "revision": "2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc",
+      "file": "decider-flash-v1.2-q8_0.gguf",
+      "weight_bytes": 5157837472,
+      "kind": "pplx-v3-inline-marker",
+      "required_protocol_version": 3,
+      "range_source_sha256": "7d630d20b410ac38860d97c6223e4204e5d9632877adda86a04c162a02c521e6",
+      "load_options": {
+        "n_gpu_layers": 99,
+        "n_threads": 8,
+        "n_ctx": 1024,
+        "n_batch": 1024,
+        "n_ubatch": 1024,
+        "n_parallel": 1,
+        "flash_attn": false,
+        "warmup": false,
+        "jinja": false,
+        "reasoning": false,
+        "cache_idle_slots": false,
+        "cont_batching": false,
+        "cache_type_k": "f32",
+        "cache_type_v": "f32"
+      },
+      "runtime_folder": "fp32-shared-gpu",
+      "prompt_model": "perplexity-ai/pplx-decider-flash-v1.2",
+      "prompt_revision": "9ff7cf9838e59df461c276b7699d56b244d2af58",
+      "range_cache_bytes": 134217728,
+      "range_chunk_bytes": 8388608,
+      "range_parallel": 2,
+      "prompt_style": "joint-question-inline-readout-v1",
+      "marker": "<|fim_suffix|>",
+      "marker_token_id": 248062,
+      "label_temperature": 1.5539092221462472,
+      "temperature_gguf_type": "FLOAT64",
+      "full_attention": "noncausal over the entire complete prompt",
+      "linear_attention": "causal GatedDeltaNet, source-derived",
+      "native_decode_calls_per_request": 1,
+      "sampled_tokens_per_request": 0,
+      "application_prefix_cache": false,
+      "minimum_options": 2,
+      "maximum_options": 255,
+      "device": "webgpu",
+      "require_adapter_without_f16": true,
+      "require_native_fp32_gpu": true,
+      "storage_precision": "Q8_0",
+      "compute_precision": "float32",
+      "expected_weight_kernel": "q8_0"
+    },
+    "baseline": "kp-browser-decision-pplx-flash-q8",
+    "comparison": "Same official GGUF; replace unsupported legacy SystemOne API with exact whole-prompt protocol-v3 inline-marker readout. No weight or quantization change.",
+    "verification": {
+      "date": "2026-10-25",
+      "run_id": "browser-decisions-1792930207762032452",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "native_python_js_prompt_token_marker_parity": true,
+      "gguf_metadata_and_float64_temperature_verified": true,
+      "unicode_layout_only": true,
+      "synthetic_native_answer_parity_cases": 6,
+      "decode_calls_per_request": 1,
+      "sampled_tokens_per_request": 0,
+      "raw_evidence": ".runtime/browser-decisions/browser-decisions-1792930207762032452/browser.json",
+      "raw_sha256": "527d69bcae5feca4414fda5d488c2b1e3d691a3c931f552762abaf70c0b445ef",
+      "receipt": ".runtime/browser-decisions/browser-decisions-1792930207762032452/receipt.json",
+      "native_build_receipt": ".runtime/browser-decisions-pplx/browser-decisions-pplx-build-1792929453104788546/receipt.json",
+      "maximum_sampled_whole_device_gpu_mib": 4610
+    },
+    "label": "Perplexity Flash \u00b7 4B \u00b7 FP32",
+    "attempt": "ky-browser-decision-pplx-flash-v3",
+    "category": "decision",
+    "native_variant": "shared-fp32-gpu-v1",
+    "cache_files": [
+      {
+        "id": "decider-flash-v1.2-q8_0.gguf",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/decider-flash-v1.2-q8_0.gguf",
+        "bytes": 5157837472,
+        "sha256": "ffb27ade8976765b0e6943a0b7f5f3fd0f7042d45ad90256a76d608bcd3942c2",
+        "kind": "weights"
+      },
+      {
+        "id": "LICENSE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/LICENSE",
+        "bytes": 11544,
+        "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+        "kind": "notice"
+      },
+      {
+        "id": "NOTICE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/NOTICE",
+        "bytes": 132,
+        "sha256": "381fb81e814716a5ef8e5eae26a08607d052cf12f019dba9da9e81298ef5cb75",
+        "kind": "notice"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-gguf-v1.2/resolve/2514d5f0b7fbbe1ee1bfec9ffb5801a60289b4cc/README.md",
+        "bytes": 14169,
+        "sha256": "04c994d3e5196b344e550ba1df4026035cf048e47346a75d29118be78841246f",
+        "kind": "notice"
+      },
+      {
+        "id": "LICENSE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/LICENSE",
+        "bytes": 11544,
+        "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+        "kind": "notice"
+      },
+      {
+        "id": "NOTICE",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/NOTICE",
+        "bytes": 132,
+        "sha256": "381fb81e814716a5ef8e5eae26a08607d052cf12f019dba9da9e81298ef5cb75",
+        "kind": "notice"
+      },
+      {
+        "id": "README.md",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/README.md",
+        "bytes": 12521,
+        "sha256": "7428a155aa3484065fa97a43322a485e851f31e1eb6ea973dfec05ff224a71ad",
+        "kind": "notice"
+      },
+      {
+        "id": "chat_template.jinja",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/chat_template.jinja",
+        "bytes": 7756,
+        "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+        "kind": "data"
+      },
+      {
+        "id": "config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/config.json",
+        "bytes": 2898,
+        "sha256": "1bdb718faa99e32673f1622ea2f536affe20867bcb4703888aac9a030ec59e22",
+        "kind": "data"
+      },
+      {
+        "id": "decision_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/decision_config.json",
+        "bytes": 5435,
+        "sha256": "6d59a4e66f459596cad6f3ff932c635e379f1dc1c49819357869de8abe01722f",
+        "kind": "data"
+      },
+      {
+        "id": "joint_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/joint_config.json",
+        "bytes": 248,
+        "sha256": "ecc88efc2a8ebd81ddf93f7d722e35b2829fd7526b5ce754db53395aa49fb510",
+        "kind": "data"
+      },
+      {
+        "id": "model.safetensors.index.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/model.safetensors.index.json",
+        "bytes": 61898,
+        "sha256": "0597ef32377f77ec490bbce02e5e3fd1d0b8e3b00b2ef500cd9306d445ab0f5c",
+        "kind": "data"
+      },
+      {
+        "id": "processor_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/processor_config.json",
+        "bytes": 1219,
+        "sha256": "b4b905eee2d1cf96dcbdac1c68b35113c8151958a4c1f76667242b01168572cd",
+        "kind": "data"
+      },
+      {
+        "id": "release-manifest.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/release-manifest.json",
+        "bytes": 4215,
+        "sha256": "b92d6898a1a0cebeec8573c3ba34cfbb810a2920fc49da60097f3a8e2de24ebc",
+        "kind": "data"
+      },
+      {
+        "id": "tokenizer.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/tokenizer.json",
+        "bytes": 19989492,
+        "sha256": "6f32ce20dc35f57a7f9ad1eac03525bd7d30f9df8cea6507e958279cc3657706",
+        "kind": "data"
+      },
+      {
+        "id": "tokenizer_config.json",
+        "url": "https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.2/resolve/9ff7cf9838e59df461c276b7699d56b244d2af58/tokenizer_config.json",
+        "bytes": 1268,
+        "sha256": "188cf0b9db5cfd6e92f1b63c646f5975be6f8383c6c9a2fa5dc2b48a8b229402",
+        "kind": "data"
+      }
+    ],
+    "reference": {
+      "attempt": "nd-browser-decision-pplx-fp32-gpu",
+      "attempt_sha256": "8e9afd3e703ec233e4ab0ddc99e4954fe0c74fd556b9b411dc034d6d3ad43f32",
+      "editor_profile": "ky-browser-decision-pplx-flash-v3"
+    }
   }
 ]

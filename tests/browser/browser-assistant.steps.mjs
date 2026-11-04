@@ -573,7 +573,7 @@ Then('decision controls preserve native results and release their exclusive mode
   const page=this.page;await installDecisionFixture(page);const panel=await openAssistant(page);const configuration=await openConfiguration(panel);
   await configuration.locator('.decision-settings > summary').click();
   const section=configuration.locator('.decision-settings'), picker=section.getByRole('combobox',{name:'Decision model',exact:true});
-  await picker.click();await expect(page.getByRole('option')).toHaveCount(9);await page.keyboard.press('Escape');
+  await picker.click();await expect(page.getByRole('option')).toHaveCount(16);await page.keyboard.press('Escape');
   expect(await page.evaluate(()=>window.decisionFixture.workers)).toBe(0);
   await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 CPU',exact:true}).click();
   await expect(section.getByRole('button',{name:'Score decision',exact:true})).toBeEnabled();
@@ -586,6 +586,25 @@ Then('decision controls preserve native results and release their exclusive mode
   await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
   await expect(configuration.getByRole('combobox',{name:'Language model',exact:true})).toBeEnabled();
   expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(1);
+  await picker.click();await page.getByRole('option',{name:'D3 lite · 0.8B · FP32',exact:true}).click();
+  await expect(section.locator('.runtime-label')).toContainText('FP32 GPU backbone');
+  await expect(section).toContainText('input embedding and small readout may use CPU');
+  await section.getByRole('button',{name:'Score decision',exact:true}).click();
+  await expect(output).toContainText('0.85');
+  expect(await page.evaluate(()=>window.decisionFixture.messages.find(row=>row.profile==='d3-lite-fp32').type)).toBe('load');
+  await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
+  expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(2);
+});
+Then('the shared FP32 decision artifact retains all native readout APIs',{timeout:90000},async function(){
+  const requests=[];this.page.on('request',request=>{if(/huggingface|\.gguf/.test(request.url()))requests.push(request.url());});
+  const result=await this.page.evaluate(async()=>{
+    const base=new URL('./assistant-runtime/decision/',location.href);
+    const code=`const base=${JSON.stringify(base.href)};try {const {Wllama}=await import(base+'vendor/wllama-fp32/index.js');await import(base+'engine.mjs');for(const name of ['inspectSystemOne','createSystemOne','createCompletion','createBlockReadout','createInlineReadout'])if(typeof Wllama.prototype[name]!=='function')throw Error('Missing native '+name);const bytes=await(await fetch(base+'vendor/wllama-fp32/wllama.wasm')).arrayBuffer();await WebAssembly.compile(bytes);const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');postMessage({bytes:bytes.byteLength,sha});}catch(error){postMessage({error:error.message});}`;
+    const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url,{type:'module'});
+    try{return await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('FP32 artifact import timed out')),45000);worker.onerror=event=>{event.preventDefault();clearTimeout(timer);reject(Error(event.message));};worker.onmessage=({data})=>{clearTimeout(timer);data.error?reject(Error(data.error)):resolve(data);};});}
+    finally{worker.terminate();URL.revokeObjectURL(url);}
+  });
+  expect(result.bytes).toBe(9386116);expect(result.sha).toBe('2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541');expect(requests).toEqual([]);
 });
 Then('native runtime modules and compressed Wasm load in real browser workers', {timeout:90000}, async function() {
   const page=this.page, requests=[];page.on('request',request=>{if(/huggingface|\.gguf/.test(request.url()))requests.push(request.url());});

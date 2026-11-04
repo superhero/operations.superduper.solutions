@@ -216,7 +216,7 @@
     "boundaries": [
       "Installation-time whole-file verification does not rehash every model block on each read.",
       "Application/runtime assets are still served by the same origin; cached model files do not establish fully offline SPA support.",
-      "Decision and speech installation remain separate integration work."
+      "Compatible GGUF decision installation is added by the compatible-decisions stage. Speech and Strands installation remain separate work."
     ]
   },
   "compatible_text_catalog": {
@@ -247,5 +247,74 @@
       "Retain the native trained formatter/tool parser and reasoning channel; thinking-off does not guarantee absence of generated reasoning."
     ],
     "qualification": "Reference native acceptance retained. Focused Operations catalog/ABI/UI/distribution checks do not constitute new Ornith/LFM3 native performance or quality acceptance."
+  },
+  "compatible_decisions": {
+    "reviewed": "2026-11-04",
+    "variant": "shared-fp32-gpu-v1",
+    "sources": [
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/evaluations/brave-decisions/gpu-cache-suite.json",
+        "sha256": "806612553c94a411535d9fa8ec504d36a76e1ea9c2424c1e27e064a790238696"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/ne-browser-decision-d3-lite-fp32-gpu/attempt.json",
+        "sha256": "562e72c96860342fbb99e28e5bb6bd9bf58fed8d17b94efd497621f7e06b0bdb"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/my-browser-decision-d3-nano-fp32-gpu/attempt.json",
+        "sha256": "8387795c3462e0b97ea122b0c56c04b77b6ebbb92992f7d7071f87cc7b8f397c"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/mz-browser-decision-d3-mini-fp32-gpu/attempt.json",
+        "sha256": "61d6f5ce5d95d5808cafce01a48570aa9f19abd57e649825a9ac084438ad170e"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/na-browser-decision-d3-flash-fp32-gpu/attempt.json",
+        "sha256": "68dfbbb3dc3638cc5be706493c34879cb99fdb5b75743833b0b6cc15b880b4f7"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/nb-browser-decision-knowline-fp32-gpu/attempt.json",
+        "sha256": "b1525fe8fe0f0425edbca57295438adba21f9db71ffc66905010d5ed6f118bbf"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/nc-browser-decision-elephant-fp32-gpu/attempt.json",
+        "sha256": "de147ff847bb8740624ac769877baac1b3ae2eba69ee078e7b895c20010adbb4"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/nd-browser-decision-pplx-fp32-gpu/attempt.json",
+        "sha256": "8e9afd3e703ec233e4ab0ddc99e4954fe0c74fd556b9b411dc034d6d3ad43f32"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/expanded-catalog.json",
+        "sha256": "d8101688ba710219e975448ca5cab50b82aff1c4ddc77bb2dfe6172a66abb3f7"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/reference/expanded/decisions.js",
+        "sha256": "18812192b05967c2442f155f80d8d83d2e7a376cd6a902cbb0cda866dd0bfe96"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/reference/expanded/decision-placement.js",
+        "sha256": "5f673bbfac274b6c57c357abe18ad88581108cf6f302989dcf6e9429d0a57197"
+      }
+    ],
+    "adaptations": [
+      "Seven explicit GGUF decision profiles use the paired shared FP32 SDK/Wasm; original nine profiles remain available.",
+      "Preserve exact native D3 inspection/SystemOne, KnowLine causal read-twice/top64, Elephant two complete attention blocks and PPLX protocol-v3 inline readout.",
+      "Verify full GPU backbone placement and packed matrix pipelines, while allowing input embedding and small readout on CPU; this is not the chat zero-CPU policy.",
+      "Verified storage retains full URLs across weight and tokenizer repositories, with shared logical use held across physical suspension.",
+      "A rejected disposal promise remains rejected; operation cancellation awaits the native disposal outcome."
+    ],
+    "qualification": "Reference acceptance retained; Operations native qualification is recorded separately in assistant-decision-quality.json."
   }
 }

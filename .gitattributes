@@ -8,3 +8,4 @@ src/public/assistant-runtime/decision/pplx-publisher-LICENSE -text -whitespace
 # Retain the exact accepted compatible native SDK and build recipe bytes.
 src/public/assistant-runtime/text-fp32/upstream/** -text -whitespace
 src/public/assistant-runtime/text-fp32/lfm3-upstream/** -text -whitespace
+src/public/assistant-runtime/decision/vendor/wllama-fp32/** -text -whitespace

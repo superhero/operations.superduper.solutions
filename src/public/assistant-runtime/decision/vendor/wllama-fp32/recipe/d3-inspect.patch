@@ -1,0 +1,161 @@
+diff --git a/cpp/wllama-context.h b/cpp/wllama-context.h
+--- a/cpp/wllama-context.h
++++ b/cpp/wllama-context.h
+@@ -771,6 +771,86 @@
+     return res;
+   }
+ 
++  // Exact D3 prompt inspection: reuse the loaded model's own formatter and
++  // tokenizer, without a response reader, submitted task, server loop or decode.
++  glue_msg_get_result_res action_inspect_systemone(const char *req_raw)
++  {
++    glue_msg_get_result_res res;
++    res.success.value = false;
++    res.has_more.value = false;
++    res.is_error.value = true;
++    json diagnostics{{"decode_calls", 0}, {"tasks_posted", 0},
++                     {"format", "native-systemone"}, {"text_only", true}, {"no_forward", true}};
++    try
++    {
++      PARSE_REQ(glue_msg_systemone_req);
++      if (!ctx || !model || !vocab)
++        throw std::runtime_error("SystemOne inspection requires a loaded model");
++      diagnostics["in_flight_readers"] = readers.size();
++      diagnostics["in_flight_decision_requests"] = decision_reqs.size();
++      diagnostics["queue_snapshot_has_more_tasks"] = has_more_tasks;
++      // Native actions are serialized by runWasmCall. These registries cover
++      // submitted, unconsumed requests; get_result erases them after the final
++      // response. has_more_tasks can still describe a queued no-op NEXT_RESPONSE
++      // from that completed forward, so it is not an active-request predicate.
++      if (!readers.empty() || !decision_reqs.empty())
++        throw std::runtime_error("SystemOne inspection requires an idle dedicated instance");
++      if (decision.type != COMMON_DECISION_TYPE_VLLM_D3)
++        throw std::runtime_error("SystemOne inspection is qualified only for D3 decision models");
++      const size_t n_ctx = llama_n_ctx(ctx);
++      const size_t n_batch = llama_n_batch(ctx);
++      const size_t n_ubatch = llama_n_ubatch(ctx);
++      const size_t publisher_max_input_tokens = 262144;
++      const size_t effective_max_input_tokens = std::min({publisher_max_input_tokens, n_ctx, n_batch, n_ubatch});
++      diagnostics["n_ctx"] = n_ctx;
++      diagnostics["n_batch"] = n_batch;
++      diagnostics["n_ubatch"] = n_ubatch;
++      diagnostics["publisher_max_input_tokens"] = publisher_max_input_tokens;
++      diagnostics["effective_max_input_tokens"] = effective_max_input_tokens;
++      const json body = json::parse(req.data_json.value);
++      const auto questions = decision.parse_questions(body);
++      std::vector<raw_buffer> files;
++      const json state = decision.parse_state(body, files);
++      if (!files.empty())
++        throw std::runtime_error("Image/audio input is not supported for SystemOne inspection");
++      json tasks = json::array();
++      for (const auto &question : questions)
++      {
++        for (size_t variant = 0; variant < decision.n_variants(question); ++variant)
++        {
++          server_task task(SERVER_TASK_TYPE_DECISION);
++          decision.fill_task(state, questions, question, variant, files, nullptr, mtmd_helper_init_opt_default(), task);
++          if (task.tokens.has_mtmd)
++            throw std::runtime_error("SystemOne inspection supports only text tokens");
++          const auto &tokens = task.tokens.get_tokens();
++          std::string decoded_prompt;
++          json token_piece_byte_lengths = json::array();
++          for (const auto token : tokens)
++          {
++            const auto piece = common_token_to_piece(vocab, token, true);
++            decoded_prompt += piece;
++            token_piece_byte_lengths.push_back(piece.size());
++          }
++          tasks.push_back(json{
++              {"question_id", question.id}, {"variant", variant},
++              {"tokens", tokens}, {"input_tokens", tokens.size()},
++              {"decoded_prompt", decoded_prompt}, {"token_piece_byte_lengths", token_piece_byte_lengths},
++              {"mapping_valid", is_valid_utf8(decoded_prompt)},
++              {"fits_loaded_capacity", tokens.size() <= effective_max_input_tokens},
++          });
++        }
++      }
++      res.data_json.value = json{{"tasks", tasks}, {"diagnostics", diagnostics}}.dump_safe();
++      res.success.value = true;
++      res.is_error.value = false;
++    }
++    catch (const std::exception &error)
++    {
++      res.data_json.value = json{{"message", error.what()}, {"diagnostics", diagnostics}}.dump_safe();
++    }
++    return res;
++  }
++
+   glue_msg_systemone_res action_systemone(const char *req_raw)
+   {
+     PARSE_REQ(glue_msg_systemone_req);
+diff --git a/cpp/wllama.cpp b/cpp/wllama.cpp
+--- a/cpp/wllama.cpp
++++ b/cpp/wllama.cpp
+@@ -114,6 +114,7 @@
+     WLLAMA_ACTION(embedding)
+     WLLAMA_ACTION(rerank)
+     WLLAMA_ACTION(systemone)
++    WLLAMA_ACTION(inspect_systemone)
+     WLLAMA_ACTION(get_result)
+     WLLAMA_ACTION(cancel)
+     WLLAMA_ACTION(test_backend_ops)
+diff --git a/src/wllama.ts b/src/wllama.ts
+--- a/src/wllama.ts
++++ b/src/wllama.ts
+@@ -758,6 +758,56 @@
+   }
+ 
+   /**
++   * Inspect D3's exact native text prompts before submitting inference.
++   * This additive API does not post tasks, run the server loop or decode.
++   */
++  async inspectSystemOne(options: SystemOneParams): Promise<{
++    tasks: {
++      question_id: string;
++      variant: number;
++      tokens: number[];
++      input_tokens: number;
++      decoded_prompt: string;
++      token_piece_byte_lengths: number[];
++      mapping_valid: boolean;
++      fits_loaded_capacity: boolean;
++    }[];
++    diagnostics: {
++      decode_calls: number;
++      tasks_posted: number;
++      format: string;
++      text_only: boolean;
++      no_forward: boolean;
++      in_flight_readers: number;
++      in_flight_decision_requests: number;
++      queue_snapshot_has_more_tasks: boolean;
++      n_ctx: number;
++      n_batch: number;
++      n_ubatch: number;
++      publisher_max_input_tokens: number;
++      effective_max_input_tokens: number;
++    };
++  }> {
++    this.checkModelLoaded();
++    const result = await this.proxy.wllamaAction<GlueMsgGetResultRes>(
++      'inspect_systemone',
++      { _name: 'sys1_req', data_json: JSON.stringify(options) }
++    );
++    if (result.has_more || !result.data_json) {
++      throw new WllamaError('Invalid SystemOne inspection response', 'inference_error');
++    }
++    const response = this.jsonDecode(result.data_json);
++    if (!result.success || result.is_error) {
++      throw new WllamaError(
++        'SystemOne inspection: ' + (response.message || 'Unknown native error') +
++          '; native_diagnostics=' + JSON.stringify(response.diagnostics || {}),
++        'inference_error'
++      );
++    }
++    return response;
++  }
++
++  /**
+    * Make chat completion for a given chat messages.
+    * @param options OAI-compatible chat completion options
+    * @returns OAI-compatible chat completion response (only the final result when stream=false) or an async iterator of completion chunks (when stream=true)
