@@ -109,6 +109,16 @@ feat(assistant): integrate compatible Strands decisions
 
 ```
 
+<!-- changelog-commit:7e53bb2b89aaf05e6f0ef8c593f11341f6711b19 -->
+### Commit [`7e53bb2`](https://github.com/superhero/operations.superduper.solutions/commit/7e53bb2b89aaf05e6f0ef8c593f11341f6711b19)
+
+```text
+feat(speech): add continuous dictation with durable recovery
+
+Persist bounded audio segments and recording-wide transcript updates, wait for archive completion before runtime handoff, and retain recoverable captures across reloads. Keep optional runtime assets and verbatim notices within the reviewed deployment contract.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66
