@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.67
+
 <!-- changelog-commit:20c4fbe8215f52f1acc68538692ab859056d51c6 -->
 ### Commit [`20c4fbe`](https://github.com/superhero/operations.superduper.solutions/commit/20c4fbe8215f52f1acc68538692ab859056d51c6)
 
@@ -118,8 +122,6 @@ feat(speech): add continuous dictation with durable recovery
 Persist bounded audio segments and recording-wide transcript updates, wait for archive completion before runtime handoff, and retain recoverable captures across reloads. Keep optional runtime assets and verbatim notices within the reviewed deployment contract.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.66
 
