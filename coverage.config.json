@@ -59,7 +59,10 @@
     "src/lib/speech/features.worker.js",
     "src/lib/speech/capture-worklet.js",
     "src/lib/speech/controller.js",
-    "src/lib/speech/storage.js"
+    "src/lib/speech/storage.js",
+    "src/lib/assistant/model-storage/storage.ts",
+    "src/lib/speech/continuous-controller.js",
+    "src/lib/speech/continuous-module.js"
   ],
   "statements": 100,
   "branches": 100,

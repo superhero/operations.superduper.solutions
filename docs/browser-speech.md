@@ -149,3 +149,9 @@ features, RPC ordering/failure, integrity/pins and streamed-download recovery.
 Browser scenarios exercise repeated recordings, editable drafts, permission
 denial/late grants, microphone cleanup, cached restoration, initialization Retry,
 local WAV/JSON export and a narrow Settings layout.
+
+Source coverage keeps the 100% threshold for pure inference, catalog and request
+helpers. Browser-only IndexedDB model installation and continuous capture/UI
+orchestration use the same browser-validation boundary as the existing speech
+controller and storage modules. The real storage, recovery and model-use scenarios
+and the independent native capture run cover those integration surfaces.
