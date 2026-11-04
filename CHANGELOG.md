@@ -69,6 +69,14 @@ Await normal worker disposal with bounded termination fallback. Treat unconfirme
 
 ```
 
+<!-- changelog-commit:735b3c842d0b96345c1d9ea49755504344b55120 -->
+### Commit [`735b3c8`](https://github.com/superhero/operations.superduper.solutions/commit/735b3c842d0b96345c1d9ea49755504344b55120)
+
+```text
+feat(assistant): add strict FP32 MiniCPM runtime
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66
