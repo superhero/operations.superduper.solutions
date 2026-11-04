@@ -122,8 +122,11 @@ async function speechWorkerCase(cancelPreparation, pcmError = false) {
   vi.stubGlobal('fetch',async()=>({blob:async()=>new Blob([new Uint8Array([1])])}));
   let next;
   try {
-    // Each scenario needs fresh worker module state, like an actual new Worker.
-    vi.resetModules();await import('./lib/speech/inference.worker.js');
+    // Refresh only the worker entry. A global module reset re-registers the
+    // shared Gherkin steps when the next feature loads in this process.
+    if(cancelPreparation)await import('./lib/speech/inference.worker.js?ownership-cancel');
+    else if(pcmError)await import('./lib/speech/inference.worker.js?ownership-pcm-error');
+    else await import('./lib/speech/inference.worker.js?ownership-archive');
     const send=data=>globalThis.onmessage({data});
     send({type:'load',mode:'gpu-fp32'});await until(()=>posts.some(row=>row.type==='ready'));
     send(cancelPreparation||pcmError?{type:'streamPrepare',sessionId:'record'}:{type:'transcribe',sessionId:'record',pcm:new Float32Array(1600)});
