@@ -85,6 +85,14 @@ feat(assistant): verify and retain local model files
 
 ```
 
+<!-- changelog-commit:3a04d6f508043540d4fcedda81caa03a5d4e016f -->
+### Commit [`3a04d6f`](https://github.com/superhero/operations.superduper.solutions/commit/3a04d6f508043540d4fcedda81caa03a5d4e016f)
+
+```text
+feat(assistant): complete compatible native text choices
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66
