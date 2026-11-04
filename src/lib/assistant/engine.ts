@@ -33,7 +33,8 @@ export async function fetchBonsaiRuntime(signal: AbortSignal, request: typeof fe
 
 export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: (event: unknown) => void, signal: AbortSignal,
   compatibility: Pick<AssistantCompatibility, "fp16">,
-  runtime: (signal: AbortSignal) => Promise<WebMLModule> = fetchBonsaiRuntime): Promise<LocalEngine & { dispose(): Promise<void> }> {
+  runtime: (signal: AbortSignal) => Promise<WebMLModule> = fetchBonsaiRuntime,
+  request?: typeof fetch): Promise<LocalEngine & { dispose(): Promise<void> }> {
   const profile = bonsaiModels.find(model => model.id === settings.model)!;
   const module = await runtime(signal);
   let stage = "GPU initialization";
@@ -43,6 +44,7 @@ export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: 
     raw = await module.Qwen3_5ForConditionalGeneration.from_pretrained(profile.model, {
       file: profile.file, revision: profile.revision, mmproj: null, max_pixels: settings.imagePixels, maxLength: settings.context,
       cache: false, prefixSnapshotStore: null, chatTemplateArgs: { enable_thinking: settings.thinking }, signal,
+      ...(request ? {fetch: request} : {}),
       onProgress: (event: unknown) => {
         if (event && typeof event === "object" && "message" in event && typeof event.message === "string") stage = event.message;
         onProgress(event);
@@ -108,15 +110,18 @@ export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: 
 }
 
 export type NativeLanguageRuntime = {
+  loadFp32Chat?: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
   loadWllama: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
   loadGemma: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
 };
 
 /** Adapt accepted native engines without substituting a server or a text parser. */
 export async function loadAssistantEngine(settings: AssistantSettings, onProgress: (event: unknown) => void,
-  signal: AbortSignal, compatibility: Pick<AssistantCompatibility, "fp16" | "fp32">, assetBase: string, nativeRuntime?: NativeLanguageRuntime): Promise<LocalEngine & { dispose(): Promise<void> }> {
+  signal: AbortSignal, compatibility: Pick<AssistantCompatibility, "fp16" | "fp32">, assetBase: string, nativeRuntime?: NativeLanguageRuntime,
+  assets?: {fetch: typeof fetch; modelId: string}): Promise<LocalEngine & { dispose(): Promise<void> }> {
   const profile = assistantProfile(settings.model);
-  if (profile.engine === "webml") return loadBonsaiEngine(settings, onProgress, signal, compatibility);
+  if (profile.engine === "webml") return loadBonsaiEngine(settings, onProgress, signal, compatibility,
+    assets ? signal => fetchBonsaiRuntime(signal, assets.fetch) : undefined, assets?.fetch);
   const url = new URL("load-language.mjs", assetBase).href;
   const runtime = nativeRuntime ?? await import(/* @vite-ignore */ `${url}`) as NativeLanguageRuntime;
   signal.throwIfAborted();
@@ -126,8 +131,10 @@ export async function loadAssistantEngine(settings: AssistantSettings, onProgres
     temperature: settings.sampling ? settings.temperature : 0, sampling_mode: settings.sampling ? "sample" : "greedy",
     top_k: settings.topK, top_p: settings.topP, min_p: settings.minP, seed: settings.seed, cpu_threads: settings.cpuThreads,
   } };
-  const loader = profile.engine === "litert-lm" ? runtime.loadGemma : runtime.loadWllama;
-  const engine = await loader(configured, onProgress, { assetBase, mode: settings.executionMode,
+  const loader = profile.engine === "wllama-fp32" ? runtime.loadFp32Chat : profile.engine === "litert-lm" ? runtime.loadGemma : runtime.loadWllama;
+  if (!loader) throw new Error("The compatible text runtime is unavailable.");
+  const engine = await loader(configured, onProgress, { assetBase, mode: settings.executionMode, signal,
+    fetch: assets?.fetch, installedModel: assets?.modelId,
     // The accepted MiniCPM allocation fallback uses eight GPU layers.
     gpuLayers: settings.executionMode === "hybrid" ? settings.gpuLayers : 8,
     capabilities: { gpu: { compute: compatibility.fp32, f16_compute: compatibility.fp16 } },

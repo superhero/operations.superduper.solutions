@@ -219,7 +219,7 @@ Then('the assistant settings expose accepted local models and remember configura
   await page.setViewportSize({ width: 1280, height: 844 });
   let picker = panel.getByRole('combobox', { name: 'Local model', exact: true });
   await picker.click();
-  await expect(page.getByRole('option').locator('.field-select-option-label')).toHaveText(['Bonsai 2 · 2B','Bonsai 2 · 4B','Bonsai 2 · 9B','Bonsai 2 · 27B','Ornith 1.5 · 9B Q4_K_M','Ornith 1.5 · 9B Q8_0','Gemma 4 · E2B','MiniCPM5 · 2.52B']);
+  await expect(page.getByRole('option').locator('.field-select-option-label')).toHaveText(['Bonsai 2 · 2B','Bonsai 2 · 4B','Bonsai 2 · 9B','Bonsai 2 · 27B','Ornith 1.5 · 9B Q4_K_M','Ornith 1.5 · 9B Q8_0','Gemma 4 · E2B','MiniCPM5 · 2.52B','MiniCPM5 · 2.52B · FP32','Ornith 1.5 · 9B · Q4 · FP32','Ornith 1.5 · 9B · Q8 · FP32','LFM3 · 1.7B · Q4 · FP32']);
   await page.keyboard.press('Escape');
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
   await picker.click();
@@ -573,7 +573,7 @@ Then('decision controls preserve native results and release their exclusive mode
   const page=this.page;await installDecisionFixture(page);const panel=await openAssistant(page);const configuration=await openConfiguration(panel);
   await configuration.locator('.decision-settings > summary').click();
   const section=configuration.locator('.decision-settings'), picker=section.getByRole('combobox',{name:'Decision model',exact:true});
-  await picker.click();await expect(page.getByRole('option')).toHaveCount(9);await page.keyboard.press('Escape');
+  await picker.click();await expect(page.getByRole('option')).toHaveCount(17);await page.keyboard.press('Escape');
   expect(await page.evaluate(()=>window.decisionFixture.workers)).toBe(0);
   await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 CPU',exact:true}).click();
   await expect(section.getByRole('button',{name:'Score decision',exact:true})).toBeEnabled();
@@ -586,6 +586,46 @@ Then('decision controls preserve native results and release their exclusive mode
   await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
   await expect(configuration.getByRole('combobox',{name:'Language model',exact:true})).toBeEnabled();
   expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(1);
+  await picker.click();await page.getByRole('option',{name:'D3 lite · 0.8B · FP32',exact:true}).click();
+  await expect(section.locator('.runtime-label')).toContainText('FP32 GPU backbone');
+  await expect(section).toContainText('input embedding and small readout may use CPU');
+  await section.getByRole('button',{name:'Score decision',exact:true}).click();
+  await expect(output).toContainText('0.85');
+  expect(await page.evaluate(()=>window.decisionFixture.messages.find(row=>row.profile==='d3-lite-fp32').type)).toBe('load');
+  await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
+  expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(2);
+  await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 · FP32',exact:true}).click();
+  await expect(section).toContainText('original CPU pointer head');
+  await expect(section.locator('.runtime-label')).toContainText('FP32 GPU backbone');
+  await section.getByRole('button',{name:'Score decision',exact:true}).click();await expect(output).toContainText('0.85');
+  await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
+  expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(3);
+});
+Then('the Strands worker loads current source without page globals or model downloads',{timeout:90000},async function(){
+  const check=()=>this.page.evaluate(async()=>{
+    const {Decider}=await import(new URL('./assistant-runtime/decision/strands-fp32.mjs',location.href).href);
+    const model=new Decider({profile:{native_variant:'unsupported'}});
+    let failure;try{await model.ready;}catch(error){failure=error.message;}finally{await model.dispose();}
+    if(!failure?.includes('pinned compatible Strands'))throw Error('The actual Strands worker did not execute its input guard: '+failure);
+    return true;
+  });
+  expect(await check()).toBe(true);
+  const {createFixtureServer,waitForApplicationReady}=await import('./legacy-smoke/support.mjs'),server=await createFixtureServer({});
+  const url=`http://127.0.0.1:${server.httpServer.address().port}`,allow=route=>route.continue();
+  await this.context.route(`${url}/**`,allow);
+  try{await this.page.goto(url,{waitUntil:'networkidle',timeout:60000});await waitForApplicationReady(this.page);expect(await check()).toBe(true);}
+  finally{await this.context.unroute(`${url}/**`,allow);await server.close();}
+});
+Then('the shared FP32 decision artifact retains all native readout APIs',{timeout:90000},async function(){
+  const requests=[];this.page.on('request',request=>{if(/huggingface|\.gguf/.test(request.url()))requests.push(request.url());});
+  const result=await this.page.evaluate(async()=>{
+    const base=new URL('./assistant-runtime/decision/',location.href);
+    const code=`const base=${JSON.stringify(base.href)};try {const {Wllama}=await import(base+'vendor/wllama-fp32/index.js');await import(base+'engine.mjs');for(const name of ['inspectSystemOne','createSystemOne','createCompletion','createBlockReadout','createInlineReadout'])if(typeof Wllama.prototype[name]!=='function')throw Error('Missing native '+name);const bytes=await(await fetch(base+'vendor/wllama-fp32/wllama.wasm')).arrayBuffer();await WebAssembly.compile(bytes);const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');postMessage({bytes:bytes.byteLength,sha});}catch(error){postMessage({error:error.message});}`;
+    const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url,{type:'module'});
+    try{return await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('FP32 artifact import timed out')),45000);worker.onerror=event=>{event.preventDefault();clearTimeout(timer);reject(Error(event.message));};worker.onmessage=({data})=>{clearTimeout(timer);data.error?reject(Error(data.error)):resolve(data);};});}
+    finally{worker.terminate();URL.revokeObjectURL(url);}
+  });
+  expect(result.bytes).toBe(9386116);expect(result.sha).toBe('2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541');expect(requests).toEqual([]);
 });
 Then('native runtime modules and compressed Wasm load in real browser workers', {timeout:90000}, async function() {
   const page=this.page, requests=[];page.on('request',request=>{if(/huggingface|\.gguf/.test(request.url()))requests.push(request.url());});
@@ -734,4 +774,36 @@ Then('local model leases coordinate browser tabs cancellation and owner worker d
     await this.page.evaluate(()=>window.successorRun);expect(await this.page.evaluate(()=>window.afterDeath)).toBe(true);
     await this.page.evaluate(()=>window.successor.close());
   } finally {await other.close();await this.context.unroute(`${url}/**`,allow);}
+});
+
+Then('compatible MiniCPM settings and its paired native artifacts remain browser-local', {timeout:90000}, async function() {
+  const page=this.page;await installAssistantFixture(page);const panel=await openAssistant(page),picker=panel.getByRole('combobox',{name:'Local model',exact:true});
+  await picker.click();await page.getByRole('option',{name:'MiniCPM5 · 2.52B · FP32',exact:true}).click();
+  await expect(panel.getByRole('button',{name:'Unload model',exact:true})).toBeVisible();
+  await page.evaluate(()=>window.assistantFixture.emit({type:'update',messages:[{role:'assistant',text:'Profile reply.'}],error:''}));await expect(panel.getByRole('log',{name:'Assistant conversation'}).locator('article > strong')).toHaveText('MiniCPM5');
+  const loaded=await page.evaluate(()=>window.assistantFixture.settings);expect(loaded.model).toBe('minicpm5-fp32');expect(loaded.executionMode).toBe('gpu');expect(loaded.context).toBe(4096);expect(loaded.maxTokens).toBe(256);
+  const config=await openConfiguration(panel);await config.getByRole('button',{name:'Unload language model',exact:true}).click();
+  for(const name of ['Reasoning','Sample responses','Prefix cache'])await expect(config.getByRole('checkbox',{name,exact:true})).toBeDisabled();
+  await expect(config.getByRole('slider',{name:'Context tokens',exact:true})).toHaveAttribute('aria-valuemax','4096');
+  await expect(config.getByRole('slider',{name:'Output tokens',exact:true})).toHaveAttribute('aria-valuemax','256');
+  await config.getByRole('combobox',{name:'Execution',exact:true}).click();expect(await page.getByRole('option').evaluateAll(options=>options.map(option=>option.getAttribute('data-value')))).toEqual(['','gpu']);await page.keyboard.press('Escape');
+  await openAssistant(page);
+  for(const [label,id]of[['Ornith 1.5 · 9B · Q4 · FP32','ornith-q4-fp32'],['Ornith 1.5 · 9B · Q8 · FP32','ornith-q8-fp32'],['LFM3 · 1.7B · Q4 · FP32','lfm3-fp32']]){
+    await picker.click();await page.getByRole('option',{name:label,exact:true}).click();await expect(panel.getByRole('button',{name:'Unload model',exact:true})).toBeVisible();
+    expect(await page.evaluate(()=>{const s=window.assistantFixture.settings;return{model:s.model,executionMode:s.executionMode,context:s.context,maxTokens:s.maxTokens,thinking:s.thinking,sampling:s.sampling,prefixCache:s.prefixCache};})).toEqual({model:id,executionMode:'gpu',context:4096,maxTokens:256,thinking:false,sampling:false,prefixCache:false});
+    await page.evaluate(()=>window.assistantFixture.emit({type:'update',messages:[{role:'assistant',text:'Profile reply.'}],error:''}));await expect(panel.getByRole('log',{name:'Assistant conversation'}).locator('article > strong')).toHaveText(label.split(' · ')[0]);
+    const settings=await openConfiguration(panel);await settings.getByRole('button',{name:'Unload language model',exact:true}).click();
+    for(const name of['Reasoning','Sample responses','Prefix cache'])await expect(settings.getByRole('checkbox',{name,exact:true})).toBeDisabled();
+    await openAssistant(page);
+  }
+  for(const width of [390,320]){await page.setViewportSize({width,height:844});expect(await page.locator('#settings-panel').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);}
+  const imports=[];for(const folder of['upstream','lfm3-upstream'])imports.push(await page.evaluate(folder=>new Promise((resolve,reject)=>{
+    const sdk=new URL('./assistant-runtime/text-fp32/'+folder+'/index.js',document.baseURI).href,wasm=new URL('./assistant-runtime/text-fp32/'+folder+'/wllama.wasm',document.baseURI).href;
+    const factory=new URL('./assistant-runtime/text-fp32/engine.mjs',document.baseURI).href;const code=`import {loadFp32Chat} from ${JSON.stringify(factory)};import {Wllama} from ${JSON.stringify(sdk)};const bytes=await(await fetch(${JSON.stringify(wasm)})).arrayBuffer();await WebAssembly.compile(bytes);const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');postMessage({factory:typeof loadFp32Chat,sdk:typeof Wllama,bytes:bytes.byteLength,sha});`;
+    const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url,{type:'module'});
+    const done=(error,value)=>{clearTimeout(timer);worker.terminate();URL.revokeObjectURL(url);error?reject(error):resolve(value);};
+    const timer=setTimeout(()=>done(Error('Compatible native artifact import timed out')),20000);
+    worker.onerror=event=>{event.preventDefault();done(Error(event.message));};worker.onmessage=({data})=>done(null,data);
+  }),folder));
+  expect(imports).toEqual([{factory:'function',sdk:'function',bytes:9326027,sha:'b4862a3d30aaac1d33afbbba430d4d48a3e8baeb55b1a2e632fac51478ec7cc0'},{factory:'function',sdk:'function',bytes:9456086,sha:'5ae95c179c98794498b7d9a4b9594ddf58c2804c4367b76a92393bd8953b02f3'}]);
 });

@@ -69,6 +69,56 @@ Await normal worker disposal with bounded termination fallback. Treat unconfirme
 
 ```
 
+<!-- changelog-commit:735b3c842d0b96345c1d9ea49755504344b55120 -->
+### Commit [`735b3c8`](https://github.com/superhero/operations.superduper.solutions/commit/735b3c842d0b96345c1d9ea49755504344b55120)
+
+```text
+feat(assistant): add strict FP32 MiniCPM runtime
+
+```
+
+<!-- changelog-commit:9688502e8d06964760c140b08cde6b64d254584d -->
+### Commit [`9688502`](https://github.com/superhero/operations.superduper.solutions/commit/9688502e8d06964760c140b08cde6b64d254584d)
+
+```text
+feat(assistant): verify and retain local model files
+
+```
+
+<!-- changelog-commit:3a04d6f508043540d4fcedda81caa03a5d4e016f -->
+### Commit [`3a04d6f`](https://github.com/superhero/operations.superduper.solutions/commit/3a04d6f508043540d4fcedda81caa03a5d4e016f)
+
+```text
+feat(assistant): complete compatible native text choices
+
+```
+
+<!-- changelog-commit:30c7101a2efce7985600962a11bb4cfcdb213954 -->
+### Commit [`30c7101`](https://github.com/superhero/operations.superduper.solutions/commit/30c7101a2efce7985600962a11bb4cfcdb213954)
+
+```text
+feat(assistant): add compatible native decision models
+
+```
+
+<!-- changelog-commit:f1e5fa61ebf28b6e8502fb404766a0b338e152f4 -->
+### Commit [`f1e5fa6`](https://github.com/superhero/operations.superduper.solutions/commit/f1e5fa61ebf28b6e8502fb404766a0b338e152f4)
+
+```text
+feat(assistant): integrate compatible Strands decisions
+
+```
+
+<!-- changelog-commit:7e53bb2b89aaf05e6f0ef8c593f11341f6711b19 -->
+### Commit [`7e53bb2`](https://github.com/superhero/operations.superduper.solutions/commit/7e53bb2b89aaf05e6f0ef8c593f11341f6711b19)
+
+```text
+feat(speech): add continuous dictation with durable recovery
+
+Persist bounded audio segments and recording-wide transcript updates, wait for archive completion before runtime handoff, and retain recoverable captures across reloads. Keep optional runtime assets and verbatim notices within the reviewed deployment contract.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66

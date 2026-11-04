@@ -11,8 +11,10 @@ const throwIfAborted = signal => { if (signal.aborted) throw signal.reason insta
 
 async function defaultLoadVision(profile, options) {
   const {signal, assetBase} = options;
+  const installedModel = profile.settings?.precision_variant === 'official-q4-fp32-compatible-v1' ? 'image:compatible' : 'image:fp16';
+  const {prepareModelAssets} = await import('./model-storage/runtime.ts');
+  const releaseAssets = await prepareModelAssets(installedModel, signal, event => options.onProgress?.(event));
   const url = new URL('vision-engine.js', assetBase).href;
-  const {createVisionEngine} = await import(/* @vite-ignore */ `${url}`);
   let worker;
   const abort = () => {
     if (!worker) return;
@@ -24,11 +26,20 @@ async function defaultLoadVision(profile, options) {
   signal.addEventListener('abort', abort, {once: true});
   try {
     throwIfAborted(signal);
-    return await createVisionEngine(profile, {...options, createWorker() {
+    const {createVisionEngine} = await import(/* @vite-ignore */ `${url}`);
+    const engine = await createVisionEngine(profile, {...options, installedModel, createWorker() {
       throwIfAborted(signal);
       worker = new Worker(new URL('vision-worker.js', assetBase), {type: 'module'});
       return worker;
     }});
+    const dispose = engine.dispose.bind(engine);
+    let disposal;
+    engine.dispose = () => disposal ??= (async () => { await dispose(); await releaseAssets(); })();
+    return engine;
+  } catch (error) {
+    // An unknown native cleanup keeps the asset claim until this worker exits.
+    if (!worker) await releaseAssets();
+    throw error;
   } finally { signal.removeEventListener('abort', abort); }
 }
 

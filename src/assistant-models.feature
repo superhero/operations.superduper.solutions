@@ -23,3 +23,21 @@ Feature: Accepted native assistant and decision engines
     Then native decision guards preserve complete inputs and separate CPU compatibility
   Scenario: Native execution requirements fail before model downloads
     Then native runtime checks distinguish CPU placement from missing GPU and Wasm features
+  Scenario: Compatible text is a separate strict GPU profile
+    Then compatible MiniCPM preserves legacy placement and caps its qualified settings
+  Scenario: Compatible native text keeps trained messages and GPU placement evidence
+    Then compatible native text binds the pinned ABI and streams original tool calls
+  Scenario: Incomplete GPU evidence and CPU model computation cannot pass
+    Then compatible text refuses unproved or CPU model placement after log rollover
+  Scenario: Compatible text cancellation awaits native disposal
+    Then compatible text cancellation drains and failed cleanup stays failed
+  Scenario: Installed catalogs contain complete immutable language and image files
+    Then installed model catalogs retain exact language files and both complete image variants
+  Scenario: Installed text uses the cache reader at every native loading seam
+    Then all language adapters receive the installed reader without changing model placement
+  Scenario: Failed installation releases its own logical use claim
+    Then model asset preparation retains successful claims and releases failed or canceled ones
+  Scenario: Compatible text choices bind each model to its qualified runtime pair
+    Then compatible Ornith and LFM3 use fixed GPU settings and reject mixed native pairs
+  Scenario: LFM3 reasoning remains separate from visible answers
+    Then the trained LFM3 reasoning boundary preserves raw output without leaking truncated thoughts

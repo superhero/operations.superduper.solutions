@@ -1,0 +1,145 @@
+{
+  "date": "2026-11-04",
+  "status": "semantic native UI pass; original suite cleanup timing assertion failed",
+  "scope": "One actual Operations production UI turn on desktop Brave/RTX3060, strict MiniCPM4096/256 greedy with compatible image1024/128. Not general quality, performance or mobile qualification.",
+  "native_run": "ops-minicpm-vision-native-1793751600476842220",
+  "native_suite_exit_code": 1,
+  "native_evidence": {
+    "raw_reference": "llm-sds-01/inference/.runtime/operations-minicpm-vision-qa-20261104/runs/ops-minicpm-vision-native-1793751600476842220/evidence/browser.json",
+    "sha256": "61317546d8cb6f10de2a61d7b5264614d2aab7191bbe23bf327d4062c546d35e",
+    "source_manifest_sha256": "2beb2254b2cdecfded58027a1ba3ec383633782f1a3325990c527ecf712d8853",
+    "qa_snapshot_sha256": "aa0b76813d8216efbdce0510938970b67343554ea23d07aacd3f1424ee985eef"
+  },
+  "gates": {
+    "whole_final_answer": {
+      "state": "passed",
+      "expected": "QAAPP-DA0333|PINE-1417",
+      "actual": "QAAPP-DA0333|PINE-1417"
+    },
+    "real_tools": {
+      "state": "passed",
+      "order": [
+        "read_skill",
+        "read_application",
+        "inspect_image"
+      ],
+      "all_failed_false": true
+    },
+    "image_ocr": {
+      "state": "passed",
+      "code": "PINE-1417",
+      "tool_result_contains_code": true
+    },
+    "text_restore": {
+      "state": "passed",
+      "status_observed": true,
+      "physical_load_markers": [
+        {
+          "at": 5104.180000007153,
+          "message": "GPU_ONLY_MODEL input=GPU no_cpu_weight_fallback=1"
+        },
+        {
+          "at": 75273.36500000954,
+          "message": "GPU_ONLY_MODEL input=GPU no_cpu_weight_fallback=1"
+        }
+      ],
+      "full_layer_markers": [
+        {
+          "at": 5110.339999973774,
+          "message": "load_tensors: offloaded 43/43 layers to GPU"
+        },
+        {
+          "at": 75280.6399999857,
+          "message": "load_tensors: offloaded 43/43 layers to GPU"
+        }
+      ],
+      "settings_unchanged": true
+    },
+    "gpu_text": {
+      "state": "strict native current-turn guard accepted both actual model responses",
+      "browser_fp32": true,
+      "browser_fp16": false,
+      "observed_cpu_model_error_markers": [],
+      "raw_numeric_audit_totals_exposed": false
+    },
+    "context": {
+      "state": "complete request estimates only; no native exact prospective API",
+      "measurements": [
+        {
+          "inputTokens": 1722,
+          "contextTokens": 4096,
+          "kind": "estimate",
+          "method": "UTF-8 request bytes / 3 plus message framing; native template/tokenizer unavailable",
+          "reserveTokens": 128,
+          "maxTokens": 256
+        },
+        {
+          "inputTokens": 2540,
+          "contextTokens": 4096,
+          "kind": "estimate",
+          "method": "UTF-8 request bytes / 3 plus message framing; native template/tokenizer unavailable",
+          "reserveTokens": 128,
+          "maxTokens": 256
+        }
+      ]
+    },
+    "ui_unload_assertion": {
+      "state": "failed premature immediate worker-count snapshot",
+      "after_click_terminated": 0,
+      "final_observed_terminated": 1,
+      "dispose_ack_observed": true,
+      "original_error": "expected +0 to be 1 // Object.is equality"
+    },
+    "terminal_cleanup": {
+      "state": "passed",
+      "own_services": [
+        {
+          "service": "ops-minicpm-vision-qa-assets-1793751600476842220",
+          "removed": true
+        },
+        {
+          "service": "ops-minicpm-vision-qa-native-1793751600476842220",
+          "removed": true
+        }
+      ],
+      "no_gpu_owners": true,
+      "gpu_csv": "GPU-dce31069-0ec8-ce8c-7f8f-41b83fbf5579, 12288, 11962, 0",
+      "browser_cleanup_errors": [],
+      "resource_read_errors": []
+    }
+  },
+  "resources": {
+    "cpu.max": "400000 100000",
+    "memory.max": "17179869184",
+    "memory.swap.max": "0",
+    "pids.max": "512",
+    "memory_peak_bytes": 8686366720,
+    "pids_peak": 194,
+    "oom_kills": 0,
+    "sampled_min_gpu_free_mib": 9253,
+    "physical_vram_peak_measured": false,
+    "nonisolated_functional": true
+  },
+  "focused_checks": {
+    "source_cases_passed": 7,
+    "browser_cases_passed": 4,
+    "new_browser_case_fixture_corrections": "Shared menu includes a placeholder and icon text; assertion now checks actual option values. Earlier three cases retained.",
+    "typecheck_errors": 0,
+    "existing_warning": "WorkflowVaultNode pointer interaction ARIA warning",
+    "production_build": "passed"
+  },
+  "limitations": [
+    "Single desktop UI case, not a quality/speed benchmark or mobile qualification.",
+    "Vision CPU shape/index/preprocessing/sampling may remain; not all-operator GPU proof.",
+    "Original suite failure and raw output remain immutable.",
+    "Explicit terminal GPUBuffer destruction counts were not instrumented in this UI case.",
+    "Native numeric text audit totals were not exported by this UI harness; the shipped adapter enforced positive per-forward GPU audit delta and zero CPU model computation.",
+    "Prospective MiniCPM context counts remain labeled estimates, using actual loaded capacity; no tokenizer/count-only API was invented.",
+    "The first QA controller failed its own inventory label before browser inference; its immutable receipt remains preserved separately."
+  ],
+  "post_qualification_changes": [
+    "Remove trailing blank line from the copied pure placement helper; no behavior change.",
+    "Record qualification and update descriptive status/docs; preserve all pinned upstream bytes.",
+    "Base integration changes CHANGELOG.md only."
+  ]
+}

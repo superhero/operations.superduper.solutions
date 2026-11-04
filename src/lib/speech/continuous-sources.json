@@ -1,0 +1,102 @@
+{
+  "reviewed": "2026-11-04",
+  "files": [
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/continuous/capture.js",
+      "target": "src/lib/speech/continuous/capture.js",
+      "source_sha256": "b61070e02738ce3c2244dac0a3c4fbcac2a67791a039fb189478eafa96fc0970",
+      "target_sha256": "5e6345a6b73451f45a77e08499dc205162f6eca4bd9ae1601909387b4abd0024",
+      "adaptation": "Operations lifecycle fences, recording lock, archive acknowledgement, coalesced failure/cancel cleanup, worker recreation and recovery callbacks."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/continuous/segment-session.js",
+      "target": "src/lib/speech/continuous/segment-session.js",
+      "source_sha256": "6ebf458f7c67ab5ade3a69e534adcd7f0b27db81d8c3bc76d6a0d8b72f297968",
+      "target_sha256": "2378fed101ef55dd09ba76695b96903de76688addf8a7df278e12b9b557028e5",
+      "adaptation": "Physical recording creation timestamp persisted in segment metadata."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/continuous/segment-store.js",
+      "target": "src/lib/speech/continuous/segment-store.js",
+      "source_sha256": "028bad1c3469d54547abc5045880c420459903550600c3343607d46e4b5be8b5",
+      "target_sha256": "028bad1c3469d54547abc5045880c420459903550600c3343607d46e4b5be8b5",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/continuous/transcript-merger.js",
+      "target": "src/lib/speech/continuous/transcript-merger.js",
+      "source_sha256": "2aed2bcb1c0e3f72a5727144ece3868a7ef3a4053af40e8c44004c59309f94e5",
+      "target_sha256": "2aed2bcb1c0e3f72a5727144ece3868a7ef3a4053af40e8c44004c59309f94e5",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/nq/resident-decoder.js",
+      "target": "src/lib/speech/nq/resident-decoder.js",
+      "source_sha256": "b57ecfcf09809538f0ebefc7c4ee6a1ae2ae6affbf5af108e02de78851170391",
+      "target_sha256": "b57ecfcf09809538f0ebefc7c4ee6a1ae2ae6affbf5af108e02de78851170391",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/nq/selection-decoder.js",
+      "target": "src/lib/speech/nq/selection-decoder.js",
+      "source_sha256": "307d103cb61b1d6dc36fa5e0795c28f4eb9e90eee8e19313be021491358f47a9",
+      "target_sha256": "307d103cb61b1d6dc36fa5e0795c28f4eb9e90eee8e19313be021491358f47a9",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/nq/grouped-decoder.js",
+      "target": "src/lib/speech/nq/grouped-decoder.js",
+      "source_sha256": "1c15a4b0636d94fee496a571ee4f26f718a327f040288cf4f8844da1a88e8a9c",
+      "target_sha256": "1c15a4b0636d94fee496a571ee4f26f718a327f040288cf4f8844da1a88e8a9c",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/speech/runtime/nq/nr/engine.js",
+      "target": "src/lib/speech/nq/nr/engine.js",
+      "source_sha256": "19002f252bd04dac230fc37b3a042d1833554a0ec3c8353705da4518a12d11ab",
+      "target_sha256": "ac0e46cd77715b0246580a2147f43cfee470f43d641b32ffed44e0b79e8dbdd6",
+      "adaptation": "Cached disposal outcome, awaited inference/session/queue drain and owned GPU cleanup."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/speech/nq/prepare-live.mjs",
+      "target": "build/speech/nq/prepare-live.mjs",
+      "source_sha256": "3ab5bd2b950e9b8a32be023b24397e85919d111f933b369c77be7e13c6f2db18",
+      "target_sha256": "3ab5bd2b950e9b8a32be023b24397e85919d111f933b369c77be7e13c6f2db18",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/speech/nq/prepare-grouped.mjs",
+      "target": "build/speech/nq/prepare-grouped.mjs",
+      "source_sha256": "76698a11132ccf573c62957b8495057cf9901c9e5d248772a8d643acfc994093",
+      "target_sha256": "76698a11132ccf573c62957b8495057cf9901c9e5d248772a8d643acfc994093",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/speech/nq/prepare-resident.mjs",
+      "target": "build/speech/nq/prepare-resident.mjs",
+      "source_sha256": "e28b014d1468c9c475dfedf36f1063d4fd611d377317098b9f2dc0350932cd9c",
+      "target_sha256": "e28b014d1468c9c475dfedf36f1063d4fd611d377317098b9f2dc0350932cd9c",
+      "adaptation": "Reference source retained byte for byte."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/speech/nq/prepare-selection.mjs",
+      "target": "build/speech/nq/prepare-selection.mjs",
+      "source_sha256": "4e82a4e95f179bbacb7b65dfb129792a9db51eaf3717e29324f57d9678b8e943",
+      "target_sha256": "4e82a4e95f179bbacb7b65dfb129792a9db51eaf3717e29324f57d9678b8e943",
+      "adaptation": "Reference source retained byte for byte."
+    }
+  ],
+  "generation": "Four pinned preparation recipes run in an Operations-owned build directory; source URL and proof paths are rewritten there. Reference worktrees remain read-only."
+}

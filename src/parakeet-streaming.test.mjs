@@ -172,8 +172,12 @@ Then('speech preferences and confirmed text preserve user control', () => {
   assert.deepEqual(speechPreferences({ mode: 'gpu-fp32', restore: false, loaded: true, refine: true }), { mode: 'gpu-fp32', restore: false, loaded: true, refine: true });
   assert.equal(speechPreferences({ mode: 'fp16', loaded: 1, refine: 1 }).mode, 'cpu');
   assert.equal(speechPreferences({ loaded: 1, refine: 1 }).loaded, false);
-  assert.equal(speechProfiles.length, 2);
-  for (const profile of speechProfiles) assert.equal(profile.bytes, profile.files.reduce((sum, file) => sum + modelLock.files.find(pin => pin.file === file).bytes, 0));
+  assert.equal(speechProfiles.length, 3);
+  assert.equal(speechPreferences({mode:'gpu-continuous'}).mode,'gpu-continuous');
+  const continuous=JSON.parse(readFileSync(new URL('./lib/speech/continuous-profile.json',import.meta.url)));
+  assert.equal(speechProfiles.find(profile=>profile.value==='gpu-continuous').bytes,continuous.files.reduce((sum,file)=>sum+file.bytes,0));
+  assert.equal(continuous.files.find(file=>file.file==='decoder-single-step.int8-fp32.onnx').bytes,18195496);
+  for (const profile of speechProfiles.filter(profile=>profile.value!=='gpu-continuous')) assert.equal(profile.bytes, profile.files.reduce((sum, file) => sum + modelLock.files.find(pin => pin.file === file).bytes, 0));
   assert.deepEqual(appendDictation('Typed words.', '', 'First sentence.'), { draft: 'Typed words. First sentence.', confirmed: 'First sentence.', truncated: false });
   assert.equal(appendDictation('User corrected first sentence. ', 'First sentence.', 'First sentence. Second.').draft, 'User corrected first sentence. Second.');
   assert.equal(appendDictation('', '', 'Hello.').draft, 'Hello.');

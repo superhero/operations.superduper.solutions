@@ -1,0 +1,90 @@
+{
+  "reviewed": "2026-11-04",
+  "variant": "shared-fp32-gpu-v1",
+  "profiles": [
+    "d3-lite-fp32",
+    "d3-nano-fp32",
+    "d3-mini-fp32",
+    "d3-flash-fp32",
+    "knowline-fp32",
+    "elephant-fp32",
+    "perplexity-fp32"
+  ],
+  "source": "llm-sds-01 brave-decisions/gpu-cache-suite.json; accepted my/mz/na/nb/nc/nd/ne attempts; Code expanded-catalog and native placement adapter",
+  "runtime": {
+    "sdk_sha256": "647a28ebc01a27b43386023f01740b6348ec7a851311811fe584e8291c33cbda",
+    "wasm_bytes": 9386116,
+    "wasm_sha256": "2eff6cb50e99d1d80c57e4ed235b659303318d98097d64fe0b39aa8f6b730541",
+    "placement": "All model backbone layers on WebGPU with F32 compute and the pinned packed-weight matrix pipeline. CPU input embedding and small readout remain allowed. No shader-f16 feature requested.",
+    "settings": "1024 context/batch/microbatch; 99 GPU layers, F32 K/V, no warmup/flash/reasoning/prefix cache override. Qualified input cap1024; KnowLine reserves one sample position and accepts1023."
+  },
+  "preserved_protocols": [
+    "D3 no-forward native inspector, one complete noncausal question, SystemOne original probabilities/calibration and matching forward input count.",
+    "KnowLine causal read-twice prompt, original selected token logprobs/top64 with one sampled token discarded.",
+    "Elephant original prefix/suffix block attention and native logits over every offered label.",
+    "Perplexity protocol-v3 single whole-prompt inline marker248062, original attention masks, no sampled tokens, calibrated temperature1.5539092221462472."
+  ],
+  "cache": "Every pinned publisher weight/tokenizer/metadata/notice file is installed and whole-file verified first. Full immutable URLs retain files from distinct model repositories even when basenames coincide. Shared use survives physical runtime yield.",
+  "source_review": "Independent proof session found no concrete dispatch/protocol/pin/cache/cleanup blocker; source-only evidence.",
+  "operations_native": {
+    "status": "D3-lite FP32 passed; other six profiles retain reference-only acceptance",
+    "run_id": "ops-d3-lite-fp32-native-1793757342151515404",
+    "source_map_sha256": "70ae3763b1513d3bb0e7e535ccd0a86ccc32beca8e35d1088e8005526c8c8c64",
+    "qa_snapshot_sha256": "1560ea8df270b41b07e0b712aa735a77783cab44c39f4bcc0336b3b608e3e4b8",
+    "raw_result_sha256": "fc414c7850fcfca9c7efbeec12a5d5b1d98894cd466c386b2ae352619a27ed99",
+    "semantic_passed": 4,
+    "controls_passed": 2,
+    "attempts": 1,
+    "installed": {
+      "models": [
+        "decision:d3-lite-fp32"
+      ],
+      "files": 2,
+      "verified_bytes": 2025306210,
+      "blocks": 243
+    },
+    "publisher_requests_after_reload": 0,
+    "transport_violations": 0,
+    "placement": {
+      "backend": "webgpu",
+      "n_gpu_layers": 99,
+      "shader_f16": false,
+      "offloaded": {
+        "count": 25,
+        "total": 25
+      },
+      "gpu_model_buffers": [
+        "load_tensors:       WebGPU model buffer size =  1436.03 MiB"
+      ],
+      "matrix_pipelines": [
+        "ggml_webgpu: FP32_COMPAT pipeline mul_mat_vec_bf16_f32_wg_reduce",
+        "ggml_webgpu: FP32_COMPAT pipeline mul_mat_vec_f32_f32_wg_reduce_vectorized",
+        "ggml_webgpu: FP32_COMPAT pipeline mul_mat_reg_tile_bf16_f32",
+        "ggml_webgpu: FP32_COMPAT pipeline mul_mat_reg_tile_f32_f32_vectorized"
+      ],
+      "compute_verified": true,
+      "native_forward_completed": true,
+      "cpu_input_embedding_and_small_readout_allowed": true
+    },
+    "unload_disposed_ack": true,
+    "worker_terminated": 1,
+    "peak_cgroup_memory_bytes": 5171695616,
+    "peak_pids": 185,
+    "oom_kills": 0,
+    "cleanup": "Both owned services removed; no GPU owners,11962MiB free; grant released.",
+    "limits": [
+      "single desktop Brave/RTX3060 case",
+      "four simple semantics/two controls, not general accuracy",
+      "native cumulative placement, not per-operator CPU-zero proof",
+      "CPU input embedding and small readout allowed",
+      "timings functional, not an isolated performance benchmark",
+      "other decision profiles not Operations-native-qualified by this run",
+      "Elephant FP32 uses a separately pinned contributor export; no tensor identity claim against the original export."
+    ]
+  },
+  "validation": {
+    "source": "8 unique focused cases passed. Initial step inventory and fixture assumptions corrected; original failure receipts retained and only failed cases repeated.",
+    "browser": "3 targeted scenarios passed: explicit16-option decision UI and result/unload, actual shared SDK five native APIs and hash/compile of paired Wasm, real production/development compatibility workers.",
+    "build": "Typecheck0errors/1existing WorkflowVaultNode ARIAwarning; final production and optional runtime builds passed."
+  }
+}

@@ -33,7 +33,13 @@ Feature: Browser assistant in Settings
     Then image runtime preferences select the served compatible model without changing text placement
   Scenario: Decision models are separate explicit native requests
     Then decision controls preserve native results and release their exclusive model session
+  Scenario: Compatible decisions retain the real shared native artifact
+    Then the shared FP32 decision artifact retains all native readout APIs
+  Scenario: Compatible Strands uses isolated production and development workers
+    Then the Strands worker loads current source without page globals or model downloads
   Scenario: Optional runtime artifacts load without model weights
     Then native runtime modules and compressed Wasm load in real browser workers
   Scenario: Runtime ownership coordinates real tabs and worker death
     Then local model leases coordinate browser tabs cancellation and owner worker death
+  Scenario: Compatible text choices load with fixed GPU settings and native artifacts
+    Then compatible MiniCPM settings and its paired native artifacts remain browser-local

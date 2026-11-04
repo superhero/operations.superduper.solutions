@@ -20,6 +20,16 @@ uses LiteRT-LM. CPU and partial GPU execution remain explicit where supported.
 Capability checks test actual computation before model loading; successful small
 probes do not establish model memory fit or mobile support.
 
+**MiniCPM5 · 2.52B · FP32** is a separate, opt-in native Wllama profile.
+It uses the pinned official Q4_K_M weights with full GPU model execution and
+FP32 activations/KV, without requiring shader-f16. It keeps greedy decoding,
+reasoning and prefix caching off, and caps context/output at4096/256 tokens.
+It rejects CPU/hybrid fallback. The original MiniCPM option retains its existing
+placement choices. One native Operations skill/application/image task passed its exact final-answer
+oracle. The original suite retained an immediate-unload timing assertion failure;
+later disposal/termination and terminal cleanup were observed. See
+[compatible text evidence](assistant-compatible-text-quality.json) for scope.
+
 Each text forward budgets the complete prompt, history and tool results.
 Bonsai uses its native counter on the generating session; current Gemma/Wllama
 bindings use a clearly labeled estimate. Output is capped by available context
@@ -46,9 +56,20 @@ WebML's runtime source is fetched from its immutable upstream URL and checked
 for exact byte count and SHA256 before import. Its redistribution license was
 not established in the source handoff, so that runtime is not vendored or bundled.
 Other runtime packages and notices are pinned in the application distribution.
-Publisher model files remain remote. Declared model hashes and QA's verified
-fixture transport do not establish a production whole-file installation guarantee.
-Model disk caching and prefix snapshots remain disabled for WebML.
+Language selection automatically saves and verifies its immutable publisher files
+before initialization. Image files are saved on first inspection. Whole-file
+SHA256 and size must match before a complete IndexedDB marker is written; failed
+ranges, cancellation and quota errors discard incomplete downloads. Model reads
+then use local storage without publisher fallback. Missing required blocks fail;
+optional metadata probes receive a local404. WebML's own disk cache and prefix
+snapshot store remain disabled, separately from this application-owned store.
+
+**Settings → AI → Model storage** lists verified files and removes unused models.
+Same-origin tabs hold shared logical use claims through physical model handoff;
+removal needs exclusive ownership. Shared files remain while another installed
+profile references them. Runtime files bundled with the application still load
+from this origin; cached model files do not establish fully offline SPA support.
+Decision and speech installation remain separate integration work.
 
 ## Error diagnostics
 
@@ -169,3 +190,7 @@ FP32, and explicit Vulkan test flags/ICD selection under a one-CPU, 3-GiB cap.
 FP16 was unavailable. The page cannot enable those browser flags. This is not a
 new qualification of 4B/9B, OCR, mobile/tablet inference or general throughput;
 the per-model limitations above remain applicable.
+
+[Installation evidence](assistant-storage-quality.json) records the actual shipped-installer and fresh-worker MiniCPM/compatible-image task with publisher requests blocked, plus targeted storage failure and cross-tab checks. Other installed native model families and original FP16 image execution do not inherit that acceptance.
+
+The language menu also offers compatible FP32 Ornith Q4/Q8 and compact LFM3 text. They retain reference acceptance with their exact native runtime pairs; they have no newly measured Operations native inference or memory-fit result. All use fixed greedy full-GPU settings and preserve the trained tool parser. LFM3 can still emit reasoning with thinking disabled.

@@ -7,6 +7,17 @@ The initialization patch follows BS (bs-browser-parakeet-serial-init), extended 
 CPU sessions too. Changes: application lifecycle, worker factory, pin verification,
 optional runtime packaging and Settings UI. Their algorithms retain the AO behavior.
 
+The optional continuous profile adapts the corrected long-stream capture,
+segment coordinator/store and global transcript merger from Code and llm-sds-01
+parakeet-long-stream. It uses the NR/NQ GPU-resident decoder and the pinned
+preparation/conversion recipes recorded in continuous-sources.json. Operations
+adds verified model storage, runtime ownership, archive acknowledgements and
+recovery UI. CPU feature calculation, TEN speech detection and audited encoder
+layout/index work remain; the decoder uses GPU FP32 math with compact original
+initializers. The converted decoder is a local conversion, not an official
+NVIDIA FP32 ONNX release. Continuous encoder, vocabulary and decoder identities
+are recorded in continuous-profile.json; model weights are not bundled.
+
 The model is NVIDIA Parakeet TDT 0.6B v3 (CC-BY-4.0); browser ONNX files are a
 maintainer conversion by ysdede, not NVIDIA-native ONNX artifacts. Immutable
 provenance is recorded in model.lock.json. Model files download only on request.

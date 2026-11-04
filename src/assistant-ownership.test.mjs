@@ -64,8 +64,8 @@ Then('explicit CPU work leaves GPU ownership unchanged',async()=>{
 });
 
 Then('the assistant worker owns the complete tool loop and restores text without repeating tools',async()=>{
-  const {vi}=await import('vitest'),env=environment(),posts=[],events=[],frozen=[];let loads=0,forwards=0;
-  const fakeLoad=async settings=>{frozen.push(structuredClone(settings));const id=++loads;events.push('load:'+id);return {
+  const {vi}=await import('vitest'),env=environment(),posts=[],events=[],frozen=[],invalidated=new Set();let loads=0,forwards=0;
+  const fakeLoad=async settings=>{frozen.push(structuredClone(settings));const id=++loads;events.push('load:'+id);return {get invalidated(){return invalidated.has(id);},
     async reset(){},async dispose(){events.push('dispose:'+id);},
     async generate(messages){
       forwards++;
@@ -75,6 +75,7 @@ Then('the assistant worker owns the complete tool loop and restores text without
   };};
   vi.doMock('./lib/assistant/engine.ts',()=>({loadAssistantEngine:fakeLoad}));
   vi.doMock('./lib/assistant/compatibility.ts',()=>({probeAssistantCompatibility:async()=>({ready:true,fp32:true,fp16:true,summary:'Controlled source device'})}));
+  let assetReleases=0;vi.doMock('./lib/assistant/model-storage/runtime.ts',()=>({prepareModelAssets:async()=>async()=>{assetReleases++;},modelAssetFetch:()=>globalThis.fetch}));
   const prior=globalThis.onmessage;
   vi.stubGlobal('navigator',{locks:env.locks});vi.stubGlobal('BroadcastChannel',class{constructor(){return env.channel();}});
   vi.stubGlobal('location',{origin:'https://example.com'});vi.stubGlobal('postMessage',data=>posts.push(data));
@@ -92,12 +93,14 @@ Then('the assistant worker owns the complete tool loop and restores text without
     assert.ok(events.indexOf('dispose:1')<events.indexOf('other-load'));assert.equal(posts.filter(row=>row.type==='tool').length,1);
     send({type:'send',text:'Keep the previous application result.'});await until(()=>posts.filter(row=>row.type==='done').length===2);
     assert.equal(loads,2);assert.deepEqual(frozen[0],frozen[1]);assert.equal(forwards,3);assert.equal(posts.filter(row=>row.type==='tool').length,1);
+    invalidated.add(2);send({type:'send',text:'Continue after the canceled physical engine.'});await until(()=>posts.filter(row=>row.type==='done').length===3);
+    assert.equal(loads,3);assert.deepEqual(frozen[0],frozen[2]);assert.equal(posts.filter(row=>row.type==='tool').length,1);
     const view=posts.filter(row=>row.type==='update').at(-1).messages;
-    assert.equal(view.filter(row=>row.role==='user').length,2);assert.equal(view.filter(row=>row.role==='tool').length,1);
-    assert.match(view.at(-1).text,/Application verified/);
-    send({type:'dispose'});await until(()=>posts.some(row=>row.type==='disposed'));
+    assert.equal(view.filter(row=>row.role==='user').length,3);assert.equal(view.filter(row=>row.role==='tool').length,1);
+    assert.match(view.at(-1).text,/Application verified/);assert.equal(assetReleases,0,'Physical handoff preserves logical asset use');
+    send({type:'dispose'});await until(()=>posts.some(row=>row.type==='disposed'));assert.equal(assetReleases,1);
   } finally {
-    await next?.close();globalThis.onmessage=prior;vi.unstubAllGlobals();vi.doUnmock('./lib/assistant/engine.ts');vi.doUnmock('./lib/assistant/compatibility.ts');
+    await next?.close();globalThis.onmessage=prior;vi.unstubAllGlobals();vi.doUnmock('./lib/assistant/engine.ts');vi.doUnmock('./lib/assistant/compatibility.ts');vi.doUnmock('./lib/assistant/model-storage/runtime.ts');
   }
 });
 

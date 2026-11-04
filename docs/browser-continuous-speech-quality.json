@@ -1,0 +1,87 @@
+{
+  "reviewed": "2026-11-04",
+  "profile": "gpu-continuous",
+  "model": "speech:parakeet-continuous",
+  "reference": "Code corrected continuous capture/coordinator/store/global merger; llm-sds-01 parakeet-long-stream and NR/NQ recipes",
+  "runtime": "ORT1.30, original dynamic FP32 encoder with audited CPU indexing/layout; converted GPU decoder/control, CPU TEN/audio features; no shader-f16 request",
+  "validation": {
+    "source": "44 new unique merger/segment/lifecycle cases and four affected existing cases passed; later packaging loader cancellation regression passed.",
+    "browser": "Six unique focused Chromium scenarios passed: prior five plus actual continuous controls/legacy refinement omission and playback URL release on selection/deletion.",
+    "build": "Typecheck0errors/one existing vault ARIAwarning; production/chart/speech/assistant build and real bundle contract passed; three affected build scenarios and current-bundle automation passed.",
+    "native": {
+      "status": "passed",
+      "owner_source_manifest_sha256": "3f60a3bc4790887ec0ecafec4c1c5fe6f55108dd13bc746c06c0899b5c66f3c1",
+      "bundle_manifest_sha256": "287163d16a3f69ee6b3f82d09ee82fc17ec996c88572cce27faec9d165fb03ec",
+      "setup_failures": [
+        {
+          "run_id": "ops-continuous-speech-native-1793763656185325863",
+          "reason": "QA evidence manifest absent from mounted ignored directory; stopped before downloads/browser/neural execution; owned service removed."
+        }
+      ],
+      "run_id": "ops-continuous-speech-native-1793763955396846533",
+      "controller_session": 93799,
+      "qa_source_snapshot_sha256": "e3cd79fc22cd7fdcb1cef1e8f9993b5e27955436f48c02dc12d890bcb8f761d8",
+      "raw_result": "/home/erik/Development/llm-sds-01/inference/.runtime/operations-continuous-speech-qa-20261104/runs/ops-continuous-speech-native-1793763955396846533/evidence/browser.json",
+      "raw_result_sha256": "9de3c07d39d6256494f634aeb79c3eb53368c39ec64313ade18ee6f4a358bb0a",
+      "receipt": "/home/erik/Development/llm-sds-01/inference/.runtime/operations-continuous-speech-qa-20261104/runs/ops-continuous-speech-native-1793763955396846533/receipt.json",
+      "semantic_attempts": 1,
+      "automatic_retry": false,
+      "installed": {
+        "models": [
+          "speech:parakeet-continuous"
+        ],
+        "files": 4,
+        "verified_bytes": 2495488654,
+        "initial_range_requests": 296
+      },
+      "microphone": {
+        "input": "90s fixed fake-device WAV through actual UI/getUserMedia/AudioWorklet",
+        "captured_seconds": 75.128,
+        "captured_samples": 1202048,
+        "segments": 4,
+        "words": 110,
+        "stable_updates_and_archive_barrier": "passed"
+      },
+      "accelerated": {
+        "input": "600s PCM through the same production controller/capture/worker ingress; not600s wall-clock microphone capture",
+        "samples": 9600000,
+        "segments": 30,
+        "words": 880,
+        "peak_queued_segments": 29,
+        "input_and_exported_core_sha256": "ee4d91d574b50ac50ec935afed59d3c4c377da3208a03544f090fcd746480528",
+        "exported_wav_bytes": 38400044
+      },
+      "controls": {
+        "main_archive_ack_holds_competing_owner": true,
+        "logical_model_use_survives_physical_yield": true,
+        "native_cancel_retains_recovery_and_fresh_worker": true,
+        "late_permission_cannot_stop_replacement": true,
+        "silence_keeps_draft": true,
+        "all_segment_and_core_hashes_identical_after_reload": true,
+        "publisher_requests_after_blocked_reload": 0,
+        "model_runtime_recording_locks_released": true,
+        "unloaded_ack_api_live_gpu_buffers": 0,
+        "page_errors": 0,
+        "cleanup_errors": 0
+      },
+      "resources": {
+        "cpu": 4,
+        "ram_bytes": 17179869184,
+        "additional_swap_bytes": 0,
+        "pids_limit": 512,
+        "physical_gpu": 1,
+        "memory_peak_bytes": 11556302848,
+        "pids_peak": 199,
+        "oom_kills": 0
+      },
+      "cleanup": "Both owned Swarm services removed; peer terminal handback retained in run record."
+    }
+  },
+  "limits": [
+    "One Operations desktop Brave/RTX3060 native functional scenario passed; the fixed repeated JFK fixture does not establish general transcription accuracy or a performance benchmark.",
+    "Ordinary browser scenarios use actual storage/workers, without downloading or qualifying neural model inference.",
+    "Physical microphones, mobile/tablet, arbitrary speech accuracy, quota exhaustion and hours-long sessions remain unqualified.",
+    "CPU audio/TEN and encoder layout/index work remain; no all-operator GPU claim.",
+    "Cached model transport is separate from full offline SPA availability."
+  ]
+}

@@ -229,3 +229,6 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
       | path              |
       | charts/engine.js  |
       | charts/NOTICES.txt |
+
+  Scenario: Compatible model bundles keep their reviewed native companions
+    Then compatible native bundles include every reviewed companion and continuous speech entry

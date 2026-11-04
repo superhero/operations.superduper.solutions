@@ -1,0 +1,163 @@
+{
+  "date": "2026-11-04",
+  "status": "passed",
+  "scope": "One actual Operations UI case with strict MiniCPM4096/256 and compatible LFM2.5-VL1024/128 on desktop Brave/RTX3060, using the shipped installer and cached bytes in fresh workers. Same-origin SPA/runtime HTTP remains allowed; no fully offline SPA or general quality/performance/mobile claim.",
+  "native_run": "ops-installed-model-native-1793753562997288256",
+  "native_suite_exit_code": 0,
+  "native_evidence": {
+    "raw_reference": "llm-sds-01/inference/.runtime/operations-installed-model-qa-20261104/runs/ops-installed-model-native-1793753562997288256/evidence/browser.json",
+    "sha256": "1a8a5feed034f7f126e27b2d0a5634d49cb8348f99ee8e85b8a416511cf724a0",
+    "owner_source_manifest_sha256": "267b4e3c79bce4435a9676d630ebca47089d5cc27889ab57cd34c0d4eaae92f9",
+    "qa_snapshot_sha256": "07b463ab7b08f58ca3a9349e4d734a63a89d6ddca744732fd8b1eb7aa1f8edb7"
+  },
+  "gates": {
+    "installed_verification": {
+      "state": "passed",
+      "api": "Exact shipped installModel through frozen code-only bridge; no direct IDB byte seeding",
+      "models": [
+        "image:compatible",
+        "minicpm5-fp32"
+      ],
+      "artifact_files": 14,
+      "whole_sha_verified_bytes": 3590159663,
+      "blocks": 441,
+      "block_bytes": 8388608,
+      "neural_priming_requests": 0,
+      "preexisting_models": []
+    },
+    "publisher_blocked_fresh_worker": {
+      "state": "passed",
+      "same_origin_page_reloaded": true,
+      "publisher_attempts": 0,
+      "blocked_requests": [],
+      "all_transport_violations": [],
+      "policy": "Publisher and QA model transport disabled after priming; sameorigin static SPA/runtime HTTP allowed",
+      "fully_offline_spa": false
+    },
+    "ordered_tools": {
+      "state": "passed",
+      "order": [
+        "read_skill",
+        "read_application",
+        "inspect_image"
+      ],
+      "all_failed_false": true
+    },
+    "actual_image_decode_and_ocr": {
+      "state": "passed",
+      "code": "PINE-4393",
+      "tool_result_contains_code": true
+    },
+    "whole_final_answer": {
+      "state": "passed",
+      "expected": "QAAPP-A478B2|PINE-4393",
+      "actual": "QAAPP-A478B2|PINE-4393"
+    },
+    "physical_text_restore": {
+      "state": "passed",
+      "native_input_gpu_markers": [
+        {
+          "at": 4579.569999992847,
+          "message": "GPU_ONLY_MODEL input=GPU no_cpu_weight_fallback=1"
+        },
+        {
+          "at": 42883.139999985695,
+          "message": "GPU_ONLY_MODEL input=GPU no_cpu_weight_fallback=1"
+        }
+      ],
+      "full_layer_markers": [
+        {
+          "at": 4586.115000009537,
+          "message": "load_tensors: offloaded 43/43 layers to GPU"
+        },
+        {
+          "at": 42889.72000002861,
+          "message": "load_tensors: offloaded 43/43 layers to GPU"
+        }
+      ],
+      "saved_settings_unchanged": true,
+      "logical_text_and_image_shared_uses_observed_together": true
+    },
+    "text_gpu": {
+      "state": "strict native current-turn GPU guard accepted actual model responses",
+      "fp32": true,
+      "fp16": false,
+      "cpu_model_error_markers": [],
+      "numerical_audit_totals_exposed_by_ui": false
+    },
+    "context": {
+      "state": "complete input estimates, not exact native prospective counts",
+      "measurements": [
+        {
+          "inputTokens": 1722,
+          "contextTokens": 4096,
+          "kind": "estimate",
+          "method": "UTF-8 request bytes / 3 plus message framing; native template/tokenizer unavailable",
+          "reserveTokens": 128,
+          "maxTokens": 256
+        },
+        {
+          "inputTokens": 2540,
+          "contextTokens": 4096,
+          "kind": "estimate",
+          "method": "UTF-8 request bytes / 3 plus message framing; native template/tokenizer unavailable",
+          "reserveTokens": 128,
+          "maxTokens": 256
+        }
+      ]
+    },
+    "terminal_cleanup": {
+      "state": "passed",
+      "worker_terminated": 1,
+      "disposed_ack": true,
+      "services": [
+        {
+          "service": "ops-installed-model-qa-assets-1793753562997288256",
+          "removed": true
+        },
+        {
+          "service": "ops-installed-model-qa-native-1793753562997288256",
+          "removed": true
+        }
+      ],
+      "gpu_csv": "GPU-dce31069-0ec8-ce8c-7f8f-41b83fbf5579, 12288, 11962, 0",
+      "gpu_owners": [],
+      "errors": []
+    }
+  },
+  "resources": {
+    "cpu.max": "400000 100000",
+    "memory.max": "17179869184",
+    "memory.swap.max": "0",
+    "pids.max": "512",
+    "memory_peak_bytes": 9436049408,
+    "pids_peak": 181,
+    "oom_kills": 0,
+    "nonisolated_functional": true
+  },
+  "focused_checks": {
+    "source_cases_passed": 8,
+    "browser_cases_passed": 5,
+    "scope": [
+      "Immutable catalogs and all text loading seams; logical use survives physical handoff.",
+      "Real IndexedDB corruption/range/truncation/retry/cancellation/quota cleanup.",
+      "Real two-tab shared use, cancellation, owner death and reference-preserving removal.",
+      "Actual Settings and compatibility workers;320/390px storage UI; fresh storage worker and local image decoding with publisher requests blocked."
+    ],
+    "typecheck_errors": 0,
+    "existing_warning": "WorkflowVaultNode pointer interaction ARIA warning",
+    "production_build": "passed",
+    "fixture_corrections": "Avoid global test-module reset; expose CORS range headers; consume the exact intentionally injected503 diagnostics; match summary text independently of its icon; assert failed streamed reads and direct missing-block diagnostics without assuming browser error wording."
+  },
+  "limits": [
+    "One desktop Brave/RTX3060 actual UI case, not mobile/general quality/throughput qualification.",
+    "Only strict MiniCPM+compatible image cache paths verified here; no native installed-model qualification inherited for FP16/Gemma/WebML.",
+    "Vision shape/index/preprocessing/sampling may remain host work; not all-operator GPU proof.",
+    "Whole model-file hashing occurs at installation; model blocks are not rehashed on every read.",
+    "Decision/speech installation remains separate integration work."
+  ],
+  "post_qualification_changes": [
+    "Documentation/evidence only. Base integration, if needed, preserves the reviewed production sources.",
+    "The compatible text catalog later adds explicit model/runtime dispatch entries, trained LFM3 reasoning separation and UI labels. Focused ABI/UI/artifact checks cover those changes; the native MiniCPM cache run remains the exact earlier source-hash qualification."
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "reviewed": "2026-11-04",
+  "files": [
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/browser/reference/expanded/strands-native-device-prompt.js",
+      "sha256": "0a7a0645116b63957c93ac2a3b728f8bd210acd17ef500bf2124bd93edf9e7e0",
+      "target": "src/lib/assistant/runtime/strands-fp32-prompt.js"
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/browser/reference/expanded/strands-native-device-head.js",
+      "sha256": "4612fd8b101fb30ef68203b0d3ae3f9c6f42276372c9df6eeca2479279f0e733",
+      "target": "src/lib/assistant/runtime/strands-fp32-head.js"
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "src/lib/assistant/browser/reference/expanded/strands-native-device-worker.js",
+      "source_sha256": "a0348ab8babb2cedd51f3866c3a86dff19484099578b130d67cbee2672277e7e",
+      "target": "src/lib/assistant/runtime/strands-fp32-worker.js",
+      "sha256": "21d6aef9b09ac705593c4b1b4b739b9023b143b32cf9b7686fe49b425a92f48a",
+      "adaptation": "Operations installed reader, exact converted-manifest digest, own contract, isolated FP32 worker and cached awaited cleanup."
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/licenses/strands-decider-PR41.txt",
+      "target": "src/public/assistant-runtime/decision/strands-fp32.LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/browser-models/strands-fp32/build.sh",
+      "target": "build/strands-fp32/build.sh",
+      "sha256": "60a8acddca598cf65d68df04b12ea162f5b842841395621e11f668b52571eae2"
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/browser-models/strands-fp32/convert.py",
+      "target": "build/strands-fp32/convert.py",
+      "sha256": "c6592f820d1fa33a42c74fa16de5a3a47da793a204c323e81eabc631157aa7d7"
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/browser-models/strands-fp32/manifest.json",
+      "target": "build/strands-fp32/manifest.json",
+      "sha256": "9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30"
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/browser-models/strands-fp32/worker.patch",
+      "target": "build/strands-fp32/worker.patch",
+      "sha256": "c000b8ae0249a768e4905c2c45ba166871bbe1ff0a94939f52ad60a465f02f85"
+    },
+    {
+      "repository": "code.superduper.solutions",
+      "source": "build/browser-models/strands-fp32/conversion-receipt.json",
+      "target": "build/strands-fp32/conversion-receipt.json",
+      "sha256": "0be158bd7d6b5825540ea9f5b3f39d2913d3d8ba917ffebc9b6132c99ff9b63c"
+    }
+  ],
+  "converted_assets": "Immutable public Code mirror. Exact sizes/digests and whole-file assembled hashes remain authoritative; weights stay outside Git.",
+  "manifest_sha256": "9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30"
+}

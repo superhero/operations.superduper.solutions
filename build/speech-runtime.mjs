@@ -3,18 +3,14 @@
 import { build } from 'vite';
 import { resolve } from 'node:path';
 import { cp, mkdir } from 'node:fs/promises';
-import { parakeetSerialInitialization } from './parakeet-plugin.mjs';
+import {speechWorkerBuildOptions} from './speech-worker-build.mjs';
 
 // Optional speech resources have their own chunks; the main single-file client
 // must not eagerly load ORT. The 26 MB Asyncify WASM is fetched by immutable pin.
-await build({ configFile: false, publicDir: false,
-  plugins: [parakeetSerialInitialization()],
-  resolve: { alias: [{ find: /^onnxruntime-web$/, replacement: resolve('node_modules/onnxruntime-web/dist/ort.webgpu.min.mjs') }] },
-  build: { target: 'es2024', outDir: 'dist/speech', emptyOutDir: true,
-    lib: { entry: { worker: resolve('src/lib/speech/inference.worker.js'), features: resolve('src/lib/speech/features.worker.js') }, formats: ['es'] },
-    rollupOptions: { output: { entryFileNames: '[name].js', chunkFileNames: 'chunks/[name]-[hash].js', assetFileNames: 'assets/[name]-[hash][extname]' } },
-  },
-});
+await build(await speechWorkerBuildOptions('dist/speech',{worker:resolve('src/lib/speech/inference.worker.js'),
+  features:resolve('src/lib/speech/features.worker.js'),'continuous-worker':resolve('src/lib/speech/continuous/worker.js'),
+  'continuous-controller':resolve('src/lib/speech/continuous-controller.js')}));
+await cp('src/lib/speech/capture-worklet.js','dist/speech/capture-worklet.js');
 await mkdir('dist/speech/licenses', { recursive: true });
 for (const [from, to] of [
   ['src/lib/speech/NOTICES.md', 'NOTICES.md'],

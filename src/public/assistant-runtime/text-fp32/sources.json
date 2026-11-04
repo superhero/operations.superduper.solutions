@@ -1,0 +1,131 @@
+{
+  "source_repository": "llm-sds-01",
+  "recipe": "inference/evaluations/brave-chat-gpu/native/standard",
+  "variant": "standard-fp32-gpu",
+  "files": [
+    {
+      "path": "text-fp32/upstream/LICENCE",
+      "bytes": 1071,
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "path": "text-fp32/upstream/build-receipt.json",
+      "bytes": 1586,
+      "sha256": "4189efdc1f1bffa27101d3872539779c8eebb633557f9670260b2240835ff896"
+    },
+    {
+      "path": "text-fp32/upstream/index.js",
+      "bytes": 386507,
+      "sha256": "dc43ffb762922b95134b45bd9b93069c2b1e6f825e8ee31e633cde17a2fc96ab"
+    },
+    {
+      "path": "text-fp32/upstream/llama-cpp.patch",
+      "bytes": 12661,
+      "sha256": "eda134dc90be444e5d2ea36645bcf88fdbe3f23304955a4e1841398e4d72deba"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/build.sh",
+      "bytes": 3554,
+      "sha256": "f8492de2bc36d1540c5bd9efaecf7695b0261dd5969ce7ede266dd599a71a36d"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/gpu-only.patch",
+      "bytes": 10280,
+      "sha256": "892b1d1f76121f5502add0c8d1bfb82a4c4858bc57971f0d43e8fb90c0fc05d2"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/heap8.patch",
+      "bytes": 760,
+      "sha256": "44466719ff4f2cc7e6cb06b24d9709d0ef0a93adab4e2fe9d5a6b4b34c939d11"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/pins.json",
+      "bytes": 1037,
+      "sha256": "44e15b3f8705dd208e7fcd4519529468758b3a7cab2629ecba7aab359d7fe325"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/queue-wait.patch",
+      "bytes": 1162,
+      "sha256": "68942b9b98a03f03a4661024a128888f461e61e7fa5e7babdbc5bf82465edcf1"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/upstream-api.patch",
+      "bytes": 361,
+      "sha256": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3"
+    },
+    {
+      "path": "text-fp32/upstream/upstream.patch",
+      "bytes": 596893,
+      "sha256": "8206b923f72d27f8746ee57db3bc674da1a8db3f0c7ca033c46570a108688a48"
+    },
+    {
+      "path": "text-fp32/upstream/wllama.wasm",
+      "bytes": 9326027,
+      "sha256": "b4862a3d30aaac1d33afbbba430d4d48a3e8baeb55b1a2e632fac51478ec7cc0"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/index.js",
+      "bytes": 386507,
+      "sha256": "530aefa7a83721e843762c0e886b83100ee1dd356fef6343a79008e98332f1b7"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/wllama.wasm",
+      "bytes": 9456086,
+      "sha256": "5ae95c179c98794498b7d9a4b9594ddf58c2804c4367b76a92393bd8953b02f3"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/LICENCE",
+      "bytes": 1071,
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/build-receipt.json",
+      "bytes": 1566,
+      "sha256": "94eb3244f553df1e01c840ea1b0f3237e44eefda22d03e5ae4e1d92ce980781d"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/upstream.patch",
+      "bytes": 596893,
+      "sha256": "87f5869ad63bfa2c5d13da91d87ed2df99ad9528bd9492ad0bc7c210000ad276"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/llama-cpp.patch",
+      "bytes": 13473,
+      "sha256": "0ec66fadb0c0fa01d28a95851e0174ca27354e7af9b167f3d4212a7619648130"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/recipe/build.sh",
+      "bytes": 3929,
+      "sha256": "73576433eba72f72de594c14df16829b470d74ceac26a8fe7feb936422975942"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/recipe/upstream-api.patch",
+      "bytes": 361,
+      "sha256": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/recipe/heap8.patch",
+      "bytes": 760,
+      "sha256": "44466719ff4f2cc7e6cb06b24d9709d0ef0a93adab4e2fe9d5a6b4b34c939d11"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/recipe/queue-wait.patch",
+      "bytes": 1162,
+      "sha256": "68942b9b98a03f03a4661024a128888f461e61e7fa5e7babdbc5bf82465edcf1"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/recipe/gpu-only.patch",
+      "bytes": 10280,
+      "sha256": "c7277f3668512afc0e45db2930f7ea2980a5bbce667f73d29ebdf98ae4a56c6f"
+    },
+    {
+      "path": "text-fp32/lfm3-upstream/recipe/pins.json",
+      "bytes": 1037,
+      "sha256": "180476402a6908a445ab9351e9cfed08aa8ac0d5cd8685056bb6a8668e48922f"
+    }
+  ],
+  "variants": [
+    "standard-fp32-gpu",
+    "lfm3-fp32-gpu"
+  ]
+}

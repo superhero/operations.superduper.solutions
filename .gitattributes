@@ -4,3 +4,12 @@ src/lib/speech/vendor/** -whitespace
 # Preserve byte-pinned native patches and publisher notices.
 build/native-runtime-sources/**/*.patch -text whitespace=-blank-at-eol
 src/public/assistant-runtime/decision/pplx-publisher-LICENSE -text -whitespace
+
+# Retain the exact accepted compatible native SDK and build recipe bytes.
+src/public/assistant-runtime/text-fp32/upstream/** -text -whitespace
+src/public/assistant-runtime/text-fp32/lfm3-upstream/** -text -whitespace
+src/public/assistant-runtime/decision/vendor/wllama-fp32/** -text -whitespace
+
+# Preserve the exact Strands conversion recipe, receipt and Apache notice.
+build/strands-fp32/** -text -whitespace
+src/public/assistant-runtime/decision/strands-fp32.LICENSE -text -whitespace

@@ -1,0 +1,133 @@
+{
+  "reviewed": "2026-11-04",
+  "profile": "strands-fp32",
+  "variant": "strands-int4-fp32-v1",
+  "conversion": "MU local compatibility conversion; unchanged packed INT4 parameters and trained FP32 CPU pointer head, FP16 support tensors upcast toFP32. Not official FP32 publisher weights.",
+  "manifest_sha256": "9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30",
+  "delivery": "Existing public Code mirror with CORS; pinned files/16MiB parts verified as complete original files in Operations model storage. No model weights copied into Git or LAN URLs used. SPA/runtime HTTP remains separate.",
+  "runtime": "Isolated ORT1.30 worker; explicitly bound GPUDevice without shader-f16; original native pointer head;1024 complete input guard/no fitting loss. Normal unload awaits session release, queue drain and device destruction before ACK/termination.",
+  "reference": "llm-sds-01 mu-browser-decision-strands-fp32-gpu; exact Code native prompt/head, adapted worker provenance in strands-sources.json and retained converter/receipt/manifest/patch.",
+  "validation": {
+    "source": "8 focused cases passed; exact conversion/cache pins, actual broker/disposal, compatibility/guard callers and generic development bundle caching.",
+    "build": "Typecheck0errors/1existingWorkflowVaultNode ARIAwarning and final production/optional runtime build passed.",
+    "browser": "3 focused Chromium scenarios passed: actual production/development child workers without model downloads, compatibility workers and17-option decision controls/results/unload.",
+    "operations_native": {
+      "state": "passed",
+      "run_id": "ops-strands-fp32-native-1793758348491323918",
+      "session_id": 54498,
+      "raw_result": "/home/erik/Development/llm-sds-01/inference/.runtime/operations-strands-fp32-qa-20261104/runs/ops-strands-fp32-native-1793758348491323918/evidence/browser.json",
+      "raw_result_sha256": "99297325c65b0568363a50b343827f561098e8f6976a183dd50791b93766982f",
+      "receipt": "/home/erik/Development/llm-sds-01/inference/.runtime/operations-strands-fp32-qa-20261104/runs/ops-strands-fp32-native-1793758348491323918/receipt.json",
+      "owner_source_manifest_sha256": "ae377c4837fd0e3454cacbb643d4225add7e6db9d11ee158b0c14652bbf8d1ac",
+      "qa_source_snapshot_sha256": "60c0879e61f70717a511fe16751f81cf4bea4fe9696bcb2f80b0028316954025",
+      "semantic_passed": 4,
+      "semantic_total": 4,
+      "controls_passed": 2,
+      "controls_total": 2,
+      "attempts": 1,
+      "automatic_retry": false,
+      "installed": {
+        "models": [
+          "decision:strands-fp32"
+        ],
+        "files": 8,
+        "verified_bytes": 1282515775,
+        "blocks": 159,
+        "publication_parts": 77
+      },
+      "publisher_requests_after_reload": 0,
+      "transport_violations": 0,
+      "cases": [
+        {
+          "id": "s01",
+          "actual": "true",
+          "expected": "true",
+          "input_tokens": 81,
+          "ui_duration_ms": 2754.185000002384
+        },
+        {
+          "id": "s02",
+          "actual": "false",
+          "expected": "false",
+          "input_tokens": 85,
+          "ui_duration_ms": 252.11500000953674
+        },
+        {
+          "id": "s03",
+          "actual": "translate",
+          "expected": "translate",
+          "input_tokens": 73,
+          "ui_duration_ms": 183.86000001430511
+        },
+        {
+          "id": "s04",
+          "actual": "2",
+          "expected": "2",
+          "input_tokens": 105,
+          "ui_duration_ms": 216.17500001192093
+        },
+        {
+          "id": "c01",
+          "actual": "translate",
+          "expected": "translate",
+          "input_tokens": 73,
+          "ui_duration_ms": 199.88499999046326
+        },
+        {
+          "id": "c02",
+          "actual": "translate",
+          "expected": "translate",
+          "input_tokens": 73,
+          "ui_duration_ms": 205.20999997854233
+        }
+      ],
+      "placement": {
+        "device_source": "executionProviders[0].device (ORT 1.30 native WebGPU EP custom-device binding)",
+        "device_features": [
+          "core-features-and-limits"
+        ],
+        "requested_features": [],
+        "compute_type": "float32",
+        "compute_pipeline_calls": {
+          "sync": 0,
+          "async": 28,
+          "total": 28
+        },
+        "pointer_readout": "unchanged JavaScript CPU FP32 pointer head",
+        "native_forward_completed": true
+      },
+      "unload_disposed_ack": true,
+      "worker_terminated": 1,
+      "peak_cgroup_memory_bytes": 5251182592,
+      "peak_pids": 185,
+      "oom_kills": 0,
+      "cleanup": {
+        "services": [
+          {
+            "service": "ops-strands-fp32-qa-assets-1793758348491323918",
+            "removed": true
+          },
+          {
+            "service": "ops-strands-fp32-qa-native-1793758348491323918",
+            "removed": true
+          }
+        ],
+        "gpu_csv": "GPU-dce31069-0ec8-ce8c-7f8f-41b83fbf5579, 12288, 11962, 0",
+        "gpu_owners": []
+      },
+      "limits": [
+        "single desktop Brave/RTX3060 case",
+        "four simple semantics/two controls, not general accuracy",
+        "cumulative pipeline creation on explicitly bound device, not per-forward dispatch/per-op CPU-zero proof",
+        "unchanged JavaScript CPU FP32 trained pointer head",
+        "UI spans include controller/rendering; not isolated performance",
+        "sameorigin static/runtime HTTP remains allowed; not fully offline SPA"
+      ]
+    }
+  },
+  "limits": [
+    "GPU backbone with original FP32 CPU pointer head; not zero-CPU execution.",
+    "One actual Operations desktop native run passed4simple semantics+2controls; this does not establish general accuracy or other devices.",
+    "No broad quality, mobile memory fit or isolated latency claim."
+  ]
+}

@@ -159,5 +159,162 @@
       "GPU speech holds ownership through capture, forward and archive acknowledgement; CPU speech bypasses the GPU handoff. Restore speech in a fresh worker after device teardown.",
       "Failed native cleanup retains ownership until the owned worker is terminated; normal unload waits for disposal acknowledgement with a bounded fallback."
     ]
+  },
+  "compatible_text": {
+    "reviewed": "2026-11-04",
+    "variant": "standard-fp32-gpu",
+    "sources": [
+      {
+        "source": "inference/evaluations/brave-chat-gpu/runtime/native-engine.js",
+        "sha256": "f284739f36991c5fb595bec4dd5d14a15bdc444ad4dc8fa8d4728340d2a085c8"
+      },
+      {
+        "source": "inference/evaluations/brave-chat-gpu/runtime/placement.js",
+        "sha256": "a6793e5283373c9493989b6a94d7a426174f7036cf760b2368967c00790b1cb8"
+      },
+      {
+        "source": "inference/attempts/ni-browser-minicpm5-2b-core-gpu/attempt.json",
+        "sha256": "5b016f08418830628b91c16b324287a7a36efa099a6e8cf3949ec6cc3a663f49"
+      }
+    ],
+    "adaptations": [
+      "Separate explicit MiniCPM profile preserves the legacy CPU/hybrid backend. Parent Operations worker owns the whole Pi/tool/vision lifetime.",
+      "Explicit worker assetBase replaces document.baseURI; immutable paired native artifacts, receipt, recipe and licenses are retained and checked during build.",
+      "Complete messages/native tool arguments use the trained formatter and parser. Context stays a labeled estimate with actual loaded capacity; native overflow rejects before prefill with ctx_shift:false, no truncation/resubmission.",
+      "Abort invalidates and awaits disposal; a failed disposal promise stays rejected. Bounded raw diagnostics retain placement proofs and cumulative native audit totals."
+    ]
+  },
+  "model_storage": {
+    "reviewed": "2026-11-04",
+    "repository": "code.superduper.solutions",
+    "sources": [
+      {
+        "source": "src/lib/assistant/browser/storage.ts",
+        "sha256": "ab238c60de273561d0d2cd4ece9ccb8bf9a0882def78af82a9f54bb0bbea019d"
+      },
+      {
+        "source": "src/lib/assistant/browser/installer.ts",
+        "sha256": "3a6a4431bec7d1b5265f3c9e042359aa6b33e596fb7252f915a9f4f4ab8c5213"
+      },
+      {
+        "source": "src/lib/assistant/browser/ownership.ts",
+        "sha256": "dcd931bf95de5879c34a3ec59ca9f04762e832275da3da572de973ca37903cb3"
+      },
+      {
+        "source": "src/lib/packages/registry.ts",
+        "sha256": "605ce8eb1833eed86c4e8032d2a30978b34d59a1328ee831d59126f9b4886634"
+      }
+    ],
+    "adaptations": [
+      "Operations-owned IndexedDB/Web Lock/channel namespace; language selection and first image use automatically save and verify immutable publisher files before native initialization.",
+      "Eight-MiB blocks and whole-file SHA before complete markers; bounded retry, exact ranges, cancellation/quota cleanup and shared artifact references.",
+      "Shared logical model-use claims survive physical GPU handoff and vision restoration; exclusive removal cannot delete files used by any tab.",
+      "Use actual injected WebML/GGUF fetch readers; initialize Gemma and vision worker-local readers before library import. Local data images and same-origin application runtime resources use the native reader.",
+      "Pinned remote reads stay in installed storage; optional unpinned probes receive local404 and missing required blocks fail without publisher fallback.",
+      "Original FP16 image allowlist combines its six pinned ONNX files with the eight identical metadata files from the same immutable compatible-profile revision."
+    ],
+    "boundaries": [
+      "Installation-time whole-file verification does not rehash every model block on each read.",
+      "Application/runtime assets are still served by the same origin; cached model files do not establish fully offline SPA support.",
+      "Compatible GGUF decision installation is added by the compatible-decisions stage. Speech and Strands installation remain separate work."
+    ]
+  },
+  "compatible_text_catalog": {
+    "reviewed": "2026-11-04",
+    "source_repository": "llm-sds-01",
+    "sources": [
+      {
+        "source": "inference/attempts/ng-browser-ornith-q4-core-gpu/attempt.json",
+        "sha256": "463a4f9363219322c412c526c69c96bbb6abe20355745115bd1a8d47c6e16a80"
+      },
+      {
+        "source": "inference/attempts/nh-browser-ornith-q8-core-gpu/attempt.json",
+        "sha256": "3e40499ae71c5d252c3cf94ba0747a2ca789f5db0ec664920cf5299a1d40dfeb"
+      },
+      {
+        "source": "inference/attempts/nj-browser-lfm3-core-gpu/attempt.json",
+        "sha256": "48766afce8c07b163de7150f83d2b2f5b0bf5938a687fef300e80da1528c9cff"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/reference/lfm3-reasoning.js",
+        "sha256": "58c0c55f741207cd2cbf4c559d979910f2f1f4f0a5b1cd8e55dbac832ad2c85b"
+      }
+    ],
+    "adaptations": [
+      "Explicit Ornith Q4/Q8 variants share the accepted standard pair; compact LFM3 uses its own paired JS/Wasm and recipe. Legacy execution paths remain separate.",
+      "Bind immutable model/revision/file/size/digest to the exact runtime variant before allocating; retain full GPU, F32 KV, fixed greedy settings and per-forward GPU audit.",
+      "Retain the native trained formatter/tool parser and reasoning channel; thinking-off does not guarantee absence of generated reasoning."
+    ],
+    "qualification": "Reference native acceptance retained. Focused Operations catalog/ABI/UI/distribution checks do not constitute new Ornith/LFM3 native performance or quality acceptance."
+  },
+  "compatible_decisions": {
+    "reviewed": "2026-11-04",
+    "variant": "shared-fp32-gpu-v1",
+    "sources": [
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/evaluations/brave-decisions/gpu-cache-suite.json",
+        "sha256": "806612553c94a411535d9fa8ec504d36a76e1ea9c2424c1e27e064a790238696"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/ne-browser-decision-d3-lite-fp32-gpu/attempt.json",
+        "sha256": "562e72c96860342fbb99e28e5bb6bd9bf58fed8d17b94efd497621f7e06b0bdb"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/my-browser-decision-d3-nano-fp32-gpu/attempt.json",
+        "sha256": "8387795c3462e0b97ea122b0c56c04b77b6ebbb92992f7d7071f87cc7b8f397c"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/mz-browser-decision-d3-mini-fp32-gpu/attempt.json",
+        "sha256": "61d6f5ce5d95d5808cafce01a48570aa9f19abd57e649825a9ac084438ad170e"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/na-browser-decision-d3-flash-fp32-gpu/attempt.json",
+        "sha256": "68dfbbb3dc3638cc5be706493c34879cb99fdb5b75743833b0b6cc15b880b4f7"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/nb-browser-decision-knowline-fp32-gpu/attempt.json",
+        "sha256": "b1525fe8fe0f0425edbca57295438adba21f9db71ffc66905010d5ed6f118bbf"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/nc-browser-decision-elephant-fp32-gpu/attempt.json",
+        "sha256": "de147ff847bb8740624ac769877baac1b3ae2eba69ee078e7b895c20010adbb4"
+      },
+      {
+        "repository": "llm-sds-01",
+        "source": "inference/attempts/nd-browser-decision-pplx-fp32-gpu/attempt.json",
+        "sha256": "8e9afd3e703ec233e4ab0ddc99e4954fe0c74fd556b9b411dc034d6d3ad43f32"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/expanded-catalog.json",
+        "sha256": "d8101688ba710219e975448ca5cab50b82aff1c4ddc77bb2dfe6172a66abb3f7"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/reference/expanded/decisions.js",
+        "sha256": "18812192b05967c2442f155f80d8d83d2e7a376cd6a902cbb0cda866dd0bfe96"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/reference/expanded/decision-placement.js",
+        "sha256": "5f673bbfac274b6c57c357abe18ad88581108cf6f302989dcf6e9429d0a57197"
+      }
+    ],
+    "adaptations": [
+      "Seven explicit GGUF decision profiles use the paired shared FP32 SDK/Wasm; original nine profiles remain available.",
+      "Preserve exact native D3 inspection/SystemOne, KnowLine causal read-twice/top64, Elephant two complete attention blocks and PPLX protocol-v3 inline readout.",
+      "Verify full GPU backbone placement and packed matrix pipelines, while allowing input embedding and small readout on CPU; this is not the chat zero-CPU policy.",
+      "Verified storage retains full URLs across weight and tokenizer repositories, with shared logical use held across physical suspension.",
+      "A rejected disposal promise remains rejected; operation cancellation awaits the native disposal outcome."
+    ],
+    "qualification": "Reference acceptance retained; Operations native qualification is recorded separately in assistant-decision-quality.json."
   }
 }

@@ -1,0 +1,20 @@
+diff --git a/ggml/src/ggml-webgpu/ggml-webgpu.cpp b/ggml/src/ggml-webgpu/ggml-webgpu.cpp
+--- a/ggml/src/ggml-webgpu/ggml-webgpu.cpp
++++ b/ggml/src/ggml-webgpu/ggml-webgpu.cpp
+@@ -88,7 +88,7 @@
+ 
+ #define WEBGPU_DEFAULT_COMMAND_SUBMIT_BATCH_SIZE 64u
+ #define WEBGPU_NUM_PARAM_SLOT_SAFETY_MARGIN      10u
+-#define WEBGPU_RUNTIME_WAIT_TIMEOUT_MS           30000u
++#define WEBGPU_RUNTIME_WAIT_TIMEOUT_MS           120000u
+ #define WEBGPU_RUNTIME_WAIT_TIMEOUT_NS           (WEBGPU_RUNTIME_WAIT_TIMEOUT_MS * 1e6)
+ #define WEBGPU_PARAMS_BUF_SIZE_BYTES             128  // enough for 32 parameters
+ #define WEBGPU_SET_ROWS_ERROR_BUF_SIZE_BYTES     4
+@@ -496,6 +496,7 @@
+                                                   const char *     failure_name,
+                                                   const char *     callback_message) {
+     if (wait_status == wgpu::WaitStatus::TimedOut) {
++        GGML_LOG_ERROR("ggml_webgpu: %s timed out after %u ms\n", wait_name, WEBGPU_RUNTIME_WAIT_TIMEOUT_MS);
+         GGML_ABORT("ggml_webgpu: %s timed out after %u ms\n", wait_name, WEBGPU_RUNTIME_WAIT_TIMEOUT_MS);
+     }
+     if (wait_status == wgpu::WaitStatus::Error) {

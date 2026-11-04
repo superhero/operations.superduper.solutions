@@ -7,6 +7,7 @@ import { speechPreferenceKey, speechPreferences, recordingLimit, initializationD
 import { listRecordings, saveRecording } from './storage.js';
 import { disposeWorker } from '../assistant/worker-shutdown.js';
 import { trackApplicationWorker } from '../application-workers.ts';
+import {loadContinuous} from './continuous-module.js';
 
 export class SpeechController {
   constructor({ state, text, recordings, dependencies = {} }) {
@@ -15,7 +16,7 @@ export class SpeechController {
     this.state = { phase: 'unloaded', status: 'Load speech to dictate a message.', error: '', provisional: '', storageError: '', seconds: 0 };
     try { this.preferences = speechPreferences(JSON.parse(localStorage.getItem(speechPreferenceKey) || '{}')); }
     catch { this.preferences = speechPreferences({}); this.state.storageError = 'Speech preferences could not be read.'; }
-    this.writing = Promise.resolve(); this.update(); void this.refreshRecordings();
+    this.recoverySources=new Set();this.writing = Promise.resolve(); this.update(); void this.refreshRecordings();
   }
   update(fields = {}) { Object.assign(this.state, fields); if (this.alive) this.notify({ ...this.state }); }
   preferencesChanged(value) {
@@ -24,13 +25,17 @@ export class SpeechController {
     catch { this.update({ storageError: 'Speech preferences could not be saved.' }); }
   }
   async refreshRecordings() {
-    try { const records = await (this.dependencies.listRecordings || listRecordings)(); if (this.alive) this.recordings(records); }
+    try { const records = await (this.dependencies.listRecordings || listRecordings)();
+      if(this.record?.metadata.continuous&&!records.some(record=>record.id===this.record.id)&&[...this.recoverySources].some(source=>source.getRecoveryAudio().some(row=>row.recordingId===this.record.id)))records.unshift({...this.record,audio:new Blob([]),signal:{}});
+      if (this.alive) this.recordings(records); }
     catch (error) { this.update({ storageError: `Local recording storage unavailable: ${error.message}` }); }
   }
   async flushStorage() { await this.writing; }
+  async recordingAudio(record){if(!record.metadata?.continuous)return record.audio;const{recordingAudio}=await loadContinuous();return recordingAudio(record,[...this.recoverySources].flatMap(source=>source.getRecoveryAudio()));}
+  clearRecovery(){this.recoverySources.clear();}
   workerFactory(kind) {
     if (this.dependencies.worker) return this.dependencies.worker(kind);
-    const url = import.meta.env.DEV ? new URL(kind === 'worker' ? './inference.worker.js' : './features.worker.js', import.meta.url) : new URL(`speech/${kind}.js`, document.baseURI);
+    const url = kind==='continuous' ? new URL('speech/continuous-worker.js',document.baseURI) : import.meta.env.DEV ? new URL(kind === 'worker' ? './inference.worker.js' : './features.worker.js', import.meta.url) : new URL(`speech/${kind}.js`, document.baseURI);
     const worker = new Worker(url, { type: 'module', name: `operations-parakeet-${kind}` });
     const release = trackApplicationWorker(worker, { scope: 'assistant', reportErrors: false });
     const terminate = worker.terminate.bind(worker); worker.terminate = () => { release(); terminate(); };
@@ -52,6 +57,17 @@ export class SpeechController {
   timeout(ms, message) { clearTimeout(this.timer); this.timer = setTimeout(() => this.fail(message), ms); }
   load() {
     if (this.state.phase !== 'unloaded') return;
+    if(this.continuous){const previous=this.continuous;this.continuous=undefined;this.teardown=previous.unload();void this.teardown.catch(()=>{});}
+    if(this.teardown){const pending=this.teardown,generation=++this.generation;this.update({phase:'downloading',status:'Waiting for speech cleanup…'});
+      void pending.catch(error=>{if(!error.workerTerminated)throw error;}).then(()=>{if(this.alive&&generation===this.generation){this.teardown=undefined;this.update({phase:'unloaded'});this.load();}}).catch(error=>{if(generation===this.generation)this.update({phase:'unloaded',error:error.message});});return;}
+    if(this.preferences.mode==='gpu-continuous'){
+      const generation=++this.generation;
+      this.update({phase:'downloading',status:'Preparing continuous speech…'});
+      void(this.dependencies.loadContinuous??loadContinuous)().then(async({ContinuousSpeechController})=>{
+        if(!this.alive||generation!==this.generation)return;
+        const current=this.continuous=new ContinuousSpeechController(this);await current.load();
+      }).catch(error=>{if(generation===this.generation)this.update({phase:'unloaded',error:error.message});});return;
+    }
     this.update({ phase: 'downloading', status: 'Checking cached speech resources…', error: '', provisional: '' });
     this.downloadStarted = Date.now();
     this.loadStages = [];
@@ -106,15 +122,15 @@ export class SpeechController {
       this.fail(data.message);
     }
   }
-  startRecord(source = 'microphone') {
+  startRecord(source = 'microphone', continuous = false) {
     this.chunks = []; this.savedSecond = -1; this.started = performance.now();
     this.record = { id: crypto.randomUUID(), created: new Date().toISOString(), status: 'recording', expected: '',
-      metadata: { source, profile: this.preferences.mode, runtime: this.runtime, startupStages: this.loadStages, sampleRate: 16000, refine: this.preferences.refine }, events: [{ type: 'start', atMs: 0 }], partials: [], final: null };
+      metadata: { source, continuous, profile: this.preferences.mode, runtime: this.runtime, startupStages: this.loadStages, sampleRate: 16000, refine: this.preferences.refine }, events: [{ type: 'start', atMs: 0 }], partials: [], final: null };
     this.update({ provisional: '', seconds: 0, error: '' }); this.persist(); return this.record.id;
   }
   persist() {
     if (!this.record) return;
-    const snapshot = structuredClone({ ...this.record, audio: wav(this.chunks), signal: signalStats(this.chunks) });
+    const snapshot = structuredClone({ ...this.record, audio: this.record.metadata.continuous ? new Blob([]) : wav(this.chunks), signal: signalStats(this.chunks) });
     this.writing = this.writing.catch(() => {}).then(() => (this.dependencies.saveRecording || saveRecording)(snapshot))
       .then(() => this.refreshRecordings()).catch(error => this.update({ storageError: `Local recording save failed: ${error.message}. Export before leaving this page.` }));
   }
@@ -142,6 +158,7 @@ export class SpeechController {
   }
   async startRecording() {
     if (this.state.phase !== 'ready') return;
+    if(this.preferences.mode==='gpu-continuous')return this.continuous.start();
     const generation = ++this.generation;
     this.startRecord(); this.update({ phase: 'requesting', status: 'Preparing the local speech runtime…' });
     this.downloadStarted = Date.now();
@@ -199,6 +216,7 @@ export class SpeechController {
     if (context && context.state !== 'closed') await context.close().catch(() => {});
   }
   async stopRecording() {
+    if(this.preferences.mode==='gpu-continuous')return this.continuous?.stop();
     if (this.state.phase === 'requesting') {
       this.preparing?.reject(new DOMException('Microphone request cancelled.', 'AbortError'));
       this.worker?.postMessage({type: 'streamCancel', sessionId: this.record.id});
@@ -227,6 +245,7 @@ export class SpeechController {
   }
   async file(file) {
     if (!file || this.state.phase !== 'ready') return;
+    if(this.preferences.mode==='gpu-continuous')return this.continuous.file(file);
     const generation = ++this.generation;
     this.startRecord('file'); this.update({ phase: 'finalizing', status: 'Reading audio file…' });
     this.timeout(initializationDeadline, 'Audio transcription exceeded 120 seconds. Retry to load speech again.');
@@ -247,6 +266,7 @@ export class SpeechController {
   }
   fail(message) { this.unload(false, message); this.update({ error: message, status: 'Speech stopped. Retry creates a fresh worker and reuses cached downloads.' }); }
   unload(forget = true, reason = 'Speech unloaded.', graceful = forget) {
+    if(this.continuous){const current=this.continuous;this.continuous=undefined;this.teardown=current.unload();void this.teardown.catch(error=>this.update({error:error.message}));}
     this.needsFreshWorker = false;
     this.preparing?.reject(new DOMException('Speech unloaded.', 'AbortError'));
     this.generation++; clearTimeout(this.timer); void this.closeCapture();

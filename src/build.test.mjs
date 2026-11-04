@@ -3,15 +3,19 @@ import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { Given, Then } from "@cucumber/cucumber";
 import { listBundleFiles, OAUTH_FILES, CHART_FILES } from "../.github/scripts/bundle-contract.mjs";
 
-let html;
+let html, notices;
 
 Given("the production build has completed", async function ()
 {
   html = await readFile("dist/index.html", "utf8");
+  notices = await readFile("dist/NOTICES.txt", "utf8");
+  assert.match(html, /<link rel="license" href="\.\/NOTICES\.txt">/);
+  const inputs = ["src/lib/secrets/NOTICES.md", "src/lib/assistant/NOTICES.md", "src/lib/speech/NOTICES.md", "src/lib/workflow-chart-NOTICES.txt"];
+  assert.equal(notices, (await Promise.all(inputs.map(file => readFile(file, "utf8")))).join("\n\n"));
 });
 
 Then("the dist directory contains the application hosting files and optional speech resources", async function ()
@@ -26,12 +30,15 @@ Then("the dist directory contains the application hosting files and optional spe
 Then("optional speech resources preserve runtime isolation and license notices", async function () {
   const speech = await readFile('dist/speech/worker.js', 'utf8');
   assert.match(speech, /encoder_session_start|Creating encoder session/);
-  assert.match(speech, /1\.30\.0/); assert.match(speech, /f88260fa0777fe0868dda6df85d1a98f012a4a7a/);
+  const chunks = await readdir('dist/speech/chunks');
+  const graph = speech + (await Promise.all(chunks.map(file => readFile('dist/speech/chunks/' + file, 'utf8')))).join('\n');
+  assert.ok(graph.includes('1.30.0'), 'Speech graph retains its accepted ORT version.');
+  assert.ok(graph.includes('f88260fa0777fe0868dda6df85d1a98f012a4a7a'), 'Speech graph retains the immutable model revision.');
   assert.doesNotMatch(html, /ortWasmThreaded|class ContinuousFeatures/);
   assert.match(await readFile('dist/speech/features.js', 'utf8'), /mel-/);
   assert.match(await readFile('dist/speech/licenses/TEN-VAD-LICENSE', 'utf8'), /additional conditions/);
   assert.match(await readFile('dist/speech/licenses/onnxruntime-LICENSE', 'utf8'), /Microsoft/);
-  assert.match(html, /Speech dependency notices/);
+  assert.match(notices, /Speech dependency notices/);
 });
 
 Then("the hosting headers enable cross-origin isolation", async function ()
@@ -100,17 +107,17 @@ Then("the production page has no external stylesheet", function ()
 
 Then("the production page contains the vault cryptography license notices", function ()
 {
-  assert.match(html, /Vault dependency notices/);
-  assert.match(html, /Copyright \(c\) 2020 Dani Biró/);
-  assert.match(html, /Permission is hereby granted, free of charge/);
-  assert.match(html, /Copyright 2012, Samuel Neves/);
+  assert.match(notices, /Vault dependency notices/);
+  assert.match(notices, /Copyright \(c\) 2020 Dani Biró/);
+  assert.match(notices, /Permission is hereby granted, free of charge/);
+  assert.match(notices, /Copyright 2012, Samuel Neves/);
 });
 
 Then("the production page contains the Pi assistant license notices", function ()
 {
-  assert.match(html, /Assistant dependency notices/);
-  assert.match(html, /@earendil-works\/pi-agent-core/);
-  assert.match(html, /Copyright \(c\) 2025 Mario Zechner/);
+  assert.match(notices, /Assistant dependency notices/);
+  assert.match(notices, /@earendil-works\/pi-agent-core/);
+  assert.match(notices, /Copyright \(c\) 2025 Mario Zechner/);
 });
 
 Then("native assistant resources preserve decoded Wasm pins and hosted encoding", async function () {

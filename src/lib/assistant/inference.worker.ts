@@ -8,12 +8,15 @@ import { loadAssistantEngine } from "./engine.ts";
 import { encodeError } from "../worker-rpc.ts";
 import { createAssistantSession, type SessionUpdate, type ToolInvoker } from "./pi-session.ts";
 import { BrowserRuntimeOwner } from "./runtime-ownership.js";
+import { prepareModelAssets, modelAssetFetch } from "./model-storage/runtime.ts";
 import { createVisionTool } from "./vision-tool.js";
 import { visionProfileFor, preflightVision } from "./vision-profiles.ts";
 import type { LocalEngine } from "./pi-session.ts";
 import type { ImageContent } from "@earendil-works/pi-ai";
 
 const scope = globalThis as unknown as DedicatedWorkerGlobalScope;
+const networkFetch = globalThis.fetch.bind(globalThis);
+let releaseAssets: (() => Promise<void>) | undefined;
 let settings: AssistantSettings;
 let engine: Awaited<ReturnType<typeof loadAssistantEngine>> | undefined;
 let session: ReturnType<typeof createAssistantSession> | undefined;
@@ -58,6 +61,7 @@ const owner = new BrowserRuntimeOwner({
 });
 async function ensureText(signal: AbortSignal) {
   if (unconfirmedAllocation) throw new Error("Local model cleanup is unconfirmed; reload the assistant.", {cause: unconfirmedAllocation});
+  if (engine && "invalidated" in engine && engine.invalidated) {await engine.dispose(); engine = undefined;}
   if (!engine) {
     if (!loadText) throw new Error("Load a model first.");
     post({type: "progress", value: "Restoring the language model with the saved conversation…"});
@@ -92,7 +96,7 @@ scope.onmessage = event => {
   if (message.type === "stop") { session?.stop(); commandAbort?.abort(new DOMException("Model operation cancelled.", "AbortError")); return; }
   if (message.type === "dispose") {
     session?.stop(); commandAbort?.abort(new DOMException("Model unloaded.", "AbortError"));
-    void owner.close().then(() => post({type: "disposed"}), error => post({type: "error", operation: "dispose", error: encodeError(error)}));
+    void owner.close().then(async () => { await releaseAssets?.(); releaseAssets = undefined; post({type: "disposed"}); }).catch(error => post({type: "error", operation: "dispose", error: encodeError(error)}));
     return;
   }
   void (async () => {
@@ -106,15 +110,18 @@ scope.onmessage = event => {
         if (message.type === "check") return {type: "compatibility", value: compatibility};
         post({ type: "compatibility", value: compatibility });
         if (!compatibility.ready) throw new Error(compatibility.summary + " " + compatibility.detail);
-        if (engine) throw new Error("Unload the current model before loading another.");
+        if (engine || session || releaseAssets) throw new Error("Unload the current model before loading another.");
         settings = validateAssistantSettings(message.settings);
         const assetURL = new URL(message.assetBase);
         if (!["https:", "http:"].includes(assetURL.protocol) || assetURL.origin !== scope.location.origin) throw new Error("Assistant runtime assets must come from this application.");
         assetBase = assetURL.href;
         const progress = (value: unknown) => post({ type: "progress", value });
+        releaseAssets = await prepareModelAssets(settings.model, AbortSignal.any([controller.signal, AbortSignal.timeout(settings.loadTimeout)]), progress, networkFetch);
+        const cachedFetch = modelAssetFetch(settings.model, networkFetch);
+        progress({message: "Model files saved and verified. Initializing the runtime…"});
         const restoreText = async (signal: AbortSignal) => {
           signal.throwIfAborted();
-          try {return await loadAssistantEngine(settings, progress, signal, compatibility, assetBase);}
+          try {return await loadAssistantEngine(settings, progress, signal, compatibility, assetBase, undefined, {fetch: cachedFetch, modelId: settings.model});}
           catch (error) {unconfirmedAllocation = error instanceof Error ? error : new Error("Native allocation failed.", {cause: error}); throw error;}
         };
         loadText = restoreText;

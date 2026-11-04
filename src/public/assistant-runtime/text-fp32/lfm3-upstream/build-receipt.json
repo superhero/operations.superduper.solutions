@@ -1,0 +1,29 @@
+{
+  "wllama": "3bb2a46f0dab0b924e8cd992b85e8881c3d3a859",
+  "declared_version": "3.12.0-source",
+  "llama_cpp": "19cce6919992fdffd92e0ac152caaf1e2b8f254e",
+  "original_llama_cpp": "5aeac37a35b44fde4bdffaec9159f2fcb253b622",
+  "change": "Update upstream llama.cpp for official LFM3 support (PR31252); no weight conversion.",
+  "emscripten": "4.0.20",
+  "dawn_tag": "v20260317.182325",
+  "dawn_zip_sha256": "8dcae86c630d76b6794b271c6572becba36f4237d132bee121a56638c3d76575",
+  "backend": "webgpu + wasm SIMD/pthreads",
+  "cpu_heap_max_gib": 8,
+  "shader_f16_required": false,
+  "gpu_only_graph_audit": true,
+  "input_embedding_device": "GPU",
+  "files": {
+    "llama-cpp.patch": "0ec66fadb0c0fa01d28a95851e0174ca27354e7af9b167f3d4212a7619648130",
+    "LICENCE": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720",
+    "wllama.wasm": "5ae95c179c98794498b7d9a4b9594ddf58c2804c4367b76a92393bd8953b02f3",
+    "upstream.patch": "87f5869ad63bfa2c5d13da91d87ed2df99ad9528bd9492ad0bc7c210000ad276",
+    "index.js": "530aefa7a83721e843762c0e886b83100ee1dd356fef6343a79008e98332f1b7"
+  },
+  "inputs_sha256": {
+    "build.sh": "73576433eba72f72de594c14df16829b470d74ceac26a8fe7feb936422975942",
+    "upstream-api.patch": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3",
+    "heap8.patch": "44466719ff4f2cc7e6cb06b24d9709d0ef0a93adab4e2fe9d5a6b4b34c939d11",
+    "queue-wait.patch": "68942b9b98a03f03a4661024a128888f461e61e7fa5e7babdbc5bf82465edcf1",
+    "gpu-only.patch": "c7277f3668512afc0e45db2930f7ea2980a5bbce667f73d29ebdf98ae4a56c6f"
+  }
+}

@@ -20,6 +20,7 @@ import {visionProfileFor, preflightVision} from './lib/assistant/vision-profiles
 import {COMPATIBLE_PIN, resolveVisionPin} from './lib/assistant/runtime/vision-engine.js';
 import {loadVisionRuntime, bindVisionSessionOptions, configureVisionDevice, releaseVisionRuntime} from './lib/assistant/runtime/vision-runtime.js';
 import {decisionModels, decisionProfile, validateDecisionRequest, validateDecisionResult, checkDecisionCompatibility} from './lib/assistant/decision-models.ts';
+import {loadFp32Chat} from './public/assistant-runtime/text-fp32/engine.mjs';
 import {loadWllama, loadGemma} from './public/assistant-runtime/load-language.mjs';
 import {litertMessages, checkedToolCalls} from './lib/assistant/runtime/text-protocol.js';
 import {assertInputBudget, prepareStrandsInput} from './public/assistant-runtime/decision/context-guard.mjs';
@@ -143,7 +144,7 @@ Then('invalid image references never suspend text and failed vision cleanup bloc
 });
 
 Then('decision profiles validate exact questions and native probability readouts', () => {
-  assert.equal(decisionModels.length,9);assert.equal(decisionModels.filter(profile=>profile.id.startsWith('d3-')).length,4);
+  assert.equal(decisionModels.length,17);assert.equal(decisionModels.filter(profile=>profile.id.startsWith('d3-')).length,8);
   assert.throws(()=>decisionProfile('experimental'));for(const profile of decisionModels)assert.match(profile.revision,/^[0-9a-f]{40}$/);
   const request=validateDecisionRequest({state:'Translate hello',questions:{q:{type:'choice',instructions:'Pick a task',criteria:{translate:'Translate',code:'Write code'}}}});
   assert.deepEqual(Object.keys(request.questions.q.criteria),['translate','code']);
@@ -197,6 +198,12 @@ Then('native runtime checks distinguish CPU placement from missing GPU and Wasm 
   finally {globalThis.WebAssembly=saved;}
   for(const id of ['strands-gpu','d3-lite'])assert.equal((await checkDecisionCompatibility(id,nativeEnvironment())).ready,true);
   assert.equal((await checkDecisionCompatibility('strands-gpu',nativeEnvironment({fp16:false}))).ready,false);
+  assert.equal((await checkDecisionCompatibility('strands-fp32',nativeEnvironment({fp16:false,jspi:false,memory64:false}))).ready,true);
+  for(const change of [{isolated:false},{simd:false},{gpu:false}])assert.equal((await checkDecisionCompatibility('strands-fp32',nativeEnvironment(change))).ready,false);
+  for(const profile of decisionModels.filter(profile=>profile.native_variant==='shared-fp32-gpu-v1')) {
+    for(const fp16 of [true,false]) assert.equal((await checkDecisionCompatibility(profile.id,nativeEnvironment({fp16}))).ready,true);
+    assert.equal((await checkDecisionCompatibility(profile.id,nativeEnvironment({gpu:false}))).ready,false);
+  }
 });
 
 Then('compatible image loaders bind each official session to the verified owned device', async () => {
@@ -308,7 +315,7 @@ Then('development image requests use current source beside older built runtime a
 
 Then('development image compilation is cached refreshed and retried without stale fallback', async () => {
   const root=await mkdtemp(join(tmpdir(),'operations-image-build-'));
-  const inputs=['src/lib/assistant/runtime/vision-worker.js','src/lib/assistant/runtime/vision-runtime.js','src/public/assistant-runtime/vision-engine.js','build/assistant-worker-build.mjs','package-lock.json'];
+  const inputs=['src/lib/assistant/runtime/vision-worker.js','src/lib/assistant/runtime/vision-runtime.js','src/public/assistant-runtime/vision-engine.js','build/assistant-worker-build.mjs','package-lock.json','src/lib/assistant/model-storage/runtime.ts','src/lib/assistant/model-storage/storage.ts','src/lib/assistant/model-storage/catalog.ts','src/lib/assistant/model-storage/events.ts','src/lib/assistant/language-profiles.json','src/lib/assistant/vision-profile.json','src/lib/assistant/vision-compatible-profile.json','src/lib/assistant/decision-profiles.json','src/lib/speech/continuous-profile.json'];
   try {
     for(const file of inputs){await mkdir(dirname(join(root,file)),{recursive:true});await writeFile(join(root,file),'initial');}
     let builds=0,fail=false;
@@ -325,4 +332,163 @@ Then('development image compilation is cached refreshed and retried without stal
     await assert.rejects(bundle(server),/compiler failed/);
     assert.equal((await bundle(server)).code,'worker-4');assert.equal(builds,4);
   } finally {await rm(root,{recursive:true,force:true});}
+});
+
+const strictProfile=()=>assistantProfile('minicpm5-fp32');
+const deferredNative=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return{promise,resolve,reject};};
+function strictFixture({missing=false,cpu=false,hold=false,exitFails=false,silent=false}={}) {
+  const record={loads:[],generations:[],exits:0,cleared:0},completion=deferredNative(),exit=deferredNative();
+  class Source {constructor(url,bytes,options){Object.assign(this,{url,bytes,options});record.source=this;}clear(){record.cleared++;}}
+  class Blob {constructor(source){this.source=source;}}
+  class Raw {
+    constructor(paths,{logger}){record.paths=paths;this.logger=logger;}
+    async loadModel(blobs,settings){
+      record.loads.push({blobs,settings});
+      if(!missing)for(const line of ['FP32_COMPAT device shader_f16=0','offloaded 43/43 layers to GPU','GPU_ONLY_MODEL input=GPU no_cpu_weight_fallback=1','FP32_COMPAT pipeline mul_mat','GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=3'])this.logger.debug(line);
+      if(cpu){this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=1 gpu_compute_ops=0');for(let i=0;i<700;i++)this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');for(let i=0;i<6100;i++)this.logger.debug('ordinary native diagnostic');}
+    }
+    getLoadedContextInfo(){return{n_ctx:4096,n_layer:42};}getChatTemplate(){return 'Native trained Jinja template';}
+    async createChatCompletion(value){
+      record.generations.push(value);if(hold)await completion.promise;
+      if(!silent)this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');
+      value.onData({choices:[{delta:{tool_calls:[{index:0,id:'native',function:{name:'read_',arguments:'{"section":'}}]}}]});
+      value.onData({choices:[{delta:{tool_calls:[{index:0,function:{name:'application',arguments:'"summary"}'}}]},finish_reason:'tool_calls'}],usage:{prompt_tokens:29,completion_tokens:9}});
+    }
+    async exit(){record.exits++;if(hold)await exit.promise;if(exitFails)throw Error('native disposal failed');}
+  }
+  const options={assetBase,gpu:{async requestAdapter(){return{features:new Set(),info:{vendor:'source-device',architecture:'controlled'}};}},Wllama:Raw,ranges:{RangeSource:Source,RangeBlob:Blob}};
+  return{record,options,completion,exit};
+}
+Then('compatible MiniCPM preserves legacy placement and caps its qualified settings',async()=>{
+  const prefs=settingsForAssistantModel('minicpm5-fp32',{...defaultAssistantSettings,sampling:true,thinking:true});
+  assert.equal(prefs.executionMode,'gpu');assert.equal(prefs.context,4096);assert.equal(prefs.maxTokens,256);assert.equal(prefs.prefixCache,false);assert.equal(prefs.sampling,false);assert.equal(prefs.thinking,false);
+  for(const executionMode of ['cpu','hybrid']) {
+    assert.throws(()=>validateAssistantSettings({...prefs,executionMode}),/full GPU/);
+    assert.equal(validateAssistantSettings({...defaultAssistantSettings,model:'minicpm5-2b',executionMode}).executionMode,executionMode);
+  }
+  for(const bad of [{maxTokens:257},{context:8192},{prefixCache:true},{sampling:true},{thinking:true}])assert.throws(()=>validateAssistantSettings({...prefs,...bad}),/Compatible text/);
+  const buffer=()=>({async mapAsync(){},getMappedRange:()=>new Float32Array([3.5]).buffer,unmap(){},destroy(){}});
+  const pass={setPipeline(){},setBindGroup(){},dispatchWorkgroups(){},end(){}};
+  const device={pushErrorScope(){},async popErrorScope(){return null;},createShaderModule(){return{};},async createComputePipelineAsync(){return{getBindGroupLayout(){return{};}};},createBuffer:buffer,createBindGroup(){return{};},createCommandEncoder(){return{beginComputePass:()=>pass,copyBufferToBuffer(){},finish(){return{};}};},queue:{writeBuffer(){},submit(){}},destroy(){}};
+  const env={isSecureContext:true,crossOriginIsolated:true,WebAssembly:{validate:()=>true,Suspending:class{}},navigator:{gpu:{async requestAdapter(){return{features:new Set(),info:{},requestDevice:async()=>device};}}}};
+  const caps=await probeAssistantCompatibility(env,prefs);assert.equal(caps.ready,true);assert.equal(caps.fp32,true);assert.equal(caps.fp16,false);
+  delete env.WebAssembly.Suspending;assert.equal((await probeAssistantCompatibility(env,prefs)).ready,false);
+  const calls=[],native={async reset(){},async dispose(){},async generate(){}};
+  await loadAssistantEngine(prefs,()=>{},signal(),{fp32:true,fp16:false},assetBase,{async loadFp32Chat(profile,_progress,options){calls.push({profile,options});return native;},async loadWllama(){assert.fail('No legacy fallback');},async loadGemma(){assert.fail('No other engine fallback');}});
+  assert.equal(calls.length,1);assert.equal(calls[0].profile.engine,'wllama-fp32');assert.equal(calls[0].profile.settings.cache_type_k,'f32');assert.equal(calls[0].options.mode,'gpu');
+});
+Then('compatible native text binds the pinned ABI and streams original tool calls',async()=>{
+  const fixture=strictFixture();fixture.options.fetch=async()=>new Response('installed GGUF');const engine=await loadFp32Chat(strictProfile(),()=>{},fixture.options);assert.equal(fixture.record.source.options.fetch,fixture.options.fetch);
+  assert.match(fixture.record.paths.default,/text-fp32\/upstream\/wllama.wasm$/);
+  const request=fixture.record.loads[0];assert.equal(request.settings.n_ctx,4096);assert.equal(request.settings.n_gpu_layers,99);assert.equal(request.settings.n_batch,128);assert.equal(request.settings.n_ubatch,64);
+  assert.equal(request.settings.cache_type_k,'f32');assert.equal(request.settings.cache_type_v,'f32');assert.equal(request.settings.ctx_shift,false);assert.equal(request.settings.flash_attn,false);assert.equal(request.settings.jinja,true);
+  await assert.rejects(engine.generate([],{generation:{sampling_mode:'sample'}}),/frozen model settings/);
+  const prior={role:'assistant',content:'',tool_calls:[{id:'prior',function:{name:'read_application',arguments:{section:'settings'}}}]};
+  const result=await engine.generate([prior],{tools:[],signal:signal(),maxTokens:32});
+  assert.equal(fixture.record.generations[0].messages[0].tool_calls[0].function.arguments,'{"section":"settings"}');
+  assert.equal(result.message.tool_calls[0].function.name,'read_application');assert.deepEqual(JSON.parse(result.message.tool_calls[0].function.arguments),{section:'summary'});
+  assert.equal(result.usage.prompt_tokens,29);assert.equal(engine.contextLimit,4096);assert.equal(result.placement.cpu_compute_ops,0);assert.ok(result.placement.gpu_compute_ops>0);
+  assert.equal(engine.contextMode,undefined,'No prospective native counter is invented');await engine.dispose();await engine.dispose();assert.equal(fixture.record.exits,1);assert.equal(fixture.record.cleared,1);
+});
+Then('compatible text refuses unproved or CPU model placement after log rollover',async()=>{
+  for(const flags of [{missing:true},{cpu:true}]) {
+    const fixture=strictFixture(flags);await assert.rejects(loadFp32Chat(strictProfile(),()=>{},fixture.options),/placement was not proved|CPU model computation/);
+    assert.equal(fixture.record.loads.length,1);assert.equal(fixture.record.exits,1);assert.equal(fixture.record.cleared,1);
+  }
+  const fixture=strictFixture();for(const mode of ['cpu','hybrid'])await assert.rejects(loadFp32Chat(strictProfile(),()=>{},{...fixture.options,mode}),/full GPU/);
+  assert.equal(fixture.record.loads.length,0);
+  await assert.rejects(loadFp32Chat({...strictProfile(),native_load_options:{ctx_shift:true}},()=>{},fixture.options),/native load overrides/);
+  const silent=strictFixture({silent:true}),engine=await loadFp32Chat(strictProfile(),()=>{},silent.options);
+  await assert.rejects(engine.generate([{role:'user',content:'hello'}],{signal:signal(),maxTokens:32}),/current-turn GPU/);await engine.dispose();
+});
+Then('compatible text cancellation drains and failed cleanup stays failed',async()=>{
+  const fixture=strictFixture({hold:true}),controller=new AbortController(),engine=await loadFp32Chat(strictProfile(),()=>{},fixture.options);
+  let settled=false;const generation=engine.generate([{role:'user',content:'hello'}],{tools:[],signal:controller.signal,maxTokens:32}).then(()=>{settled=true;},()=>{settled=true;});
+  await new Promise(resolve=>setImmediate(resolve));controller.abort();await new Promise(resolve=>setImmediate(resolve));
+  fixture.completion.resolve();await new Promise(resolve=>setImmediate(resolve));assert.equal(settled,false);assert.equal(engine.invalidated,true);
+  fixture.exit.resolve();await generation;assert.equal(fixture.record.exits,1);await engine.dispose();
+  const broken=strictFixture({exitFails:true}),failed=await loadFp32Chat(strictProfile(),()=>{},broken.options);
+  await assert.rejects(failed.dispose(),/native disposal failed/);await assert.rejects(failed.dispose(),/native disposal failed/);assert.equal(broken.record.exits,1);
+});
+
+Then('installed model catalogs retain exact language files and both complete image variants',async()=>{
+  const {storageProfiles,artifactsFor,profileById}=await import('./lib/assistant/model-storage/catalog.ts');
+  assert.equal(storageProfiles.length,23);
+  for(const profile of storageProfiles){const files=artifactsFor(profile);assert.ok(files.length);for(const file of files){assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(Number.isSafeInteger(file.bytes)&&file.bytes>0);assert.match(file.url,profile.id==='decision:strands-fp32'?/\/strands-fp32\/[a-f0-9]{64}\//:file.url.startsWith('https://code.superduper.solutions/speech/')?/\/speech\/models\/[a-f0-9]{64}\//:/\/resolve\/[a-f0-9]{40}\//);}}
+  const fp16=artifactsFor(profileById('image:fp16')),fp32=artifactsFor(profileById('image:compatible'));
+  assert.equal(fp16.length,14);assert.equal(fp32.length,13);
+  assert.deepEqual(fp16.filter(file=>!file.id.startsWith('onnx/')),fp32.filter(file=>!file.id.startsWith('onnx/')));
+  assert.deepEqual(artifactsFor({...profileById('2b'),model:'untrusted',file:'other',revision:'bad'}),artifactsFor(profileById('2b')));
+  assert.throws(()=>profileById('unregistered'),/not available/);
+  assert.equal(artifactsFor(profileById('minicpm5-2b'))[0].sha256,artifactsFor(profileById('minicpm5-fp32'))[0].sha256);
+});
+Then('all language adapters receive the installed reader without changing model placement',async()=>{
+  const {loadAssistantEngine,loadBonsaiEngine}=await import('./lib/assistant/engine.ts');
+  const {settingsForAssistantModel,defaultAssistantSettings}=await import('./lib/assistant/config.ts');
+  const reader=async()=>new Response('cached'),calls=[];
+  const native=Object.fromEntries(['loadWllama','loadGemma','loadFp32Chat'].map(name=>[name,async(profile,_progress,options)=>{calls.push({name,profile,options});return{async dispose(){}};}]));
+  for(const model of ['minicpm5-2b','minicpm5-fp32','gemma-e2b']){
+    const settings=settingsForAssistantModel(model,defaultAssistantSettings);
+    await loadAssistantEngine(settings,()=>{},signal(),{fp32:true,fp16:true},assetBase,native,{fetch:reader,modelId:model});
+    assert.equal(calls.at(-1).options.fetch,reader);assert.equal(calls.at(-1).options.installedModel,model);assert.equal(calls.at(-1).options.mode,settings.executionMode);
+  }
+  assert.deepEqual(calls.map(row=>row.name),['loadWllama','loadFp32Chat','loadGemma']);
+  let request;
+  const engine=await loadBonsaiEngine(defaultAssistantSettings,()=>{},signal(),{fp16:true},async()=>({Qwen3_5ForConditionalGeneration:{async from_pretrained(_model,options){request=options;return{create_session:()=>({max_length:4096,async dispose(){}}),async dispose(){}};}}}),reader);
+  assert.equal(request.fetch,reader);assert.equal(request.mmproj,null);await engine.dispose();
+});
+Then('model asset preparation retains successful claims and releases failed or canceled ones',async()=>{
+  const {vi}=await import('vitest'),events=[];let fail=false;
+  vi.doMock('./lib/assistant/model-storage/storage.ts',()=>({
+    acquireModelUse:async(_id,signal)=>{signal.throwIfAborted();events.push('claim');return async()=>events.push('release');},
+    installModel:async(_id,_progress,signal,_base,fetcher)=>{events.push('install');assert.equal(fetcher,reader);signal.throwIfAborted();if(fail)throw Error('Checksum mismatch');},
+    installedFetch:()=>reader,
+  }));
+  const reader=async()=>new Response('local');
+  try{
+    const {prepareModelAssets,modelAssetFetch}=await import('./lib/assistant/model-storage/runtime.ts?preparation-case');
+    const imageReader=modelAssetFetch('minicpm5-fp32',async()=>new Response('local image bytes'));
+    assert.equal(await(await imageReader('data:image/png;base64,AA==')).text(),'local image bytes');
+    assert.equal(await(await imageReader('https://unregistered.invalid/model')).text(),'local');
+    const release=await prepareModelAssets('minicpm5-fp32',signal(),()=>{},reader);assert.deepEqual(events,['claim','install']);await release();assert.equal(events.at(-1),'release');
+    fail=true;await assert.rejects(prepareModelAssets('minicpm5-fp32',signal(),()=>{},reader),/Checksum mismatch/);assert.deepEqual(events.slice(-3),['claim','install','release']);
+    const abort=new AbortController();abort.abort();const before=events.length;await assert.rejects(prepareModelAssets('minicpm5-fp32',abort.signal,()=>{},reader),/abort/i);assert.equal(events.length,before);
+  } finally{vi.doUnmock('./lib/assistant/model-storage/storage.ts');}
+});
+
+Then('compatible Ornith and LFM3 use fixed GPU settings and reject mixed native pairs',async()=>{
+  for(const id of['minicpm5-fp32','ornith-q4-fp32','ornith-q8-fp32','lfm3-fp32']){
+    const profile=assistantProfile(id),preferences=settingsForAssistantModel(id,defaultAssistantSettings),fixture=strictFixture();
+    assert.equal(preferences.executionMode,'gpu');assert.equal(preferences.context,4096);assert.equal(preferences.maxTokens,256);
+    for(const key of['thinking','sampling','prefixCache'])assert.equal(preferences[key],false);
+    for(const executionMode of['cpu','hybrid'])assert.throws(()=>validateAssistantSettings({...preferences,executionMode}),/full GPU/);
+    const reader=async()=>new Response('cached');fixture.options.fetch=reader;
+    const engine=await loadFp32Chat(profile,()=>{},fixture.options),folder=id==='lfm3-fp32'?'lfm3-upstream':'upstream';
+    assert.ok(fixture.record.paths.default.endsWith(`/text-fp32/${folder}/wllama.wasm`));assert.ok(fixture.record.source.url.includes(profile.revision+'/'+profile.file));assert.equal(fixture.record.source.options.fetch,reader);
+    const result=await engine.generate([{role:'user',content:'Use the available application tool.'}],{tools:[],signal:signal(),maxTokens:32});
+    assert.equal(result.message.tool_calls[0].function.name,'read_application');assert.equal(result.placement.current_turn.cpu_compute_ops,0);assert.ok(result.placement.current_turn.gpu_compute_ops>0);await engine.dispose();
+    for(const bad of[{native_variant:id==='lfm3-fp32'?'standard-fp32-gpu':'lfm3-fp32-gpu'},{weight_bytes:profile.weight_bytes-1},{weight_sha256:'0'.repeat(64)},{revision:'0'.repeat(40)}]){
+      const rejected=strictFixture();await assert.rejects(loadFp32Chat({...profile,...bad},()=>{},rejected.options),/Unqualified compatible/);assert.equal(rejected.record.loads.length,0);assert.equal(rejected.record.source,undefined);
+    }
+  }
+  assert.equal(assistantProfile('ornith-q4').engine,'wllama');assert.equal(assistantProfile('ornith-q8').engine,'wllama');
+  assert.equal(assistantProfile('lfm3-fp32').runtime_source.llama_cpp,'19cce6919992fdffd92e0ac152caaf1e2b8f254e');
+  assert.equal(assistantProfile('lfm3-fp32').license.id,'lfm1.0');assert.match(assistantProfile('lfm3-fp32').limitations,/Thinking-off/);
+});
+
+Then('the trained LFM3 reasoning boundary preserves raw output without leaking truncated thoughts',async()=>{
+  for(const [content,native,text,thought]of[['<think>plan</think>answer','native','answer','native\nplan'],['Paris</think>Paris','','Paris','Paris'],['<think>truncated','','','truncated'],['normal <b>answer</b>','native','normal <b>answer</b>','native']]){
+    const fixture=strictFixture(),visible=[],thinking=[],profile=assistantProfile('lfm3-fp32');
+    fixture.options.Wllama.prototype.createChatCompletion=async function(request){this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');for(const part of[content.slice(0,4),content.slice(4)]){request.onData({choices:[{delta:{content:part}}]});assert.deepEqual(visible,[]);}request.onData({choices:[{delta:{reasoning_content:native},finish_reason:'stop'}]});assert.deepEqual(thinking,[]);};
+    const engine=await loadFp32Chat(profile,()=>{},fixture.options),result=await engine.generate([],{maxTokens:32,signal:signal(),onText:part=>visible.push(part),onThinking:part=>thinking.push(part)});
+    assert.equal(result.message.content,text);assert.equal(result.message.reasoning_content??'',thought);assert.deepEqual(visible,text?[text]:[]);assert.deepEqual(thinking,thought?[thought]:[]);assert.deepEqual(result.raw_lfm3,{content,reasoning_content:native});if(!text)assert.equal(result.timings.browser_first_text_ms,null);await engine.dispose();
+  }
+  const canceled=strictFixture(),abort=new AbortController();
+  canceled.options.Wllama.prototype.createChatCompletion=async function(request){this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');request.onData({choices:[{delta:{content:'<think>plan</think>answer'},finish_reason:'stop'}]});};
+  const cancelEngine=await loadFp32Chat(assistantProfile('lfm3-fp32'),()=>{},canceled.options);
+  const cancelResult=await cancelEngine.generate([],{maxTokens:32,signal:abort.signal,onThinking:()=>abort.abort(),onText:()=>assert.fail('No answer after synchronous callback cancellation')});
+  assert.equal(cancelResult.finish_reason,'cancelled');assert.equal(cancelEngine.invalidated,true);assert.equal(canceled.record.exits,1);await cancelEngine.dispose();assert.equal(canceled.record.exits,1);
+  const fixture=strictFixture(),visible=[];
+  fixture.options.Wllama.prototype.createChatCompletion=async function(request){this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');request.onData({choices:[{delta:{content:'<think>ordinary model text'}}]});assert.deepEqual(visible,['<think>ordinary model text']);};
+  const engine=await loadFp32Chat(strictProfile(),()=>{},fixture.options);await engine.generate([],{maxTokens:32,signal:signal(),onText:part=>visible.push(part)});await engine.dispose();
 });

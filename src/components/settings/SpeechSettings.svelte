@@ -49,12 +49,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (preferences.restore && preferences.loaded) { opened = true; controller.load(); }
     }
   });
+  let playbackURL = "", playbackGeneration = 0;
+  function clearPlayback(){playbackGeneration++;if(playbackURL)URL.revokeObjectURL(playbackURL);playbackURL="";playback="";}
   $effect(() => {
-    if (selected?.audio) {
-      const url = URL.createObjectURL(selected.audio); playback = url;
-      return () => URL.revokeObjectURL(url);
+    const recording=selected;clearPlayback();
+    if (recording?.audio && !recording.metadata.continuous) {
+      playbackURL=URL.createObjectURL(recording.audio);playback=playbackURL;
     }
-    playback = "";
+    return clearPlayback;
   });
   function preference(value: Partial<typeof preferences>) { controller.preferencesChanged(value); preferences = { ...controller.preferences }; }
   function visibility() { if (document.hidden) controller.hidden(); }
@@ -65,7 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   async function clearRecordings() {
     storageBusy = true;
-    try { localError = ""; await controller.flushStorage(); await deleteRecordings(); selectedId = ""; await controller.refreshRecordings(); }
+    try { localError = ""; await controller.flushStorage(); await deleteRecordings(); controller.clearRecovery(); selectedId = ""; await controller.refreshRecordings(); }
     catch (error) { localError = error instanceof Error ? error.message : String(error); }
     finally { storageBusy = false; }
   }
@@ -81,13 +83,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       const record = selected;
       const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(record.audio);
+        void controller.recordingAudio(record).then(audio=>{const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(audio);},reject);
       });
       const url = URL.createObjectURL(new Blob([JSON.stringify({ schema: 1, ...record, comparison,
         audio: { format: "mono IEEE float32 WAV", sampleRate: 16000, dataUrl } }, null, 2)], { type: "application/json" }));
       const link = document.createElement("a"); link.href = url; link.download = `parakeet-debug-${record.id}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) { localError = error instanceof Error ? error.message : String(error); }
   }
+  async function playRecording(){const recording=selected,generation=playbackGeneration;if(!recording)return;storageBusy=true;try{localError='';const blob=await controller.recordingAudio(recording);if(generation!==playbackGeneration||selected?.id!==recording.id)return;clearPlayback();playbackURL=URL.createObjectURL(blob);playback=playbackURL;}catch(error){localError=error instanceof Error?error.message:String(error);}finally{storageBusy=false;}}
 </script>
 
 <details class="speech-settings" bind:this={panel} bind:open={opened}>
@@ -96,7 +99,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <label for="speech-profile">Parakeet TDT 0.6B v3</label>
     <FieldSelect id="speech-profile" label="Speech runtime" options={speechProfiles} includePlaceholder={false} value={preferences.mode} disabled={loaded || externalBusy}
       onValueChange={value => preference({ mode: value })} />
-    <p>{(profile.bytes / 1e9).toFixed(2)} GB model download · {preferences.mode === "cpu" ? "CPU encoder and decoder" : "WebGPU encoder · INT8 CPU decoder"}</p>
+    <p>{(profile.bytes / 1e9).toFixed(2)} GB model download · {preferences.mode === "cpu" ? "CPU encoder and decoder" : preferences.mode === "gpu-continuous" ? "WebGPU encoder and decoder · CPU audio features" : "WebGPU encoder · INT8 CPU decoder"}</p>
     {#if preferences.mode === "gpu-fp32"}<p>Needs browser file storage and substantially more memory than the download size. Private browsing may have too little storage space.</p>{/if}
     <div class="speech-actions">
       {#if !loaded}
@@ -114,23 +117,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <input hidden aria-label="Transcribe audio file" type="file" accept="audio/*" disabled={speechState.phase !== "ready" || externalBusy} bind:this={audioInput}
         onchange={event => { void controller.file(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
     </div>
-    <p class="status" role="status">{speechState.status}{busy ? ` · ${speechState.seconds.toFixed(1)}s` : ""}</p>
+    <p class="status" role="status">{speechState.status}{busy ? ` · ${speechState.seconds.toFixed(1)}s` : ""}{speechState.queuedSegments ? ` · ${speechState.queuedSegments} queued segments` : ''}</p>
     {#if speechState.provisional}<p class="provisional" aria-label="Provisional transcript">{speechState.provisional}</p>{/if}
     {#if speechState.error}<p class="error" role="alert">{speechState.error}</p>{/if}
     {#if speechState.storageError}<p class="error" role="alert">{speechState.storageError}</p>{/if}
     {#if localError}<p class="error" role="alert">{localError}</p>{/if}
     <label class="switch"><span>Restore loaded speech when Assistant opens</span><input type="checkbox" checked={preferences.restore} onchange={event => preference({ restore: event.currentTarget.checked })} /></label>
-    <label class="switch"><span>Refine the whole recording after Stop</span><input type="checkbox" disabled={busy} checked={preferences.refine} onchange={event => preference({ refine: event.currentTarget.checked })} /></label>
-    <p>Speak for up to 55 seconds, or choose audio up to 60 seconds and 10 MiB. Confirmed text is added to your draft. Send it when you are ready.</p>
+    {#if preferences.mode!=='gpu-continuous'}<label class="switch"><span>Refine the whole recording after Stop</span><input type="checkbox" disabled={busy} checked={preferences.refine} onchange={event => preference({ refine: event.currentTarget.checked })} /></label>{/if}
+    <p>{preferences.mode==='gpu-continuous'?'Continuous dictation saves bounded audio segments while you speak; Stop drains queued recognition.':'Speak for up to 55 seconds.'} Audio files support up to 60 seconds and 10 MiB. Confirmed text is added to your draft. Send it when you are ready.</p>
+    {#if preferences.mode==='gpu-continuous'}<p>The FP32 encoder uses GPU neural operators with CPU indexing and layout work. The converted decoder and grouped control use GPU; audio features and TEN detection use CPU.</p>{/if}
     <p>Closing Assistant or hiding this page stops the microphone. Short or quiet speech can be missed or misheard. WebGPU startup varies by browser and device; CPU is available as an explicit choice.</p>
   </div>
   <details class="diagnostics">
     <summary>Local speech diagnostics<MaterialIcon name="chevron_forward" size={16} /></summary>
-    <p>The latest 20 recordings, transcripts and diagnostics are saved in this browser. Nothing is uploaded. Export only when you want to share a capture.</p>
+    <p>The latest 20 finished recordings, plus unfinished recovery audio, are saved in this browser. Each long recording keeps all its segments. Nothing is uploaded. Export only when you want to share a capture.</p>
     {#if records.length}
       <FieldSelect id="speech-recordings" label="Saved speech recordings" includePlaceholder={false}
         options={records.map(record => ({ value: record.id, label: `${new Date(record.created).toLocaleString()} · ${record.status}` }))} value={selectedId} onValueChange={value => selectedId = value} />
       {#if selected}
+        {#if selected.metadata.continuous}<button type="button" class="secondary" disabled={busy||storageBusy} onclick={playRecording}>Prepare saved audio for playback</button>{/if}
         {#if playback}<audio aria-label="Saved speech recording" controls src={playback}><track kind="captions" /></audio>{/if}
         <p class="transcript">{transcript || "No transcript."}</p>
         <label for="speech-reference">What you said (optional)</label>

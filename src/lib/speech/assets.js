@@ -56,6 +56,7 @@ export async function verifyBlob(blob, pin) {
 }
 
 export async function modelFiles(mode, progress, { getFile = speechModelFile, verify = verifyBlob } = {}) {
+  if(mode==='gpu-continuous')throw new Error('Continuous speech uses its verified installed-model reader.');
   const profile = speechProfiles.find(p => p.value === mode);
   if (!profile) throw new Error('Unknown speech profile.');
   const urls = [], files = {};

@@ -1,0 +1,203 @@
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -2764,6 +2764,27 @@
+     }
+ 
+     copy_experts.reset();
++
++    // Dedicated GPU-only runtime: audit the allocated graph before executing it.
++    int gpu_only_cpu_ops = 0;
++    int gpu_only_gpu_ops = 0;
++    for (int i = 0; i < ggml_graph_n_nodes(gf); ++i) {
++        auto * node = ggml_graph_node(gf, i);
++        if (node->op == GGML_OP_NONE || node->op == GGML_OP_VIEW ||
++            node->op == GGML_OP_RESHAPE || node->op == GGML_OP_PERMUTE ||
++            node->op == GGML_OP_TRANSPOSE) continue;
++        auto * assigned = ggml_backend_sched_get_tensor_backend(sched.get(), node);
++        const auto type = assigned ? ggml_backend_dev_type(ggml_backend_get_device(assigned)) : GGML_BACKEND_DEVICE_TYPE_CPU;
++        if (type == GGML_BACKEND_DEVICE_TYPE_GPU || type == GGML_BACKEND_DEVICE_TYPE_IGPU) {
++            ++gpu_only_gpu_ops;
++        } else {
++            ++gpu_only_cpu_ops;
++            LLAMA_LOG_ERROR("GPU_ONLY_CPU_OP name=%s op=%s backend=%s\n", node->name,
++                ggml_op_name(node->op), assigned ? ggml_backend_name(assigned) : "unassigned");
++        }
++    }
++    LLAMA_LOG_INFO("GPU_ONLY_AUDIT cpu_compute_ops=%d gpu_compute_ops=%d\n", gpu_only_cpu_ops, gpu_only_gpu_ops);
++    if (gpu_only_cpu_ops != 0 || gpu_only_gpu_ops == 0) return GGML_STATUS_FAILED;
+ 
+     auto status = ggml_backend_sched_graph_compute_async(sched.get(), gf);
+     if (status != GGML_STATUS_SUCCESS) {
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -1629,7 +1629,7 @@
+     for (const auto & dev : devices) {
+         buft_list_t buft_list = make_gpu_buft_list(dev.dev, split_mode, tensor_split);
+         // add CPU buffer types as a fallback
+-        buft_list.insert(buft_list.end(), pimpl->cpu_buft_list.begin(), pimpl->cpu_buft_list.end());
++        // GPU_ONLY: never append CPU model-weight buffer fallbacks.
+         pimpl->gpu_buft_list.emplace(dev.dev, std::move(buft_list));
+     }
+ 
+@@ -1687,7 +1687,11 @@
+ 
+     // assign the input layer
+     // there is very little benefit to offloading the input layer, so always keep it on the CPU
+-    pimpl->dev_input = { cpu_dev, &pimpl->cpu_buft_list };
++    if (devices.empty() || n_gpu_layers <= n_layer_all) {
++        throw std::runtime_error("GPU_ONLY requires a GPU and all layers including output");
++    }
++    pimpl->dev_input = get_layer_buft_list(0);
++    LLAMA_LOG_INFO("GPU_ONLY_MODEL input=GPU no_cpu_weight_fallback=1\n");
+ 
+     // assign the repeating layers to the devices according to the splits
+     pimpl->dev_layer.resize(n_layer_all);
+--- a/ggml/src/ggml-webgpu/ggml-webgpu.cpp
++++ b/ggml/src/ggml-webgpu/ggml-webgpu.cpp
+@@ -4189,10 +4189,9 @@
+     ctx->webgpu_global_ctx->max_inflight_batches      = ggml_backend_webgpu_get_max_inflight_batches();
+     ctx->webgpu_global_ctx->vendor                    = info.vendor;
+     ctx->webgpu_global_ctx->capabilities.supports_subgroups =
+-        ctx->webgpu_global_ctx->adapter.HasFeature(wgpu::FeatureName::Subgroups);
++        false; // Core-only FP32 compatibility; do not request optional shader features.
+     // for dot4I8packed
+-    ctx->webgpu_global_ctx->capabilities.supports_dot_product = ctx->webgpu_global_ctx->instance.HasWGSLLanguageFeature(
+-        wgpu::WGSLLanguageFeatureName::Packed4x8IntegerDotProduct);
++    ctx->webgpu_global_ctx->capabilities.supports_dot_product = false; // Disable the FP16-packed MMVQ path.
+ 
+     bool valid_subgroup_matrix_config = false;
+ #if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+@@ -4214,14 +4213,15 @@
+         }
+     }
+ #endif
+-    ctx->webgpu_global_ctx->capabilities.supports_subgroup_matrix = valid_subgroup_matrix_config;
++    ctx->webgpu_global_ctx->capabilities.supports_subgroup_matrix = false;
++    GGML_UNUSED(valid_subgroup_matrix_config);
+ 
+     // Runtime subgroup size can be any supported size in this range. Shaders
+     // that allocate per-lane register arrays must size them for the minimum.
+     ctx->webgpu_global_ctx->capabilities.min_subgroup_size = info.subgroupMinSize;
+     ctx->webgpu_global_ctx->capabilities.max_subgroup_size = info.subgroupMaxSize;
+     // Initialize device
+-    std::vector<wgpu::FeatureName> required_features       = { wgpu::FeatureName::ShaderF16 };
++    std::vector<wgpu::FeatureName> required_features       = {}; // FP32 compatibility, no shader-f16
+ 
+ #if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+     required_features.push_back(wgpu::FeatureName::ImplicitDeviceSynchronization);
+@@ -4288,6 +4288,8 @@
+         UINT64_MAX);
+     GGML_ASSERT(ctx->webgpu_global_ctx->device != nullptr);
+ 
++    GGML_ASSERT(!ctx->webgpu_global_ctx->device.HasFeature(wgpu::FeatureName::ShaderF16));
++    GGML_LOG_INFO("ggml_webgpu: FP32_COMPAT device shader_f16=0; unchanged BF16/Q4_0/Q8_0/Q4_K/Q6_K/F32 storage; core features only\n");
+     ggml_webgpu_init_memset_pipeline(ctx->webgpu_global_ctx);
+     ggml_webgpu_create_buffer(ctx->webgpu_global_ctx->device, ctx->webgpu_global_ctx->memset_params_buf,
+                               WEBGPU_PARAMS_BUF_SIZE_BYTES, wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+@@ -4429,6 +4431,16 @@
+     ggml_tensor * src0 = op->src[0];
+     ggml_tensor * src1 = op->src[1];
+     ggml_tensor * src2 = op->src[2];
++
++    // Support F32/BF16/Q8_0/Q4_K/Q6_K/integer storage. Never reinterpret
++    // packed F16 storage as F32 or change quantized struct layouts implicitly.
++    auto unsupported_storage = [](const ggml_tensor * tensor) {
++        return tensor && (tensor->type == GGML_TYPE_F16 || (ggml_is_quantized(tensor->type) && tensor->type != GGML_TYPE_Q4_0 && tensor->type != GGML_TYPE_Q8_0 && tensor->type != GGML_TYPE_Q4_K && tensor->type != GGML_TYPE_Q6_K));
++    };
++    if (unsupported_storage(op)) return false;
++    for (const ggml_tensor * source : op->src) {
++        if (unsupported_storage(source)) return false;
++    }
+ 
+     // on smaller devices (or CI), tensors may be larger than the max storage buffer size
+     if (ggml_nbytes(op) > ctx->webgpu_global_ctx->capabilities.limits.maxStorageBufferBindingSize ||
+@@ -4934,7 +4946,7 @@
+     }
+ 
+     // WebGPU backend requires f16 support and, on native, implicit device synchronization.
+-    if (adapter != nullptr && adapter.HasFeature(wgpu::FeatureName::ShaderF16)
++    if (adapter != nullptr // FP32 compatibility backend does not require shader-f16
+ #if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+         && adapter.HasFeature(wgpu::FeatureName::ImplicitDeviceSynchronization)
+ #endif
+--- a/ggml/src/ggml-webgpu/ggml-webgpu-shader-lib.hpp
++++ b/ggml/src/ggml-webgpu/ggml-webgpu-shader-lib.hpp
+@@ -10,11 +10,12 @@
+ 
+ #include <algorithm>
+ #include <memory>
++#include <regex>
+ #include <string>
+ #include <unordered_map>
+ #include <vector>
+ 
+-#define GGML_WEBGPU_F16_SIZE_BYTES                   2
++#define GGML_WEBGPU_F16_SIZE_BYTES                   4 // FP32 arithmetic scratch, no F16 storage path
+ #define GGML_WEBGPU_F32_SIZE_BYTES                   4
+ #define GGML_WEBGPU_I32_SIZE_BYTES                   4
+ #define GGML_WEBGPU_FLASH_ATTN_PREFERRED_KV_SG_TILES 8u
+@@ -1660,6 +1661,7 @@
+                         case GGML_TYPE_Q5_0:
+                         case GGML_TYPE_Q8_0:
+                         case GGML_TYPE_Q3_K:
++                        case GGML_TYPE_Q4_K:
+                         case GGML_TYPE_Q6_K:
+                         case GGML_TYPE_IQ2_XXS:
+                         case GGML_TYPE_IQ2_XS:
+@@ -3538,6 +3540,12 @@
+     static webgpu_pipeline ggml_webgpu_create_pipeline(wgpu::Device & device,
+                                                        std::string    shader_code,
+                                                        std::string    label) {
++        // Storage types are guarded by supports_op. BF16 remains packed u32;
++        // only arithmetic and workgroup temporary types are promoted here.
++        shader_code = std::regex_replace(shader_code, std::regex("enable[ \t]+f16[ \t]*;"), "");
++        shader_code = std::regex_replace(shader_code, std::regex("\\bf16\\b"), "f32");
++        GGML_ASSERT(!std::regex_search(shader_code, std::regex("\\bf16\\b")));
++        GGML_LOG_INFO("ggml_webgpu: FP32_COMPAT pipeline %s\n", label.c_str());
+         wgpu::ShaderSourceWGSL shader_source;
+         shader_source.code = shader_code.c_str();
+ 
+--- a/ggml/src/ggml-webgpu/wgsl-shaders/get_rows.wgsl
++++ b/ggml/src/ggml-webgpu/wgsl-shaders/get_rows.wgsl
+@@ -264,25 +264,24 @@
+ #endif
+ 
+ #ifdef Q4_K
+-// 8 blocks of 32 elements each
+-fn copy_elements(src_base: u32, dst_base: u32, offset: u32) {
+-    let block = src[src_base + offset];
+-    let d = f32(block.d);
+-    let m = f32(block.dmin);
+-    var dst_i = dst_base + offset * 256;
+-    var is: u32 = 0;
+-    // 2 blocks each iteration
+-    for (var q_b_idx: u32 = 0; q_b_idx < 128; q_b_idx += 32) {
+-        for (var shift: u32 = 0; shift < 8; shift += 4) {
+-            let scale_min = get_scale_min(is, block.scales);
++// Preserve packed Q4_K layout (144 bytes/block); decode scales in core FP32.
++fn copy_elements(src_base: u32, dst_base: u32, offset: u32) {
++    let word_base = (src_base + offset) * 36u;
++    let dm = unpack2x16float(src[word_base]);
++    let scales = array<u32, 3>(src[word_base + 1u], src[word_base + 2u], src[word_base + 3u]);
++    var dst_i = dst_base + offset * 256u;
++    var is: u32 = 0u;
++    for (var q_b_idx: u32 = 0u; q_b_idx < 128u; q_b_idx += 32u) {
++        for (var shift: u32 = 0u; shift < 8u; shift += 4u) {
++            let scale_min = get_scale_min(is, scales);
+             is++;
+-            let dl = d * scale_min.x;
+-            let ml = m * scale_min.y;
+-            for (var l: u32 = 0; l < 32; l++) {
++            let dl = dm.x * scale_min.x;
++            let ml = dm.y * scale_min.y;
++            for (var l: u32 = 0u; l < 32u; l++) {
+                 let q_idx = q_b_idx + l;
+-                let q_byte = get_byte(block.qs[q_idx / 4], q_idx % 4);
+-                let qs_val = (q_byte >> shift) & 0xF;
+-                dst[dst_i] = (f32(qs_val) * dl - ml);
++                let q_byte = get_byte(src[word_base + 4u + q_idx / 4u], q_idx % 4u);
++                let qs_val = (q_byte >> shift) & 0xFu;
++                dst[dst_i] = f32(qs_val) * dl - ml;
+                 dst_i++;
+             }
+         }

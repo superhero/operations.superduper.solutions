@@ -97,7 +97,12 @@
     "src/workflow-chart.test.mjs",
     "src/chart-settings.test.mjs",
     "src/workflow-table.test.mjs",
-    "src/assistant-ownership.test.mjs"
+    "src/assistant-ownership.test.mjs",
+    "src/assistant-decisions.test.mjs",
+    "src/assistant-strands.test.mjs",
+    "src/continuous-speech-merger.test.mjs",
+    "src/continuous-speech-segments.test.mjs",
+    "src/continuous-speech-lifecycle.test.mjs"
   ],
   "paths": [
     "src/github-notification-auth.feature",
@@ -197,6 +202,11 @@
     "src/workflow-chart.feature",
     "src/chart-settings.feature",
     "src/workflow-table.feature",
-    "src/assistant-ownership.feature"
+    "src/assistant-ownership.feature",
+    "src/assistant-decisions.feature",
+    "src/assistant-strands.feature",
+    "src/continuous-speech-merger.feature",
+    "src/continuous-speech-segments.feature",
+    "src/continuous-speech-lifecycle.feature"
   ]
 }

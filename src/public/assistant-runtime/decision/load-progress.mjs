@@ -1,10 +1,12 @@
 // Download observation only; preserve the bytes supplied to native tokenizers.
+let assetFetch;
+export const setAssetFetch = reader => { assetFetch = reader; };
 export async function fetchTextProgress(url, {key, label, onProgress = () => {}}) {
   let loaded = 0, total = null, lastUpdate = 0;
   const report = (state, detail) => onProgress({key, label, state, loaded, total, detail});
   report('loading', 'Downloading');
   try {
-    const response = await fetch(url, {credentials: 'omit'});
+    const response = await (assetFetch ?? globalThis.fetch)(url, {credentials: 'omit'});
     if (!response.ok) throw Error(`${label}: HTTP ${response.status}`);
     const length = Number(response.headers.get('content-length'));
     if (!response.headers.get('content-encoding') && length > 0) total = length;

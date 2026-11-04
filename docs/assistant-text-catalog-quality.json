@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-04",
+  "status": "focused integration checks passed; reference native acceptance retained",
+  "added_profiles": [
+    {
+      "id": "ornith-q4-fp32",
+      "model": "ornith-ai/Ornith-1.5-9B-GGUF",
+      "revision": "abdd624b12ebf020b767fff532ff44fe552b28c3",
+      "file": "Ornith-1.5-9B-Q4_K_M.gguf",
+      "weight_bytes": 5780090816,
+      "weight_sha256": "70c112196e0b7023803c9762752e46d29e612a92c83f995bc3ba1ceb07e8fab6",
+      "native_variant": "standard-fp32-gpu",
+      "reference": {
+        "attempt": "ng-browser-ornith-q4-core-gpu",
+        "attempt_sha256": "463a4f9363219322c412c526c69c96bbb6abe20355745115bd1a8d47c6e16a80"
+      }
+    },
+    {
+      "id": "ornith-q8-fp32",
+      "model": "ornith-ai/Ornith-1.5-9B-GGUF",
+      "revision": "abdd624b12ebf020b767fff532ff44fe552b28c3",
+      "file": "Ornith-1.5-9B-Q8_0.gguf",
+      "weight_bytes": 9786060384,
+      "weight_sha256": "22086870b009dbe9815ee752c48a82de930118a7c5ce5599590892ae03b8b010",
+      "native_variant": "standard-fp32-gpu",
+      "reference": {
+        "attempt": "nh-browser-ornith-q8-core-gpu",
+        "attempt_sha256": "3e40499ae71c5d252c3cf94ba0747a2ca789f5db0ec664920cf5299a1d40dfeb"
+      }
+    },
+    {
+      "id": "lfm3-fp32",
+      "model": "LiquidAI/LFM3-1.7B-GGUF",
+      "revision": "bad5729bba61d076fff20d2548e62526665af215",
+      "file": "LFM3-1.7B-QAD-Q4_0.gguf",
+      "weight_bytes": 1049615680,
+      "weight_sha256": "43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452",
+      "native_variant": "lfm3-fp32-gpu",
+      "reference": {
+        "attempt": "nj-browser-lfm3-core-gpu",
+        "attempt_sha256": "48766afce8c07b163de7150f83d2b2f5b0bf5938a687fef300e80da1528c9cff"
+      }
+    }
+  ],
+  "checks": {
+    "source_cases_passed": 7,
+    "browser_cases_passed": 2,
+    "typecheck_errors": 0,
+    "existing_warning": "WorkflowVaultNode pointer interaction ARIA warning",
+    "production_build": "passed",
+    "public_runtime_update": "passed after the LFM3 trained-boundary change",
+    "sdk_wasm_pairs": "Both exact SDK exports load and both pinned Wasm files compile/hash correctly in actual browser module workers; no model weights or neural allocation.",
+    "ui": "All four compatible choices automatically load controlled workers with fixed GPU settings, correct names and disabled unsupported controls; twelve-option menu persists;320/390px layout.",
+    "reasoning": "Explicit and implicit closed boundaries, truncated explicit thinking, native reasoning, unchanged ordinary HTML, raw output, ordinary MiniCPM streaming and synchronous callback cancellation/disposal."
+  },
+  "runtime_sources": {
+    "standard": {
+      "sdk_sha256": "dc43ffb762922b95134b45bd9b93069c2b1e6f825e8ee31e633cde17a2fc96ab",
+      "wasm_sha256": "b4862a3d30aaac1d33afbbba430d4d48a3e8baeb55b1a2e632fac51478ec7cc0"
+    },
+    "lfm3": {
+      "sdk_sha256": "530aefa7a83721e843762c0e886b83100ee1dd356fef6343a79008e98332f1b7",
+      "wasm_sha256": "5ae95c179c98794498b7d9a4b9594ddf58c2804c4367b76a92393bd8953b02f3"
+    },
+    "all_recipe_and_artifact_pins": 24
+  },
+  "native_operations_inference_newly_measured": false,
+  "limits": [
+    "No new native Ornith/LFM3 inference, memory-fit, quality, speed or mobile acceptance; their original reference evidence is retained.",
+    "Prior MiniCPM/compatible-image native installed-model acceptance remains scoped to its recorded run and source hashes.",
+    "LFM3 buffers ambiguous native text/thinking until its complete trained boundary can be split; raw content is retained in the native result.",
+    "Publisher LFM3 QAD Q4_0 weights retain the declared lfm1.0 license independently of the MIT runtime."
+  ]
+}

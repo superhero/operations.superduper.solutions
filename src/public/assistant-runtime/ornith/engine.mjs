@@ -4,8 +4,8 @@ import {RangeSource, RangeBlob} from './range-blob.mjs';
 import {ornithLoadOptions} from './settings.js';
 
 export class BrowserGGUF {
-  constructor(manifest, onProgress = () => {}) {
-    this.manifest = manifest; this.onProgress = onProgress; this.logs = []; this.sources = []; this.abort = new AbortController();
+  constructor(manifest, onProgress = () => {}, options = {}) {
+    this.manifest = manifest; this.onProgress = onProgress; this.logs = []; this.sources = []; this.abort = new AbortController(); this.fetch = options.fetch;
     const logger = Object.fromEntries(['debug', 'log', 'warn', 'error'].map(level => [level, (...args) => {
       const line = args.map(v => typeof v === 'string' ? v : v && typeof v === 'object' ? `[${Object.keys(v).join(',')}]` : String(v)).join(' ').slice(0, 1500);
       this.logs.push(line); if (this.logs.length > 2500) this.logs.shift();
@@ -23,7 +23,7 @@ export class BrowserGGUF {
     const signal = AbortSignal.any([this.abort.signal, AbortSignal.timeout(this.manifest.settings.load_timeout_ms)]);
     const blobs = [this.manifest, this.manifest.projector].filter(Boolean).map(file => {
       const source = new RangeSource(`https://huggingface.co/${this.manifest.model}/resolve/${this.manifest.revision}/${file.file}`, file.weight_bytes ?? file.bytes, {
-        signal, chunkBytes: s.range_chunk_bytes, cacheBytes: s.range_lru_bytes_per_file,
+        signal, fetch: this.fetch, chunkBytes: s.range_chunk_bytes, cacheBytes: s.range_lru_bytes_per_file,
         parallel: s.range_parallel, onProgress: event => this.onProgress({message: 'Streaming official GGUF ranges', ...event})
       });
       this.sources.push(source); return new RangeBlob(source);

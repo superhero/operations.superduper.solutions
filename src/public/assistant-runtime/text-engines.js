@@ -1,6 +1,6 @@
 import {textMessages} from './text-protocol.js';
 
-export async function createTextEngine(profile, {assetBase, onProgress = () => {}, onLog = () => {}, contextTokens = 1024, outputTokens = 256} = {}) {
+export async function createTextEngine(profile, {assetBase, installedModel, onProgress = () => {}, onLog = () => {}, contextTokens = 1024, outputTokens = 256} = {}) {
   if (profile.engine !== 'litert-lm') throw Error('Unsupported text engine: ' + profile.engine);
   if (profile.projector || profile.kind === 'vision') throw Error('Text engines require a text-only profile');
   if (!Number.isInteger(contextTokens) || contextTokens < 128 || !Number.isInteger(outputTokens) || outputTokens < 1) throw Error('Invalid context/output token limits');
@@ -51,7 +51,7 @@ export async function createTextEngine(profile, {assetBase, onProgress = () => {
   let info;
   try {
     if (bootstrapModuleUrl) worker.postMessage({type: 'bootstrap', moduleUrl: bootstrapModuleUrl});
-    info = await request('load', {profile, contextTokens, outputTokens}, {timeoutMs: profile.settings?.load_timeout_ms ?? 1200000});
+    info = await request('load', {profile, installedModel, contextTokens, outputTokens}, {timeoutMs: profile.settings?.load_timeout_ms ?? 1200000});
   }
   catch (error) {shutdown(error); throw error;}
   return {kind: profile.engine, info, get invalidated() {return invalidated;},

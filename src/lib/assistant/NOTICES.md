@@ -38,3 +38,12 @@ LiteRT-LM core0.18.0 is Apache-2.0, copyright2025 Google LLC. Its npm package om
 The shared Strands LICENSE and THIRD_PARTY_NOTICES cover both CPU and native-device GPU trees. Tokenizers0.2 and Jinja0.5.3 retain original licenses in the decision vendor tree. Elephant and Perplexity preserve their source notices beside the adapters. The build distributes these notices under `assistant-runtime/licenses/`.
 
 The pinned WebML Space runtime's redistribution license remains unestablished in the reference evidence. Operations continues fetching that exact runtime on demand with its existing size/checksum verification; it is not vendored here.
+
+The opt-in compatible MiniCPM text profile uses the separate accepted strict FP32
+Wllama/llama.cpp build under `text-fp32/upstream/`. Its MIT `LICENCE`, exact build
+receipt and source recipe/patches accompany the runtime distribution;
+`text-fp32/sources.json` records all immutable files. It retains the same official
+MiniCPM5 Q4_K_M model revision (model license Apache-2.0); no model weights are
+bundled or converted. Original runtime attribution and placement choices remain.
+
+The optional compatible Ornith Q4/Q8 variants use the same byte-pinned standard FP32 native pair. Compact LFM3 text uses its distinct llama.cpp19cce691 pair under text-fp32/lfm3-upstream, with the unchanged MIT license, build receipt and recipe inputs. Its publisher QAD Q4_0 weights remain unmodified and declare lfm1.0, independently of the runtime license. No model weights are bundled. Reference acceptance and Operations qualification remain separate.

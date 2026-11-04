@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
-import { lstatSync, readdirSync } from 'node:fs';
+import { lstatSync, readdirSync,readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -118,17 +118,23 @@ export const ASSISTANT_FILES = [
   "assistant-runtime/vision-ort/ort-wasm-simd-threaded.wasm",
   "assistant-runtime/vision-worker.js"
 ];
-const assistantChunk = /^assistant-runtime\/chunks\/[A-Za-z0-9_-]+\.js$/;
-const chunk = /^speech\/chunks\/[A-Za-z0-9_-]+\.js$/;
+export const ASSISTANT_EXTENSION_FILES=JSON.parse(readFileSync(new URL('./assistant-extension-files.json',import.meta.url),'utf8'));
+export const CONTINUOUS_SPEECH_FILES=['speech/continuous-worker.js','speech/continuous-controller.js','speech/capture-worklet.js'];
+export const BUNDLE_NOTICE_FILES=['NOTICES.txt'];
+const assistantChunk = /^assistant-runtime\/chunks\/[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.js$/;
+const transformerChunk=/^assistant-runtime\/chunks\/transformers\.web-[A-Za-z0-9_-]+\.js$/;
+const chunk = /^speech\/chunks\/[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.js$/;
 
 // Retain legacy complete bundles for validation reuse. Public OAuth metadata is
 // an explicit optional asset; speech still requires its complete runtime.
 export function validBundlePaths(paths) {
   if (!Array.isArray(paths) || new Set(paths).size !== paths.length || !BUNDLE_FILES.every(path => paths.includes(path))) return false;
   const assistant = paths.some(path => path.startsWith('assistant-runtime/'));
-  if (!paths.every(path => BUNDLE_FILES.includes(path) || OAUTH_FILES.includes(path) || CHART_FILES.includes(path) || SPEECH_FILES.includes(path) || chunk.test(path)
-    || assistant && (['_worker.js', '_routes.json'].includes(path) || ASSISTANT_FILES.includes(path) || assistantChunk.test(path)))) return false;
-  if (assistant && (!['_worker.js', '_routes.json'].every(path => paths.includes(path)) || !ASSISTANT_FILES.every(path => paths.includes(path)) || !paths.some(path => assistantChunk.test(path)))) return false;
+  if (!paths.every(path => BUNDLE_FILES.includes(path) || BUNDLE_NOTICE_FILES.includes(path) || OAUTH_FILES.includes(path) || CHART_FILES.includes(path) || SPEECH_FILES.includes(path) || CONTINUOUS_SPEECH_FILES.includes(path) || chunk.test(path)
+    || assistant && (['_worker.js', '_routes.json'].includes(path) || ASSISTANT_FILES.includes(path) || ASSISTANT_EXTENSION_FILES.includes(path) || assistantChunk.test(path)))) return false;
+  if (assistant && (!['_worker.js', '_routes.json'].every(path => paths.includes(path)) || !ASSISTANT_FILES.every(path => transformerChunk.test(path)?paths.some(item=>transformerChunk.test(item)):paths.includes(path)) || !paths.some(path => assistantChunk.test(path)))) return false;
+  if(paths.some(path=>ASSISTANT_EXTENSION_FILES.includes(path))&&!ASSISTANT_EXTENSION_FILES.every(path=>paths.includes(path)))return false;
+  if(paths.some(path=>CONTINUOUS_SPEECH_FILES.includes(path))&&![...CONTINUOUS_SPEECH_FILES,...BUNDLE_NOTICE_FILES].every(path=>paths.includes(path)))return false;
   if (paths.some(path => path.startsWith('charts/')) && !CHART_FILES.every(path => paths.includes(path))) return false;
   return !paths.some(path => path.startsWith('speech/'))
     || SPEECH_FILES.every(path => paths.includes(path)) && paths.some(path => chunk.test(path));
