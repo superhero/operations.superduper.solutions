@@ -77,6 +77,14 @@ feat(assistant): add strict FP32 MiniCPM runtime
 
 ```
 
+<!-- changelog-commit:9688502e8d06964760c140b08cde6b64d254584d -->
+### Commit [`9688502`](https://github.com/superhero/operations.superduper.solutions/commit/9688502e8d06964760c140b08cde6b64d254584d)
+
+```text
+feat(assistant): verify and retain local model files
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.66
