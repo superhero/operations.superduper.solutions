@@ -7,7 +7,7 @@ import { mkdirSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from 
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, get, OTHER_SHA, REPOSITORY, SHA } from "./support.mjs";
-import { BUNDLE_FILES, OAUTH_FILES, CHART_FILES, SPEECH_FILES, ASSISTANT_FILES, listBundleFiles } from '../scripts/bundle-contract.mjs';
+import { BUNDLE_FILES, OAUTH_FILES, CHART_FILES, SPEECH_FILES, ASSISTANT_FILES, ASSISTANT_EXTENSION_FILES,CONTINUOUS_SPEECH_FILES,BUNDLE_NOTICE_FILES,validBundlePaths,listBundleFiles } from '../scripts/bundle-contract.mjs';
 import { validateArtifactContract, REPORT_FILES } from '../scripts/validation-artifacts.mjs';
 
 const PROJECT = "operations-superduper-solutions";
@@ -324,4 +324,15 @@ Then('validation manifests require complete native assistant resources and rejec
     const extra = structuredClone(files); extra.bundle[path] = 'a'.repeat(64);
     assert.throws(() => validateArtifactContract(extra), /complete bundle/, path);
   }
+});
+
+Then('compatible native bundles include every reviewed companion and continuous speech entry',()=>{
+  const legacy=[...new Set([...BUNDLE_FILES,...SPEECH_FILES,...ASSISTANT_FILES,'speech/chunks/fixture.js','assistant-runtime/chunks/fixture.js','_worker.js','_routes.json'])];
+  assert.equal(validBundlePaths(legacy),true);
+  const current=[...legacy,...ASSISTANT_EXTENSION_FILES,...CONTINUOUS_SPEECH_FILES,...BUNDLE_NOTICE_FILES,'assistant-runtime/chunks/ort.webgpu.min-fixture.js','speech/chunks/ort.webgpu.bundle.min-fixture.js'];
+  assert.equal(validBundlePaths(current),true);
+  const renamed=current.map(path=>path==='assistant-runtime/chunks/transformers.web-SzAWJJQT.js'?'assistant-runtime/chunks/transformers.web-newbuild.js':path);assert.equal(validBundlePaths(renamed),true);
+  assert.equal(validBundlePaths(current.filter(path=>!path.startsWith('assistant-runtime/chunks/transformers.web-'))),false);
+  for(const file of [...ASSISTANT_EXTENSION_FILES,...CONTINUOUS_SPEECH_FILES,...BUNDLE_NOTICE_FILES])assert.equal(validBundlePaths(current.filter(path=>path!==file)),false,file);
+  assert.equal(validBundlePaths([...current,'assistant-runtime/unreviewed-model.gguf']),false);
 });

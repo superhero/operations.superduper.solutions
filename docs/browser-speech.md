@@ -1,8 +1,8 @@
 # Browser-local speech input
 
-Open **Settings → Assistant → Speech input**. Choose CPU INT8 (about 0.67 GB)
-or WebGPU FP32 encoder (about 2.50 GB, INT8 CPU decoder), then **Load speech**.
-Both use NVIDIA Parakeet TDT 0.6B v3 through parakeet.js 1.4.4 and ONNX Runtime
+Open **Settings → AI → Speech input**. Choose CPU INT8 (about 0.67 GB),
+WebGPU FP32 encoder (about 2.50 GB, INT8 CPU decoder), or WebGPU Continuous
+FP32 (about 2.50 GB, GPU encoder/decoder), then **Load speech**. These use NVIDIA Parakeet TDT 0.6B v3 through parakeet.js 1.4.4 and ONNX Runtime
 Web 1.30.0. FP16 is experimental and is not offered as a qualified profile.
 
 **Dictate** requests microphone permission. Confirmed sentences append to the
@@ -10,22 +10,23 @@ message draft; provisional words remain visible separately. Typed edits survive
 later partial results. **Stop dictation** finalizes pending words. The model
 never sends a message automatically. Bonsai must be ready before Send is enabled.
 Speech can prepare a draft before Bonsai is loaded. Whole-recording refinement
-is optional and off by default; enabling it inserts text only at completion.
+is available for the two legacy profiles and off by default; enabling it inserts
+text only at completion.
 
-Capture stops after 55 seconds, when Assistant/Speech input closes, or when the
-page becomes hidden. Unload/page teardown terminates speech workers and stops
+Legacy capture stops after 55 seconds. Every profile stops when Assistant/Speech
+input closes or when the page becomes hidden. Unload/page teardown terminates speech workers and stops
 tracks. A late permission grant after cancellation immediately stops its tracks.
 Audio files are decoded/resampled locally to mono 16 kHz (0.1–60 seconds, at
 most 10 MiB). No speech service, hosted model or browser Web Speech API is used.
 
-The latest 20 captures retain exact recognizer PCM as IEEE float32 WAV, signal
+The latest 20 finished recordings retain exact recognizer PCM as IEEE float32 WAV, signal
 levels, capture settings, partial/final transcripts, timestamps, VAD/feature
 statistics and error/reset events in local IndexedDB. **Local speech diagnostics**
 offers playback, optional expected text with normalized word-error comparison,
 JSON export including audio, and deletion. Sharing an export is a user action.
 Application assistant tools cannot read these recordings.
 
-Model files persist in parakeet.js's browser cache; the large GPU external-data
+Legacy model files persist in parakeet.js's browser cache; the large GPU external-data
 file streams to browser-local OPFS storage to avoid buffering gigabytes of
 download chunks in memory. That profile requires OPFS support. After one successful load,
 **Restore loaded speech when Assistant opens** restores the selected profile on
@@ -35,12 +36,56 @@ recordings have a separate delete control. Cache eviction or private browsing
 may require downloading again. Private browsing can impose a quota smaller than
 the GPU weights; choose CPU or use a regular browser profile in that case.
 
-Download progress has a two-minute idle deadline and a twenty-minute total
+Legacy download progress has a two-minute idle deadline and a twenty-minute total
 deadline. After files are ready, initialization has a separate **120-second**
 deadline. This deliberately separates cold multi-gigabyte downloads from BS's
 initialization watchdog. A failure terminates the worker and offers **Retry
 speech**; retry starts a fresh worker without an automatic retry/fallback loop.
 The selected GPU profile never silently substitutes CPU encoding.
+
+## Continuous dictation and recovery
+
+**WebGPU · Continuous FP32** keeps the original variable-shape encoder and a
+locally converted NR/NQ decoder. Compact stored initializers stay unchanged;
+activation math uses FP32 without requesting shader-f16. This is a compatibility
+conversion, not official publisher FP32 ONNX weights. CPU audio features, TEN
+speech detection, and audited encoder indexing/layout work remain explicit.
+
+Capture saves 20-second unique cores with two seconds of replay overlap. One
+serial recognition worker processes the queue; at most two feature clients are
+active. The global transcript merger owns time offsets and a one-second seam
+tail. Only consecutive nonempty stable updates append to the draft. Stop flushes
+capture, drains queued recognition and commits the complete archive before the
+runtime can yield to another model or tab. Longer capture has no 55-second timer;
+this does not qualify unlimited duration, memory, or browser storage.
+
+Audio and lightweight segment metadata use separate local stores. A single
+physical recording can contain more than 20 segments; the retention limit is
+20 finished physical recordings, with unfinished continuous audio retained for
+recovery. Lists avoid loading every PCM buffer. **Prepare saved audio** assembles
+unique cores only for playback, and JSON export includes the same on-demand WAV.
+Missing audio fails explicitly without deleting the remaining segments. Failed
+storage writes retain available PCM in memory for export before leaving the page;
+only successfully persisted segments can survive a reload.
+
+The shared verified model installer records whole-file hashes and immutable
+encoder/vocabulary/converted-decoder identities in
+[continuous-profile.json](../src/lib/speech/continuous-profile.json). The decoder
+uses the pinned public Code mirror; no model weights ship in Git or the static
+bundle. Shared model-use and recording locks prevent deletion while in use.
+Fresh workers restore installed files after a runtime handoff. Cached operation
+still needs the SPA/runtime HTTP assets; it is not a full offline application.
+
+The corrected coordinator, merger and store travel together. Adaptation hashes
+and four original preparation recipes are recorded in
+[continuous-sources.json](../src/lib/speech/continuous-sources.json); build inputs
+and conversion provenance remain under `build/speech/`. Continuous runtime and
+controller modules are separate static assets. Distribution notices remain
+verbatim in the linked `NOTICES.txt` artifact and separate dependency licenses.
+
+[Continuous evidence](browser-continuous-speech-quality.json) distinguishes
+reference acceptance, ordinary browser checks, and Operations native QA. The
+historical CPU/hybrid evidence below remains scoped to its original runs.
 
 ## Implementation and provenance
 

@@ -315,7 +315,7 @@ Then('development image requests use current source beside older built runtime a
 
 Then('development image compilation is cached refreshed and retried without stale fallback', async () => {
   const root=await mkdtemp(join(tmpdir(),'operations-image-build-'));
-  const inputs=['src/lib/assistant/runtime/vision-worker.js','src/lib/assistant/runtime/vision-runtime.js','src/public/assistant-runtime/vision-engine.js','build/assistant-worker-build.mjs','package-lock.json','src/lib/assistant/model-storage/runtime.ts','src/lib/assistant/model-storage/storage.ts','src/lib/assistant/model-storage/catalog.ts','src/lib/assistant/model-storage/events.ts','src/lib/assistant/language-profiles.json','src/lib/assistant/vision-profile.json','src/lib/assistant/vision-compatible-profile.json','src/lib/assistant/decision-profiles.json'];
+  const inputs=['src/lib/assistant/runtime/vision-worker.js','src/lib/assistant/runtime/vision-runtime.js','src/public/assistant-runtime/vision-engine.js','build/assistant-worker-build.mjs','package-lock.json','src/lib/assistant/model-storage/runtime.ts','src/lib/assistant/model-storage/storage.ts','src/lib/assistant/model-storage/catalog.ts','src/lib/assistant/model-storage/events.ts','src/lib/assistant/language-profiles.json','src/lib/assistant/vision-profile.json','src/lib/assistant/vision-compatible-profile.json','src/lib/assistant/decision-profiles.json','src/lib/speech/continuous-profile.json'];
   try {
     for(const file of inputs){await mkdir(dirname(join(root,file)),{recursive:true});await writeFile(join(root,file),'initial');}
     let builds=0,fail=false;
@@ -413,8 +413,8 @@ Then('compatible text cancellation drains and failed cleanup stays failed',async
 
 Then('installed model catalogs retain exact language files and both complete image variants',async()=>{
   const {storageProfiles,artifactsFor,profileById}=await import('./lib/assistant/model-storage/catalog.ts');
-  assert.equal(storageProfiles.length,22);
-  for(const profile of storageProfiles){const files=artifactsFor(profile);assert.ok(files.length);for(const file of files){assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(Number.isSafeInteger(file.bytes)&&file.bytes>0);assert.match(file.url,profile.id==='decision:strands-fp32'?/\/strands-fp32\/[a-f0-9]{64}\//:/\/resolve\/[a-f0-9]{40}\//);}}
+  assert.equal(storageProfiles.length,23);
+  for(const profile of storageProfiles){const files=artifactsFor(profile);assert.ok(files.length);for(const file of files){assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(Number.isSafeInteger(file.bytes)&&file.bytes>0);assert.match(file.url,profile.id==='decision:strands-fp32'?/\/strands-fp32\/[a-f0-9]{64}\//:file.url.startsWith('https://code.superduper.solutions/speech/')?/\/speech\/models\/[a-f0-9]{64}\//:/\/resolve\/[a-f0-9]{40}\//);}}
   const fp16=artifactsFor(profileById('image:fp16')),fp32=artifactsFor(profileById('image:compatible'));
   assert.equal(fp16.length,14);assert.equal(fp32.length,13);
   assert.deepEqual(fp16.filter(file=>!file.id.startsWith('onnx/')),fp32.filter(file=>!file.id.startsWith('onnx/')));

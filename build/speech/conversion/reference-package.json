@@ -1,0 +1,9 @@
+{
+  "name": "brave-parakeet-gpu-compatibility",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node build.mjs"},
+  "dependencies": {"parakeet.js": "1.4.4", "onnxruntime-web": "1.30.0"},
+  "devDependencies": {"vite": "8.3.4", "playwright": "1.61.1", "quickpickle": "1.11.2", "vitest": "5.0.5"},
+  "overrides": {"onnxruntime-web": "1.30.0"}
+}

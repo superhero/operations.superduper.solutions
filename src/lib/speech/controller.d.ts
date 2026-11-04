@@ -1,6 +1,7 @@
 export interface SpeechState {
   phase: 'unloaded' | 'downloading' | 'initializing' | 'ready' | 'requesting' | 'recording' | 'finalizing';
   status: string; error: string; provisional: string; storageError: string; seconds: number;
+  queuedSegments?: number;
 }
 export interface Dictation { sessionId: string; confirmed: string; final: boolean }
 export interface Recording {
@@ -17,4 +18,5 @@ export class SpeechController {
   startRecording(): Promise<void>; stopRecording(): Promise<void>; file(file: File | undefined): Promise<void>;
   refreshRecordings(): Promise<void>;
   flushStorage(): Promise<void>;
+  recordingAudio(record:Recording):Promise<Blob>;clearRecovery():void;
 }

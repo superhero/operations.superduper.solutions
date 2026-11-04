@@ -1,0 +1,149 @@
+{
+  "source_sha256": "eea7483ee3d1a30375daedc8ed83e3960c91b098812127a0d99d1c8977667a70",
+  "output_sha256": "8a8957dbe0eb8dcb49fac13f5b2db42e7c448a4dd10a24d27e0fc32189a8ec26",
+  "source_bytes": 18202004,
+  "output_bytes": 18195496,
+  "stored_weights": "Original UINT8/INT8 and FP32 initializer encodings unchanged",
+  "activation_math": "FP32; original dynamic activation quantization omitted",
+  "all_original_initializer_sha256": [
+    {
+      "name": "joint.pred.bias",
+      "sha256": "f5a7f8f347998176237dff350074d389d50f3d92fb4b30bd6368dd1f4c85eda6"
+    },
+    {
+      "name": "joint.enc.bias",
+      "sha256": "e033249d5ea8da44fcea23049cae44dbe4b543a24a8b905766c1e49a9b29bdd8"
+    },
+    {
+      "name": "joint.joint_net.2.bias",
+      "sha256": "df26c810729a0cc4607c06a1336ec34059d06b77582ccd4948071f6649b33f13"
+    },
+    {
+      "name": "onnx::LSTM_207",
+      "sha256": "d23891d0b83f82c744b7292bdbc0de1f0be04719755349234688f147fc6d697d"
+    },
+    {
+      "name": "onnx::LSTM_227",
+      "sha256": "2f044fb75518b1e20ba9c685fe65d5a53e5de177be7169a2910fa1ac0efd8502"
+    },
+    {
+      "name": "decoder.prediction.embed.weight_scale",
+      "sha256": "c878dabbe1147df3b9278405e0b22c60b2d57267c73536fbe3f5f451a213776d"
+    },
+    {
+      "name": "decoder.prediction.embed.weight_zero_point",
+      "sha256": "772736e6be3fc7eae8021fc490fe3ecbb70f0fcafb3f1eefb45ff914477aac06"
+    },
+    {
+      "name": "decoder.prediction.embed.weight_quantized",
+      "sha256": "840b2ee298ba06dd1a4655904af5361dc78449ed82a1e39c7c877e1b9cef88a9"
+    },
+    {
+      "name": "onnx::LSTM_205_scale",
+      "sha256": "e2ceb5bdbeb51fa93f5e9b5185d20a737dab5c2c6d2d446efcbaf5adee509123"
+    },
+    {
+      "name": "onnx::LSTM_205_zero_point",
+      "sha256": "bfd49f149e2b11503b15a9ae6e118b610033b9a7417436cc8341593f79c8802d"
+    },
+    {
+      "name": "onnx::LSTM_206_scale",
+      "sha256": "4190eb9e0c081bda297adb6180fdea1150d279ca58fc52f2c9de999f0c7b56ab"
+    },
+    {
+      "name": "onnx::LSTM_206_zero_point",
+      "sha256": "a1f36889d4e1201d3392c4d761976c6c0f700a28173c2def7f3bd3e807c897ef"
+    },
+    {
+      "name": "onnx::LSTM_205_quantized",
+      "sha256": "5f09ed0f2392668f81566925276605ccfac9adda020c14c88d3335e4c8ecf3b9"
+    },
+    {
+      "name": "onnx::LSTM_206_quantized",
+      "sha256": "fdc3bf5164b4880e26fa1406e68cd42fa26cd7dbbee8a39fc2f4dec8dfef0f7e"
+    },
+    {
+      "name": "onnx::LSTM_225_scale",
+      "sha256": "7738081adbb6f72aa51ae17d9d76b385b123536e9d396a4e20d35e190353d94f"
+    },
+    {
+      "name": "onnx::LSTM_225_zero_point",
+      "sha256": "99b54734ac74d2b7d579c72cf02a4a28a1b52a612dd244b52aac85c9a1ea9da1"
+    },
+    {
+      "name": "onnx::LSTM_226_scale",
+      "sha256": "5c1b6fa59ae443f1a88b6bb954afae3f40734fc48954705d81336f675acb46f8"
+    },
+    {
+      "name": "onnx::LSTM_226_zero_point",
+      "sha256": "71568f68c1e024c9708325634c53cb68a009d46393de8180365454989410f954"
+    },
+    {
+      "name": "onnx::LSTM_225_quantized",
+      "sha256": "40d8bbba37d95506356fbb08672f6d16266b2f2799f0071254ea41bb5be55edb"
+    },
+    {
+      "name": "onnx::LSTM_226_quantized",
+      "sha256": "5f0d062da4eceb6661e64af2c25774b7a7aa235287190c01668551b6355695bd"
+    },
+    {
+      "name": "onnx::MatMul_228_scale",
+      "sha256": "a2a1a9d9dec0ade3456703b4cae37593eba2349cbf581d610154f3302c3f8648"
+    },
+    {
+      "name": "onnx::MatMul_228_zero_point",
+      "sha256": "da61b7515fa5dc3ea6fde33196ad84f0ebc91fecb58b49746e8c5df9d9a7ca72"
+    },
+    {
+      "name": "onnx::MatMul_228_quantized",
+      "sha256": "7e7e416b83927ba2293225122ca1d792863c5f038bfc5ae0a5a33de78cf4ff2c"
+    },
+    {
+      "name": "onnx::MatMul_229_scale",
+      "sha256": "97592352021558c3767b85689055134825e062016af8a813e23faec3db046461"
+    },
+    {
+      "name": "onnx::MatMul_229_zero_point",
+      "sha256": "3d74d5faff048403f95799eb30073135a12228e8d76244480756be49ad15b492"
+    },
+    {
+      "name": "onnx::MatMul_229_quantized",
+      "sha256": "b9f7612e10a9d75dfbfb32496b46e80ea7fbd4de942bfd632746c508769c29af"
+    },
+    {
+      "name": "onnx::MatMul_230_scale",
+      "sha256": "ed0d2c738ad4319b8b9d39dca8a69f61762d9ebab5a4917a94e2ab1cfe7fa3c6"
+    },
+    {
+      "name": "onnx::MatMul_230_zero_point",
+      "sha256": "81be31dc285d3f48ca4b7c887ced7b005d2860c46ec5ecdc657d2900b1bdd4f9"
+    },
+    {
+      "name": "onnx::MatMul_230_quantized",
+      "sha256": "55ce6140b34d944f171631ea24fd83ad5dfd87c0df5b8122784e9720183bb543"
+    }
+  ],
+  "nodes": 70,
+  "ops": [
+    "DequantizeLinear",
+    "Gather",
+    "Reshape",
+    "Split",
+    "MatMul",
+    "Add",
+    "Sigmoid",
+    "Tanh",
+    "Mul",
+    "Concat",
+    "Relu"
+  ],
+  "constraints": {
+    "batch": 1,
+    "frames": 1,
+    "tokens": 1,
+    "layers": 2,
+    "hidden": 640
+  },
+  "not_official": true,
+  "model_inference_executed": false
+}

@@ -8,12 +8,16 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import { assistantRuntimeDevelopment } from "./build/assistant-plugin.mjs";
+import {speechRuntimeDevelopment} from './build/speech-development-worker.mjs';
 import { parakeetSerialInitialization } from "./build/parakeet-plugin.mjs";
 
 const isolationHeaders = {
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Embedder-Policy": "credentialless"
 };
+const distributionNotices = ["./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md", "./src/lib/workflow-chart-NOTICES.txt"]
+  .map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n\n");
+let building = false;
 
 const overlay = errorOverlay({
   framework: "svelte",
@@ -81,14 +85,17 @@ export default defineConfig({
   plugins: [
     parakeetSerialInitialization(),
     assistantRuntimeDevelopment(),
+    speechRuntimeDevelopment(),
     {
       name: "operations-vault-notices",
+      configResolved(config) { building = config.command === "build"; },
+      generateBundle() { this.emitFile({ type: "asset", fileName: "NOTICES.txt", source: distributionNotices }); },
       transformIndexHtml: {
         order: "post",
         handler(html) {
-          const notice = ["./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md", "./src/lib/workflow-chart-NOTICES.txt"]
-            .map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n\n");
-          return html.replace("</head>", `<!--\n${notice.replaceAll("--", "—")}\n-->\n</head>`);
+          // Preserve every notice verbatim without growing the single-file core
+          // beyond Pages' per-file limit as optional runtimes are added.
+          return html.replace("</head>", building ? '<link rel="license" href="./NOTICES.txt">\n</head>' : `<!--\n${distributionNotices.replaceAll("--", "—")}\n-->\n</head>`);
         }
       }
     },

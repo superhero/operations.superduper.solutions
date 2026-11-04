@@ -36,7 +36,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS. -->
 
 <details class="model-storage">
   <summary>Model storage<MaterialIcon name="chevron_forward" size={16}/></summary>
-  <p>Selecting a language model or an FP32 decision model saves and verifies its files before loading. Image files are saved on first inspection. Files stay in this browser until removed or cleared by the browser.</p>
+  <p>Language models, FP32 decision models and continuous speech save and verify their files before loading. Image files are saved on first inspection. Files stay in this browser until removed or cleared by the browser.</p>
   {#if error}<p role="alert" class="error">{error}</p>{/if}
   {#if models.length}
     <ul aria-label="Verified model files">

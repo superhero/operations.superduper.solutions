@@ -1,0 +1,41 @@
+{
+  "id": "speech:parakeet-continuous",
+  "label": "Parakeet \u00b7 Continuous FP32",
+  "engine": "speech-nq",
+  "model": "ysdede/parakeet-tdt-0.6b-v3-onnx",
+  "revision": "f88260fa0777fe0868dda6df85d1a98f012a4a7a",
+  "weight_bytes": 2495488654,
+  "files": [
+    {
+      "file": "encoder-model.onnx",
+      "url": "https://huggingface.co/ysdede/parakeet-tdt-0.6b-v3-onnx/resolve/f88260fa0777fe0868dda6df85d1a98f012a4a7a/encoder-model.onnx",
+      "bytes": 41770866,
+      "sha256": "98a74b21b4cc0017c1e7030319a4a96f4a9506e50f0708f3a516d02a77c96bb1"
+    },
+    {
+      "file": "encoder-model.onnx.data",
+      "url": "https://huggingface.co/ysdede/parakeet-tdt-0.6b-v3-onnx/resolve/f88260fa0777fe0868dda6df85d1a98f012a4a7a/encoder-model.onnx.data",
+      "bytes": 2435420160,
+      "sha256": "9a22d372c51455c34f13405da2520baefb7125bd16981397561423ed32d24f36"
+    },
+    {
+      "file": "vocab.txt",
+      "url": "https://huggingface.co/ysdede/parakeet-tdt-0.6b-v3-onnx/resolve/f88260fa0777fe0868dda6df85d1a98f012a4a7a/vocab.txt",
+      "bytes": 102132,
+      "sha256": "ba8e4007c65f4bb4358ffe2ecc13d9ccc7a10351151065242b5c3a943e685742"
+    },
+    {
+      "file": "decoder-single-step.int8-fp32.onnx",
+      "url": "https://code.superduper.solutions/speech/models/8a8957dbe0eb8dcb49fac13f5b2db42e7c448a4dd10a24d27e0fc32189a8ec26/decoder-single-step.int8-fp32.onnx",
+      "bytes": 18195496,
+      "sha256": "8a8957dbe0eb8dcb49fac13f5b2db42e7c448a4dd10a24d27e0fc32189a8ec26",
+      "parts": [
+        {
+          "url": "https://code.superduper.solutions/speech/models/8a8957dbe0eb8dcb49fac13f5b2db42e7c448a4dd10a24d27e0fc32189a8ec26/decoder-single-step.int8-fp32.onnx",
+          "bytes": 18195496
+        }
+      ]
+    }
+  ],
+  "conversion": "Local NR decoder activation conversion; original compact initializers preserved; original dynamic FP32 encoder and vocabulary."
+}
