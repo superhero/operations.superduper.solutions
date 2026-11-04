@@ -22,6 +22,12 @@ const decisionSources = JSON.parse(await readFile(`${publicRoot}/decision/source
 for (const file of decisionSources.files) {
   if (digest(await readFile(resolve(file.target))) !== file.sha256) throw Error(`Decision source/artifact pin changed: ${file.target}`);
 }
+const fp32Sources = JSON.parse(await readFile(`${publicRoot}/text-fp32/sources.json`, 'utf8'));
+for (const file of fp32Sources.files) {
+  const bytes = await readFile(`${publicRoot}/${file.path}`);
+  if (bytes.length !== file.bytes || createHash('sha256').update(bytes).digest('hex') !== file.sha256)
+    throw Error(`Compatible text runtime source differs from its accepted pin: ${file.path}`);
+}
 await mkdir(output, {recursive: true});
 await cp(publicRoot, output, {recursive: true});
 await build(assistantWorkerBuildOptions(output, {'gemma-worker': resolve('src/lib/assistant/runtime/litert-worker.js'),

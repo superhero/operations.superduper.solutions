@@ -23,3 +23,11 @@ Feature: Accepted native assistant and decision engines
     Then native decision guards preserve complete inputs and separate CPU compatibility
   Scenario: Native execution requirements fail before model downloads
     Then native runtime checks distinguish CPU placement from missing GPU and Wasm features
+  Scenario: Compatible text is a separate strict GPU profile
+    Then compatible MiniCPM preserves legacy placement and caps its qualified settings
+  Scenario: Compatible native text keeps trained messages and GPU placement evidence
+    Then compatible native text binds the pinned ABI and streams original tool calls
+  Scenario: Incomplete GPU evidence and CPU model computation cannot pass
+    Then compatible text refuses unproved or CPU model placement after log rollover
+  Scenario: Compatible text cancellation awaits native disposal
+    Then compatible text cancellation drains and failed cleanup stays failed

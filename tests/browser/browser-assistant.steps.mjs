@@ -219,7 +219,7 @@ Then('the assistant settings expose accepted local models and remember configura
   await page.setViewportSize({ width: 1280, height: 844 });
   let picker = panel.getByRole('combobox', { name: 'Local model', exact: true });
   await picker.click();
-  await expect(page.getByRole('option').locator('.field-select-option-label')).toHaveText(['Bonsai 2 · 2B','Bonsai 2 · 4B','Bonsai 2 · 9B','Bonsai 2 · 27B','Ornith 1.5 · 9B Q4_K_M','Ornith 1.5 · 9B Q8_0','Gemma 4 · E2B','MiniCPM5 · 2.52B']);
+  await expect(page.getByRole('option').locator('.field-select-option-label')).toHaveText(['Bonsai 2 · 2B','Bonsai 2 · 4B','Bonsai 2 · 9B','Bonsai 2 · 27B','Ornith 1.5 · 9B Q4_K_M','Ornith 1.5 · 9B Q8_0','Gemma 4 · E2B','MiniCPM5 · 2.52B','MiniCPM5 · 2.52B · FP32']);
   await page.keyboard.press('Escape');
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
   await picker.click();
@@ -734,4 +734,27 @@ Then('local model leases coordinate browser tabs cancellation and owner worker d
     await this.page.evaluate(()=>window.successorRun);expect(await this.page.evaluate(()=>window.afterDeath)).toBe(true);
     await this.page.evaluate(()=>window.successor.close());
   } finally {await other.close();await this.context.unroute(`${url}/**`,allow);}
+});
+
+Then('compatible MiniCPM settings and its paired native artifacts remain browser-local', {timeout:90000}, async function() {
+  const page=this.page;await installAssistantFixture(page);const panel=await openAssistant(page),picker=panel.getByRole('combobox',{name:'Local model',exact:true});
+  await picker.click();await page.getByRole('option',{name:'MiniCPM5 · 2.52B · FP32',exact:true}).click();
+  await expect(panel.getByRole('button',{name:'Unload model',exact:true})).toBeVisible();
+  const loaded=await page.evaluate(()=>window.assistantFixture.settings);expect(loaded.model).toBe('minicpm5-fp32');expect(loaded.executionMode).toBe('gpu');expect(loaded.context).toBe(4096);expect(loaded.maxTokens).toBe(256);
+  const config=await openConfiguration(panel);await config.getByRole('button',{name:'Unload language model',exact:true}).click();
+  for(const name of ['Reasoning','Sample responses','Prefix cache'])await expect(config.getByRole('checkbox',{name,exact:true})).toBeDisabled();
+  await expect(config.getByRole('slider',{name:'Context tokens',exact:true})).toHaveAttribute('aria-valuemax','4096');
+  await expect(config.getByRole('slider',{name:'Output tokens',exact:true})).toHaveAttribute('aria-valuemax','256');
+  await config.getByRole('combobox',{name:'Execution',exact:true}).click();expect(await page.getByRole('option').evaluateAll(options=>options.map(option=>option.getAttribute('data-value')))).toEqual(['','gpu']);await page.keyboard.press('Escape');
+  await openAssistant(page);
+  for(const width of [390,320]){await page.setViewportSize({width,height:844});expect(await page.locator('#settings-panel').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);}
+  const imports=await page.evaluate(()=>new Promise((resolve,reject)=>{
+    const sdk=new URL('./assistant-runtime/text-fp32/upstream/index.js',document.baseURI).href,wasm=new URL('./assistant-runtime/text-fp32/upstream/wllama.wasm',document.baseURI).href;
+    const code=`import {Wllama} from ${JSON.stringify(sdk)};const bytes=await(await fetch(${JSON.stringify(wasm)})).arrayBuffer();await WebAssembly.compile(bytes);const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');postMessage({sdk:typeof Wllama,bytes:bytes.byteLength,sha});`;
+    const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url,{type:'module'});
+    const done=(error,value)=>{clearTimeout(timer);worker.terminate();URL.revokeObjectURL(url);error?reject(error):resolve(value);};
+    const timer=setTimeout(()=>done(Error('Compatible native artifact import timed out')),20000);
+    worker.onerror=event=>{event.preventDefault();done(Error(event.message));};worker.onmessage=({data})=>done(null,data);
+  }));
+  expect(imports).toEqual({sdk:'function',bytes:9326027,sha:'b4862a3d30aaac1d33afbbba430d4d48a3e8baeb55b1a2e632fac51478ec7cc0'});
 });

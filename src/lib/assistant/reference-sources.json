@@ -159,5 +159,29 @@
       "GPU speech holds ownership through capture, forward and archive acknowledgement; CPU speech bypasses the GPU handoff. Restore speech in a fresh worker after device teardown.",
       "Failed native cleanup retains ownership until the owned worker is terminated; normal unload waits for disposal acknowledgement with a bounded fallback."
     ]
+  },
+  "compatible_text": {
+    "reviewed": "2026-11-04",
+    "variant": "standard-fp32-gpu",
+    "sources": [
+      {
+        "source": "inference/evaluations/brave-chat-gpu/runtime/native-engine.js",
+        "sha256": "f284739f36991c5fb595bec4dd5d14a15bdc444ad4dc8fa8d4728340d2a085c8"
+      },
+      {
+        "source": "inference/evaluations/brave-chat-gpu/runtime/placement.js",
+        "sha256": "a6793e5283373c9493989b6a94d7a426174f7036cf760b2368967c00790b1cb8"
+      },
+      {
+        "source": "inference/attempts/ni-browser-minicpm5-2b-core-gpu/attempt.json",
+        "sha256": "5b016f08418830628b91c16b324287a7a36efa099a6e8cf3949ec6cc3a663f49"
+      }
+    ],
+    "adaptations": [
+      "Separate explicit MiniCPM profile preserves the legacy CPU/hybrid backend. Parent Operations worker owns the whole Pi/tool/vision lifetime.",
+      "Explicit worker assetBase replaces document.baseURI; immutable paired native artifacts, receipt, recipe and licenses are retained and checked during build.",
+      "Complete messages/native tool arguments use the trained formatter and parser. Context stays a labeled estimate with actual loaded capacity; native overflow rejects before prefill with ctx_shift:false, no truncation/resubmission.",
+      "Abort invalidates and awaits disposal; a failed disposal promise stays rejected. Bounded raw diagnostics retain placement proofs and cumulative native audit totals."
+    ]
   }
 }

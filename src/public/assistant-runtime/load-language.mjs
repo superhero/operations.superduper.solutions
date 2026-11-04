@@ -65,3 +65,5 @@ export async function loadGemma(profile, onProgress, options = {}) {
         ...(result.tool_calls?.length ? {tool_calls: result.tool_calls} : {})}, usage: result.usage || {}};
     }};
 }
+
+export {loadFp32Chat} from './text-fp32/engine.mjs';

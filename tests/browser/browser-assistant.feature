@@ -37,3 +37,5 @@ Feature: Browser assistant in Settings
     Then native runtime modules and compressed Wasm load in real browser workers
   Scenario: Runtime ownership coordinates real tabs and worker death
     Then local model leases coordinate browser tabs cancellation and owner worker death
+  Scenario: Compatible MiniCPM loads with fixed GPU settings and native artifacts
+    Then compatible MiniCPM settings and its paired native artifacts remain browser-local

@@ -20,6 +20,16 @@ uses LiteRT-LM. CPU and partial GPU execution remain explicit where supported.
 Capability checks test actual computation before model loading; successful small
 probes do not establish model memory fit or mobile support.
 
+**MiniCPM5 · 2.52B · FP32** is a separate, opt-in native Wllama profile.
+It uses the pinned official Q4_K_M weights with full GPU model execution and
+FP32 activations/KV, without requiring shader-f16. It keeps greedy decoding,
+reasoning and prefix caching off, and caps context/output at4096/256 tokens.
+It rejects CPU/hybrid fallback. The original MiniCPM option retains its existing
+placement choices. One native Operations skill/application/image task passed its exact final-answer
+oracle. The original suite retained an immediate-unload timing assertion failure;
+later disposal/termination and terminal cleanup were observed. See
+[compatible text evidence](assistant-compatible-text-quality.json) for scope.
+
 Each text forward budgets the complete prompt, history and tool results.
 Bonsai uses its native counter on the generating session; current Gemma/Wllama
 bindings use a clearly labeled estimate. Output is capped by available context

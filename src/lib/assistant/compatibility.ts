@@ -59,13 +59,16 @@ async function probeGPUCompatibility(environment: GPUEnvironment): Promise<Assis
 export async function probeAssistantCompatibility(environment: GPUEnvironment, input: unknown = defaultAssistantSettings): Promise<AssistantCompatibility> {
   const settings = validateAssistantSettings(input), profile = assistantProfile(settings.model);
   const gpu = await probeGPUCompatibility(environment);
-  if (profile.engine !== "wllama") return gpu;
+  if (!["wllama", "wllama-fp32"].includes(profile.engine)) return gpu;
   const wasm = environment.WebAssembly ?? globalThis.WebAssembly;
   const header = [0, 97, 115, 109, 1, 0, 0, 0];
   const simd = wasm.validate(new Uint8Array([...header, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
   const memory64 = wasm.validate(new Uint8Array([...header, 5, 3, 1, 4, 0]));
   if (!environment.isSecureContext || !environment.crossOriginIsolated || !simd || !memory64 || !("Suspending" in wasm))
     return { ...gpu, ready: false, summary: "Native Wasm requirements are missing.", detail: "Use a secure, cross-origin isolated Chromium browser with Wasm SIMD, Memory64 and JSPI. Model files have not been downloaded." };
+  if (profile.engine === "wllama-fp32") return {...gpu, ready: gpu.fp32,
+    summary: gpu.fp32 ? "Compatible FP32 WebGPU and native Wasm verified." : "Compatible text requires verified WebGPU computation.",
+    detail: "This profile uses full GPU model execution without shader-f16 or CPU/hybrid model fallback. Memory fit is checked during loading."};
   const fitsCPU = profile.bytes < 4294967296;
   if (settings.executionMode === "cpu" || (settings.executionMode === "auto" && !gpu.fp16 && fitsCPU))
     return { ...gpu, ready: true, summary: "Native Wasm CPU path available.", detail: "Memory fit is verified during loading; CPU execution is explicit and local." };

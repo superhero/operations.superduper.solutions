@@ -58,6 +58,7 @@ const owner = new BrowserRuntimeOwner({
 });
 async function ensureText(signal: AbortSignal) {
   if (unconfirmedAllocation) throw new Error("Local model cleanup is unconfirmed; reload the assistant.", {cause: unconfirmedAllocation});
+  if (engine && "invalidated" in engine && engine.invalidated) {await engine.dispose(); engine = undefined;}
   if (!engine) {
     if (!loadText) throw new Error("Load a model first.");
     post({type: "progress", value: "Restoring the language model with the saved conversation…"});

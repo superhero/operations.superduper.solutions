@@ -339,12 +339,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </div>
         <div class="option"><label for="assistant-execution">Execution</label>
           <FieldSelect id="assistant-execution" label="Execution" value={preferences.executionMode}
-            options={model.engine === "wllama" ? [{value: "auto", label: "Auto"}, {value: "gpu", label: "GPU"}, {value: "hybrid", label: "Partial GPU"}, ...(model.bytes < 4294967296 ? [{value: "cpu", label: "CPU"}] : [])] : [{value: "auto", label: "GPU"}]}
+            options={model.engine === "wllama" ? [{value: "auto", label: "Auto"}, {value: "gpu", label: "GPU"}, {value: "hybrid", label: "Partial GPU"}, ...(model.bytes < 4294967296 ? [{value: "cpu", label: "CPU"}] : [])] : [{value: model.engine === "wllama-fp32" ? "gpu" : "auto", label: "GPU"}]}
             disabled={locked} onValueChange={value => { preferences.executionMode = value; savePreferences(); }} />
         </div>
         {#each integers as setting}
           <div class="option"><label for={`assistant-${setting.key}`}>{setting.label}</label>
-            <FieldInteger id={`assistant-${setting.key}`} label={setting.label} value={String(preferences[setting.key])} minimum={setting.minimum} maximum={setting.key === "gpuLayers" ? Number(model.gguf_block_count || model.model_layers || setting.maximum) + 1 : setting.maximum} disabled={locked || (["gpuLayers", "cpuThreads"].includes(setting.key) && model.engine !== "wllama")} logarithmic={setting.maximum > 1000}
+            <FieldInteger id={`assistant-${setting.key}`} label={setting.label} value={String(preferences[setting.key])} minimum={setting.minimum} maximum={setting.key === "gpuLayers" ? Number(model.gguf_block_count || model.model_layers || setting.maximum) + 1 : model.engine === "wllama-fp32" && setting.key === "context" ? 4096 : model.engine === "wllama-fp32" && setting.key === "maxTokens" ? 256 : setting.maximum} disabled={locked || (["gpuLayers", "cpuThreads"].includes(setting.key) && model.engine !== "wllama")} logarithmic={setting.maximum > 1000}
               onValueChange={value => { preferences[setting.key] = Number(value); savePreferences(); }} />
           </div>
         {/each}
@@ -358,7 +358,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <div class="switches">
         {#each switches as setting}
           <label class="switch-option"><span>{setting.label}</span><span class="switch-control">
-            <input type="checkbox" bind:checked={preferences[setting.key]} disabled={model.engine === "litert-lm" && ["sampling", "thinking", "prefixCache"].includes(setting.key)} onchange={savePreferences} /><span aria-hidden="true"></span>
+            <input type="checkbox" bind:checked={preferences[setting.key]} disabled={["litert-lm", "wllama-fp32"].includes(model.engine) && ["sampling", "thinking", "prefixCache"].includes(setting.key)} onchange={savePreferences} /><span aria-hidden="true"></span>
           </span></label>
         {/each}
       </div>
@@ -378,7 +378,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <details class="assistant-details">
     <summary>Compatibility and model details<MaterialIcon name="chevron_forward" size={16} /></summary>
     {#if compatibility}<p>{compatibility.summary} {compatibility.detail}</p><p>FP32: {compatibility.fp32 ? "verified" : "unavailable"} · FP16: {compatibility.fp16 ? "verified" : "unavailable"}</p><p>{compatibility.adapter}</p>{/if}
-    <p>{(model.bytes / 1e9).toFixed(2)} GB language download · {model.engine === "wllama" ? "native Wllama" : model.engine === "litert-lm" ? "LiteRT GPU" : "WebML GPU"}</p>
+    <p>{(model.bytes / 1e9).toFixed(2)} GB language download · {model.engine === "wllama-fp32" ? "native Wllama FP32 GPU" : model.engine === "wllama" ? "native Wllama" : model.engine === "litert-lm" ? "LiteRT GPU" : "WebML GPU"}</p>
     <p>{model.engine === "wllama" ? "Native Wasm supports explicit CPU or GPU placement. Ornith cannot fit the 4 GiB CPU heap; partial offload still needs a supported GPU." : "GPU only; no CPU fallback."} Images require verified WebGPU shader-f16. Free RAM and VRAM are not exposed by browsers. Download size is not a measured memory requirement. Mobile and tablet inference are not qualified.</p>
     <p>These pinned language profiles passed the reference text, tool and skill checks. Images use the separate LFM2.5-VL 1.6B tool; model observations can be wrong. Desktop acceptance does not qualify phones or guarantee memory fit.</p>
     <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run}<br />Runtime: {model.engine} · Pi 1.3.0</p>

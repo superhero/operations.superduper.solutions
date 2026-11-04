@@ -4,3 +4,6 @@ src/lib/speech/vendor/** -whitespace
 # Preserve byte-pinned native patches and publisher notices.
 build/native-runtime-sources/**/*.patch -text whitespace=-blank-at-eol
 src/public/assistant-runtime/decision/pplx-publisher-LICENSE -text -whitespace
+
+# Retain the exact accepted compatible native SDK and build recipe bytes.
+src/public/assistant-runtime/text-fp32/upstream/** -text -whitespace

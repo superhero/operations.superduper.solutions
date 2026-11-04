@@ -1,0 +1,67 @@
+{
+  "source_repository": "llm-sds-01",
+  "recipe": "inference/evaluations/brave-chat-gpu/native/standard",
+  "variant": "standard-fp32-gpu",
+  "files": [
+    {
+      "path": "text-fp32/upstream/LICENCE",
+      "bytes": 1071,
+      "sha256": "5866e3bd7e3cbd3f7c8bea6efd8a1e7fa7cc8de68c30f428aff7c6584a0fb720"
+    },
+    {
+      "path": "text-fp32/upstream/build-receipt.json",
+      "bytes": 1586,
+      "sha256": "4189efdc1f1bffa27101d3872539779c8eebb633557f9670260b2240835ff896"
+    },
+    {
+      "path": "text-fp32/upstream/index.js",
+      "bytes": 386507,
+      "sha256": "dc43ffb762922b95134b45bd9b93069c2b1e6f825e8ee31e633cde17a2fc96ab"
+    },
+    {
+      "path": "text-fp32/upstream/llama-cpp.patch",
+      "bytes": 12661,
+      "sha256": "eda134dc90be444e5d2ea36645bcf88fdbe3f23304955a4e1841398e4d72deba"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/build.sh",
+      "bytes": 3554,
+      "sha256": "f8492de2bc36d1540c5bd9efaecf7695b0261dd5969ce7ede266dd599a71a36d"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/gpu-only.patch",
+      "bytes": 10280,
+      "sha256": "892b1d1f76121f5502add0c8d1bfb82a4c4858bc57971f0d43e8fb90c0fc05d2"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/heap8.patch",
+      "bytes": 760,
+      "sha256": "44466719ff4f2cc7e6cb06b24d9709d0ef0a93adab4e2fe9d5a6b4b34c939d11"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/pins.json",
+      "bytes": 1037,
+      "sha256": "44e15b3f8705dd208e7fcd4519529468758b3a7cab2629ecba7aab359d7fe325"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/queue-wait.patch",
+      "bytes": 1162,
+      "sha256": "68942b9b98a03f03a4661024a128888f461e61e7fa5e7babdbc5bf82465edcf1"
+    },
+    {
+      "path": "text-fp32/upstream/recipe/upstream-api.patch",
+      "bytes": 361,
+      "sha256": "7302ecacb81e062faec41966963ac6681d0f7a8c2ac6ff40be6ab61047eb45e3"
+    },
+    {
+      "path": "text-fp32/upstream/upstream.patch",
+      "bytes": 596893,
+      "sha256": "8206b923f72d27f8746ee57db3bc674da1a8db3f0c7ca033c46570a108688a48"
+    },
+    {
+      "path": "text-fp32/upstream/wllama.wasm",
+      "bytes": 9326027,
+      "sha256": "b4862a3d30aaac1d33afbbba430d4d48a3e8baeb55b1a2e632fac51478ec7cc0"
+    }
+  ]
+}

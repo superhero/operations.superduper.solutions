@@ -108,6 +108,7 @@ export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: 
 }
 
 export type NativeLanguageRuntime = {
+  loadFp32Chat?: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
   loadWllama: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
   loadGemma: (profile: unknown, onProgress: (value: unknown) => void, options: unknown) => Promise<LocalEngine & { dispose(): Promise<void> }>;
 };
@@ -126,8 +127,9 @@ export async function loadAssistantEngine(settings: AssistantSettings, onProgres
     temperature: settings.sampling ? settings.temperature : 0, sampling_mode: settings.sampling ? "sample" : "greedy",
     top_k: settings.topK, top_p: settings.topP, min_p: settings.minP, seed: settings.seed, cpu_threads: settings.cpuThreads,
   } };
-  const loader = profile.engine === "litert-lm" ? runtime.loadGemma : runtime.loadWllama;
-  const engine = await loader(configured, onProgress, { assetBase, mode: settings.executionMode,
+  const loader = profile.engine === "wllama-fp32" ? runtime.loadFp32Chat : profile.engine === "litert-lm" ? runtime.loadGemma : runtime.loadWllama;
+  if (!loader) throw new Error("The compatible text runtime is unavailable.");
+  const engine = await loader(configured, onProgress, { assetBase, mode: settings.executionMode, signal,
     // The accepted MiniCPM allocation fallback uses eight GPU layers.
     gpuLayers: settings.executionMode === "hybrid" ? settings.gpuLayers : 8,
     capabilities: { gpu: { compute: compatibility.fp32, f16_compute: compatibility.fp16 } },
