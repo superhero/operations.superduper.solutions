@@ -157,6 +157,7 @@
     "Decision/speech installation remains separate integration work."
   ],
   "post_qualification_changes": [
-    "Documentation/evidence only. Base integration, if needed, preserves the reviewed production sources."
+    "Documentation/evidence only. Base integration, if needed, preserves the reviewed production sources.",
+    "The compatible text catalog later adds explicit model/runtime dispatch entries, trained LFM3 reasoning separation and UI labels. Focused ABI/UI/artifact checks cover those changes; the native MiniCPM cache run remains the exact earlier source-hash qualification."
   ]
 }

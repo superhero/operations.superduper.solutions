@@ -39,8 +39,8 @@ export function validateAssistantSettings(value: unknown): AssistantSettings {
   if (!["auto", "gpu", "hybrid", "cpu"].includes(next.executionMode)) throw new Error("Choose Auto, GPU, partial GPU or CPU execution.");
   if (profile.engine === "wllama-fp32") {
     if (!["auto", "gpu"].includes(next.executionMode) || next.sampling || next.thinking || next.prefixCache)
-      throw new Error("Compatible MiniCPM uses full GPU greedy decoding with reasoning and prefix cache off.");
-    if (next.context > 4096 || next.maxTokens > 256) throw new Error("Compatible MiniCPM supports at most 4096 context and 256 output tokens in this profile.");
+      throw new Error("Compatible text uses full GPU greedy decoding with reasoning and prefix cache off.");
+    if (next.context > 4096 || next.maxTokens > 256) throw new Error("Compatible text supports at most 4096 context and 256 output tokens in this profile.");
   }
   if (profile.engine === "webml" && !["auto", "gpu"].includes(next.executionMode)) throw new Error("Bonsai requires WebGPU execution.");
   if (profile.engine === "litert-lm" && (next.sampling || next.thinking || next.prefixCache || !["auto", "gpu"].includes(next.executionMode)))
@@ -74,6 +74,6 @@ export function settingsForAssistantModel(id: string, current: AssistantSettings
     prefixCache: native ? false : current.prefixCache,
     sampling: ["litert-lm", "wllama-fp32"].includes(profile.engine) ? false : current.sampling,
     thinking: ["litert-lm", "wllama-fp32"].includes(profile.engine) ? false : current.thinking,
-    requestTimeout: ["gemma-e2b", "minicpm5-2b", "minicpm5-fp32"].includes(id) ? 1200000 : current.requestTimeout,
+    requestTimeout: ["gemma-e2b", "minicpm5-2b", "minicpm5-fp32", "lfm3-fp32"].includes(id) ? 1200000 : current.requestTimeout,
   });
 }

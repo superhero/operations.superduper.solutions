@@ -45,3 +45,5 @@ receipt and source recipe/patches accompany the runtime distribution;
 `text-fp32/sources.json` records all immutable files. It retains the same official
 MiniCPM5 Q4_K_M model revision (model license Apache-2.0); no model weights are
 bundled or converted. Original runtime attribution and placement choices remain.
+
+The optional compatible Ornith Q4/Q8 variants use the same byte-pinned standard FP32 native pair. Compact LFM3 text uses its distinct llama.cpp19cce691 pair under text-fp32/lfm3-upstream, with the unchanged MIT license, build receipt and recipe inputs. Its publisher QAD Q4_0 weights remain unmodified and declare lfm1.0, independently of the runtime license. No model weights are bundled. Reference acceptance and Operations qualification remain separate.

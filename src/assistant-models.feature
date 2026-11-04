@@ -37,3 +37,7 @@ Feature: Accepted native assistant and decision engines
     Then all language adapters receive the installed reader without changing model placement
   Scenario: Failed installation releases its own logical use claim
     Then model asset preparation retains successful claims and releases failed or canceled ones
+  Scenario: Compatible text choices bind each model to its qualified runtime pair
+    Then compatible Ornith and LFM3 use fixed GPU settings and reject mixed native pairs
+  Scenario: LFM3 reasoning remains separate from visible answers
+    Then the trained LFM3 reasoning boundary preserves raw output without leaking truncated thoughts

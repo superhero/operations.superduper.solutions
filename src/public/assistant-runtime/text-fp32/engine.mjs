@@ -3,6 +3,7 @@
 // Ported from the qualified brave-chat-gpu runtime; see reference-sources.json.
 import {samplingOptions} from '../settings.js';
 import {abortableGeneration} from '../execution.js';
+import {splitLFM3Reasoning} from './lfm3-reasoning.js';
 function mergeToolDeltas(calls,deltas=[]) {
  for(const delta of deltas){const index=delta.index??0;calls[index]??={id:'',type:'function',function:{name:'',arguments:''}};
   const call=calls[index];if(delta.id)call.id=delta.id;call.function.name+=delta.function?.name??'';call.function.arguments+=delta.function?.arguments??'';}
@@ -13,16 +14,25 @@ export function nativeMessages(messages) {return messages.map(message=>({...mess
 import {inspectPlacement,requireGpuPlacement} from './placement.mjs';
 export {inspectPlacement,requireGpuPlacement};
 
+const PINS = [
+ ['openbmb/MiniCPM5-2B-GGUF','2079a22f3beaa4e306449978533478fe0522f4b3','MiniCPM5-2B-Q4_K_M.gguf',1561318368,'ec2d5801640099e97d8d7e8003ad4d81f336e757811f03a26173dddf386602fd','standard-fp32-gpu','upstream'],
+ ['ornith-ai/Ornith-1.5-9B-GGUF','abdd624b12ebf020b767fff532ff44fe552b28c3','Ornith-1.5-9B-Q4_K_M.gguf',5780090816,'70c112196e0b7023803c9762752e46d29e612a92c83f995bc3ba1ceb07e8fab6','standard-fp32-gpu','upstream'],
+ ['ornith-ai/Ornith-1.5-9B-GGUF','abdd624b12ebf020b767fff532ff44fe552b28c3','Ornith-1.5-9B-Q8_0.gguf',9786060384,'22086870b009dbe9815ee752c48a82de930118a7c5ce5599590892ae03b8b010','standard-fp32-gpu','upstream'],
+ ['LiquidAI/LFM3-1.7B-GGUF','bad5729bba61d076fff20d2548e62526665af215','LFM3-1.7B-QAD-Q4_0.gguf',1049615680,'43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452','lfm3-fp32-gpu','lfm3-upstream'],
+];
+
 export async function loadFp32Chat(profile,onProgress=()=>{},options={}){
  const asset=path=>new URL(path,new URL('text-fp32/',options.assetBase)).href;
- if(profile.model!=='openbmb/MiniCPM5-2B-GGUF'||profile.revision!=='2079a22f3beaa4e306449978533478fe0522f4b3'||profile.file!=='MiniCPM5-2B-Q4_K_M.gguf'||profile.native_variant!=='standard-fp32-gpu')throw Error('Unqualified compatible text profile.');
+ const pin=PINS.find(([model,revision,file,bytes,sha,variant])=>profile.model===model&&profile.revision===revision&&profile.file===file&&profile.weight_bytes===bytes&&profile.weight_sha256===sha&&profile.native_variant===variant);
+ if(!pin)throw Error('Unqualified compatible text profile or native runtime pair.');
+ const lfm3=pin[5]==='lfm3-fp32-gpu';
  if(Object.keys(profile.native_load_options??{}).length)throw Error('Compatible text does not allow native load overrides.');
  if(!['auto','gpu'].includes(options.mode??'gpu'))throw Error('Compatible text requires full GPU execution.');
  if(profile.settings.context_tokens>4096||profile.settings.max_new_tokens>256||profile.settings.thinking||profile.settings.prefix_cache||profile.settings.sampling_mode!=='greedy')throw Error('Compatible text exceeds its qualified configuration.');
  if(profile.settings.execution_mode!=='gpu'||profile.settings.gpu_layers!==99)throw Error('This attempt has no CPU/hybrid model fallback');
  const adapter=await (options.gpu??globalThis.navigator?.gpu)?.requestAdapter({powerPreference:'high-performance'});
  if(!adapter)throw Error('A usable WebGPU adapter is required');
- const folder='upstream',moduleURL=asset('./upstream/index.js');
+ const folder=pin[6],moduleURL=asset('./'+folder+'/index.js');
  const [{Wllama},{RangeSource,RangeBlob}]=await Promise.all([
   options.Wllama?{Wllama:options.Wllama}:import(/* @vite-ignore */ `${moduleURL}`),
   options.ranges??import('../ornith/range-blob.mjs'),
@@ -72,7 +82,7 @@ export async function loadFp32Chat(profile,onProgress=()=>{},options={}){
     if(generation!==s)throw Error('Compatible text generation uses the frozen model settings.');
     signal??=new AbortController().signal;
     if(!Number.isInteger(maxTokens)||maxTokens<1||maxTokens>256)throw Error('Compatible text output must fit within256 tokens.');
-    const calls=[];let text='',reasoning='',finish=null,usage={},timings={},first=null;
+    const calls=[];let text='',reasoning='',finish=null,usage={},timings={},first=null,firstRaw=null;
     const started=performance.now();
     signal.throwIfAborted();
     const before={...auditTotals};
@@ -80,8 +90,8 @@ export async function loadFp32Chat(profile,onProgress=()=>{},options={}){
      ...samplingOptions(generation,'wllama'),max_tokens:maxTokens,cache_prompt:false,
      chat_template_kwargs:{enable_thinking:false},abortSignal:signal,
      onData(chunk){const delta=chunk.choices?.[0]?.delta;
-      if(delta?.content){first??=performance.now();text+=delta.content;onText(delta.content);}
-      if(delta?.reasoning_content){reasoning+=delta.reasoning_content;onThinking(delta.reasoning_content);}
+      if(delta?.content){firstRaw??=performance.now();text+=delta.content;if(!lfm3){first??=firstRaw;onText(delta.content);}}
+      if(delta?.reasoning_content){reasoning+=delta.reasoning_content;if(!lfm3)onThinking(delta.reasoning_content);}
       mergeToolDeltas(calls,delta?.tool_calls);finish=chunk.choices?.[0]?.finish_reason||finish;
       usage=chunk.usage||usage;timings=chunk.timings||timings;
      }}),signal,async()=>{this.invalidated=true;await dispose();});}
@@ -89,8 +99,17 @@ export async function loadFp32Chat(profile,onProgress=()=>{},options={}){
     const delta={cpu_compute_ops:auditTotals.cpu_compute_ops-before.cpu_compute_ops,gpu_compute_ops:auditTotals.gpu_compute_ops-before.gpu_compute_ops};
     if(!signal.aborted&&(delta.cpu_compute_ops!==0||delta.gpu_compute_ops<=0))throw Error('This completion did not prove current-turn GPU model work.');
     const placement={...requireGpuPlacement(allLogs()),current_turn:delta};
+    const rawLfm3=lfm3?{content:text,reasoning_content:reasoning}:null;
+    if(lfm3){
+     const parsed=splitLFM3Reasoning(text,reasoning);text=parsed.text;reasoning=parsed.reasoning;
+     try {
+      if(!signal.aborted&&reasoning)onThinking(reasoning);
+      if(!signal.aborted&&text){first??=performance.now();onText(text);}
+     } finally {if(signal.aborted){this.invalidated=true;await dispose();}}
+    }
     return {message:{role:'assistant',content:text,...(reasoning?{reasoning_content:reasoning}:{}),
       ...(calls.length?{tool_calls:calls.filter(Boolean)}:{})},finish_reason:signal?.aborted?'cancelled':finish,
+     ...(lfm3?{raw_lfm3:rawLfm3}:{}),
      usage,timings:{...timings,browser_first_text_ms:first===null?null:first-started},
      wall_ms:performance.now()-started,audit_totals:{...auditTotals},native_settings:{...samplingOptions(generation,'wllama'),
       enable_thinking:false,cache_prompt:false},placement};

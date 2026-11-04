@@ -218,5 +218,34 @@
       "Application/runtime assets are still served by the same origin; cached model files do not establish fully offline SPA support.",
       "Decision and speech installation remain separate integration work."
     ]
+  },
+  "compatible_text_catalog": {
+    "reviewed": "2026-11-04",
+    "source_repository": "llm-sds-01",
+    "sources": [
+      {
+        "source": "inference/attempts/ng-browser-ornith-q4-core-gpu/attempt.json",
+        "sha256": "463a4f9363219322c412c526c69c96bbb6abe20355745115bd1a8d47c6e16a80"
+      },
+      {
+        "source": "inference/attempts/nh-browser-ornith-q8-core-gpu/attempt.json",
+        "sha256": "3e40499ae71c5d252c3cf94ba0747a2ca789f5db0ec664920cf5299a1d40dfeb"
+      },
+      {
+        "source": "inference/attempts/nj-browser-lfm3-core-gpu/attempt.json",
+        "sha256": "48766afce8c07b163de7150f83d2b2f5b0bf5938a687fef300e80da1528c9cff"
+      },
+      {
+        "repository": "code.superduper.solutions",
+        "source": "src/lib/assistant/browser/reference/lfm3-reasoning.js",
+        "sha256": "58c0c55f741207cd2cbf4c559d979910f2f1f4f0a5b1cd8e55dbac832ad2c85b"
+      }
+    ],
+    "adaptations": [
+      "Explicit Ornith Q4/Q8 variants share the accepted standard pair; compact LFM3 uses its own paired JS/Wasm and recipe. Legacy execution paths remain separate.",
+      "Bind immutable model/revision/file/size/digest to the exact runtime variant before allocating; retain full GPU, F32 KV, fixed greedy settings and per-forward GPU audit.",
+      "Retain the native trained formatter/tool parser and reasoning channel; thinking-off does not guarantee absence of generated reasoning."
+    ],
+    "qualification": "Reference native acceptance retained. Focused Operations catalog/ABI/UI/distribution checks do not constitute new Ornith/LFM3 native performance or quality acceptance."
   }
 }

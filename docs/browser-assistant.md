@@ -192,3 +192,5 @@ new qualification of 4B/9B, OCR, mobile/tablet inference or general throughput;
 the per-model limitations above remain applicable.
 
 [Installation evidence](assistant-storage-quality.json) records the actual shipped-installer and fresh-worker MiniCPM/compatible-image task with publisher requests blocked, plus targeted storage failure and cross-tab checks. Other installed native model families and original FP16 image execution do not inherit that acceptance.
+
+The language menu also offers compatible FP32 Ornith Q4/Q8 and compact LFM3 text. They retain reference acceptance with their exact native runtime pairs; they have no newly measured Operations native inference or memory-fit result. All use fixed greedy full-GPU settings and preserve the trained tool parser. LFM3 can still emit reasoning with thinking disabled.

@@ -360,7 +360,7 @@ Then('compatible MiniCPM preserves legacy placement and caps its qualified setti
     assert.throws(()=>validateAssistantSettings({...prefs,executionMode}),/full GPU/);
     assert.equal(validateAssistantSettings({...defaultAssistantSettings,model:'minicpm5-2b',executionMode}).executionMode,executionMode);
   }
-  for(const bad of [{maxTokens:257},{context:8192},{prefixCache:true},{sampling:true},{thinking:true}])assert.throws(()=>validateAssistantSettings({...prefs,...bad}),/Compatible MiniCPM/);
+  for(const bad of [{maxTokens:257},{context:8192},{prefixCache:true},{sampling:true},{thinking:true}])assert.throws(()=>validateAssistantSettings({...prefs,...bad}),/Compatible text/);
   const buffer=()=>({async mapAsync(){},getMappedRange:()=>new Float32Array([3.5]).buffer,unmap(){},destroy(){}});
   const pass={setPipeline(){},setBindGroup(){},dispatchWorkgroups(){},end(){}};
   const device={pushErrorScope(){},async popErrorScope(){return null;},createShaderModule(){return{};},async createComputePipelineAsync(){return{getBindGroupLayout(){return{};}};},createBuffer:buffer,createBindGroup(){return{};},createCommandEncoder(){return{beginComputePass:()=>pass,copyBufferToBuffer(){},finish(){return{};}};},queue:{writeBuffer(){},submit(){}},destroy(){}};
@@ -407,7 +407,7 @@ Then('compatible text cancellation drains and failed cleanup stays failed',async
 
 Then('installed model catalogs retain exact language files and both complete image variants',async()=>{
   const {storageProfiles,artifactsFor,profileById}=await import('./lib/assistant/model-storage/catalog.ts');
-  assert.equal(storageProfiles.length,11);
+  assert.equal(storageProfiles.length,14);
   for(const profile of storageProfiles){const files=artifactsFor(profile);assert.ok(files.length);for(const file of files){assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(Number.isSafeInteger(file.bytes)&&file.bytes>0);assert.match(file.url,/\/resolve\/[a-f0-9]{40}\//);}}
   const fp16=artifactsFor(profileById('image:fp16')),fp32=artifactsFor(profileById('image:compatible'));
   assert.equal(fp16.length,14);assert.equal(fp32.length,13);
@@ -448,4 +448,41 @@ Then('model asset preparation retains successful claims and releases failed or c
     fail=true;await assert.rejects(prepareModelAssets('minicpm5-fp32',signal(),()=>{},reader),/Checksum mismatch/);assert.deepEqual(events.slice(-3),['claim','install','release']);
     const abort=new AbortController();abort.abort();const before=events.length;await assert.rejects(prepareModelAssets('minicpm5-fp32',abort.signal,()=>{},reader),/abort/i);assert.equal(events.length,before);
   } finally{vi.doUnmock('./lib/assistant/model-storage/storage.ts');}
+});
+
+Then('compatible Ornith and LFM3 use fixed GPU settings and reject mixed native pairs',async()=>{
+  for(const id of['minicpm5-fp32','ornith-q4-fp32','ornith-q8-fp32','lfm3-fp32']){
+    const profile=assistantProfile(id),preferences=settingsForAssistantModel(id,defaultAssistantSettings),fixture=strictFixture();
+    assert.equal(preferences.executionMode,'gpu');assert.equal(preferences.context,4096);assert.equal(preferences.maxTokens,256);
+    for(const key of['thinking','sampling','prefixCache'])assert.equal(preferences[key],false);
+    for(const executionMode of['cpu','hybrid'])assert.throws(()=>validateAssistantSettings({...preferences,executionMode}),/full GPU/);
+    const reader=async()=>new Response('cached');fixture.options.fetch=reader;
+    const engine=await loadFp32Chat(profile,()=>{},fixture.options),folder=id==='lfm3-fp32'?'lfm3-upstream':'upstream';
+    assert.ok(fixture.record.paths.default.endsWith(`/text-fp32/${folder}/wllama.wasm`));assert.ok(fixture.record.source.url.includes(profile.revision+'/'+profile.file));assert.equal(fixture.record.source.options.fetch,reader);
+    const result=await engine.generate([{role:'user',content:'Use the available application tool.'}],{tools:[],signal:signal(),maxTokens:32});
+    assert.equal(result.message.tool_calls[0].function.name,'read_application');assert.equal(result.placement.current_turn.cpu_compute_ops,0);assert.ok(result.placement.current_turn.gpu_compute_ops>0);await engine.dispose();
+    for(const bad of[{native_variant:id==='lfm3-fp32'?'standard-fp32-gpu':'lfm3-fp32-gpu'},{weight_bytes:profile.weight_bytes-1},{weight_sha256:'0'.repeat(64)},{revision:'0'.repeat(40)}]){
+      const rejected=strictFixture();await assert.rejects(loadFp32Chat({...profile,...bad},()=>{},rejected.options),/Unqualified compatible/);assert.equal(rejected.record.loads.length,0);assert.equal(rejected.record.source,undefined);
+    }
+  }
+  assert.equal(assistantProfile('ornith-q4').engine,'wllama');assert.equal(assistantProfile('ornith-q8').engine,'wllama');
+  assert.equal(assistantProfile('lfm3-fp32').runtime_source.llama_cpp,'19cce6919992fdffd92e0ac152caaf1e2b8f254e');
+  assert.equal(assistantProfile('lfm3-fp32').license.id,'lfm1.0');assert.match(assistantProfile('lfm3-fp32').limitations,/Thinking-off/);
+});
+
+Then('the trained LFM3 reasoning boundary preserves raw output without leaking truncated thoughts',async()=>{
+  for(const [content,native,text,thought]of[['<think>plan</think>answer','native','answer','native\nplan'],['Paris</think>Paris','','Paris','Paris'],['<think>truncated','','','truncated'],['normal <b>answer</b>','native','normal <b>answer</b>','native']]){
+    const fixture=strictFixture(),visible=[],thinking=[],profile=assistantProfile('lfm3-fp32');
+    fixture.options.Wllama.prototype.createChatCompletion=async function(request){this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');for(const part of[content.slice(0,4),content.slice(4)]){request.onData({choices:[{delta:{content:part}}]});assert.deepEqual(visible,[]);}request.onData({choices:[{delta:{reasoning_content:native},finish_reason:'stop'}]});assert.deepEqual(thinking,[]);};
+    const engine=await loadFp32Chat(profile,()=>{},fixture.options),result=await engine.generate([],{maxTokens:32,signal:signal(),onText:part=>visible.push(part),onThinking:part=>thinking.push(part)});
+    assert.equal(result.message.content,text);assert.equal(result.message.reasoning_content??'',thought);assert.deepEqual(visible,text?[text]:[]);assert.deepEqual(thinking,thought?[thought]:[]);assert.deepEqual(result.raw_lfm3,{content,reasoning_content:native});if(!text)assert.equal(result.timings.browser_first_text_ms,null);await engine.dispose();
+  }
+  const canceled=strictFixture(),abort=new AbortController();
+  canceled.options.Wllama.prototype.createChatCompletion=async function(request){this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');request.onData({choices:[{delta:{content:'<think>plan</think>answer'},finish_reason:'stop'}]});};
+  const cancelEngine=await loadFp32Chat(assistantProfile('lfm3-fp32'),()=>{},canceled.options);
+  const cancelResult=await cancelEngine.generate([],{maxTokens:32,signal:abort.signal,onThinking:()=>abort.abort(),onText:()=>assert.fail('No answer after synchronous callback cancellation')});
+  assert.equal(cancelResult.finish_reason,'cancelled');assert.equal(cancelEngine.invalidated,true);assert.equal(canceled.record.exits,1);await cancelEngine.dispose();assert.equal(canceled.record.exits,1);
+  const fixture=strictFixture(),visible=[];
+  fixture.options.Wllama.prototype.createChatCompletion=async function(request){this.logger.debug('GPU_ONLY_AUDIT cpu_compute_ops=0 gpu_compute_ops=1');request.onData({choices:[{delta:{content:'<think>ordinary model text'}}]});assert.deepEqual(visible,['<think>ordinary model text']);};
+  const engine=await loadFp32Chat(strictProfile(),()=>{},fixture.options);await engine.generate([],{maxTokens:32,signal:signal(),onText:part=>visible.push(part)});await engine.dispose();
 });

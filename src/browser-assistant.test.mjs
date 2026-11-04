@@ -49,7 +49,7 @@ Then('the local assistant preserves accepted profiles and rejects unsupported en
   assert.deepEqual(bonsaiModels.map(m => m.id), ['2b', '4b', '9b', '27b']);
   for (const model of bonsaiModels) { assert.match(model.revision, /^[0-9a-f]{40}$/); assert.equal(model.projector, null); assert.match(model.file, /PTQ1_0/); assert.ok(model.bytes > 400e6); assert.match(model.run, new RegExp(model.attempt)); }
   assert.match(bonsaiRuntime.url, /621e20782f208660f4f58283c2ce58430020f243/);
-  assert.equal(assistantModels.length, 9);
+  assert.equal(assistantModels.length, 12);
   for (const profile of assistantModels) {
     const configured = settingsForAssistantModel(profile.id, settings());
     assert.equal(configured.model, profile.id); assert.equal(profile.projector, null);

@@ -265,7 +265,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#if message.role === "tool"}
           <details class="tool-result"><summary><span>{message.tool}</span><span class="tool-state">{message.failed ? "Failed" : "Result"}</span><MaterialIcon name="chevron_forward" size={16} /></summary><pre>{message.text}</pre></details>
         {:else}
-          <strong>{message.role === "user" ? "You" : "Bonsai"}</strong>
+          <strong>{message.role === "user" ? "You" : model.family === "bonsai" ? "Bonsai" : model.label.split(" · ")[0]}</strong>
           {#if message.imageCount}<p class="image-note"><MaterialIcon name="image" size={16} />{message.imageCount === 1 ? "1 image attached" : `${message.imageCount} images attached`}</p>{/if}
           {#if message.thinking}<details><summary>Reasoning<MaterialIcon name="chevron_forward" size={16} /></summary><pre>{message.thinking}</pre></details>{/if}
           {#if message.role === "assistant"}<WorkflowCommentPreview text={message.text} scope={`assistant-${index}`} allowImages={false} />{:else}<pre>{message.text}</pre>{/if}
@@ -380,9 +380,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <summary>Compatibility and model details<MaterialIcon name="chevron_forward" size={16} /></summary>
     {#if compatibility}<p>{compatibility.summary} {compatibility.detail}</p><p>FP32: {compatibility.fp32 ? "verified" : "unavailable"} · FP16: {compatibility.fp16 ? "verified" : "unavailable"}</p><p>{compatibility.adapter}</p>{/if}
     <p>{(model.bytes / 1e9).toFixed(2)} GB language download · {model.engine === "wllama-fp32" ? "native Wllama FP32 GPU" : model.engine === "wllama" ? "native Wllama" : model.engine === "litert-lm" ? "LiteRT GPU" : "WebML GPU"}</p>
-    <p>{model.engine === "wllama" ? "Native Wasm supports explicit CPU or GPU placement. Ornith cannot fit the 4 GiB CPU heap; partial offload still needs a supported GPU." : "GPU only; no CPU fallback."} Images require verified WebGPU shader-f16. Free RAM and VRAM are not exposed by browsers. Download size is not a measured memory requirement. Mobile and tablet inference are not qualified.</p>
+    <p>{model.engine === "wllama" ? "Native Wasm supports explicit CPU or GPU placement. Ornith cannot fit the 4 GiB CPU heap; partial offload still needs a supported GPU." : "GPU only; no CPU fallback."} Images require {preferences.visionMode === "compatible" ? "verified FP32 WebGPU and at least nine storage buffers per shader stage" : "verified WebGPU shader-f16"}. Free RAM and VRAM are not exposed by browsers. Download size is not a measured memory requirement. Mobile and tablet inference are not qualified.</p>
     <p>These pinned language profiles passed the reference text, tool and skill checks. Images use the separate LFM2.5-VL 1.6B tool; model observations can be wrong. Desktop acceptance does not qualify phones or guarantee memory fit.</p>
-    <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run}<br />Runtime: {model.engine} · Pi 1.3.0</p>
+    <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run ?? model.reference?.attempt}<br />Runtime: {model.engine} · Pi 1.3.0</p>
     <p>Language and image files are saved from their pinned publishers and verified before initialization. Optional runtime code loads with the selected engine. Inference and application tool data stay in this browser. Chat lasts for this tab; a new model load starts a new conversation.</p>
   </details>
   <AssistantModelStorage visible={configurationOpen}/>
