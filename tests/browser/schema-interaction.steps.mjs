@@ -184,6 +184,11 @@ Then('closed settings and search retain no inactive controls or matching worker'
   const hiddenInputs = page.locator('.settings-section .disclosure-panel input');
   await expect(hiddenInputs).toHaveCount(0);
   await setMode(page, 'settings');
+  const ai = page.locator('summary[aria-label="AI"]');
+  await ai.click();
+  await expect(page.locator('#assistant-configuration-panel input')).not.toHaveCount(0);
+  await ai.click();
+  await expect(hiddenInputs).toHaveCount(0);
   const schemas = page.locator('summary[aria-label="Schemas"]');
   await schemas.click();
   await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + bundledCatalogs.length);

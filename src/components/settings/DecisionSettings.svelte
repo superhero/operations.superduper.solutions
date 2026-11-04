@@ -11,7 +11,8 @@ SPDX-License-Identifier: AGPL-3.0-only -->
   import {trackApplicationWorker} from '$lib/application-workers.ts';
   import {decodeError} from '$lib/worker-rpc.ts';
   import {logger} from '$lib/logger.ts';
-  let {speechBusy = false, onActivity = (_active: boolean, _busy: boolean) => {}}: {speechBusy?: boolean; onActivity?: (active: boolean, busy: boolean) => void} = $props();
+  let {controlsVisible = true, speechBusy = false, onActivity = (_active: boolean, _busy: boolean) => {}}: {controlsVisible?: boolean; speechBusy?: boolean; onActivity?: (active: boolean, busy: boolean) => void} = $props();
+  let opened = $state(false);
   let selected = $state('d3-lite'), phase = $state<'unloaded' | 'checking' | 'loading' | 'ready' | 'deciding'>('unloaded');
   let decisionState = $state('The status card is blue.'), question = $state('Is the status card blue?'), kind = $state('noul');
   let criteria = $state('translate: Translate between languages\nsummarize: Shorten a document\ncode: Write software');
@@ -74,7 +75,8 @@ SPDX-License-Identifier: AGPL-3.0-only -->
   onDestroy(() => {terminate(true); onActivity(false, false);});
 </script>
 
-<details class="decision-settings">
+{#if controlsVisible}
+<details class="decision-settings" bind:open={opened}>
   <summary>Decision models<MaterialIcon name="chevron_forward" size={16} /></summary>
   <p>Score a state against an explicit question. These models do not write chat replies or run workflows.</p>
   {#if speechBusy}<p>Stop dictation before computing a decision.</p>{/if}
@@ -110,6 +112,7 @@ SPDX-License-Identifier: AGPL-3.0-only -->
     </div>
   {/if}
 </details>
+{/if}
 <style>
   .decision-settings {padding:12px;background:var(--color-surface);border-radius:4px;min-width:0;}
   summary {display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer;list-style:none;}

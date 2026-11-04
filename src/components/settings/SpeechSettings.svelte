@@ -11,23 +11,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { speechProfiles } from "$lib/speech/config.js";
   import { compare } from "$lib/speech/diagnostics.js";
   import { clearSpeechCache, deleteRecordings, saveRecording } from "$lib/speech/storage.js";
-  let { visible = true, externalBusy = false, onDictation, onActivity }: { visible?: boolean; externalBusy?: boolean; onDictation: (text: Dictation) => void; onActivity: (state: { ready: boolean; busy: boolean; recording: boolean }) => void } = $props();
+  let { visible = true, controlsVisible = true, externalBusy = false, onDictation, onActivity }: { visible?: boolean; controlsVisible?: boolean; externalBusy?: boolean; onDictation: (text: Dictation) => void; onActivity: (state: { ready: boolean; busy: boolean; recording: boolean }) => void } = $props();
   let speechState = $state<SpeechState>({ phase: "unloaded", status: "", error: "", provisional: "", storageError: "", seconds: 0 });
   let records = $state.raw<Recording[]>([]);
   let selectedId = $state("");
   let playback = $state("");
   let localError = $state("");
   let storageBusy = $state(false);
-  let audioInput: HTMLInputElement;
+  let audioInput = $state<HTMLInputElement>();
   let opened = $state(false);
-  let panel: HTMLDetailsElement;
+  let panel = $state<HTMLDetailsElement>();
   export async function toggleDictation() {
     opened = true;
     if (speechState.phase === "recording" || speechState.phase === "requesting") await controller.stopRecording();
     else if (speechState.phase === "ready" && !storageBusy && !externalBusy) await controller.startRecording();
     else {
       await tick();
-      panel.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+      panel?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
     }
   }
   const controller = new SpeechController({ state: value => { speechState = value; }, text: value => onDictation(value),
@@ -93,6 +93,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function playRecording(){const recording=selected,generation=playbackGeneration;if(!recording)return;storageBusy=true;try{localError='';const blob=await controller.recordingAudio(recording);if(generation!==playbackGeneration||selected?.id!==recording.id)return;clearPlayback();playbackURL=URL.createObjectURL(blob);playback=playbackURL;}catch(error){localError=error instanceof Error?error.message:String(error);}finally{storageBusy=false;}}
 </script>
 
+{#if controlsVisible}
 <details class="speech-settings" bind:this={panel} bind:open={opened}>
   <summary>Speech input<MaterialIcon name="chevron_forward" size={16} /></summary>
   <div class="speech-card">
@@ -112,7 +113,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <button type="button" class="recording" onclick={() => void controller.stopRecording()}>{speechState.phase === "requesting" ? "Cancel microphone" : "Stop dictation"}</button>
       {:else}
         <button type="button" disabled={speechState.phase !== "ready" || storageBusy || externalBusy} onclick={() => void controller.startRecording()}><MaterialIcon name="mic" size={18} />Dictate</button>
-        <button type="button" class="secondary" disabled={speechState.phase !== "ready" || storageBusy || externalBusy} onclick={() => audioInput.click()}>Choose audio</button>
+        <button type="button" class="secondary" disabled={speechState.phase !== "ready" || storageBusy || externalBusy} onclick={() => audioInput?.click()}>Choose audio</button>
       {/if}
       <input hidden aria-label="Transcribe audio file" type="file" accept="audio/*" disabled={speechState.phase !== "ready" || externalBusy} bind:this={audioInput}
         onchange={event => { void controller.file(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
@@ -148,6 +149,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else}<p>No saved recordings.</p>{/if}
   </details>
 </details>
+{/if}
 
 <style>
   .speech-settings { border-radius: 4px; background: var(--color-surface); padding: 12px; }

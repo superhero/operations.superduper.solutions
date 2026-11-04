@@ -317,6 +317,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <MaterialIcon name="chevron_forward" size={17} />
   {/snippet}
   <div id="assistant-configuration-panel" class="assistant-configuration">
+  {#if configurationOpen}
   <details class="assistant-details" open>
     <summary>Language model<MaterialIcon name="chevron_forward" size={16} /></summary>
     <div class="configuration-model">
@@ -365,10 +366,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
     </fieldset>
   </details>
-  {#if speechBuilt}
-    <SpeechSettings bind:this={speechSettings} visible={visible || configurationOpen} externalBusy={busy} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
   {/if}
-  <DecisionSettings {speechBusy} onActivity={(_active, working) => { decisionBusy = working; }} />
+  {#if speechBuilt}
+    <SpeechSettings bind:this={speechSettings} controlsVisible={configurationOpen} visible={visible || configurationOpen} externalBusy={busy} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; speechRecording = value.recording; }} />
+  {/if}
+  <DecisionSettings controlsVisible={configurationOpen} {speechBusy} onActivity={(_active, working) => { decisionBusy = working; }} />
+  {#if configurationOpen}
   <details class="assistant-details">
     <summary>Tools and skills<MaterialIcon name="chevron_forward" size={16} /></summary>
     <p>Reads cover catalogs, operation schemas, settings, saved workflows and current ports. Workspace edits add operations, move nodes and connect ports. Changes use normal save history and Undo.</p>
@@ -385,6 +388,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p>Model: {model.model}<br />Revision: {model.revision}<br />Evidence: {model.run ?? model.reference?.attempt}<br />Runtime: {model.engine} · Pi 1.3.0</p>
     <p>Language and image files are saved from their pinned publishers and verified before initialization. Optional runtime code loads with the selected engine. Inference and application tool data stay in this browser. Chat lasts for this tab; a new model load starts a new conversation.</p>
   </details>
+  {/if}
   <AssistantModelStorage visible={configurationOpen}/>
 
   </div>

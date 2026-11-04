@@ -49,7 +49,10 @@ Then('Parakeet and Bonsai share the draft without sending during capture', async
   expect(await page.evaluate(() => window.speechFixture.workers)).toBe(0);
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');
   await showChat(page); await loadAssistantModel(page); await showSpeech(page); await load(speech);
-  await showChat(page); await draft(page).fill('Typed introduction.'); await start(page, speech, true);
+  await showChat(page);
+  await expect(page.locator('#assistant-configuration-panel input')).toHaveCount(0);
+  expect(await page.evaluate(() => window.speechFixture.terminated)).toBe(0);
+  await draft(page).fill('Typed introduction.'); await start(page, speech, true);
   await page.evaluate(() => window.speechFixture.partial('First sentence.', 'Unconfirmed words'));
   await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toHaveCount(0);
   await draft(page).press('Enter'); expect(await page.evaluate(() => window.assistantFixture.lastMessage)).toBeUndefined();

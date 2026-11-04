@@ -140,6 +140,7 @@ Then('AI settings preserve drafts attachments and streamed replies across pane n
   const heading = page.locator('summary[aria-label="AI"]');
   await expect(heading).toBeVisible();
   expect(await page.evaluate(() => window.aiSettingsHydration.opens)).toBe(0);
+  await expect(page.locator('#assistant-configuration-panel input')).toHaveCount(0);
   await heading.click();
   const configuration = page.locator('#assistant-configuration-panel');
   await expect(configuration).toBeVisible();
@@ -169,6 +170,7 @@ Then('AI settings preserve drafts attachments and streamed replies across pane n
   await page.getByRole('switch', { name: 'Dark theme', exact: true }).click();
   await page.screenshot({ path: `${this.artifactDirectory}/normal-ai-settings-other-theme.png` });
   await openAssistant(page);
+  await expect(configuration.locator('input, textarea, button, [role="combobox"]')).toHaveCount(0);
   await expect(draft).toHaveValue('Keep this draft and image');
   await expect(panel.getByRole('img', { name: 'Attachment ready to send', exact: true })).toBeVisible();
   await page.evaluate(() => window.assistantFixture.behavior = 'manual');
@@ -583,6 +585,12 @@ Then('decision controls preserve native results and release their exclusive mode
   const output=section.getByRole('region',{name:'Decision result',exact:true});await expect(output).toContainText('0.85');
   await output.locator('summary').click();await expect(output).toContainText('native_fixture');await expect(output).toContainText('rendered_tokens');
   const messages=await page.evaluate(()=>window.decisionFixture.messages);expect(messages[0].profile).toBe('strands-cpu');expect(messages[1].request.questions.q.type).toBe('noul');
+  await openAssistant(page);
+  await expect(configuration.locator('input, textarea, button, [role="combobox"]')).toHaveCount(0);
+  expect(await page.evaluate(()=>({workers:window.decisionFixture.workers,terminated:window.decisionFixture.terminated}))).toEqual({workers:1,terminated:0});
+  await openConfiguration(panel);
+  await expect(output).toBeVisible();await expect(output).toContainText('0.85');
+  await expect(section.getByRole('button',{name:'Score decision',exact:true})).toBeEnabled();
   await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
   await expect(configuration.getByRole('combobox',{name:'Language model',exact:true})).toBeEnabled();
   expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(1);

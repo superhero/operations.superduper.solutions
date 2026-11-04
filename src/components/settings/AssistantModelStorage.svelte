@@ -34,6 +34,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS. -->
   onDestroy(() => { alive = false; lifetime.abort(); unsubscribe?.(); });
 </script>
 
+{#if visible}
 <details class="model-storage">
   <summary>Model storage<MaterialIcon name="chevron_forward" size={16}/></summary>
   <p>Language models, FP32 decision models and continuous speech save and verify their files before loading. Image files are saved on first inspection. Files stay in this browser until removed or cleared by the browser.</p>
@@ -48,6 +49,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS. -->
     </ul>
   {:else}<p>No model files have been verified and saved yet.</p>{/if}
 </details>
+{/if}
 
 <style>
   .model-storage { padding: 12px; border-radius: 4px; background: var(--color-surface); min-width: 0; }
