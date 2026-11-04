@@ -98,7 +98,8 @@
     "src/chart-settings.test.mjs",
     "src/workflow-table.test.mjs",
     "src/assistant-ownership.test.mjs",
-    "src/assistant-decisions.test.mjs"
+    "src/assistant-decisions.test.mjs",
+    "src/assistant-strands.test.mjs"
   ],
   "paths": [
     "src/github-notification-auth.feature",
@@ -199,6 +200,7 @@
     "src/chart-settings.feature",
     "src/workflow-table.feature",
     "src/assistant-ownership.feature",
-    "src/assistant-decisions.feature"
+    "src/assistant-decisions.feature",
+    "src/assistant-strands.feature"
   ]
 }

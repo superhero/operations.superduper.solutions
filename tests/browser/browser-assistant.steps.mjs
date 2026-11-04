@@ -573,7 +573,7 @@ Then('decision controls preserve native results and release their exclusive mode
   const page=this.page;await installDecisionFixture(page);const panel=await openAssistant(page);const configuration=await openConfiguration(panel);
   await configuration.locator('.decision-settings > summary').click();
   const section=configuration.locator('.decision-settings'), picker=section.getByRole('combobox',{name:'Decision model',exact:true});
-  await picker.click();await expect(page.getByRole('option')).toHaveCount(16);await page.keyboard.press('Escape');
+  await picker.click();await expect(page.getByRole('option')).toHaveCount(17);await page.keyboard.press('Escape');
   expect(await page.evaluate(()=>window.decisionFixture.workers)).toBe(0);
   await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 CPU',exact:true}).click();
   await expect(section.getByRole('button',{name:'Score decision',exact:true})).toBeEnabled();
@@ -594,6 +594,27 @@ Then('decision controls preserve native results and release their exclusive mode
   expect(await page.evaluate(()=>window.decisionFixture.messages.find(row=>row.profile==='d3-lite-fp32').type)).toBe('load');
   await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
   expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(2);
+  await picker.click();await page.getByRole('option',{name:'Strands · 2B INT4 · FP32',exact:true}).click();
+  await expect(section).toContainText('original CPU pointer head');
+  await expect(section.locator('.runtime-label')).toContainText('FP32 GPU backbone');
+  await section.getByRole('button',{name:'Score decision',exact:true}).click();await expect(output).toContainText('0.85');
+  await section.getByRole('button',{name:'Unload decision model',exact:true}).click();
+  expect(await page.evaluate(()=>window.decisionFixture.terminated)).toBe(3);
+});
+Then('the Strands worker loads current source without page globals or model downloads',{timeout:90000},async function(){
+  const check=()=>this.page.evaluate(async()=>{
+    const {Decider}=await import(new URL('./assistant-runtime/decision/strands-fp32.mjs',location.href).href);
+    const model=new Decider({profile:{native_variant:'unsupported'}});
+    let failure;try{await model.ready;}catch(error){failure=error.message;}finally{await model.dispose();}
+    if(!failure?.includes('pinned compatible Strands'))throw Error('The actual Strands worker did not execute its input guard: '+failure);
+    return true;
+  });
+  expect(await check()).toBe(true);
+  const {createFixtureServer,waitForApplicationReady}=await import('./legacy-smoke/support.mjs'),server=await createFixtureServer({});
+  const url=`http://127.0.0.1:${server.httpServer.address().port}`,allow=route=>route.continue();
+  await this.context.route(`${url}/**`,allow);
+  try{await this.page.goto(url,{waitUntil:'networkidle',timeout:60000});await waitForApplicationReady(this.page);expect(await check()).toBe(true);}
+  finally{await this.context.unroute(`${url}/**`,allow);await server.close();}
 });
 Then('the shared FP32 decision artifact retains all native readout APIs',{timeout:90000},async function(){
   const requests=[];this.page.on('request',request=>{if(/huggingface|\.gguf/.test(request.url()))requests.push(request.url());});

@@ -1,0 +1,514 @@
+{
+  "base": {
+    "repo": "Qwen/Qwen3.5-2B-Base",
+    "revision": "b1485b2fa6dfa1287294f269f5fb618e03d52d7c"
+  },
+  "compatibility_conversion": {
+    "changes": {
+      "cast_or_dtype_attributes": 13,
+      "fp16_tensors_upcast": 304,
+      "tensor_type_annotations": 1156
+    },
+    "converted_bytes": 1282506364,
+    "format": "INT4 packed parameters / FP32 computation support",
+    "input_manifest_sha256": "d855ce380cf949b6a0b8d549e8f83f99fb9a369f9e537ff5230f67e54966d444",
+    "integer_parameters_identical": true,
+    "kind": "local compatibility conversion, not an official FP32 release",
+    "numpy": "2.2.6",
+    "onnx": "1.19.1",
+    "onnx_checker": "No Op registered for SimplifiedLayerNormalization with domain_version of 22; unchanged upstream limitation; validate in actual ORT WebGPU",
+    "operators": {
+      "::BitShift": 1,
+      "::BitwiseAnd": 1,
+      "::BitwiseXor": 1,
+      "::Cast": 27,
+      "::Concat": 1,
+      "::Constant": 11,
+      "::Gather": 3,
+      "::LpNormalization": 36,
+      "::MatMul": 36,
+      "::Mul": 73,
+      "::ReduceSum": 1,
+      "::Reshape": 116,
+      "::Shape": 1,
+      "::Sigmoid": 30,
+      "::SimplifiedLayerNormalization": 13,
+      "::Split": 24,
+      "::Sub": 2,
+      "::Transpose": 36,
+      "::Unsqueeze": 3,
+      "com.microsoft::CausalConvWithState": 18,
+      "com.microsoft::GatedRMSNorm": 18,
+      "com.microsoft::GroupQueryAttention": 6,
+      "com.microsoft::LinearAttention": 18,
+      "com.microsoft::LinearAttentionGate": 18,
+      "com.microsoft::MRotaryEmbedding": 12,
+      "com.microsoft::MatMulNBits": 150,
+      "com.microsoft::SkipSimplifiedLayerNormalization": 48
+    },
+    "original_bytes": 1161327644,
+    "source_url": "https://huggingface.co/alxnahas/strands-decider-webgpu-ci/resolve/b08c4c84e3380ca86cc3990208a6dc070f427bd5/strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/"
+  },
+  "converter": "81a60500ec",
+  "files": {
+    "model/LICENSE.md": {
+      "bytes": 12636,
+      "sha256": "c0d777a0fed01cceb107d91f1aef96d51737be04f2ed75b1b933286a170d7411"
+    },
+    "model/decider_config.json": {
+      "bytes": 808,
+      "sha256": "2fa0d96b9dbd3cb97c706e153e918cbca6329611145e52528074ec8c3329c8e5"
+    },
+    "model/head.safetensors": {
+      "bytes": 12605928,
+      "sha256": "ace56742545b505e6fae34ada85c8edbeedb23ba8974d8680aebe0380d6083a1"
+    },
+    "model/tokenizer.json": {
+      "bytes": 19989592,
+      "sha256": "a2cdd2e108566b09079afa8d266e9e65e7c280f27b771218237a06de5ba9cd86"
+    },
+    "model/tokenizer_config.json": {
+      "bytes": 1128,
+      "sha256": "8671bed7c852ce9e661be94f179a7b4ffd091c2a65aea0363e5501c20318ee45"
+    },
+    "onnx/model.onnx": {
+      "bytes": 382800,
+      "sha256": "5ad01a0299f6d9c255e18a7624d1038379cb3eae89549a3c6031bca001ab0c48"
+    },
+    "onnx/model.onnx.data": {
+      "bytes": 1249513472,
+      "sha256": "8caa2a76d304a20629537e1d767dd3e1fb70bd38b051de234cdb2e0087196100"
+    }
+  },
+  "graph": "onnx/model.onnx",
+  "shards": [
+    "onnx/model.onnx.data"
+  ],
+  "source": {
+    "repo": "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610",
+    "revision": "216d1ccb46a9e9b036eb9187b248db98480f77d4"
+  },
+  "state_inputs": {
+    "past.0.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.0.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.1.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.1.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.10.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.10.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.12.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.12.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.13.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.13.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.14.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.14.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.16.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.16.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.17.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.17.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.18.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.18.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.2.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.2.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.20.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.20.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.21.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.21.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.22.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.22.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.4.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.4.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.5.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.5.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.6.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.6.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.8.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.8.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past.9.conv": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        6144,
+        3
+      ]
+    },
+    "past.9.recurrent": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        16,
+        128,
+        128
+      ]
+    },
+    "past_key_values.11.key": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.11.value": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.15.key": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.15.value": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.19.key": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.19.value": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.23.key": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.23.value": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.3.key": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.3.value": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.7.key": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    },
+    "past_key_values.7.value": {
+      "dtype": "float32",
+      "shape": [
+        1,
+        2,
+        0,
+        256
+      ]
+    }
+  },
+  "versions": {
+    "onnx": "1.23.1",
+    "onnxruntime-genai": "0.17.1",
+    "peft": "0.21.2",
+    "torch": "2.14.1+cpu",
+    "transformers": "5.19.0"
+  }
+}

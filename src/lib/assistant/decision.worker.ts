@@ -38,7 +38,7 @@ scope.onmessage = ({data}) => {
           const base = new URL(data.assetBase);
           if (!['http:', 'https:'].includes(base.protocol) || base.origin !== scope.location.origin) throw new Error('Decision assets must come from this application.');
           const profile = decisionProfile(data.profile);
-          const stored = profile.native_variant === 'shared-fp32-gpu-v1';
+          const stored = ['shared-fp32-gpu-v1','strands-int4-fp32-v1'].includes(profile.native_variant ?? '');
           const modelId = 'decision:' + profile.id;
           if (stored) releaseAssets = await prepareModelAssets(modelId,
             AbortSignal.any([active.signal, AbortSignal.timeout(profile.settings.load_timeout_ms)]),

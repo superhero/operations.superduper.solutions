@@ -1,7 +1,7 @@
 [
   {
     "id": "d3-flash",
-    "title": "D3-flash \u00b7 9B upstream Q8_0",
+    "title": "D3-flash · 9B upstream Q8_0",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-flash-GGUF",
@@ -183,13 +183,13 @@
         "allocator_peak_verified": false
       }
     },
-    "label": "D3 flash \u00b7 9B Q8",
+    "label": "D3 flash · 9B Q8",
     "attempt": "lb-browser-decision-d3-flash-q8",
     "category": "decision"
   },
   {
     "id": "d3-lite",
-    "title": "D3-lite \u00b7 upstream BF16 GGUF",
+    "title": "D3-lite · upstream BF16 GGUF",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-lite-GGUF",
@@ -311,7 +311,7 @@
       "sha256": "b99f8e1079e64a39b8f8d26d57446a57c2d494a1aba2c4584604407d8178bbb3"
     },
     "measured_date": "2026-10-25 Europe/Madrid",
-    "label": "D3 lite \u00b7 0.8B BF16",
+    "label": "D3 lite · 0.8B BF16",
     "attempt": "kt-browser-decision-d3-lite-gguf-bf16",
     "category": "decision",
     "template_pin_evidence": {
@@ -322,7 +322,7 @@
   },
   {
     "id": "d3-mini",
-    "title": "D3-mini \u00b7 4B upstream Q8_0",
+    "title": "D3-mini · 4B upstream Q8_0",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-mini-GGUF",
@@ -504,13 +504,13 @@
         "allocator_peak_verified": false
       }
     },
-    "label": "D3 mini \u00b7 4B Q8",
+    "label": "D3 mini · 4B Q8",
     "attempt": "la-browser-decision-d3-mini-q8",
     "category": "decision"
   },
   {
     "id": "d3-nano",
-    "title": "D3-nano \u00b7 2B upstream Q8_0",
+    "title": "D3-nano · 2B upstream Q8_0",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-nano-GGUF",
@@ -692,13 +692,13 @@
         "allocator_peak_verified": false
       }
     },
-    "label": "D3 nano \u00b7 2B Q8",
+    "label": "D3 nano · 2B Q8",
     "attempt": "kz-browser-decision-d3-nano-q8",
     "category": "decision"
   },
   {
     "id": "elephant",
-    "title": "Elephant-1 \u00b7 community Q4_K_M two-block readout",
+    "title": "Elephant-1 · community Q4_K_M two-block readout",
     "kind": "decision",
     "engine": "wllama-elephant",
     "model": "prithivMLmods/elephant-1-GGUF",
@@ -855,13 +855,13 @@
       "tensor_header_audit": ".runtime/browser-decisions/browser-decisions-1792926063835373379/gguf-head-audit.json",
       "tensor_header_audit_sha256": "de1b9bd025f47169244276755c41ef7f1c98a94ac254a51c76712c35e9b88e36"
     },
-    "label": "Elephant-1 \u00b7 9B Q4_K_M",
+    "label": "Elephant-1 · 9B Q4_K_M",
     "attempt": "kw-browser-decision-elephant1-q4",
     "category": "decision"
   },
   {
     "id": "knowline",
-    "title": "KnowLine Gen5.5 \u00b7 Q8_0 bounded raw label readout",
+    "title": "KnowLine Gen5.5 · Q8_0 bounded raw label readout",
     "kind": "decision",
     "engine": "wllama-knowline",
     "model": "mradermacher/KnowLine-4B-Gen5.5-GGUF",
@@ -1001,13 +1001,13 @@
       "raw_sha256": "a7e45e0d02b74dfd731a5c04db738d1696303f3b0e36f75ed98c01a4e9459be1",
       "receipt": ".runtime/browser-decisions/browser-decisions-1792923992623330923/receipt.json"
     },
-    "label": "KnowLine Gen5.5 \u00b7 4B Q8",
+    "label": "KnowLine Gen5.5 · 4B Q8",
     "attempt": "kv-browser-decision-knowline-gen55-top64",
     "category": "decision"
   },
   {
     "id": "perplexity",
-    "title": "Perplexity Decider Flash \u00b7 official Q8_0 protocol-v3 readout",
+    "title": "Perplexity Decider Flash · official Q8_0 protocol-v3 readout",
     "kind": "decision",
     "engine": "wllama-pplx",
     "model": "perplexity-ai/pplx-decider-flash-gguf-v1.2",
@@ -1076,7 +1076,7 @@
       "state": "browser-verified-native-protocol-v3",
       "entry": "evaluations/browser-decisions/runtime/engine.mjs",
       "requirements": "Exact publisher Python/JS prompt, token, codebook and interior-marker parity; entire prompt in one noncausal full-attention batch with causal GatedDeltaNet. Read offered raw slot logits at marker, apply exact FLOAT64 publisher temperature and native answer normalization; no sampling.",
-      "gap": "All six native browser decisions passed. Text only, one question per request, 2\u2013255 options, <=1024 tokens. Structured JSON numeric values restricted to finite safe integers; arbitrary text accepted. Images, phones, grouped questions and broad quality/calibration remain unqualified."
+      "gap": "All six native browser decisions passed. Text only, one question per request, 2–255 options, <=1024 tokens. Structured JSON numeric values restricted to finite safe integers; arbitrary text accepted. Images, phones, grouped questions and broad quality/calibration remain unqualified."
     },
     "status": "working",
     "test_status": "browser-tested",
@@ -1164,13 +1164,13 @@
       "native_build_receipt": ".runtime/browser-decisions-pplx/browser-decisions-pplx-build-1792929453104788546/receipt.json",
       "maximum_sampled_whole_device_gpu_mib": 4610
     },
-    "label": "Perplexity Flash \u00b7 4B Q8",
+    "label": "Perplexity Flash · 4B Q8",
     "attempt": "ky-browser-decision-pplx-flash-v3",
     "category": "decision"
   },
   {
     "id": "strands-cpu",
-    "title": "Strands Decider \u00b7 current INT4 Wasm CPU",
+    "title": "Strands Decider · current INT4 Wasm CPU",
     "kind": "decision",
     "engine": "strands-onnx",
     "model": "alxnahas/strands-decider-webgpu-ci",
@@ -1337,13 +1337,13 @@
       "sha256": "121dfefb304ca49c10dfd6f39c7b19a61c450a7465baa0222e9b789cd04eb330"
     },
     "measured_date": "2026-10-25 Europe/Madrid",
-    "label": "Strands \u00b7 2B INT4 CPU",
+    "label": "Strands · 2B INT4 CPU",
     "attempt": "ks-browser-decision-strands-current-int4-cpu",
     "category": "decision"
   },
   {
     "id": "strands-gpu",
-    "title": "Strands current INT4 \u00b7 native EP baseline GPU device",
+    "title": "Strands current INT4 · native EP baseline GPU device",
     "kind": "decision",
     "engine": "strands-onnx",
     "model": "alxnahas/strands-decider-webgpu-ci",
@@ -1525,13 +1525,13 @@
       "resident_vram_peak": "Not captured: fast ready/inference completed between ten-second samples; do not use 468 MiB load sample as model memory requirement.",
       "receipt": ".runtime/browser-decisions/browser-decisions-1792929241442058667/receipt.json"
     },
-    "label": "Strands \u00b7 2B INT4 WebGPU",
+    "label": "Strands · 2B INT4 WebGPU",
     "attempt": "kx-browser-decision-strands-portable-matmul",
     "category": "decision"
   },
   {
     "id": "d3-lite-fp32",
-    "title": "D3-lite \u00b7 upstream BF16 GGUF",
+    "title": "D3-lite · upstream BF16 GGUF",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-lite-GGUF",
@@ -1665,7 +1665,7 @@
       "sha256": "b99f8e1079e64a39b8f8d26d57446a57c2d494a1aba2c4584604407d8178bbb3"
     },
     "measured_date": "2026-10-25 Europe/Madrid",
-    "label": "D3 lite \u00b7 0.8B \u00b7 FP32",
+    "label": "D3 lite · 0.8B · FP32",
     "attempt": "kt-browser-decision-d3-lite-gguf-bf16",
     "category": "decision",
     "template_pin_evidence": {
@@ -1698,7 +1698,7 @@
   },
   {
     "id": "d3-nano-fp32",
-    "title": "D3-nano \u00b7 2B upstream Q8_0",
+    "title": "D3-nano · 2B upstream Q8_0",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-nano-GGUF",
@@ -1892,7 +1892,7 @@
         "allocator_peak_verified": false
       }
     },
-    "label": "D3 nano \u00b7 2B \u00b7 FP32",
+    "label": "D3 nano · 2B · FP32",
     "attempt": "kz-browser-decision-d3-nano-q8",
     "category": "decision",
     "native_variant": "shared-fp32-gpu-v1",
@@ -1920,7 +1920,7 @@
   },
   {
     "id": "d3-mini-fp32",
-    "title": "D3-mini \u00b7 4B upstream Q8_0",
+    "title": "D3-mini · 4B upstream Q8_0",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-mini-GGUF",
@@ -2114,7 +2114,7 @@
         "allocator_peak_verified": false
       }
     },
-    "label": "D3 mini \u00b7 4B \u00b7 FP32",
+    "label": "D3 mini · 4B · FP32",
     "attempt": "la-browser-decision-d3-mini-q8",
     "category": "decision",
     "native_variant": "shared-fp32-gpu-v1",
@@ -2142,7 +2142,7 @@
   },
   {
     "id": "d3-flash-fp32",
-    "title": "D3-flash \u00b7 9B upstream Q8_0",
+    "title": "D3-flash · 9B upstream Q8_0",
     "kind": "decision",
     "engine": "wllama",
     "model": "ggml-org/vllm-d3-flash-GGUF",
@@ -2336,7 +2336,7 @@
         "allocator_peak_verified": false
       }
     },
-    "label": "D3 flash \u00b7 9B \u00b7 FP32",
+    "label": "D3 flash · 9B · FP32",
     "attempt": "lb-browser-decision-d3-flash-q8",
     "category": "decision",
     "native_variant": "shared-fp32-gpu-v1",
@@ -2364,7 +2364,7 @@
   },
   {
     "id": "knowline-fp32",
-    "title": "KnowLine Gen5.5 \u00b7 Q8_0 bounded raw label readout",
+    "title": "KnowLine Gen5.5 · Q8_0 bounded raw label readout",
     "kind": "decision",
     "engine": "wllama-knowline",
     "model": "mradermacher/KnowLine-4B-Gen5.5-GGUF",
@@ -2575,7 +2575,7 @@
       "raw_sha256": "a7e45e0d02b74dfd731a5c04db738d1696303f3b0e36f75ed98c01a4e9459be1",
       "receipt": ".runtime/browser-decisions/browser-decisions-1792923992623330923/receipt.json"
     },
-    "label": "KnowLine Gen5.5 \u00b7 4B \u00b7 FP32",
+    "label": "KnowLine Gen5.5 · 4B · FP32",
     "attempt": "kv-browser-decision-knowline-gen55-top64",
     "category": "decision",
     "native_variant": "shared-fp32-gpu-v1",
@@ -2680,7 +2680,7 @@
   },
   {
     "id": "elephant-fp32",
-    "title": "Elephant-1 \u00b7 community Q4_K_M two-block readout",
+    "title": "Elephant-1 · community Q4_K_M two-block readout",
     "kind": "decision",
     "engine": "wllama-elephant",
     "model": "mradermacher/elephant-1-GGUF",
@@ -2875,7 +2875,7 @@
       "tensor_header_audit": ".runtime/browser-decisions/browser-decisions-1792926063835373379/gguf-head-audit.json",
       "tensor_header_audit_sha256": "de1b9bd025f47169244276755c41ef7f1c98a94ac254a51c76712c35e9b88e36"
     },
-    "label": "Elephant-1 \u00b7 9B \u00b7 FP32",
+    "label": "Elephant-1 · 9B · FP32",
     "attempt": "kw-browser-decision-elephant1-q4",
     "category": "decision",
     "native_variant": "shared-fp32-gpu-v1",
@@ -2952,7 +2952,7 @@
   },
   {
     "id": "perplexity-fp32",
-    "title": "Perplexity Decider Flash \u00b7 official Q8_0 protocol-v3 readout",
+    "title": "Perplexity Decider Flash · official Q8_0 protocol-v3 readout",
     "kind": "decision",
     "engine": "wllama-pplx",
     "model": "perplexity-ai/pplx-decider-flash-gguf-v1.2",
@@ -3092,7 +3092,7 @@
       "state": "browser-verified-native-protocol-v3",
       "entry": "evaluations/browser-decisions/runtime/engine.mjs",
       "requirements": "Exact publisher Python/JS prompt, token, codebook and interior-marker parity; entire prompt in one noncausal full-attention batch with causal GatedDeltaNet. Read offered raw slot logits at marker, apply exact FLOAT64 publisher temperature and native answer normalization; no sampling.",
-      "gap": "All six native browser decisions passed. Text only, one question per request, 2\u2013255 options, <=1024 tokens. Structured JSON numeric values restricted to finite safe integers; arbitrary text accepted. Images, phones, grouped questions and broad quality/calibration remain unqualified."
+      "gap": "All six native browser decisions passed. Text only, one question per request, 2–255 options, <=1024 tokens. Structured JSON numeric values restricted to finite safe integers; arbitrary text accepted. Images, phones, grouped questions and broad quality/calibration remain unqualified."
     },
     "status": "Reference FP32 GPU accepted; Operations native qualification pending",
     "test_status": "browser-tested",
@@ -3188,7 +3188,7 @@
       "native_build_receipt": ".runtime/browser-decisions-pplx/browser-decisions-pplx-build-1792929453104788546/receipt.json",
       "maximum_sampled_whole_device_gpu_mib": 4610
     },
-    "label": "Perplexity Flash \u00b7 4B \u00b7 FP32",
+    "label": "Perplexity Flash · 4B · FP32",
     "attempt": "ky-browser-decision-pplx-flash-v3",
     "category": "decision",
     "native_variant": "shared-fp32-gpu-v1",
@@ -3310,6 +3310,443 @@
       "attempt": "nd-browser-decision-pplx-fp32-gpu",
       "attempt_sha256": "8e9afd3e703ec233e4ab0ddc99e4954fe0c74fd556b9b411dc034d6d3ad43f32",
       "editor_profile": "ky-browser-decision-pplx-flash-v3"
+    }
+  },
+  {
+    "id": "strands-fp32",
+    "title": "Strands current INT4 · native EP baseline GPU device",
+    "kind": "decision",
+    "engine": "strands-onnx",
+    "model": "alxnahas/strands-decider-webgpu-ci",
+    "revision": "b08c4c84e3380ca86cc3990208a6dc070f427bd5",
+    "files": [
+      {
+        "file": "model/LICENSE.md",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/model/LICENSE.md",
+        "bytes": 12636,
+        "sha256": "c0d777a0fed01cceb107d91f1aef96d51737be04f2ed75b1b933286a170d7411"
+      },
+      {
+        "file": "model/decider_config.json",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/model/decider_config.json",
+        "bytes": 808,
+        "sha256": "2fa0d96b9dbd3cb97c706e153e918cbca6329611145e52528074ec8c3329c8e5"
+      },
+      {
+        "file": "model/head.safetensors",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/model/head.safetensors",
+        "bytes": 12605928,
+        "sha256": "ace56742545b505e6fae34ada85c8edbeedb23ba8974d8680aebe0380d6083a1"
+      },
+      {
+        "file": "model/tokenizer.json",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/model/tokenizer.json",
+        "bytes": 19989592,
+        "sha256": "a2cdd2e108566b09079afa8d266e9e65e7c280f27b771218237a06de5ba9cd86",
+        "parts": [
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/model/tokenizer.json.part-001",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/model/tokenizer.json.part-002",
+            "bytes": 3212376
+          }
+        ]
+      },
+      {
+        "file": "model/tokenizer_config.json",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/model/tokenizer_config.json",
+        "bytes": 1128,
+        "sha256": "8671bed7c852ce9e661be94f179a7b4ffd091c2a65aea0363e5501c20318ee45"
+      },
+      {
+        "file": "onnx/model.onnx",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx",
+        "bytes": 382800,
+        "sha256": "5ad01a0299f6d9c255e18a7624d1038379cb3eae89549a3c6031bca001ab0c48"
+      },
+      {
+        "file": "onnx/model.onnx.data",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data",
+        "bytes": 1249513472,
+        "sha256": "8caa2a76d304a20629537e1d767dd3e1fb70bd38b051de234cdb2e0087196100",
+        "parts": [
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-001",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-002",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-003",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-004",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-005",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-006",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-007",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-008",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-009",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-010",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-011",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-012",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-013",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-014",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-015",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-016",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-017",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-018",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-019",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-020",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-021",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-022",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-023",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-024",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-025",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-026",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-027",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-028",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-029",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-030",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-031",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-032",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-033",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-034",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-035",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-036",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-037",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-038",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-039",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-040",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-041",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-042",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-043",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-044",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-045",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-046",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-047",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-048",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-049",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-050",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-051",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-052",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-053",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-054",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-055",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-056",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-057",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-058",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-059",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-060",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-061",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-062",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-063",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-064",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-065",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-066",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-067",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-068",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-069",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-070",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-071",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-072",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-073",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-074",
+            "bytes": 16777216
+          },
+          {
+            "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/onnx/model.onnx.data.part-075",
+            "bytes": 7999488
+          }
+        ]
+      },
+      {
+        "file": "manifest.json",
+        "url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/manifest.json",
+        "bytes": 9411,
+        "sha256": "9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30"
+      }
+    ],
+    "weight_bytes": 1282506364,
+    "precision": "Local MU compatibility conversion: unchanged packed INT4 parameters and FP32 trained CPU pointer head; FP16 support tensors upcast to FP32. No shader-f16 requested or required. Not an official FP32 release.",
+    "settings": {
+      "max_rendered_prompt_tokens": 1024,
+      "questions_per_request": 1,
+      "concurrency": 1,
+      "semantic_cases": 4,
+      "controls": 2,
+      "requests_per_model": 6,
+      "load_timeout_ms": 1200000,
+      "decision_timeout_ms": 60000,
+      "model_deadline_ms": 1800000,
+      "cancel_grace_ms": 5000,
+      "vision_execution": false,
+      "application_answer_cache": false,
+      "native_prefix_cache": "keep native behavior and record effective settings",
+      "precision_substitution": false,
+      "target_gpu_memory_bytes": 6000000000
+    },
+    "runtime_source": {
+      "repository": "https://github.com/strands-labs/strands-decider",
+      "ref": "refs/pull/41/head",
+      "source_revision": "0607f4ebc4eb6c5abaefcc5489c373a7411997b1",
+      "upstream_status": "unmerged contributor PR",
+      "onnxruntime_web": "1.30.0",
+      "tokenizers": "0.2.0",
+      "backend": "WebGPU INT4/FP32 backbone; unchanged JavaScript CPU FP32 pointer head",
+      "patch": "evaluations/brave-decisions/runtime/strands-fp32.patch",
+      "patch_sha256": "c000b8ae0249a768e4905c2c45ba166871bbe1ff0a94939f52ad60a465f02f85",
+      "worker_sha256": "5b56140452c1a207f29e3dc78e8e5c2d1e69a58eb71309bc5cd711137d983d16"
+    },
+    "status": "Reference FP32 native acceptance; Operations native qualification pending",
+    "input": [
+      "text"
+    ],
+    "projector": null,
+    "execution": "Pinned locally converted INT4/FP32 ONNX backbone on WebGPU; original trained FP32 pointer head on CPU. Operations qualification is reported separately.",
+    "browser_probe": {
+      "kind": "native-onnx-pointer-head",
+      "model": "alxnahas/strands-decider-webgpu-ci",
+      "revision": "b08c4c84e3380ca86cc3990208a6dc070f427bd5",
+      "file": "strands-decider-2B-qwen3.5-v1-2610/e7b1933c8a81/81a60500ec/onnx/model.onnx",
+      "weight_bytes": 1282506364,
+      "weights_url": "https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/",
+      "original_model": "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610",
+      "original_revision": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
+      "application_answer_cache": false,
+      "disk_cache": false,
+      "device": "webgpu",
+      "runtime_folder": "strands-fp32",
+      "gpu_computation": true,
+      "require_native_custom_device": true,
+      "compute_precision": "float32"
+    },
+    "conversion_manifest_sha256": "9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30",
+    "label": "Strands · 2B INT4 · FP32",
+    "category": "decision",
+    "limitations": "Local compatibility conversion: unchanged packed INT4 parameters and FP32 trained pointer head; FP16 support tensors upcast to FP32. No shader-f16 required. One question, 1,024 tokens; larger contexts and mobile unqualified.",
+    "parameters": "2B",
+    "quantization": "INT4",
+    "file": "onnx/model.onnx",
+    "weight_sha256": "5ad01a0299f6d9c255e18a7624d1038379cb3eae89549a3c6031bca001ab0c48",
+    "native_variant": "strands-int4-fp32-v1",
+    "reference": {
+      "attempt": "mu-browser-decision-strands-fp32-gpu",
+      "scope": "Reference Brave six native decisions, actual GPU execution without shader-f16. Editor verification reported separately."
     }
   }
 ]

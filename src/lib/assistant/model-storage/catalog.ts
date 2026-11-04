@@ -12,7 +12,7 @@ export interface Artifact {
   parts?: { url: string; bytes: number }[];
 }
 export interface Progress { message: string; received?: number; total?: number }
-interface FilePin { file: string; bytes: number; sha256: string; url?: string }
+interface FilePin { file: string; bytes: number; sha256: string; url?: string; parts?: {url:string;bytes:number}[] }
 interface ModelPin {
   id: string; label?: string; model: string; revision: string; file?: string;
   weight_bytes: number; weight_sha256?: string; files?: FilePin[];
@@ -22,7 +22,7 @@ interface ModelPin {
 const metadata = vision.files.filter(file => !file.file.startsWith('onnx/'));
 export const storageProfiles: readonly ModelPin[] = [...language, {...vision, id: 'image:compatible'},
   {...originalVision, id: 'image:fp16', files: [...originalVision.files, ...metadata]},
-  ...decisions.filter(profile => profile.native_variant === 'shared-fp32-gpu-v1').map(profile => ({...profile,
+  ...decisions.filter(profile => ['shared-fp32-gpu-v1','strands-int4-fp32-v1'].includes(profile.native_variant ?? '')).map(profile => ({...profile,
     id: 'decision:' + profile.id, weight_bytes: profile.browser_probe.weight_bytes}))] as ModelPin[];
 export function profileById(id: string): ModelPin {
   const profile = storageProfiles.find(item => item.id === id);
@@ -30,6 +30,7 @@ export function profileById(id: string): ModelPin {
   return profile;
 }
 const publisherURL = (model: string, revision: string, file: string) => `https://huggingface.co/${model}/resolve/${revision}/${file}`;
+const strandsRoot='https://code.superduper.solutions/browser-models/strands-fp32/9c3589ba48ec3be7a565b52a2fbd0687e30ffe0222c2b3a29d94b569062daf30/';
 
 /** The catalog owns identities; callers cannot supply an installation URL. */
 export function artifactsFor(profile: ModelPin): Artifact[] {
@@ -37,7 +38,7 @@ export function artifactsFor(profile: ModelPin): Artifact[] {
   const files: FilePin[] = known.files ?? [{file: known.file!, bytes: known.weight_bytes, sha256: known.weight_sha256!}];
   const result: Artifact[] = files.map(file => ({id: file.file,
     url: file.url ?? publisherURL(known.model, known.revision, file.file), bytes: file.bytes, sha256: file.sha256,
-    kind: file.bytes >= 8 * 1024 * 1024 ? 'weights' : 'data'}));
+    kind: file.bytes >= 8 * 1024 * 1024 ? 'weights' : 'data',...(file.parts?{parts:file.parts.map(part=>({...part}))}:{})}));
   if (known.engine === 'webml') {
     const runtime = known.runtime_source!;
     result.push({id: 'webml-js', url: publisherURL(`spaces/${runtime.repository}`, runtime.revision!, runtime.file!),
@@ -45,8 +46,11 @@ export function artifactsFor(profile: ModelPin): Artifact[] {
   }
   for (const file of result) {
     if (!Number.isSafeInteger(file.bytes) || file.bytes <= 0 || !/^[a-f0-9]{64}$/.test(file.sha256) ||
-      !/^https:\/\/huggingface\.co\/.+\/resolve\/[a-f0-9]{40}\//.test(file.url))
+      !(known.id==='decision:strands-fp32' ? file.url.startsWith(strandsRoot) && file.url===strandsRoot+file.id : /^https:\/\/huggingface\.co\/.+\/resolve\/[a-f0-9]{40}\//.test(file.url)))
       throw new Error('The model does not have a complete immutable artifact pin.');
+    if(file.parts && (known.id!=='decision:strands-fp32' || file.parts.reduce((sum,part)=>sum+part.bytes,0)!==file.bytes ||
+      file.parts.some((part,index)=>!Number.isSafeInteger(part.bytes)||part.bytes<=0||part.bytes>16777216||(index<file.parts!.length-1&&part.bytes%8388608!==0)||part.url!==file.url+'.part-'+String(index+1).padStart(3,'0'))))
+      throw new Error('The converted model does not have complete immutable part pins.');
   }
   return result;
 }

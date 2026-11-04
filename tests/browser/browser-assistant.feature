@@ -35,6 +35,8 @@ Feature: Browser assistant in Settings
     Then decision controls preserve native results and release their exclusive model session
   Scenario: Compatible decisions retain the real shared native artifact
     Then the shared FP32 decision artifact retains all native readout APIs
+  Scenario: Compatible Strands uses isolated production and development workers
+    Then the Strands worker loads current source without page globals or model downloads
   Scenario: Optional runtime artifacts load without model weights
     Then native runtime modules and compressed Wasm load in real browser workers
   Scenario: Runtime ownership coordinates real tabs and worker death

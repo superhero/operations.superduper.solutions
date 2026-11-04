@@ -144,7 +144,7 @@ Then('invalid image references never suspend text and failed vision cleanup bloc
 });
 
 Then('decision profiles validate exact questions and native probability readouts', () => {
-  assert.equal(decisionModels.length,16);assert.equal(decisionModels.filter(profile=>profile.id.startsWith('d3-')).length,8);
+  assert.equal(decisionModels.length,17);assert.equal(decisionModels.filter(profile=>profile.id.startsWith('d3-')).length,8);
   assert.throws(()=>decisionProfile('experimental'));for(const profile of decisionModels)assert.match(profile.revision,/^[0-9a-f]{40}$/);
   const request=validateDecisionRequest({state:'Translate hello',questions:{q:{type:'choice',instructions:'Pick a task',criteria:{translate:'Translate',code:'Write code'}}}});
   assert.deepEqual(Object.keys(request.questions.q.criteria),['translate','code']);
@@ -198,6 +198,8 @@ Then('native runtime checks distinguish CPU placement from missing GPU and Wasm 
   finally {globalThis.WebAssembly=saved;}
   for(const id of ['strands-gpu','d3-lite'])assert.equal((await checkDecisionCompatibility(id,nativeEnvironment())).ready,true);
   assert.equal((await checkDecisionCompatibility('strands-gpu',nativeEnvironment({fp16:false}))).ready,false);
+  assert.equal((await checkDecisionCompatibility('strands-fp32',nativeEnvironment({fp16:false,jspi:false,memory64:false}))).ready,true);
+  for(const change of [{isolated:false},{simd:false},{gpu:false}])assert.equal((await checkDecisionCompatibility('strands-fp32',nativeEnvironment(change))).ready,false);
   for(const profile of decisionModels.filter(profile=>profile.native_variant==='shared-fp32-gpu-v1')) {
     for(const fp16 of [true,false]) assert.equal((await checkDecisionCompatibility(profile.id,nativeEnvironment({fp16}))).ready,true);
     assert.equal((await checkDecisionCompatibility(profile.id,nativeEnvironment({gpu:false}))).ready,false);
@@ -411,8 +413,8 @@ Then('compatible text cancellation drains and failed cleanup stays failed',async
 
 Then('installed model catalogs retain exact language files and both complete image variants',async()=>{
   const {storageProfiles,artifactsFor,profileById}=await import('./lib/assistant/model-storage/catalog.ts');
-  assert.equal(storageProfiles.length,21);
-  for(const profile of storageProfiles){const files=artifactsFor(profile);assert.ok(files.length);for(const file of files){assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(Number.isSafeInteger(file.bytes)&&file.bytes>0);assert.match(file.url,/\/resolve\/[a-f0-9]{40}\//);}}
+  assert.equal(storageProfiles.length,22);
+  for(const profile of storageProfiles){const files=artifactsFor(profile);assert.ok(files.length);for(const file of files){assert.match(file.sha256,/^[a-f0-9]{64}$/);assert.ok(Number.isSafeInteger(file.bytes)&&file.bytes>0);assert.match(file.url,profile.id==='decision:strands-fp32'?/\/strands-fp32\/[a-f0-9]{64}\//:/\/resolve\/[a-f0-9]{40}\//);}}
   const fp16=artifactsFor(profileById('image:fp16')),fp32=artifactsFor(profileById('image:compatible'));
   assert.equal(fp16.length,14);assert.equal(fp32.length,13);
   assert.deepEqual(fp16.filter(file=>!file.id.startsWith('onnx/')),fp32.filter(file=>!file.id.startsWith('onnx/')));

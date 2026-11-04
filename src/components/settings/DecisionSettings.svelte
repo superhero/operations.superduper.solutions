@@ -86,9 +86,10 @@ SPDX-License-Identifier: AGPL-3.0-only -->
     {:else}
       <HintButton type="button" class="decision-action" label={working ? 'Stop decision model' : 'Unload decision model'} onclick={unload}><MaterialIcon name="power_settings_new" size={18} /></HintButton>
     {/if}
-    <span class="runtime-label">{profile.native_variant === 'shared-fp32-gpu-v1' ? 'FP32 GPU backbone' : profile.engine === 'strands-onnx' ? (profile.browser_probe.device === 'wasm' ? 'CPU' : 'WebGPU') : 'Native GPU'} · {profile.engine === 'wllama-knowline' ? '1023' : '1024'} input tokens</span>
+    <span class="runtime-label">{profile.native_variant ? 'FP32 GPU backbone' : profile.engine === 'strands-onnx' ? (profile.browser_probe.device === 'wasm' ? 'CPU' : 'WebGPU') : 'Native GPU'} · {profile.engine === 'wllama-knowline' ? '1023' : '1024'} input tokens</span>
   </div>
   {#if profile.native_variant === 'shared-fp32-gpu-v1'}<p>FP32 GPU backbone; input embedding and small readout may use CPU. Model files are saved and verified before loading.</p>{/if}
+  {#if profile.native_variant === 'strands-int4-fp32-v1'}<p>Locally converted INT4/FP32 GPU backbone with the original CPU pointer head. Files are saved and verified from the public Code mirror before loading.</p>{/if}
   {#if status}<p role="status">{status}</p>{/if}
   {#if error}<p role="alert" class="error">{error}</p>{/if}
   <fieldset disabled={phase !== 'ready' || speechBusy}>

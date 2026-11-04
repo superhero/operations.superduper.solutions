@@ -1,0 +1,123 @@
+--- a/js/worker.js
++++ b/js/worker.js
+@@ -14,6 +14,32 @@
+ // shares one origin, and so one OPFS.
+ const CACHE_DIR = "strands-decider-weights";
+ let ort, session, tokenizer, head, cfg, manifest, runtime, adapter;
++let portableDevice = null;
++const portablePipelineCalls = { sync: 0, async: 0 };
++
++// Observe the actual GPUDevice supplied to the native ORT WebGPU EP. In ORT 1.30,
++// env.webgpu.device describes the default device; it does not bind a custom one.
++// Public API: executionProviders: [{ name: "webgpu", device }]. Source and E2E:
++// https://github.com/microsoft/onnxruntime/blob/v1.30.0/js/web/lib/wasm/session-options.ts
++// https://github.com/microsoft/onnxruntime/blob/v1.30.0/js/web/test/e2e/browser-test-webgpu-custom-device.js
++function portableDeviceEvidence(requirePipelines = false) {
++  if (runtime !== "webgpu") return {};
++  if (!portableDevice) throw new Error("native ORT EP custom device was not created");
++  const features = [...portableDevice.features];
++  if (features.includes("shader-f16")) throw new Error("FP32 compatibility device unexpectedly enabled shader-f16");
++  if (features.some((name) => /subgroup[-_]matrix/.test(name))) {
++    throw new Error("native ORT EP custom device enabled experimental subgroup matrix kernels");
++  }
++  const total = portablePipelineCalls.sync + portablePipelineCalls.async;
++  if (requirePipelines && total === 0) throw new Error("model forward did not create a compute pipeline on the bound ORT device");
++  return { native_gpu: {
++    device_source: "executionProviders[0].device (ORT 1.30 native WebGPU EP custom-device binding)",
++    device_features: features,
++    requested_features: [], compute_type: "float32",
++    compute_pipeline_calls: { ...portablePipelineCalls, total },
++    pointer_readout: "unchanged JavaScript CPU FP32 pointer head",
++  } };
++}
+ const post = (type, data) => self.postMessage({ type, ...data });
+ 
+ async function cacheDir() {
+@@ -72,8 +98,8 @@
+   if (!self.navigator.gpu) return "this browser has no WebGPU";
+   adapter = await self.navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+   if (!adapter) return "WebGPU found no usable GPU";
+-  // The graph computes in fp16; ONNX Runtime fails at the first run on an adapter without it.
+-  if (!adapter.features.has("shader-f16")) return "this GPU has no fp16 shader support (shader-f16)";
++  // INT4 packed weights retained; local compatibility graph computes in FP32.
++  // FP32 compatibility graph: no shader-f16 feature is requested or required.
+   return null;
+ }
+ 
+@@ -85,6 +111,7 @@
+     if (problem) { post("unsupported", { reason: problem }); return; }
+   }
+   manifest = await fetch(new URL("manifest.json", WEIGHTS)).then((r) => { if (!r.ok) throw new Error(`manifest.json: HTTP ${r.status}`); return r.json(); });
++  if (manifest.compatibility_conversion?.integer_parameters_identical !== true || Object.values(manifest.state_inputs).some((value) => value.dtype === "float16")) throw new Error("FP32 compatibility graph/provenance required");
+   post("status", { msg: `runtime ${runtime}`, runtime });
+ 
+   let dir = await cacheDir();
+@@ -113,8 +140,31 @@
+   ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(8, self.navigator.hardwareConcurrency || 4) : 1;
+   ort.env.logLevel = "warning";
+   ort.env.webgpu.powerPreference = "high-performance";  // the discrete GPU on a laptop that has two
++  if (runtime === "webgpu") {
++    const names = ["maxBindGroups", "maxStorageBuffersPerShaderStage",
++      "maxComputeWorkgroupStorageSize", "maxComputeWorkgroupsPerDimension",
++      "maxStorageBufferBindingSize", "maxBufferSize", "maxComputeInvocationsPerWorkgroup",
++      "maxComputeWorkgroupSizeX", "maxComputeWorkgroupSizeY", "maxComputeWorkgroupSizeZ"];
++    portableDevice = await adapter.requestDevice({
++      requiredFeatures: [],
++      requiredLimits: Object.fromEntries(names.map((name) => [name, adapter.limits[name]])),
++    });
++    const createSync = portableDevice.createComputePipeline.bind(portableDevice);
++    const createAsync = portableDevice.createComputePipelineAsync.bind(portableDevice);
++    portableDevice.createComputePipeline = (descriptor) => {
++      portablePipelineCalls.sync++;
++      return createSync(descriptor);
++    };
++    portableDevice.createComputePipelineAsync = (descriptor) => {
++      portablePipelineCalls.async++;
++      return createAsync(descriptor);
++    };
++    portableDevice.addEventListener("uncapturederror", (event) => {
++      post("status", { msg: "Native ORT custom device validation error", error: String(event.error?.message || event.error) });
++    });
++  }
+   session = await ort.InferenceSession.create(got[manifest.graph].buf, {
+-    executionProviders: [runtime],
++    executionProviders: runtime === "webgpu" ? [{ name: "webgpu", device: portableDevice }] : [runtime],
+     externalData: manifest.shards.map((s) => ({ path: s.split("/").pop(), data: got[s].buf })),
+     graphOptimizationLevel: "all",
+     logSeverityLevel: 3,  // errors only: ORT warns on every load that it places shape ops on the CPU, which is expected
+@@ -122,12 +172,16 @@
+     preferredOutputLocation: runtime === "webgpu" ? "gpu-buffer" : "cpu",
+   });
+   timings.session_ms = performance.now() - t;
++  if (runtime === "webgpu") post("status", {
++    msg: "Native ORT session created with its bound baseline FP16 device; pointer head remains on JavaScript CPU",
++    ...portableDeviceEvidence(),
++  });
+   // One short forward compiles the GPU kernels now, so the first decision is not slow and a GPU problem shows at load.
+   t = performance.now(); release((await forward(tokenizer.encode("<state>\n", { add_special_tokens: false }).ids)).cache);
+   timings.warmup_ms = performance.now() - t;
+   timings.total_load_ms = performance.now() - t0;
+   const gpu = adapter && [adapter.info.vendor, adapter.info.architecture].filter(Boolean).join(" ");
+-  post("ready", { runtime, timings, cached: results.every((r) => r.hit), gpu, source: manifest.source });
++  post("ready", { runtime, timings, cached: results.every((r) => r.hit), gpu, source: manifest.source, ...portableDeviceEvidence(true) });
+ }
+ 
+ /** Empty recurrent, conv and KV-cache inputs for a forward with no prefix (shapes from the manifest). */
+@@ -170,7 +224,7 @@
+   const { hidden, d, cache } = await forward(ids);
+   release(cache);
+   const t2 = performance.now();
+-  post("result", { id, answer: answer(q.rq, hidden, d, ids.length - 1, q.optIdx), tokens: ids.length, timings: { prep_ms: t1 - t0, forward_ms: t2 - t1, total_ms: performance.now() - t0 }, runtime });
++  post("result", { id, answer: answer(q.rq, hidden, d, ids.length - 1, q.optIdx), tokens: ids.length, timings: { prep_ms: t1 - t0, forward_ms: t2 - t1, total_ms: performance.now() - t0 }, runtime, ...portableDeviceEvidence(true) });
+ }
+ 
+ /** Several named questions about one state: the state is encoded once, then each question from its cached state. */
+@@ -189,7 +243,7 @@
+       per[names[i]] = performance.now() - ts;
+     }
+   } finally { release(prefix.cache); }  // GPU buffers on WebGPU
+-  post("result", { id, answers, tokens: sLen + built.reduce((n, q) => n + q.ids.length, 0), timings: { prefix_ms: t1 - t0, per_question_ms: per, total_ms: performance.now() - t0 }, runtime });
++  post("result", { id, answers, tokens: sLen + built.reduce((n, q) => n + q.ids.length, 0), timings: { prefix_ms: t1 - t0, per_question_ms: per, total_ms: performance.now() - t0 }, runtime, ...portableDeviceEvidence(true) });
+ }
+ 
+ // One request at a time: ORT Web hangs on overlapping session.run calls.

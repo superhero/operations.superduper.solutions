@@ -52,9 +52,15 @@ export async function checkDecisionCompatibility(id: string, environment: GPUEnv
     const ready = Boolean(environment.isSecureContext && environment.crossOriginIsolated && wasm.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11])));
     return {ready, summary: ready ? 'Strands CPU Wasm available; memory fit is checked during loading.' : 'Strands needs a secure, cross-origin isolated page with WebAssembly.'};
   }
+  const strandsFP32 = profile.native_variant === 'strands-int4-fp32-v1';
   const fp32 = profile.native_variant === 'shared-fp32-gpu-v1';
   const compatibility = await probeAssistantCompatibility(environment, {...defaultAssistantSettings,
     model: fp32 ? 'minicpm5-fp32' : profile.engine === 'strands-onnx' ? '2b' : 'ornith-q4', executionMode: 'gpu', prefixCache: false, maxTokens: 256});
+  if (strandsFP32) {
+    const wasm=environment.WebAssembly ?? globalThis.WebAssembly;
+    const ready=compatibility.fp32 && environment.crossOriginIsolated && wasm.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]));
+    return {ready:Boolean(ready),summary:ready?'Strands FP32 WebGPU and Wasm SIMD verified; memory fit is checked during loading.':'Strands FP32 requires WebGPU computation, Wasm SIMD and cross-origin isolation.'};
+  }
   if (fp32) return {ready: compatibility.ready && compatibility.fp32,
     summary: compatibility.ready && compatibility.fp32 ? 'Native FP32 GPU requirements verified; memory fit is checked during loading.' : compatibility.summary};
   return {ready: compatibility.ready && compatibility.fp16, summary: compatibility.ready && compatibility.fp16 ? 'Native GPU requirements verified; memory fit is checked during loading.' : compatibility.summary + ' Native GPU execution also requires shader-f16.'};

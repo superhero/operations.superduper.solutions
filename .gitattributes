@@ -9,3 +9,7 @@ src/public/assistant-runtime/decision/pplx-publisher-LICENSE -text -whitespace
 src/public/assistant-runtime/text-fp32/upstream/** -text -whitespace
 src/public/assistant-runtime/text-fp32/lfm3-upstream/** -text -whitespace
 src/public/assistant-runtime/decision/vendor/wllama-fp32/** -text -whitespace
+
+# Preserve the exact Strands conversion recipe, receipt and Apache notice.
+build/strands-fp32/** -text -whitespace
+src/public/assistant-runtime/decision/strands-fp32.LICENSE -text -whitespace

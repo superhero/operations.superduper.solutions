@@ -9,12 +9,13 @@ import {setAssetFetch} from './load-progress.mjs';
 import {nativeGpuPlacement} from './decision-placement.js';
 const digest = async text => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))), x => x.toString(16).padStart(2, '0')).join('');
 const normalize = answer => answer.type === 'noul' ? {...answer, probabilities: {true: answer.noul, false: 1 - answer.noul}, probability_derivation: 'P(false) = 1 - native noul'} : answer;
-async function text(url) {const response = await fetch(url, {credentials: 'omit'}); if (!response.ok) throw Error(`Native metadata request failed (${response.status})`); return response.text();}
+async function text(url, reader = globalThis.fetch) {const response = await reader(url, {credentials: 'omit'}); if (!response.ok) throw Error(`Native metadata request failed (${response.status})`); return response.text();}
 
 export async function loadDecisionEngine(profile, onProgress = () => {}, options = {}) {
   const probe = profile.browser_probe, abort = new AbortController(), sources = [];
   const fp32 = profile.native_variant === 'shared-fp32-gpu-v1';
-  if (profile.native_variant && !fp32) throw Error('Unknown native decision runtime variant.');
+  const strandsFP32 = profile.native_variant === 'strands-int4-fp32-v1';
+  if (profile.native_variant && !fp32 && !strandsFP32) throw Error('Unknown native decision runtime variant.');
   if (fp32) {
     const fixed = {n_gpu_layers:99,n_threads:8,n_ctx:1024,n_batch:1024,n_ubatch:1024,n_parallel:1,
       flash_attn:false,warmup:false,jinja:false,reasoning:false,cache_idle_slots:false,cont_batching:false,cache_type_k:'f32',cache_type_v:'f32'};
@@ -26,13 +27,13 @@ export async function loadDecisionEngine(profile, onProgress = () => {}, options
     signal: AbortSignal.any([abort.signal, ...(options.signal ? [options.signal] : []), ...(init.signal ? [init.signal] : [])])});
   setAssetFetch(read);
   const gpu = fp32 ? nativeGpuPlacement(probe.expected_weight_kernel) : undefined, logs = [];
-  let model, prepare, validate, score, disposed = false, busy = false, disposal, context, nativeForward = false;
+  let model, prepare, validate, score, disposed = false, busy = false, disposal, context, nativeForward = false, strandsEvidence;
   const progress = (phase, event = {}) => onProgress({phase, ...event});
   const dispose = () => {
     if (disposal) return disposal;
     disposed = true; abort.abort();
     return disposal = (async () => {
-      try {if (model?.worker) model.worker.terminate(); else if (model) await model.exit();}
+      try {if (strandsFP32 && model) await model.dispose(); else if (model?.worker) model.worker.terminate(); else if (model) await model.exit();}
       finally {for (const source of sources) source.clear();}
     })();
   };
@@ -42,17 +43,18 @@ export async function loadDecisionEngine(profile, onProgress = () => {}, options
     if (profile.engine === 'strands-onnx') {
       const folder = probe.device === 'wasm' ? 'strands' : 'strands-native-device';
       const [{Decider}, {Tokenizer}, formatting] = await Promise.all([
-        import(`./vendor/${folder}/js/decider-client.js`), import(`./vendor/${folder}/tokenizers/tokenizers.min.mjs`), import(`./vendor/${folder}/js/prompt.js`),
+        strandsFP32 ? import('./strands-fp32.mjs') : import(`./vendor/${folder}/js/decider-client.js`), import(`./vendor/${folder}/tokenizers/tokenizers.min.mjs`), import(`./vendor/${folder}/js/prompt.js`),
       ]);
-      model = new Decider({weights: probe.weights_url, device: probe.device, onEvent: event => progress('loading', event)});
+      options.signal?.throwIfAborted(); if (disposed) throw Error('Decision loading was cancelled.');
+      model = new Decider({weights: probe.weights_url, device: probe.device, profile,createWorker:options.createWorker,onEvent: event => progress('loading', event)});
       const ready = await model.ready;
       if (ready.source.repo !== probe.original_model || ready.source.revision !== probe.original_revision) throw Error('Strands loaded a different native source.');
-      const manifestText = await text(probe.weights_url + 'manifest.json');
+      const manifestText = await text(probe.weights_url + 'manifest.json', read);
       if (await digest(manifestText) !== profile.conversion_manifest_sha256) throw Error('Strands export manifest pin changed.');
       const manifest = JSON.parse(manifestText);
       if (manifest.source.repo !== ready.source.repo || manifest.source.revision !== ready.source.revision) throw Error('Strands input and native export sources differ.');
       const [tokenizerJSON, tokenizerConfig, config] = await Promise.all(['tokenizer.json', 'tokenizer_config.json', 'decider_config.json'].map(async name => {
-        const source = await text(probe.weights_url + 'model/' + name), expected = manifest.files['model/' + name];
+        const source = await text(probe.weights_url + 'model/' + name, read), expected = manifest.files['model/' + name];
         if (!expected || new TextEncoder().encode(source).length !== expected.bytes || await digest(source) !== expected.sha256) throw Error('Strands input asset pin changed: ' + name);
         return JSON.parse(source);
       }));
@@ -61,6 +63,13 @@ export async function loadDecisionEngine(profile, onProgress = () => {}, options
       validate = prepared => assertInputBudget(prepared, {harnessLimit: 1024, contextSize: maxLength, nativeLimit: maxLength});
       score = async (request, prepared) => {
         const raw = await model.decide(request.state, request.questions.q);
+        nativeForward = true;
+        if (strandsFP32) {
+          const evidence=raw.native_gpu;
+          if (evidence?.compute_type !== 'float32' || evidence.device_features?.includes('shader-f16') ||
+              evidence.requested_features?.length !== 0 || !(evidence.compute_pipeline_calls?.total > 0)) throw Error('Native Strands did not prove its bound FP32 GPU device.');
+          strandsEvidence=evidence;
+        }
         if (raw.tokens !== prepared.rendered_tokens) throw Error('Native Strands input differs from exact preflight.');
         return {raw, answer: raw.answer};
       };
@@ -151,7 +160,7 @@ export async function loadDecisionEngine(profile, onProgress = () => {}, options
           const {raw, answer} = await score(request, prepared);
           signal?.throwIfAborted(); if (disposed) throw Error('Decision model was unloaded.');
           const execution = gpu ? {...gpu.verify(context.n_layer,true),native_forward_completed:nativeForward,
-            cpu_input_embedding_and_small_readout_allowed:true} : undefined;
+            cpu_input_embedding_and_small_readout_allowed:true} : strandsFP32 ? {...strandsEvidence,native_forward_completed:nativeForward} : undefined;
           return {answers: {q: normalize(answer)}, raw, prepared: preparedSummary(prepared), profile: profile.id, ...(execution ? {execution} : {})};
         } catch (error) {
           if (gpu) error.native_forward_completed = nativeForward;

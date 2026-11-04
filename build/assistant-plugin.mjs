@@ -3,10 +3,10 @@
 import { createReadStream, existsSync } from 'node:fs';
 import { resolve, sep, dirname } from 'node:path';
 import { createRequire } from 'node:module';
-import { createDevelopmentVisionWorker } from './assistant-development-worker.mjs';
+import { createDevelopmentVisionWorker,createDevelopmentStrandsWorker } from './assistant-development-worker.mjs';
 const require = createRequire(import.meta.url);
 export function assistantRuntimeDevelopment({builtRoot = resolve('dist/assistant-runtime'), sourceRoot = resolve('src/public/assistant-runtime'),
-  bundleVisionWorker = createDevelopmentVisionWorker()} = {}) {
+  bundleVisionWorker = createDevelopmentVisionWorker(),bundleStrandsWorker=createDevelopmentStrandsWorker()} = {}) {
   return {name: 'operations-assistant-runtimes', apply: 'serve', configureServer(server) {
     let visionAssets = new Map();
     server.middlewares.use('/assistant-runtime', async (request, response, next) => {
@@ -19,9 +19,9 @@ export function assistantRuntimeDevelopment({builtRoot = resolve('dist/assistant
           response.setHeader('Content-Type', 'text/javascript'); response.end(transformed.code);
         } catch (error) {next(error);}
       };
-      if (path === '/vision-worker.js') {
+      if (path === '/vision-worker.js' || path === '/strands-fp32-worker.js') {
         try {
-          const bundle = await bundleVisionWorker(server);
+          const bundle = await (path === '/vision-worker.js' ? bundleVisionWorker : bundleStrandsWorker)(server);
           for (const [name, value] of bundle.assets) visionAssets.set(name, value);
           for (const [name, value] of Object.entries(server.config.server.headers || {})) if (value !== undefined) response.setHeader(name, value);
           response.setHeader('Content-Type', 'text/javascript'); response.end(bundle.code); return;
@@ -35,8 +35,8 @@ export function assistantRuntimeDevelopment({builtRoot = resolve('dist/assistant
       const built = resolve(builtRoot);
       // This authored factory must update during development even when dist
       // still contains a previously built image profile.
-      const canonicalFactory = path === '/vision-engine.js';
-      let file = canonicalFactory ? resolve(sourceRoot, 'vision-engine.js') : resolve(built, '.' + path);
+      const canonicalFactory = ['/vision-engine.js','/decision/engine.mjs','/decision/strands-fp32.mjs'].includes(path);
+      let file = canonicalFactory ? resolve(sourceRoot, '.'+path) : resolve(built, '.' + path);
       if (!canonicalFactory && !file.startsWith(built + sep)) return next();
       if (!existsSync(file) && path.startsWith('/litert/')) {
         const folder = resolve(dirname(require.resolve('@litert-lm/core/package.json')), 'wasm');
