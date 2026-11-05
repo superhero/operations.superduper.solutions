@@ -78,3 +78,4 @@ Feature: Qualified operation display metadata
       | aws-s3:PutObject |
       | bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/activity |
       | bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity |
+      | bitbucket:GET /repositories/{workspace}/{repo_slug}/src/{commit}/{path} |

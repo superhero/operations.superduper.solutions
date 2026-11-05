@@ -323,5 +323,10 @@
     "method": "GET",
     "path": "/repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity",
     "description": "Returns a paginated list of the pull request's activity log."
+  },
+  "bitbucket:GET /repositories/{workspace}/{repo_slug}/src/{commit}/{path}": {
+    "method": "GET",
+    "path": "/repositories/{workspace}/{repo_slug}/src/{commit}/{path}",
+    "description": "This endpoints is used to retrieve the contents of a single file, or the contents of a directory at a specified revision."
   }
 }
