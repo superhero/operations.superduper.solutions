@@ -263,5 +263,10 @@
     "method": "PATCH",
     "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/networkConfig/virtualNetwork",
     "name": "Update slot virtual network connection"
+  },
+  "groq:uploadFile": {
+    "method": "POST",
+    "path": "/openai/v1/files",
+    "name": "Upload file"
   }
 }

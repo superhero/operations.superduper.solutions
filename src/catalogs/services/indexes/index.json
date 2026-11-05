@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "9ff4fc91c96546bab91b5db9c94d7d829277198402c2a2d7c52e9d10446205bd",
+  "adapterRevision": "e949c1cd44ab1d764dce5765c33f3da17c564edfaf9cce5f5d27366b814dfc57",
   "indexes": [
     {
       "id": "anthropic",
@@ -2701,9 +2701,9 @@
     {
       "id": "groq",
       "sourceRevision": "24a6ad42e199c84687dc4037a8173f52bdc721c74ed1670c8c58441805ee1cf2",
-      "bytes": 9140,
-      "compressedBytes": 1641,
-      "sha256": "a998e5906c30c3faa1a822d2c7e8a0b7012eba281834fb22d7655e885fc7da38",
+      "bytes": 8896,
+      "compressedBytes": 1511,
+      "sha256": "7663cd9abd5009321f63c420d0e86fe74b14d02da987a157d01b22feb7f44c22",
       "summary": {
         "name": "GroqCloud API",
         "serverUrl": "https://api.groq.com",

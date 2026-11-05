@@ -63,3 +63,4 @@ Feature: Qualified operation display metadata
       | azure-app-service:WebApps_ListBackupStatusSecretsSlot |
       | azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheck |
       | azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheckSlot |
+      | groq:uploadFile |
