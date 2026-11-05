@@ -58,3 +58,4 @@ Feature: Qualified operation display metadata
       | twilio:UpdateKey |
       | twilio:UpdateSigningKey |
       | azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheck |
+      | azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheckSlot |

@@ -238,5 +238,10 @@
     "method": "PUT",
     "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/networkConfig/virtualNetwork",
     "name": "Create or update app virtual network connection"
+  },
+  "azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheckSlot": {
+    "method": "PUT",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/networkConfig/virtualNetwork",
+    "name": "Create or update slot virtual network connection"
   }
 }
