@@ -338,5 +338,10 @@
     "method": "POST",
     "path": "/repositories/{workspace}/{repo_slug}/src",
     "description": "This endpoint is used to create new commits in the repository by uploading files."
+  },
+  "bitbucket:POST /snippets": {
+    "method": "POST",
+    "path": "/snippets",
+    "description": "Creates a new snippet under the authenticated user's account."
   }
 }

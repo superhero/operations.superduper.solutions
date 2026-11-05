@@ -81,3 +81,4 @@ Feature: Qualified operation display metadata
       | bitbucket:GET /repositories/{workspace}/{repo_slug}/src/{commit}/{path} |
       | bitbucket:GET /snippets/{workspace}/{encoded_id} |
       | bitbucket:POST /repositories/{workspace}/{repo_slug}/src |
+      | bitbucket:POST /snippets |
