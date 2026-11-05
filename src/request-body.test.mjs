@@ -95,7 +95,7 @@ Then('form arrays retain item constraints and reject unqualified structures befo
       assert.throws(() => extractOperations(source, 'forms'));
       assert.ok(inspectServiceSchema(source, 'forms').operations[0].unavailableReason);
     }
-    for (const encoding of [{}, { field: { style: 'form', explode: false } }, { '*': { contentType: '*/*' } }]) {
+    for (const encoding of [{ field: { style: 'form', explode: false } }, { '*': { contentType: '*/*' } }]) {
       const source = document(media, { type: 'object', properties: { field: array(text) } });
       source.paths['/forms'].post.requestBody.content[media].encoding = encoding;
       assert.throws(() => extractOperations(source, 'forms'));

@@ -30,7 +30,7 @@ Then('pinned Twilio and Atlassian Basic operations dispatch selected username an
       assert.equal(inspection.operations.length, 197);
       assert.equal(available.length, 196);
       assert.deepEqual(census[id].unavailable.map(operation => operation.id), ['twilio:CreatePayments']);
-      assert.ok(census[id].unavailable.every(operation => /form.*structured/.test(operation.reason)));
+      assert.ok(census[id].unavailable.every(operation => /Form field "Parameter" \(type=json\)/.test(operation.reason)));
       assert.ok(available.every(operation => operation.security.some(option => option.some(scheme => scheme.kind === 'basic'))));
     }
     const operation = available.find(operation => operation.id === operationId);

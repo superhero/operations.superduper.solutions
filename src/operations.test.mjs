@@ -413,9 +413,12 @@ Then("unsupported structures and serializations fail during catalog loading", fu
   assert.throws(() => bodyOperation({ type: "number" }, "text/plain"), /string schema/);
   for (const type of ["application/x-www-form-urlencoded", "multipart/form-data"])
     for (const schema of [{ type: "array", items: { type: "string" } }, { type: "object", properties: { file: { type: "array", items: { type: "object" } } } }])
-      assert.throws(() => bodyOperation(schema, type), /form bodies require named primitive fields/);
+      assert.throws(() => bodyOperation(schema, type), schema.type === "array"
+        ? /Form body.*type=array/ : /Form field "file".*type=array/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "application/json": {}, "text/plain": {} } }), "fixture"), /choose one supported/);
-  assert.throws(() => extractOperations(withBody(undefined, { content: { "multipart/form-data": { schema: { type: "object", properties: {} }, encoding: {} } } }), "fixture"), /unsupported schema fields/);
+  assert.throws(() => extractOperations(withBody(undefined, { content: { "multipart/form-data": {
+    schema: { type: "object", properties: { file: { type: "string" } } }, encoding: { file: { contentType: "application/json" } }
+  } } }), "fixture"), /Form part "file": custom encoding/);
 });
 
 Then("nullable request inputs preserve explicit omission null and the text null", function ()
@@ -517,7 +520,7 @@ Then("nullable query collections serialize safely and form bodies reject null sc
     { "filter[value]": null, tags: [null, "null"] });
   for (const media of ["application/x-www-form-urlencoded", "multipart/form-data"])
   {
-    assert.throws(() => bodyOperation({ type: "object", nullable: true }, media), /form bodies require named primitive fields/);
+    assert.throws(() => bodyOperation({ type: "object", nullable: true }, media), /Form body.*nullable=true/);
     const form = bodyOperation({ type: "object", properties: { value: { type: ["string", "null"] } } }, media);
     assert.equal(prepareRequest(form, { "body:value": "null" }).body.value, "null");
     assert.throws(() => prepareRequest(form, { "body:value": null }), error => error instanceof InputValidationError && error.fieldKey === "body:value");
@@ -638,6 +641,6 @@ Then("dynamic body fields respect canonical policies and transport restrictions"
       assert.throws(() => prepareRequest(form, { "body:extra": raw }, [additionalBodyField(form, "extra", type)]),
         error => error instanceof InputValidationError && error.fieldKey === "body:extra"
           && (type === "null" ? /explicit null has no qualified form encoding/ : /form body properties must be primitive values/).test(error.message));
-    assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /form bodies require named primitive fields/);
+    assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /Form field "<additional properties>".*type=object/);
   }
 });

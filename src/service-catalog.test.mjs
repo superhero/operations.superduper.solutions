@@ -403,7 +403,7 @@ Then('service contract guards reject invalid operations without dropping their s
   assert.throws(() => inspectServiceSchema(duplicate, 'guard'), /Duplicate/);
   for (const [patch, expected] of [
     [{ parameters: {} }, /must be an array/],
-    [{ parameters: [{ in: 'cookie', name: 'token' }] }, /Cookie/],
+    [{ parameters: [{ in: 'cookie', name: 'token' }] }, /cookie parameter "token"/],
     [{ requestBody: { content: { 'text/plain': { schema: { type: 'integer' } } } } }, /text body/],
     [{ parameters: [{ $ref: '#/missing/path' }] }, /Unresolved/],
     [{ parameters: [{ $ref: '#/info/title/missing' }] }, /Unresolved/]
