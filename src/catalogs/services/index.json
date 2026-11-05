@@ -2019,7 +2019,15 @@
     "sha256": "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020",
     "sourceSha256": "2c172ea3a80567939d828b6f5bfb8fea3530387a2786542a186bdc5786084911",
     "bytes": 36129,
-    "compressedBytes": 5799
+    "compressedBytes": 5799,
+    "patches": [
+      {
+        "id": "ecb-registration-parameters",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2e565438c7897c410cde664702a974883e814a392ecf72ecaf7068dc3d86f97d",
+    "effectiveBytes": 36571
   },
   {
     "id": "elevenlabs",

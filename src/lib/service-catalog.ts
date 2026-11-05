@@ -12,12 +12,13 @@ import { extractCredentialPermissions, extractOperationSecurity, inspectSecurity
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
 import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
-import { supportsFormField } from "./form-input.ts";
+import { normalizeStringUnion, validateFormBody } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
 import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } from "./operation-capabilities.ts";
 import { configureQueryArray } from "./query-serialization.ts";
+import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { providerPathSecurity } from "./provider-path-bindings.ts";
 
 type Value = Record<string, unknown>;
@@ -78,7 +79,7 @@ function resolve(input: unknown, document: Value): Value
 function inputSchema(input: unknown, document: Value, depth: number, ancestors: Set<unknown>, binary: boolean, rootPropertyBudget = 200): InputSchema
 {
   if (depth > 8 || ancestors.has(input)) return json();
-  const shape = resolve(input, document);
+  const shape = normalizeStringUnion(resolve(input, document));
   const variants = shape.anyOf ?? shape.oneOf;
   if (Array.isArray(variants) && variants.length === 2)
   {
@@ -116,7 +117,10 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   {
     const properties = Object.entries(value(shape.properties)).filter(([, property]) => resolve(property, document).readOnly !== true);
     if (properties.length > (depth === 0 ? rootPropertyBudget : 200)) return json();
-    result.properties = Object.fromEntries(properties.map(([name, property]) => [name, inputSchema(property, document, depth + 1, next, binary)]));
+    result.properties = Object.fromEntries(properties.map(([name, property]) => {
+      try { return [name, inputSchema(property, document, depth + 1, next, binary)]; }
+      catch (error) { throw new Error(`Field ${JSON.stringify(name)}: ${(error as Error).message}`, { cause: error }); }
+    }));
     if (Array.isArray(shape.required) && shape.required.some(name => typeof name !== "string" || !Object.hasOwn(value(shape.properties), name))) return json();
     result.required = Array.isArray(shape.required) ? shape.required.filter((name): name is string => typeof name === "string" && Object.hasOwn(result.properties!, name)) : [];
     result.additionalProperties = typeof shape.additionalProperties === "boolean" ? shape.additionalProperties
@@ -245,7 +249,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           if (!wire && (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path))) throw new Error("This endpoint uses a path or transport that is not supported.");
         });
         if (!upload && !wire && !s3) {
-          const parametersValid = inspect("request", "unsupported-contract", () => {
+          let parametersValid = true;
+          const parameterListsValid = inspect("request", "unsupported-contract", () => {
             const fields = new Map<string, InputField>();
             for (const parameters of [item.parameters, source.parameters])
             {
@@ -253,21 +258,34 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               if (!Array.isArray(parameters)) throw new Error("Parameters must be an array.");
               for (const raw of parameters)
               {
-                const parameter = resolve(raw, document);
-                const location = text(parameter.in);
-                if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string") throw new Error("Cookie or content-encoded parameters are not supported.");
-                const input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description,
-                  location === "query" && parameter.explode === false);
-                const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
-                const csv = configureQueryArray(input, parameter);
-                if (parameter.content || parameter.style !== undefined && parameter.style !== style
-                  || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv
-                  || location !== "query" && ["object", "array"].includes(input.type)) throw new Error("This parameter serialization is not supported.");
-                fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
+                const valid = inspect("request", "unsupported-contract", () => {
+                  const parameter = resolve(raw, document);
+                  let input: InputField | undefined;
+                  try {
+                    const location = text(parameter.in);
+                    if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string")
+                      throw new Error("Only named path, query and header parameters are supported.");
+                    input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description,
+                      location === "query" && parameter.explode === false);
+                    const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
+                    const csv = configureQueryArray(input, parameter);
+                    const pathArray = configureSimplePathArray(input, parameter);
+                    if (parameter.content) throw new Error("Content-encoded parameters are not supported; declare a schema-based parameter.");
+                    if (parameter.style !== undefined && parameter.style !== style
+                      || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray
+                      || location !== "query" && ["object", "array"].includes(input.type) && !pathArray)
+                      throw new Error("Unsupported parameter serialization; use primitive values, simple path arrays or supported form/deepObject query parameters.");
+                    fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
+                  } catch (error) {
+                    throw new Error(`${parameterContext(parameter, input?.type)}: ${(error as Error).message}`, { cause: error });
+                  }
+                });
+                if (!valid) parametersValid = false;
               }
             }
             operation.fields = [...fields.values()];
           });
+          parametersValid &&= parameterListsValid;
           inspect("request", "unsupported-contract", () => {
             if (source.requestBody !== undefined)
             {
@@ -296,9 +314,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
               if (mediaType === "text/plain" && parsed.type !== "string") throw new Error("This text body requires an unsupported schema.");
               if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
-                if (parsed.type !== "object" || parsed.nullable || value(content[mediaType]).encoding !== undefined
-                  || Object.values(parsed.properties!).some(property => !supportsFormField(property, mediaType === "multipart/form-data")))
-                  throw new Error("This form uses unsupported structured fields or custom part encodings.");
+                validateFormBody(parsed, mediaType === "multipart/form-data", value(content[mediaType]).encoding);
               if (parsed.type === "object" && !parsed.nullable)
                 for (const [name, property] of Object.entries(value(schema.properties)))
                 {
@@ -312,11 +328,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               }
             }
           });
-          if (parametersValid) inspect("endpoint", "unsupported-contract", () => {
-            const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
-            if (placeholders.some(name => !operation.fields.some(field => field.location === "path" && field.name === name)))
-              throw new Error("This endpoint uses unsupported URI template expansion.");
-          });
+          if (parametersValid) inspect("endpoint", "invalid-contract", () => validatePathParameters(path, operation.fields));
         }
         inspect("authentication", "invalid-contract", () => {
           const authorization = security(document, source, operation);

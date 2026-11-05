@@ -3,6 +3,29 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { InputSchema } from "./catalog.ts";
 
+const unionAnnotations = new Set(["title", "description", "example", "examples", "default", "deprecated"]);
+
+/** An unrestricted string branch subsumes enum suggestions in anyOf, never oneOf. */
+export function normalizeStringUnion(shape: Record<string, unknown>): Record<string, unknown> {
+  const variants = shape.anyOf;
+  if (!Array.isArray(variants) || !variants.length
+    || Object.keys(shape).some(key => key !== "anyOf" && !unionAnnotations.has(key))) return shape;
+  let unrestricted = false, nullable = false;
+  for (const variant of variants) {
+    if (!variant || typeof variant !== "object" || Array.isArray(variant)) return shape;
+    const branch = variant as Record<string, unknown>;
+    if (Object.keys(branch).some(key => key !== "type" && key !== "enum" && !unionAnnotations.has(key))) return shape;
+    if (branch.type === "null" && branch.enum === undefined) nullable = true;
+    else if (branch.type === "string") {
+      if (branch.enum === undefined) unrestricted = true;
+      else if (!Array.isArray(branch.enum) || !branch.enum.length || branch.enum.some(value => typeof value !== "string")) return shape;
+    } else return shape;
+  }
+  if (!unrestricted) return shape;
+  const { anyOf, ...annotations } = shape;
+  return { ...annotations, type: "string", ...(nullable ? { nullable: true } : {}) };
+}
+
 function primitiveField(schema: InputSchema): boolean {
   return !schema.format && ["string", "number", "integer", "boolean"].includes(schema.type)
     && (!schema.enum || schema.enum.some(value => value !== null) && schema.enum.every(value => value === null ? !!schema.nullable
@@ -18,4 +41,28 @@ export function supportsFormField(schema: Pick<InputSchema, "type" | "nullable" 
   return primitiveField(schema)
     || multipart && schema.type === "string" && schema.format === "binary"
     || schema.type === "array" && !schema.nullable && !!schema.items && textField(schema.items);
+}
+
+export function validateFormBody(schema: InputSchema, multipart: boolean, encoding?: unknown): void {
+  const issues: string[] = [];
+  if (schema.type !== "object" || schema.nullable)
+    issues.push(`Form body must be a non-null object with named fields (type=${schema.type}${schema.nullable ? ", nullable=true" : ""}).`);
+  else {
+    const fields = Object.entries(schema.properties ?? {});
+    if (schema.additionalProperties && typeof schema.additionalProperties === "object") fields.push(["<additional properties>", schema.additionalProperties]);
+    for (const [name, field] of fields) if (!supportsFormField(field, multipart)) {
+      const reason = field.type === "array" ? "arrays require non-null primitive items"
+        : field.type === "json" ? "the schema union or constraints cannot be represented by a supported form field"
+        : "use a primitive value, a primitive array or a multipart binary file";
+      issues.push(`Form field ${JSON.stringify(name)} (type=${field.type}): ${reason}.`);
+    }
+  }
+  if (encoding !== undefined) {
+    if (!encoding || typeof encoding !== "object" || Array.isArray(encoding)) issues.push("Form part encoding must be an object keyed by field name.");
+    else for (const [name, settings] of Object.entries(encoding)) {
+      const keys = settings && typeof settings === "object" && !Array.isArray(settings) ? Object.keys(settings) : [];
+      issues.push(`Form part ${JSON.stringify(name)}: custom encoding${keys.length ? ` (${keys.join(", ")})` : ""} is not supported.`);
+    }
+  }
+  if (issues.length) throw new Error(issues.join(" "));
 }

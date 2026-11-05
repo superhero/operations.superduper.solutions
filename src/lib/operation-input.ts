@@ -10,6 +10,7 @@ import { validateWorkflowBinary, binaryRequestMediaType, validateBinarySchema } 
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import type { QuerySerialization } from "./query-serialization.ts";
+import { encodeSimplePathArray } from "./parameter-serialization.ts";
 
 export type InputValue = string | null | undefined;
 export type InputValues = Record<string, InputValue>;
@@ -197,9 +198,14 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     if (input.querySerialization !== undefined && (input.querySerialization !== "form-csv" || input.location !== "query" || input.type !== "array"))
       fail(input, "this query serialization is not supported.");
     if (input.location === "path") {
-      if (value !== null && typeof value === "object") fail(input, "path values must be primitive values.");
       let encoded: string;
-      try { encoded = operation.s3Files ? input.name === "Key" ? encodeS3Key(String(value)) : encodeURIComponent(validateS3Bucket(String(value))) : encodeURIComponent(String(value)); }
+      try {
+        if (input.type === "array" && !operation.s3Files) encoded = encodeSimplePathArray(input, value);
+        else {
+          if (value !== null && typeof value === "object") throw new Error("path values must be primitive values or supported simple arrays.");
+          encoded = operation.s3Files ? input.name === "Key" ? encodeS3Key(String(value)) : encodeURIComponent(validateS3Bucket(String(value))) : encodeURIComponent(String(value));
+        }
+      }
       catch (cause) { fail(input, (cause as Error).message); }
       request.path = request.path.replaceAll(`{${input.name}}`, encoded!);
     }

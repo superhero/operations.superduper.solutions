@@ -10,7 +10,7 @@ import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent, type ResponseContent } from "./workflow-response-body.ts";
-import { supportsFormField } from "./form-input.ts";
+import { normalizeStringUnion, validateFormBody } from "./form-input.ts";
 import { responseStreamProfile, type ResponseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile, type PrivatePathProfile } from "./server-url.ts";
 import { codexExecutionLimitation, type NativeRpcContract } from "./native-rpc.ts";
@@ -18,6 +18,7 @@ import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
 import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 import { withOperationCapabilities, type OperationCapabilities, type CapabilitySummary } from "./operation-capabilities.ts";
 import { configureQueryArray, type QuerySerialization } from "./query-serialization.ts";
+import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -141,7 +142,7 @@ function text(value: unknown, fallback: string): string
 function inputSchema(value: unknown, document: RecordValue, context: string, depth = 0): InputSchema
 {
   if (depth > 12) throw new Error(`${context}: schema nesting exceeds 12 levels or contains a recursive reference.`);
-  const shape = resolve(value, document, context);
+  const shape = normalizeStringUnion(resolve(value, document, context));
   const union = Array.isArray(shape.type) ? shape.type : undefined;
   if (union && (union.length !== 2 || !union.includes("null") || new Set(union).size !== 2))
     throw new Error(`${context}: unsupported input type union.`);
@@ -293,26 +294,31 @@ export function extractOperations(value: unknown, source: string): Operation[]
         for (const raw of parameters)
         {
           const parameter = resolve(raw, document, id);
-          supported(parameter, ["name", "in", "required", "schema", "description", "deprecated", "style", "explode", "allowReserved", "allowEmptyValue"], id);
+          supported(parameter, ["name", "in", "required", "schema", "description", "deprecated", "style", "explode", "allowReserved", "allowEmptyValue"], `${id}: ${parameterContext(parameter)}`);
           if (!["path", "query", "header"].includes(String(parameter.in)) || typeof parameter.name !== "string" || !parameter.name
             || parameter.required !== undefined && typeof parameter.required !== "boolean"
             || parameter.in === "path" && parameter.required !== true)
-            throw new Error(`${id}: inputs require a name and a supported path/query/header location; path inputs must be required.`);
+            throw new Error(`${id}: ${parameterContext(parameter)}: inputs require a name and a supported path/query/header location; path inputs must be required.`);
           const input = field(parameter.schema, document, parameter.in as InputField["location"], parameter.name, parameter.required === true);
           const query = input.location === "query";
           const style = query ? input.type === "object" ? "deepObject" : "form" : "simple";
-          const csv = configureQueryArray(input, parameter);
-          if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
-            || parameter.style !== undefined && parameter.style !== style
-            || parameter.explode !== undefined && parameter.explode !== query && !csv
-            || parameter.allowReserved !== undefined && parameter.allowReserved !== false
-            || parameter.allowEmptyValue !== undefined && parameter.allowEmptyValue !== false
-            || !query && !primitiveTypes.includes(input.type)
-            || input.type === "array" && !primitiveTypes.includes(input.schema!.items!.type)
-            || input.type === "object" && objectSchemas(input.schema!).some(property => !primitiveTypes.includes(property.type)))
-            throw new Error(`${id}: unsupported parameter serialization; use primitive parameters, form query arrays or flat deepObject query objects.`);
+          try {
+            const csv = configureQueryArray(input, parameter);
+            const pathArray = configureSimplePathArray(input, parameter);
+            if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
+              || parameter.style !== undefined && parameter.style !== style
+              || parameter.explode !== undefined && parameter.explode !== query && !csv && !pathArray
+              || parameter.allowReserved !== undefined && parameter.allowReserved !== false
+              || parameter.allowEmptyValue !== undefined && parameter.allowEmptyValue !== false
+              || !query && !primitiveTypes.includes(input.type) && !pathArray
+              || input.type === "array" && !primitiveTypes.includes(input.schema!.items!.type)
+              || input.type === "object" && objectSchemas(input.schema!).some(property => !primitiveTypes.includes(property.type)))
+              throw new Error("unsupported parameter serialization; use primitive values, simple path arrays, form query arrays or flat deepObject query objects.");
+          } catch (error) {
+            throw new Error(`${id}: ${parameterContext(parameter, input.type)}: ${(error as Error).message}`, { cause: error });
+          }
           if (input.location === "header" && !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(input.name))
-            throw new Error(`${id}: invalid header name.`);
+            throw new Error(`${id}: ${parameterContext(parameter, input.type)}: invalid header name.`);
           const identity = input.location === "header" ? input.key.toLowerCase() : input.key;
           if (parameterKeys.has(identity)) throw new Error(`${id}: duplicate parameter ${input.key}.`);
           parameterKeys.add(identity);
@@ -342,7 +348,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
           throw new Error(`${id}: choose one supported request media type: application/json, text/plain, application/x-www-form-urlencoded or multipart/form-data.`);
         bodyMediaType = mediaTypes[0] as BodyMediaType;
         const media = object(content[bodyMediaType], id);
-        supported(media, ["schema", "example", "examples"], id);
+        const form = bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data";
+        supported(media, ["schema", "example", "examples", ...(form ? ["encoding"] : [])], id);
         const shape = resolve(media.schema, document, id);
         const schema = inputSchema(shape, document, id);
         bodySchema = schema;
@@ -358,9 +365,10 @@ export function extractOperations(value: unknown, source: string): Operation[]
         }
         else if (bodyMediaType !== "multipart/form-data" && containsBinaryInput(schema)) throw new Error(`${id}: binary fields require a raw file body or multipart/form-data.`);
         if (bodyMediaType === "text/plain" && schema.type !== "string") throw new Error(`${id}: text/plain requires a string schema.`);
-        if (bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data")
-          if (schema.type !== "object" || schema.nullable || objectSchemas(schema).some(property => !supportsFormField(property, bodyMediaType === "multipart/form-data")))
-            throw new Error(`${id}: form bodies require named primitive fields, primitive arrays or individual binary files; other structured fields are unsupported.`);
+        if (form) {
+          try { validateFormBody(schema, bodyMediaType === "multipart/form-data", media.encoding); }
+          catch (error) { throw new Error(`${id}: ${(error as Error).message}`, { cause: error }); }
+        }
         if (schema.type === "object" && !schema.nullable)
           for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
         else
@@ -371,10 +379,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
           fields.push(input);
         }
       }
-      const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
-      if (placeholders.some(name => !fields.some(input => input.location === "path" && input.name === name))
-        || fields.some(input => input.location === "path" && !placeholders.includes(input.name)))
-        throw new Error(`${id}: path placeholders and required path inputs must agree.`);
+      try { validatePathParameters(path, fields); }
+      catch (error) { throw new Error(`${id}: ${(error as Error).message}`, { cause: error }); }
       const tags = operation.tags;
       if (tags !== undefined && (!Array.isArray(tags) || tags.some(tag => typeof tag !== "string" || !tag.trim())))
         throw new Error(`${id}: tags must be nonempty strings.`);

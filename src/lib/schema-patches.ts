@@ -14,7 +14,9 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export const ecbRegistrationParameters: SchemaPatch = { id: "ecb-registration-parameters", version: 1 };
+export const ecbRegistrationSourceSha256 = "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020";
 export const bigqueryJobMetadata: SchemaPatch = { id: "bigquery-job-metadata", version: 1 };
 export const bigqueryJobSourceSha256 = "84a35e70565d01face776e9dddecb1fc1ffda5bdf60e15fe41b96728c71b2b44";
 export const googleStorageMedia: SchemaPatch = { id: "google-storage-media", version: 1 };
@@ -42,7 +44,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "bigquery-job-metadata" ? "BigQuery JSON job metadata"
+  return patch.id === "ecb-registration-parameters" ? "ECB registration path parameters"
+    : patch.id === "bigquery-job-metadata" ? "BigQuery JSON job metadata"
     : patch.id === "google-storage-media" ? "Google Storage media upload"
     : patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
@@ -349,6 +352,38 @@ function elevenLabsAuth(document: Record<string, any>): void {
   }
 }
 
+/** The SDMX 2.2.2 source reuses resourceIDs for two differently named routes. */
+function registrationParameters(document: Record<string, any>): void {
+  const parameters = document.components?.parameters;
+  if (document.openapi !== "3.0.0" || document.info?.title !== "SDMX RESTful API, v2.2.2" || document.info.version !== "2.2.2"
+    || document.servers?.length !== 1 || document.servers[0]?.url !== "https://data-api.ecb.europa.eu/service"
+    || !object(parameters) || ["resourceIDs", "providers"].some((key, index) => {
+      const parameter = parameters[key];
+      return parameter?.in !== "path" || parameter.name !== ["resourceID", "providerID"][index] || parameter.required !== true
+        || parameter.style !== "simple" || parameter.schema?.type !== "array" || parameter.schema.items?.type !== "string";
+    })) throw new Error("ECB registration correction requires the reviewed SDMX version, destination and path lists.");
+  const contracts = [
+    { path: "/registration/id/{registrationID}", refs: ["resourceIDs"], index: 0,
+      replacement: { ...structuredClone(parameters.resourceIDs), name: "registrationID", description: "The registration ID(s)." } },
+    { path: "/registration/provider/{agencyID}/{providerID}", refs: ["agencies", "resourceIDs", "updatedBeforeReg", "updatedAfterReg"], index: 1,
+      replacement: { $ref: "#/components/parameters/providers" } },
+  ];
+  const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
+  for (const contract of contracts) {
+    const item = document.paths?.[contract.path], operation = item?.get;
+    if (!object(item) || item.servers !== undefined || item.parameters !== undefined || !object(operation) || operation.servers !== undefined)
+      throw new Error(`ECB registration correction requires the reviewed GET ${contract.path}.`);
+    const original = contract.refs.map(name => ({ $ref: `#/components/parameters/${name}` }));
+    const corrected = original.map((parameter, index) => index === contract.index ? contract.replacement : parameter);
+    if (same(operation.parameters, corrected)
+      && (!Object.hasOwn(operation, "x-upstream-parameters") || same(operation["x-upstream-parameters"], original))) continue;
+    if (!same(operation.parameters, original) || Object.hasOwn(operation, "x-upstream-parameters"))
+      throw new Error(`ECB registration correction requires the reviewed parameters and unused provenance for GET ${contract.path}.`);
+    operation["x-upstream-parameters"] = structuredClone(operation.parameters);
+    operation.parameters = corrected;
+  }
+}
+
 function bigqueryMetadata(document: Record<string, any>): void {
   const item = document.paths?.["/projects/{projectId}/jobs"], operation = item?.post;
   if (document.openapi !== "3.0.0" || document.info?.title !== "BigQuery API" || document.info.version !== "v2"
@@ -567,10 +602,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "bigquery-job-metadata") bigqueryMetadata(document);
+    if (patch.id === "ecb-registration-parameters") registrationParameters(document);
+    else if (patch.id === "bigquery-job-metadata") bigqueryMetadata(document);
     else if (patch.id === "google-storage-media") storageMedia(document);
     else if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
     else if (patch.id === "digitalocean-bearer-permissions") digitalOceanPermissions(document);

@@ -14,6 +14,7 @@
     "test:acceptance": "node tests/gherkin/run.mjs acceptance",
     "test:automation": "node tests/gherkin/run.mjs automation",
     "test:browser": "bash .github/scripts/test-browser.sh",
+    "test:catalog-additions": "node tests/catalog-additions/run.mjs",
     "test:coverage": "node .github/scripts/test-results.mjs coverage",
     "test:source": "node tests/gherkin/run.mjs source",
     "test:source:coverage": "OPERATIONS_COVERAGE=1 node tests/gherkin/run.mjs source",

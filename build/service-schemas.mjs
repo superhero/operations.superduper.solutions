@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { createHash } from 'node:crypto';
+import { ecbRegistrationParameters, ecbRegistrationSourceSha256 } from '../src/lib/schema-patches.ts';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -140,7 +141,10 @@ for (const source of sources) {
     throw new Error('BigQuery job metadata requires requalification before updating the pinned native source.');
   if (source.id === 'gcp-storage' && sha(json) !== googleStorageMediaSourceSha256)
     throw new Error('Google Storage media requires requalification before updating the pinned native source.');
-  const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
+  if (source.id === 'ecb' && sha(json) !== ecbRegistrationSourceSha256)
+    throw new Error('ECB registration parameters require requalification before updating the pinned native source.');
+  const patches = source.id === 'ecb' ? [ecbRegistrationParameters]
+    : source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
     : source.profile === 'azure-eventgrid-auth' ? [azureEventGridManagementAuth]
