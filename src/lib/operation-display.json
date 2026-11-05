@@ -313,5 +313,10 @@
     "method": "PUT",
     "path": "/{Bucket}/{Key}",
     "description": "Adds an object to a bucket. You must have WRITE permissions on a bucket to add an object to it. Amazon S3 never adds partial objects; if you receive a success response, Amazon S3 added the entire object to the bucket. You cannot use PutObject to only update a single piece of metadata for an existing object. You must put the entire object with updated metadata if you want to update some values. Amazon S3 is a distributed system. If it receives multiple write requests for the same object simultaneously, it overwrites all but the last object written. To prevent objects from being deleted or overwritten, you can use Amazon S3 Object Lock . To ensure that data is not corrupted traversing the network, use the Content-MD5 header. When you use this header, Amazon S3 checks the object against the provided MD5 value and, if they do not match, returns an error. Additionally, you can calculate the MD5 while putting an object to Amazon S3 and compare the returned ETag to the calculated MD5 value. To successfully complete the PutObject request, you must have the s3:PutObject in your IAM permissions."
+  },
+  "bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/activity": {
+    "method": "GET",
+    "path": "/repositories/{workspace}/{repo_slug}/pullrequests/activity",
+    "description": "Returns a paginated list of the pull request's activity log."
   }
 }

@@ -76,3 +76,4 @@ Feature: Qualified operation display metadata
       | xai:handle_upload_file_request |
       | aws-s3:GetObject |
       | aws-s3:PutObject |
+      | bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/activity |
