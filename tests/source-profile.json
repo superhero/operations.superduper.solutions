@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/catalog-path-bindings.test.mjs",
     "src/json-request-media.test.mjs",
     "src/empty-request-body.test.mjs",
     "src/query-schema.test.mjs",
@@ -115,6 +116,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/catalog-path-bindings.feature",
     "src/json-request-media.feature",
     "src/empty-request-body.feature",
     "src/query-schema.feature",

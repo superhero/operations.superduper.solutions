@@ -1,0 +1,1998 @@
+{
+  "version": 1,
+  "sources": {
+    "atlassian-admin-organizations": {
+      "sha256": "270392b944e9ad895c2c6ce6d81db50d5da336d0bb10a0edc47619ae44263bb1",
+      "title": "API for Atlassian Access",
+      "version": "1.0",
+      "openapi": "3.0.0",
+      "servers": [
+        {
+          "url": "https://api.atlassian.com/admin"
+        }
+      ]
+    },
+    "atlassian-commerce": {
+      "sha256": "f857bab047794449bede893e617f6d8f07169837197a6848546546b48faa1d08",
+      "title": "Commerce Cloud REST API",
+      "version": "1.0.0",
+      "openapi": "3.0.2",
+      "servers": [
+        {
+          "url": "https://api.atlassian.com/commerce/api"
+        }
+      ]
+    },
+    "atlassian-incidents": {
+      "sha256": "9788e6bd62b45a5a157e5a0854f9586ea9bf18bfe573ea6d6932d5a40e950339",
+      "title": "JSM Incident API",
+      "version": "1",
+      "openapi": "3.0.1",
+      "servers": [
+        {
+          "url": "https://api.atlassian.com"
+        }
+      ]
+    },
+    "atlassian-marketplace-product-tags": {
+      "sha256": "b2ff5be0cacb2b1ec99fb496c271806513f7b1be71c5c7308ac11d07b3d40660",
+      "title": "Atlassian Marketplace API",
+      "version": "3",
+      "openapi": "3.0.2",
+      "servers": [
+        {
+          "url": "https://api.atlassian.com"
+        }
+      ]
+    },
+    "bamboo": {
+      "sha256": "a5f54819ac94622e3855a4a809404b538858fd98ac51690e25960643634a2b4e",
+      "title": "Bamboo",
+      "version": "12.1.12",
+      "openapi": "3.0.1",
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest/",
+          "variables": {
+            "baseurl": {
+              "default": "example.com:8085",
+              "description": "Bamboo URL"
+            }
+          }
+        }
+      ]
+    },
+    "bitbucket-dc": {
+      "sha256": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
+      "title": "Bitbucket Data Center",
+      "version": "10.5",
+      "openapi": "3.0.1",
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest",
+          "variables": {
+            "baseurl": {
+              "default": "example.com:7990",
+              "description": "Address of your Bitbucket instance"
+            }
+          }
+        }
+      ]
+    },
+    "jira-dc": {
+      "sha256": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
+      "title": "Jira Software Data Center REST API Reference",
+      "version": "11.3.12",
+      "openapi": "3.0.1",
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest",
+          "variables": {
+            "baseurl": {
+              "default": "localhost:8090",
+              "description": "Address of your Jira Data Center instance"
+            }
+          }
+        }
+      ]
+    },
+    "jira-service-management-dc": {
+      "sha256": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
+      "title": "JIRA Service Management REST API Reference",
+      "version": "11.3.12",
+      "openapi": "3.0.1",
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest",
+          "variables": {
+            "baseurl": {
+              "default": "localhost:2990",
+              "description": "Address of your Jira Service Management instance"
+            }
+          }
+        }
+      ]
+    },
+    "jira-service-management-ops": {
+      "sha256": "c0fb62c243a89256567fdfb82d3667cd779f9a99dff9a9efe5b3a99b375b0d1d",
+      "title": "JSM Operations API",
+      "version": "1",
+      "openapi": "3.0.1",
+      "servers": [
+        {
+          "url": "https://api.atlassian.com/jsm/ops/",
+          "description": "Generated server url"
+        }
+      ]
+    },
+    "trello": {
+      "sha256": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
+      "title": "Trello REST API",
+      "version": "0.0.1",
+      "openapi": "3.0.0",
+      "servers": [
+        {
+          "url": "https://api.trello.com/1"
+        }
+      ]
+    }
+  },
+  "operations": [
+    {
+      "catalog": "atlassian-admin-organizations",
+      "id": "atlassian-admin-organizations:GET /v2/orgs/{orgId}/directories/{directoryId}/users/{userId}",
+      "method": "GET",
+      "path": "/v2/orgs/{orgId}/directories/{directoryId}/users/{userId}",
+      "actions": [
+        {
+          "kind": "rename",
+          "name": "accountId",
+          "target": "userId"
+        }
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/orgIdParam"
+        },
+        {
+          "$ref": "#/components/parameters/directoryIdParam"
+        },
+        {
+          "$ref": "#/components/parameters/accountIdParam"
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-commerce",
+      "id": "atlassian-commerce:DELETE /v1/pricing-plans/{id}",
+      "method": "DELETE",
+      "path": "/v1/pricing-plans/{id}",
+      "actions": [
+        {
+          "kind": "rename",
+          "name": "key",
+          "target": "id"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "X-Catalog-Account",
+          "in": "header",
+          "required": false,
+          "style": "simple",
+          "explode": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "key",
+          "in": "path",
+          "required": true,
+          "style": "simple",
+          "explode": false,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:DELETE /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}",
+      "method": "DELETE",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:DELETE /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/chat/channel/unlink",
+      "method": "DELETE",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/chat/channel/unlink",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:DELETE /jsm/incidents/cloudId/{cloudId}/v1/post-incident-review/{issueID}/primary-incident/remove",
+      "method": "DELETE",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/post-incident-review/{issueID}/primary-incident/remove",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "JSM Post-incident review Issue ID.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/affected-service",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/affected-service",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/alert",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/alert",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "startKey",
+          "in": "query",
+          "description": "Pagination parameter for the next page.",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/chat/channel",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/chat/channel",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/major",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/major",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder-alerts",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder-alerts",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/stakeholder",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/stakeholder",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/post-incident-review/{issueID}/primary-incident",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/post-incident-review/{issueID}/primary-incident",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "JSM Post-incident review Issue ID.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:GET /jsm/incidents/cloudId/{cloudId}/v1/request/{requestId}",
+      "method": "GET",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/request/{requestId}",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "requestId",
+          "in": "path",
+          "description": "Unique ID returned by API that returns <code>202 - Accepted</code>.",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "##default"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": null
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/bulk/link-alerts",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/bulk/link-alerts",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": null
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/affected-service/add",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/affected-service/add",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/affected-service/remove",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/affected-service/remove",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/alert/add",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/alert/add",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/alert/remove",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/alert/remove",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/chat/channel/create",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/chat/channel/create",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/major",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/major",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder/add",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder/add",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder/remove",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/responder/remove",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/stakeholder/add",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/stakeholder/add",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/stakeholder/remove",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/incident/{issueID}/stakeholder/remove",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "The ID of the incident issue.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/post-incident-review",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/post-incident-review",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": null
+    },
+    {
+      "catalog": "atlassian-incidents",
+      "id": "atlassian-incidents:POST /jsm/incidents/cloudId/{cloudId}/v1/post-incident-review/{issueID}/primary-incident/add",
+      "method": "POST",
+      "path": "/jsm/incidents/cloudId/{cloudId}/v1/post-incident-review/{issueID}/primary-incident/add",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "cloudId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit cloudId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "issueID",
+          "in": "path",
+          "description": "JSM Post-incident review Issue ID.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "atlassian-marketplace-product-tags",
+      "id": "atlassian-marketplace-product-tags:GET /marketplace/rest/1/product-tags/{productTagId}",
+      "method": "GET",
+      "path": "/marketplace/rest/1/product-tags/{productTagId}",
+      "actions": [
+        {
+          "kind": "rename",
+          "name": "ProductTagId",
+          "target": "productTagId"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "ProductTagId",
+          "in": "path",
+          "description": "The unique identifier for this Product tag, for example \"ca794339-9b4f-41ed-8b8d-cae9ee1a2676\"",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "bamboo",
+      "id": "bamboo:DELETE /admin/latest/session/{name}",
+      "method": "DELETE",
+      "path": "/admin/latest/session/{name}",
+      "actions": [
+        {
+          "kind": "remove",
+          "name": "user"
+        }
+      ],
+      "parameters": [
+        {
+          "in": "path",
+          "name": "name",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "(.+)?"
+          }
+        },
+        {
+          "description": "Username",
+          "in": "path",
+          "name": "user",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "bamboo",
+      "id": "bamboo:GET /responsibility/latest/brokenBuild/{planResultKeyOrPlanKey}",
+      "method": "GET",
+      "path": "/responsibility/latest/brokenBuild/{planResultKeyOrPlanKey}",
+      "actions": [
+        {
+          "kind": "remove",
+          "name": "name"
+        }
+      ],
+      "parameters": [
+        {
+          "description": "User name",
+          "in": "path",
+          "name": "name",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Chain result or plan key, e.g. PROJ-PLAN or PROJ-PLAN-2",
+          "in": "path",
+          "name": "planResultKeyOrPlanKey",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "bitbucket-dc",
+      "id": "bitbucket-dc:DELETE /api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "projectKey",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit projectKey identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "repositorySlug",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit repositorySlug identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": null
+    },
+    {
+      "catalog": "bitbucket-dc",
+      "id": "bitbucket-dc:GET /api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "projectKey",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit projectKey identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "repositorySlug",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit repositorySlug identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": null
+    },
+    {
+      "catalog": "bitbucket-dc",
+      "id": "bitbucket-dc:GET /api/latest/projects/{projectKey}/secret-scanning/exempt",
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/exempt",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "projectKey",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit projectKey identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "description": "Order by project name followed by repository name either ascending or descending, defaults to ascending.",
+          "in": "query",
+          "name": "order",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "NAME_ASC",
+              "NAME_DESC"
+            ]
+          }
+        },
+        {
+          "description": "Start number for the page (inclusive). If not passed, first page is assumed.",
+          "example": 0,
+          "in": "query",
+          "name": "start",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "example": 0
+          }
+        },
+        {
+          "description": "Number of items to return. If not passed, a page size of 25 is used.",
+          "example": 25,
+          "in": "query",
+          "name": "limit",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "example": 25
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "bitbucket-dc",
+      "id": "bitbucket-dc:PUT /api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "projectKey",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit projectKey identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "repositorySlug",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit repositorySlug identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": null
+    },
+    {
+      "catalog": "jira-dc",
+      "id": "jira-dc:DELETE /api/2/filter/{id}/permission/{permission-id}",
+      "method": "DELETE",
+      "path": "/api/2/filter/{id}/permission/{permission-id}",
+      "actions": [
+        {
+          "kind": "remove",
+          "name": "permissionId"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "permissionId",
+          "in": "path",
+          "description": "The permission id.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "description": "The filter id.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "permission-id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-dc",
+      "id": "jira-dc:DELETE /api/2/issuetype/{id}",
+      "method": "DELETE",
+      "path": "/api/2/issuetype/{id}",
+      "actions": [
+        {
+          "kind": "query",
+          "name": "alternativeIssueTypeId",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "The issue type id.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "alternativeIssueTypeId",
+          "in": "path",
+          "description": "The id of an issue type to which issues associated with the removed issue type will be migrated.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-dc",
+      "id": "jira-service-management-dc:DELETE /api/2/filter/{id}/permission/{permission-id}",
+      "method": "DELETE",
+      "path": "/api/2/filter/{id}/permission/{permission-id}",
+      "actions": [
+        {
+          "kind": "remove",
+          "name": "permissionId"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "permissionId",
+          "in": "path",
+          "description": "The permission id.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "description": "The filter id.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "permission-id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-dc",
+      "id": "jira-service-management-dc:DELETE /api/2/issuetype/{id}",
+      "method": "DELETE",
+      "path": "/api/2/issuetype/{id}",
+      "actions": [
+        {
+          "kind": "query",
+          "name": "alternativeIssueTypeId",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "The issue type id.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "alternativeIssueTypeId",
+          "in": "path",
+          "description": "The id of an issue type to which issues associated with the removed issue type will be migrated.",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:DELETE /api/{cloudId}/v1/alerts/{id}/extra-properties",
+      "method": "DELETE",
+      "path": "/api/{cloudId}/v1/alerts/{id}/extra-properties",
+      "actions": [
+        {
+          "kind": "rename",
+          "name": "alertId",
+          "target": "id"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "alertId",
+          "in": "path",
+          "required": true,
+          "description": "Identifier of the alert.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:DELETE /api/{cloudId}/v1/alerts/{id}/tags",
+      "method": "DELETE",
+      "path": "/api/{cloudId}/v1/alerts/{id}/tags",
+      "actions": [
+        {
+          "kind": "rename",
+          "name": "alertId",
+          "target": "id"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "alertId",
+          "in": "path",
+          "required": true,
+          "description": "Identifier of the alert.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:GET /api/{cloudId}/v1/integrations/{integrationId}/actions",
+      "method": "GET",
+      "path": "/api/{cloudId}/v1/integrations/{integrationId}/actions",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit integrationId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "type",
+          "description": "Type of the integration action.",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "direction",
+          "description": "Direction of the action. It can be *incoming* or *outgoing*",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "domain",
+          "in": "query",
+          "required": false,
+          "description": "Domain of the action. It can be *alert*",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "description": "Name of the integration action.",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "description": "The index of the first item to return in a page of results.",
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          }
+        },
+        {
+          "name": "size",
+          "in": "query",
+          "description": "The maximum number of items to return per page.",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "default": 50
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:GET /api/{cloudId}/v1/integrations/{integrationId}/outgoing/alert-filter/main",
+      "method": "GET",
+      "path": "/api/{cloudId}/v1/integrations/{integrationId}/outgoing/alert-filter/main",
+      "actions": [
+        {
+          "kind": "rename",
+          "name": "id",
+          "target": "integrationId"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "description": "ID of the integration.",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:GET /api/{cloudId}/v1/syncs/{syncId}/action-groups/{id}",
+      "method": "GET",
+      "path": "/api/{cloudId}/v1/syncs/{syncId}/action-groups/{id}",
+      "actions": [
+        {
+          "kind": "rename",
+          "name": "actionGroupId",
+          "target": "id"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "syncId",
+          "in": "path",
+          "description": "Id of the sync",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "description": "Id of the sync"
+          }
+        },
+        {
+          "name": "actionGroupId",
+          "in": "path",
+          "description": "Id of the action group",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "description": "Id of the action group"
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:GET /api/{cloudId}/v1/syncs/{syncId}/actions",
+      "method": "GET",
+      "path": "/api/{cloudId}/v1/syncs/{syncId}/actions",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "syncId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit syncId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "type",
+          "in": "query",
+          "description": "Type of the action.",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "Type of the action."
+          }
+        },
+        {
+          "name": "direction",
+          "in": "query",
+          "description": "Direction of the action.",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "Direction of the action."
+          }
+        },
+        {
+          "name": "groupId",
+          "in": "query",
+          "description": "Id of the action group that the action belongs to.",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "Id of the action group that the action belongs to."
+          }
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "description": "Name of the action.",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "Name of the action."
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "description": "The offset parameter controls the starting point within the collection of resource results.",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "The offset parameter controls the starting point within the collection of resource results."
+          }
+        },
+        {
+          "name": "size",
+          "in": "query",
+          "description": "The limit parameter controls the maximum number of items that may be returned for a single request.",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "description": "The limit parameter controls the maximum number of items that may be returned for a single request."
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:GET /api/{cloudId}/v1/teams/{teamId}/requests/{requestId}",
+      "method": "GET",
+      "path": "/api/{cloudId}/v1/teams/{teamId}/requests/{requestId}",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit teamId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "requestId",
+          "in": "path",
+          "required": true,
+          "description": "ID of the request.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:PATCH /api/{cloudId}/v1/integrations/{integrationId}/outgoing/alert-filter/main",
+      "method": "PATCH",
+      "path": "/api/{cloudId}/v1/integrations/{integrationId}/outgoing/alert-filter/main",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit integrationId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:POST /api/{cloudId}/v1/alerts/policies/{policyId}/change-order",
+      "method": "POST",
+      "path": "/api/{cloudId}/v1/alerts/policies/{policyId}/change-order",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit policyId identifier for this operation.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "jira-service-management-ops",
+      "id": "jira-service-management-ops:POST /api/{cloudId}/v1/teams/{teamId}/policies",
+      "method": "POST",
+      "path": "/api/{cloudId}/v1/teams/{teamId}/policies",
+      "actions": [
+        {
+          "kind": "remove",
+          "name": "policyId"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "policyId",
+          "in": "path",
+          "required": true,
+          "description": "Identifier of the policy.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "teamId",
+          "in": "path",
+          "description": "The jira team identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cloudId",
+          "in": "path",
+          "required": true,
+          "description": "The cloud ID of the selected Jira instance. Supply its explicit site identifier.",
+          "schema": {
+            "type": "string",
+            "title": "Cloud ID",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+          }
+        }
+      ]
+    },
+    {
+      "catalog": "trello",
+      "id": "trello:PUT /cards/{idCard}/customFields",
+      "method": "PUT",
+      "path": "/cards/{idCard}/customFields",
+      "actions": [
+        {
+          "kind": "add",
+          "parameter": {
+            "name": "idCard",
+            "in": "path",
+            "required": true,
+            "description": "Supply the explicit idCard identifier for this operation.",
+            "schema": {
+              "$ref": "#/components/schemas/TrelloID"
+            }
+          }
+        }
+      ],
+      "parameters": null
+    }
+  ]
+}

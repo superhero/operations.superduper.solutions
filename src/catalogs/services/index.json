@@ -84,7 +84,15 @@
     "sha256": "270392b944e9ad895c2c6ce6d81db50d5da336d0bb10a0edc47619ae44263bb1",
     "sourceSha256": "84d325e0640afed8890c7e9e1d258d7ed553eeda24314dc5d20ff75532455485",
     "bytes": 184146,
-    "compressedBytes": 24449
+    "compressedBytes": 24449,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "9e712cd49030bd38196272fc032873bca842e7de210af744ccd30fa8d6daa443",
+    "effectiveBytes": 184401
   },
   {
     "id": "atlassian-admin-users",
@@ -211,10 +219,14 @@
       {
         "id": "atlassian-dc-authentication",
         "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
       }
     ],
-    "effectiveSha256": "fc79736d2a5c3904419440887446b4af21db6c8101c8f2e3f44c5d4690af1022",
-    "effectiveBytes": 613997
+    "effectiveSha256": "0e9b555fcf5f4c5147332f5ac5bce232fbe0e6d8ab5cd5b127c17edd4cd364ff",
+    "effectiveBytes": 614299
   },
   {
     "id": "bitbucket",
@@ -245,7 +257,15 @@
     "sha256": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
     "sourceSha256": "e736bc5916a1078955f5c28f47ccb67dc5b9b778f4abc77addfad56974bc4ad9",
     "bytes": 1309472,
-    "compressedBytes": 119473
+    "compressedBytes": 119473,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f4e8fb1544dc3341bbb70d0247b2b88c5d904e4248d8f6a89cb49668e690084c",
+    "effectiveBytes": 1311423
   },
   {
     "id": "atlassian-capacity-planning",
@@ -277,7 +297,15 @@
     "sha256": "f857bab047794449bede893e617f6d8f07169837197a6848546546b48faa1d08",
     "sourceSha256": "37f169f9a452b2a46edb85621e0bd730e7d2a31cbe41e57d0e338546c4a94067",
     "bytes": 455678,
-    "compressedBytes": 53641
+    "compressedBytes": 53641,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "97fab47825e876a97dc4160999bfd30f0e14bbe298c63f5ee31a5806501a7a9b",
+    "effectiveBytes": 455926
   },
   {
     "id": "atlassian-commerce-it",
@@ -468,7 +496,15 @@
     "sha256": "9788e6bd62b45a5a157e5a0854f9586ea9bf18bfe573ea6d6932d5a40e950339",
     "sourceSha256": "a2d5a9c2807675c32b70d86f9f43d106e9a6d16297c9ec1afb81783903bb1e1c",
     "bytes": 58761,
-    "compressedBytes": 7794
+    "compressedBytes": 7794,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "40de4bbcb3380621d8bd9a110a455eb490ce0f879ed56b0b553a2228e6c687ac",
+    "effectiveBytes": 67423
   },
   {
     "id": "jira",
@@ -524,10 +560,14 @@
       {
         "id": "atlassian-dc-authentication",
         "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
       }
     ],
-    "effectiveSha256": "952e361d41d9757483318893bf27cec2a6517c778e46fd9c0eef776e362837a4",
-    "effectiveBytes": 785816
+    "effectiveSha256": "3226c59d907a9eadbd19288d0be51096d15f746e5fe1714197b1e1777e899de1",
+    "effectiveBytes": 786374
   },
   {
     "id": "jira-service-management-ops",
@@ -553,10 +593,14 @@
       {
         "id": "atlassian-server-bindings",
         "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
       }
     ],
-    "effectiveSha256": "ef77a1a70332a053b8fb636f4cbe911acb58cdff5fc04f3b8cda596730e9e797",
-    "effectiveBytes": 695949
+    "effectiveSha256": "7f087622eec225ebcc2f12cd64b5e101b6d127017e88b4f14d17779b5fcd8b09",
+    "effectiveBytes": 702614
   },
   {
     "id": "jira-software",
@@ -597,10 +641,14 @@
       {
         "id": "atlassian-dc-authentication",
         "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
       }
     ],
-    "effectiveSha256": "8dfa96c50de9e8b19eda1e8129b2ba30c373bc096980182dcb74ac613a0db628",
-    "effectiveBytes": 633720
+    "effectiveSha256": "c5dd26b63ac838fef431bf039e6ed6976748ed467f30bb4a072cc723b69b4c57",
+    "effectiveBytes": 634278
   },
   {
     "id": "atlassian-marketplace",
@@ -632,7 +680,15 @@
     "sha256": "b2ff5be0cacb2b1ec99fb496c271806513f7b1be71c5c7308ac11d07b3d40660",
     "sourceSha256": "9689c778628b66a72f5db62050eab0cb0b3c66661e5480899f1b78ab0433df37",
     "bytes": 3158,
-    "compressedBytes": 961
+    "compressedBytes": 961,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "32d47cdc35298885d57d2968f65d48de269345a8248f5c180902483df4734522",
+    "effectiveBytes": 3376
   },
   {
     "id": "atlassian-migration-api",
@@ -765,7 +821,15 @@
     "sha256": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
     "sourceSha256": "b07c97d06e93f7caff661a307e86f2b58c1f97591614ac8179f8e31bda27334b",
     "bytes": 291280,
-    "compressedBytes": 34309
+    "compressedBytes": 34309,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "3216bf23cd25cdc35ac85e15bed4f793c3813a8cf93b7fb69c99260fbc179516",
+    "effectiveBytes": 291494
   },
   {
     "id": "aws-apigatewayv2",

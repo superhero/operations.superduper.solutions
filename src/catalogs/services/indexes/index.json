@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "83e0083763af16c8823ce84e2bf6ced088d04f90fc930ac9ddc8c3e18ee23f33",
+  "adapterRevision": "0de9d1bc605c03f5f8660783237ab87aff03a31ed3771f1358aa923a50954f30",
   "indexes": [
     {
       "id": "anthropic",
@@ -57,15 +57,15 @@
     },
     {
       "id": "atlassian-admin-organizations",
-      "sourceRevision": "270392b944e9ad895c2c6ce6d81db50d5da336d0bb10a0edc47619ae44263bb1",
-      "bytes": 23390,
-      "compressedBytes": 1865,
-      "sha256": "a87a02a7adc87a6b7a56447bc65a9b10ed1edec8e09869deea73ab83a40f660d",
+      "sourceRevision": "9e712cd49030bd38196272fc032873bca842e7de210af744ccd30fa8d6daa443",
+      "bytes": 23142,
+      "compressedBytes": 1774,
+      "sha256": "d648888181da8f85cbe46aad69f4afc4b77c5367df1046cef04d7700585e1ca2",
       "summary": {
         "name": "API for Atlassian Access",
         "serverUrl": "https://api.atlassian.com/admin",
         "operationCount": 47,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
@@ -151,16 +151,16 @@
     },
     {
       "id": "bamboo",
-      "sourceRevision": "fc79736d2a5c3904419440887446b4af21db6c8101c8f2e3f44c5d4690af1022",
-      "bytes": 157379,
-      "compressedBytes": 9815,
-      "sha256": "666d01461d87ffd79f0b30d690bbfcce8eeed18634bd525cadcbe4f66ec11a5d",
+      "sourceRevision": "0e9b555fcf5f4c5147332f5ac5bce232fbe0e6d8ab5cd5b127c17edd4cd364ff",
+      "bytes": 156999,
+      "compressedBytes": 9714,
+      "sha256": "c164ed4fa30dd63713996d8eac0a3ba2eb075586254b4beb22a737b9afdc0ee5",
       "summary": {
         "name": "Bamboo",
         "serverUrl": "http://example.com:8085/rest",
         "description": "This is the reference document for the Atlassian Bamboo REST API. The REST API is for developers who want to: \n\n - integrate Bamboo with other applications;\n\n - create scripts that interact with Bamboo; or\n\n - develop plugins that enhance the Bamboo UI, using REST to interact with the backend. \n\n You can read more about developing Bamboo plugins in the [Bamboo Developer Documentation](https://developer.atlassian.com/bamboo/server/docs/latest/).",
         "operationCount": 404,
-        "unavailableCount": 3
+        "unavailableCount": 1
       }
     },
     {
@@ -179,16 +179,16 @@
     },
     {
       "id": "bitbucket-dc",
-      "sourceRevision": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
-      "bytes": 222762,
-      "compressedBytes": 15858,
-      "sha256": "392f14512fb43f3d668e9607732b46c0f2a7935dce53e8201e01d11acab6658c",
+      "sourceRevision": "f4e8fb1544dc3341bbb70d0247b2b88c5d904e4248d8f6a89cb49668e690084c",
+      "bytes": 221707,
+      "compressedBytes": 15823,
+      "sha256": "fd5e68aa223d744738869847d52e9777198e01c26452848514f27d8c680147c0",
       "summary": {
         "name": "Bitbucket Data Center",
         "serverUrl": "http://example.com:7990/rest",
         "description": "This is the reference document for the Atlassian Bitbucket REST API. The REST API is for developers who want to: \n\n - integrate Bitbucket with other applications;\n\n - create scripts that interact with Bitbucket; or\n\n - develop plugins that enhance the Bitbucket UI, using REST to interact with the backend. \n\n You can read more about developing Bitbucket plugins in the [Bitbucket Developer Documentation](https://developer.atlassian.com/bitbucket/server/docs/latest/).",
         "operationCount": 574,
-        "unavailableCount": 24
+        "unavailableCount": 20
       }
     },
     {
@@ -207,15 +207,15 @@
     },
     {
       "id": "atlassian-commerce",
-      "sourceRevision": "f857bab047794449bede893e617f6d8f07169837197a6848546546b48faa1d08",
-      "bytes": 14156,
-      "compressedBytes": 1764,
-      "sha256": "131ed596f63c3e9b8d487b156be470da4953d0db2b203a3e3ada475ab10b7bc0",
+      "sourceRevision": "97fab47825e876a97dc4160999bfd30f0e14bbe298c63f5ee31a5806501a7a9b",
+      "bytes": 13924,
+      "compressedBytes": 1695,
+      "sha256": "d25815e9123dadd8e38510e3e00e6dcf195d02476e5e0d1a2825ef2e18ad476a",
       "summary": {
         "name": "Commerce Cloud REST API",
         "serverUrl": "https://api.atlassian.com/commerce/api",
         "operationCount": 40,
-        "unavailableCount": 7
+        "unavailableCount": 6
       }
     },
     {
@@ -371,16 +371,16 @@
     },
     {
       "id": "atlassian-incidents",
-      "sourceRevision": "9788e6bd62b45a5a157e5a0854f9586ea9bf18bfe573ea6d6932d5a40e950339",
-      "bytes": 20464,
-      "compressedBytes": 1530,
-      "sha256": "5f39015e5701f285b5f0dcd48eb69115b52b5ffd7606bfd29b94db7db10bd587",
+      "sourceRevision": "40de4bbcb3380621d8bd9a110a455eb490ce0f879ed56b0b553a2228e6c687ac",
+      "bytes": 14812,
+      "compressedBytes": 1353,
+      "sha256": "1e0f930627bb8c94b9426d8944d42fb9f965ef87b081523cc96d4a929b4180fb",
       "summary": {
         "name": "JSM Incident API",
         "serverUrl": "https://api.atlassian.com",
         "description": "Incident Management APIs for Jira Service Management",
         "operationCount": 27,
-        "unavailableCount": 27
+        "unavailableCount": 0
       }
     },
     {
@@ -413,30 +413,30 @@
     },
     {
       "id": "jira-service-management-dc",
-      "sourceRevision": "952e361d41d9757483318893bf27cec2a6517c778e46fd9c0eef776e362837a4",
-      "bytes": 218487,
-      "compressedBytes": 17056,
-      "sha256": "0f48966d5ee99c4376153c124abed30164d59dcedf259ff1a209238ba30fed37",
+      "sourceRevision": "3226c59d907a9eadbd19288d0be51096d15f746e5fe1714197b1e1777e899de1",
+      "bytes": 218131,
+      "compressedBytes": 16970,
+      "sha256": "ef5fbd9a844c3b423a6d6d9af24714316c006632b9ac5706fe3908423f288256",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Service Management Data Center. The REST APIs are for developers who want to integrate Jira Service Management Data Center with other applications, and for administrators who want to script configuration interactions with Jira Service Management Data Center.## Using the REST API\nNot familiar with the Jira Service Management REST APIs? Start with our [Guide to exploring the Jira Service Management domain model via the REST APIs](https://developer.atlassian.com/display/JIRADEV/Guide+-+Exploring+the+JIRA+Service+Desk+domain+model+via+the+REST+APIs), which will help you get a conceptual understanding of the Jira Service Management Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the information on the following topics:\n* [Structure of the REST URIs](/server/jira-servicedesk/info/url-structure)\n* [Authentication](/server/jira-servicedesk/info/authentication)\n* [Expansion](/server/jira-servicedesk/info/expansion)\n* [Special headers](/server/jira-servicedesk/info/special-headers)\n* [Field input formats](/server/jira-servicedesk/info/field-input-formats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 514,
-        "unavailableCount": 12
+        "unavailableCount": 10
       }
     },
     {
       "id": "jira-service-management-ops",
-      "sourceRevision": "ef77a1a70332a053b8fb636f4cbe911acb58cdff5fc04f3b8cda596730e9e797",
-      "bytes": 157281,
-      "compressedBytes": 7341,
-      "sha256": "c5c0edd4c465e0d2e3cf26c8375640dbce887d1855896bfcb0e69a4bf669e08e",
+      "sourceRevision": "7f087622eec225ebcc2f12cd64b5e101b6d127017e88b4f14d17779b5fcd8b09",
+      "bytes": 155149,
+      "compressedBytes": 7114,
+      "sha256": "5b846e4d34f4f348ff6b7c0820bec270423275dadd0d4369dfd2c947ac9c34a6",
       "summary": {
         "name": "JSM Operations API",
         "serverUrl": "https://api.atlassian.com/jsm/ops",
         "description": "Operations APIs for Jira Service Management",
         "operationCount": 240,
-        "unavailableCount": 10
+        "unavailableCount": 0
       }
     },
     {
@@ -455,16 +455,16 @@
     },
     {
       "id": "jira-dc",
-      "sourceRevision": "8dfa96c50de9e8b19eda1e8129b2ba30c373bc096980182dcb74ac613a0db628",
-      "bytes": 169952,
-      "compressedBytes": 14294,
-      "sha256": "1c0fa4110034f817ac01a6dcb076e7ddb035e843e5d67bf435406db518a76a9f",
+      "sourceRevision": "c5dd26b63ac838fef431bf039e6ed6976748ed467f30bb4a072cc723b69b4c57",
+      "bytes": 169596,
+      "compressedBytes": 14210,
+      "sha256": "a90ad093d7bea863c93ba96ac99bfa27ff46d2f576d5d938d876be3e036c846b",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Software Data Center. The REST APIs are for developers who want to integrate Jira Data Center with other applications, and for administrators who want to script configuration interactions with Jira Data Center.\n\nJira Data Center is built upon the Jira platform.  As such there is a natural overlap in functionality between what is provided by Jira Data Center and what is provided by the Jira platform.  If you are after an introductory, high-level view of the Jira REST APIs, then the best place to start is the [Jira REST API home](https://developer.atlassian.com/server/jira/platform/rest-apis/).\n## Using the REST API\nNot familiar with the Jira Data Center REST APIs? Start with our [Guide to exploring the Jira Data Center domain model via the REST APIs](https://developer.atlassian.com/server/jira/platform/tutorials_and_guides/), which will help you get a conceptual understanding of the Jira Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the [Appendix](#appendix) at the end of this page (after the resources), where you'll find information on the following topics:\n* [Structure of the REST URIs](#structure)\n* [Authentication](#authentication)\n* [Pagination](#pagination)\n* [Expansion](#expansion)\n* [Special headers](#special-headers)\n* [Field input formats](#fieldformats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 437,
-        "unavailableCount": 9
+        "unavailableCount": 7
       }
     },
     {
@@ -482,15 +482,15 @@
     },
     {
       "id": "atlassian-marketplace-product-tags",
-      "sourceRevision": "b2ff5be0cacb2b1ec99fb496c271806513f7b1be71c5c7308ac11d07b3d40660",
-      "bytes": 1601,
-      "compressedBytes": 553,
-      "sha256": "57b8a019ff521ef1b37721d7de3863e7a95093e4ab749d661b66cc6853f07853",
+      "sourceRevision": "32d47cdc35298885d57d2968f65d48de269345a8248f5c180902483df4734522",
+      "bytes": 1325,
+      "compressedBytes": 449,
+      "sha256": "21318c62f65edfea13933f92fdac5f591db29c48f5114002aacd46409651fdd8",
       "summary": {
         "name": "Atlassian Marketplace API",
         "serverUrl": "https://api.atlassian.com",
         "operationCount": 2,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
@@ -592,15 +592,15 @@
     },
     {
       "id": "trello",
-      "sourceRevision": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
-      "bytes": 91082,
-      "compressedBytes": 6947,
-      "sha256": "2bc8dc2f2bad075aa52b2dfe999243cc94af893f430134c1d0c930f7f75a8040",
+      "sourceRevision": "3216bf23cd25cdc35ac85e15bed4f793c3813a8cf93b7fb69c99260fbc179516",
+      "bytes": 90913,
+      "compressedBytes": 6883,
+      "sha256": "25f947bc154207b8e0c87d06eba0b05a79e52972fc8e3121ed220720275a1ed0",
       "summary": {
         "name": "Trello REST API",
         "serverUrl": "https://api.trello.com/1",
         "operationCount": 261,
-        "unavailableCount": 4
+        "unavailableCount": 3
       }
     },
     {
