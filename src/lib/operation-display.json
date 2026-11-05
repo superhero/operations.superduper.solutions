@@ -23,5 +23,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/Keys.json",
     "name": "Create new key"
+  },
+  "twilio:CreateParticipant": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Participants.json",
+    "name": "Create participant"
   }
 }

@@ -15,3 +15,4 @@ Feature: Qualified operation display metadata
       | twilio:CreateIncomingPhoneNumberMobile |
       | twilio:CreateIncomingPhoneNumberTollFree |
       | twilio:CreateNewKey |
+      | twilio:CreateParticipant |
