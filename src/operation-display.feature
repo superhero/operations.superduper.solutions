@@ -25,3 +25,4 @@ Feature: Qualified operation display metadata
       | twilio:FetchAddress |
       | twilio:FetchAvailablePhoneNumberCountry |
       | twilio:FetchCallNotification |
+      | twilio:FetchKey |
