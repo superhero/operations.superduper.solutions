@@ -273,5 +273,10 @@
     "method": "POST",
     "path": "/v1/files/{file_id}/public-url",
     "name": "Create public file URL"
+  },
+  "xai:handle_generic_model_request": {
+    "method": "POST",
+    "path": "/v1/responses",
+    "name": "Generate a response"
   }
 }
