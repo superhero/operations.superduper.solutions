@@ -98,5 +98,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers.json",
     "name": "List countries with available phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberLocal": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Local.json",
+    "name": "List available local phone numbers"
   }
 }

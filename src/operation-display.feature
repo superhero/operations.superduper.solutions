@@ -30,3 +30,4 @@ Feature: Qualified operation display metadata
       | twilio:FetchSigningKey |
       | twilio:ListAddress |
       | twilio:ListAvailablePhoneNumberCountry |
+      | twilio:ListAvailablePhoneNumberLocal |
