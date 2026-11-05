@@ -26,3 +26,4 @@ Feature: Qualified operation display metadata
       | twilio:FetchAvailablePhoneNumberCountry |
       | twilio:FetchCallNotification |
       | twilio:FetchKey |
+      | twilio:FetchRecordingTranscription |
