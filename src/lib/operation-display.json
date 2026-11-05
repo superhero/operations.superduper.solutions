@@ -253,5 +253,10 @@
     "method": "POST",
     "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups/{backupId}/list",
     "name": "Get slot backup status and secrets"
+  },
+  "azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheck": {
+    "method": "PATCH",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/networkConfig/virtualNetwork",
+    "name": "Update app virtual network connection"
   }
 }
