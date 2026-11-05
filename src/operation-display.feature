@@ -23,3 +23,4 @@ Feature: Qualified operation display metadata
       | twilio:DeleteSigningKey |
       | twilio:DeleteUsageTrigger |
       | twilio:FetchAddress |
+      | twilio:FetchAvailablePhoneNumberCountry |

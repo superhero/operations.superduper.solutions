@@ -63,5 +63,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json",
     "name": "Fetch address"
+  },
+  "twilio:FetchAvailablePhoneNumberCountry": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}.json",
+    "name": "Fetch available phone number country"
   }
 }
