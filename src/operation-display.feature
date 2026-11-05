@@ -88,3 +88,4 @@ Feature: Qualified operation display metadata
       | github:migrations/get-import-status |
       | github:repos/compare-commits |
       | jira:evaluateJSISJiraExpression |
+      | jira:evaluateJiraExpression |

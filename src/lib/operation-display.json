@@ -373,5 +373,10 @@
     "method": "POST",
     "path": "/rest/api/3/expression/evaluate",
     "description": "Evaluates a Jira expression and returns its value. The difference between this and `eval` is that this endpoint uses the enhanced search API when evaluating JQL queries. This API is eventually consistent, unlike the strongly consistent `eval` API. This allows for better performance and scalability. In addition, this API's response for JQL evaluation is based on a scrolling view (backed by a `nextPageToken`) instead of a paginated view (backed by `startAt` and `totalCount`)."
+  },
+  "jira:evaluateJiraExpression": {
+    "method": "POST",
+    "path": "/rest/api/3/expression/eval",
+    "description": "Endpoint is currently being removed. [More details](https://developer.atlassian.com/changelog/#CHANGE-2046)"
   }
 }
