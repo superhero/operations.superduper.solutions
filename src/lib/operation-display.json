@@ -83,5 +83,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions/{Sid}.json",
     "name": "Fetch recording transcription"
+  },
+  "twilio:FetchSigningKey": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys/{Sid}.json",
+    "name": "Fetch signing key"
   }
 }

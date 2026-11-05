@@ -27,3 +27,4 @@ Feature: Qualified operation display metadata
       | twilio:FetchCallNotification |
       | twilio:FetchKey |
       | twilio:FetchRecordingTranscription |
+      | twilio:FetchSigningKey |
