@@ -19,3 +19,4 @@ Feature: Qualified operation display metadata
       | twilio:CreateValidationRequest |
       | twilio:DeleteAddress |
       | twilio:DeleteKey |
+      | twilio:DeleteRecordingTranscription |

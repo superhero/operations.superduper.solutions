@@ -43,5 +43,10 @@
     "method": "DELETE",
     "path": "/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json",
     "name": "Delete key"
+  },
+  "twilio:DeleteRecordingTranscription": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions/{Sid}.json",
+    "name": "Delete recording transcription"
   }
 }
