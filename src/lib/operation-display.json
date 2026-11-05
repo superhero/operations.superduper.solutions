@@ -298,5 +298,10 @@
     "method": "POST",
     "path": "/v1/files/{file_id}/public-url/revoke",
     "name": "Revoke public file URL"
+  },
+  "xai:handle_upload_file_request": {
+    "method": "POST",
+    "path": "/v1/files",
+    "name": "Upload file"
   }
 }
