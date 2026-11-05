@@ -75,3 +75,4 @@ Feature: Qualified operation display metadata
       | xai:handle_revoke_public_url_request |
       | xai:handle_upload_file_request |
       | aws-s3:GetObject |
+      | aws-s3:PutObject |
