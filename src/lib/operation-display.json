@@ -378,5 +378,10 @@
     "method": "POST",
     "path": "/rest/api/3/expression/eval",
     "description": "Endpoint is currently being removed. [More details](https://developer.atlassian.com/changelog/#CHANGE-2046)"
+  },
+  "jira:getAllPermissionSchemes": {
+    "method": "GET",
+    "path": "/rest/api/3/permissionscheme",
+    "description": "Returns all permission schemes."
   }
 }

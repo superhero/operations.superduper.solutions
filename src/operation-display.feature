@@ -89,3 +89,4 @@ Feature: Qualified operation display metadata
       | github:repos/compare-commits |
       | jira:evaluateJSISJiraExpression |
       | jira:evaluateJiraExpression |
+      | jira:getAllPermissionSchemes |
