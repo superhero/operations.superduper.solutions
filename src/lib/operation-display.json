@@ -158,5 +158,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/TollFree.json",
     "name": "List toll-free incoming phone numbers"
+  },
+  "twilio:ListKey": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys.json",
+    "name": "List keys"
   }
 }

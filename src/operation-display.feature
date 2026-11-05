@@ -42,3 +42,4 @@ Feature: Qualified operation display metadata
       | twilio:ListIncomingPhoneNumberLocal |
       | twilio:ListIncomingPhoneNumberMobile |
       | twilio:ListIncomingPhoneNumberTollFree |
+      | twilio:ListKey |
