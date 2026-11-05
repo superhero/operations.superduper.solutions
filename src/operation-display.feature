@@ -56,3 +56,4 @@ Feature: Qualified operation display metadata
       | twilio:UpdateAddress |
       | twilio:UpdateConference |
       | twilio:UpdateKey |
+      | twilio:UpdateSigningKey |

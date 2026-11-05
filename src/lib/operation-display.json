@@ -228,5 +228,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json",
     "name": "Update key"
+  },
+  "twilio:UpdateSigningKey": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys/{Sid}.json",
+    "name": "Update signing key"
   }
 }
