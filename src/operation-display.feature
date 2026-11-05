@@ -64,3 +64,4 @@ Feature: Qualified operation display metadata
       | azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheck |
       | azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheckSlot |
       | groq:uploadFile |
+      | xai:handle_create_public_url_request |

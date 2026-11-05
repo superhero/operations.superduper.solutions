@@ -268,5 +268,10 @@
     "method": "POST",
     "path": "/openai/v1/files",
     "name": "Upload file"
+  },
+  "xai:handle_create_public_url_request": {
+    "method": "POST",
+    "path": "/v1/files/{file_id}/public-url",
+    "name": "Create public file URL"
   }
 }
