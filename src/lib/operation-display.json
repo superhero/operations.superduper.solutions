@@ -178,5 +178,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/AllTime.json",
     "name": "List all-time usage records"
+  },
+  "twilio:ListUsageRecordDaily": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Daily.json",
+    "name": "List daily usage records"
   }
 }
