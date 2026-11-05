@@ -128,5 +128,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/TollFree.json",
     "name": "List available toll-free phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberVoip": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Voip.json",
+    "name": "List available VoIP phone numbers"
   }
 }
