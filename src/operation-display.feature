@@ -38,3 +38,4 @@ Feature: Qualified operation display metadata
       | twilio:ListAvailablePhoneNumberTollFree |
       | twilio:ListAvailablePhoneNumberVoip |
       | twilio:ListCallNotification |
+      | twilio:ListDependentPhoneNumber |

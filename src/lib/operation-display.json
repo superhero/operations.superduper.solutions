@@ -138,5 +138,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Notifications.json",
     "name": "List call notifications"
+  },
+  "twilio:ListDependentPhoneNumber": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{AddressSid}/DependentPhoneNumbers.json",
+    "name": "List dependent phone numbers"
   }
 }
