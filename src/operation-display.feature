@@ -48,3 +48,4 @@ Feature: Qualified operation display metadata
       | twilio:ListUsageRecordAllTime |
       | twilio:ListUsageRecordDaily |
       | twilio:ListUsageRecordLastMonth |
+      | twilio:ListUsageRecordMonthly |
