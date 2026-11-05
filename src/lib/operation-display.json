@@ -328,5 +328,10 @@
     "method": "GET",
     "path": "/repositories/{workspace}/{repo_slug}/src/{commit}/{path}",
     "description": "This endpoints is used to retrieve the contents of a single file, or the contents of a directory at a specified revision."
+  },
+  "bitbucket:GET /snippets/{workspace}/{encoded_id}": {
+    "method": "GET",
+    "path": "/snippets/{workspace}/{encoded_id}",
+    "description": "Retrieves a single snippet."
   }
 }

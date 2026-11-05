@@ -79,3 +79,4 @@ Feature: Qualified operation display metadata
       | bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/activity |
       | bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity |
       | bitbucket:GET /repositories/{workspace}/{repo_slug}/src/{commit}/{path} |
+      | bitbucket:GET /snippets/{workspace}/{encoded_id} |
