@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import corrections from './lib/operation-display.json' with { type: 'json' };
-import { operationDisplayName } from './lib/operation-display.ts';
+import { operationDisplayName, operationDisplayDescription } from './lib/operation-display.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { extractOperations } from './lib/catalog.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
@@ -55,4 +55,18 @@ Then('the corrected operation {string} has persistable display metadata and reta
   const index = JSON.parse(gunzipSync(await readFile(new URL(`./catalogs/services/indexes/${catalog}.json.gz`, import.meta.url))));
   assert.equal(index.operations.find(row => row.id === id).name, operation.name);
   assert.equal(JSON.stringify(schema), original, 'Display projection must not mutate source schemas.');
+});
+
+Then('workflow descriptions only shorten the qualified overlong metadata', () => {
+  const id = 'aws-s3:GetObject', correction = corrections[id], long = 'x'.repeat(4001);
+  const operation = { id, ...correction, description: long };
+  assert.equal(operationDisplayDescription(operation), correction.description);
+  for (const description of ['', 'Repaired documentation', 'x'.repeat(4000)])
+    assert.equal(operationDisplayDescription({ ...operation, description }), description);
+  for (const change of [{ id: 'unknown:GetObject' }, { method: 'POST' }, { path: '/different' }])
+    assert.equal(operationDisplayDescription({ ...operation, ...change }), long);
+  assert.equal(operationDisplayDescription({ ...first, description: long }), long, 'A name correction grants no description override.');
+  assert.equal(operationDisplayName({ ...operation, name: '' }), '', 'A synopsis correction grants no name override.');
+  const invalid = { ...operation, id: 'unknown:GetObject', name: 'Get object', fields: [], bodyRequired: false, group: 'Test' };
+  assert.throws(() => validateWorkflowDocument(document(createOperationGraph(invalid, { x: 0, y: 0 }, 'node'))), /Operation description/);
 });

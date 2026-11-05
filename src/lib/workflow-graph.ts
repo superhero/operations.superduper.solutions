@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { operationDisplayDescription } from "./operation-display.ts";
 import type { Operation } from "./catalog.ts";
 import { nativeRpcOperation } from "./native-rpc.ts";
 import { fileValueType } from "./workflow-file.ts";
@@ -234,7 +235,7 @@ export function createOperationGraph(operation: Operation, position: { x: number
   const raw = pathItem[operation.method.toLowerCase()];
   const source = object(raw) ? raw : undefined;
   const nodes: WorkflowDocumentNode[] = [{ id: ownerId, type: "operation", position: { ...position }, data: {
-    operationId: operation.id, name: operation.name, description: operation.description, method: operation.method, path: operation.path,
+    operationId: operation.id, name: operation.name, description: operationDisplayDescription(operation), method: operation.method, path: operation.path,
     ...(operation.protocol === "json-rpc" && operation.rpc ? { protocol: "json-rpc" as const,
       rpc: { version: operation.rpc.version, method: operation.rpc.method } } : {})
   } }];

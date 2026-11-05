@@ -5,6 +5,9 @@ Feature: Qualified operation display metadata
   Scenario: Name corrections preserve repaired sources and reject route mismatches
     Then operation display names only repair the qualified invalid metadata
 
+  Scenario: Description corrections retain full documentation and repaired upstream text
+    Then workflow descriptions only shorten the qualified overlong metadata
+
   Scenario Outline: Corrected operation metadata survives workflow persistence
     Then the corrected operation "<id>" has persistable display metadata and retains its source documentation
 
@@ -71,3 +74,4 @@ Feature: Qualified operation display metadata
       | xai:handle_list_files_request |
       | xai:handle_revoke_public_url_request |
       | xai:handle_upload_file_request |
+      | aws-s3:GetObject |

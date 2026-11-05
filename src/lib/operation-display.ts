@@ -16,3 +16,11 @@ export function operationDisplayName(operation: Identity & Pick<Operation, "name
     && (!operation.name.trim() || operation.name.length > 200)
     ? correction.name ?? operation.name : operation.name;
 }
+
+/** Workflow synopses stay bounded; canonical operation documentation stays full. */
+export function operationDisplayDescription(operation: Identity & Pick<Operation, "description">): string
+{
+  const correction = entries[operation.id];
+  return correction?.method === operation.method && correction.path === operation.path && operation.description.length > 4000
+    ? correction.description ?? operation.description : operation.description;
+}
