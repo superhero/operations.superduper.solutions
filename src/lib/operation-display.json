@@ -198,5 +198,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/ThisMonth.json",
     "name": "List this month’s usage records"
+  },
+  "twilio:ListUsageRecordToday": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Today.json",
+    "name": "List today’s usage records"
   }
 }
