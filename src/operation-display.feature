@@ -31,3 +31,4 @@ Feature: Qualified operation display metadata
       | twilio:ListAddress |
       | twilio:ListAvailablePhoneNumberCountry |
       | twilio:ListAvailablePhoneNumberLocal |
+      | twilio:ListAvailablePhoneNumberMachineToMachine |

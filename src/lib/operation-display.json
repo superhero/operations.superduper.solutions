@@ -103,5 +103,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Local.json",
     "name": "List available local phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberMachineToMachine": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/MachineToMachine.json",
+    "name": "List available machine-to-machine phone numbers"
   }
 }
