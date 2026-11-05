@@ -32,3 +32,4 @@ Feature: Qualified operation display metadata
       | twilio:ListAvailablePhoneNumberCountry |
       | twilio:ListAvailablePhoneNumberLocal |
       | twilio:ListAvailablePhoneNumberMachineToMachine |
+      | twilio:ListAvailablePhoneNumberMobile |

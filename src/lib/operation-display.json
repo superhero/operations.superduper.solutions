@@ -108,5 +108,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/MachineToMachine.json",
     "name": "List available machine-to-machine phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberMobile": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Mobile.json",
+    "name": "List available mobile phone numbers"
   }
 }
