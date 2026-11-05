@@ -6,23 +6,37 @@ import type { InputSchema } from "./catalog.ts";
 const unionAnnotations = new Set(["title", "description", "example", "examples", "default", "deprecated"]);
 
 /** An unrestricted string branch subsumes enum suggestions in anyOf, never oneOf. */
-export function normalizeStringUnion(shape: Record<string, unknown>): Record<string, unknown> {
+export function normalizeStringUnion(shape: Record<string, unknown>, resolveBranch: (branch: unknown) => unknown = branch => branch): Record<string, unknown> {
   const variants = shape.anyOf;
   if (!Array.isArray(variants) || !variants.length
     || Object.keys(shape).some(key => key !== "anyOf" && !unionAnnotations.has(key))) return shape;
   let unrestricted = false, nullable = false;
-  for (const variant of variants) {
+  const patterns: string[] = [], values: string[] = [];
+  for (const raw of variants) {
+    const variant = resolveBranch(raw);
     if (!variant || typeof variant !== "object" || Array.isArray(variant)) return shape;
     const branch = variant as Record<string, unknown>;
-    if (Object.keys(branch).some(key => key !== "type" && key !== "enum" && !unionAnnotations.has(key))) return shape;
+    if (Object.keys(branch).some(key => !["type", "enum", "pattern"].includes(key) && !unionAnnotations.has(key) && !key.startsWith("x-"))) return shape;
     if (branch.type === "null" && branch.enum === undefined) nullable = true;
     else if (branch.type === "string") {
-      if (branch.enum === undefined) unrestricted = true;
-      else if (!Array.isArray(branch.enum) || !branch.enum.length || branch.enum.some(value => typeof value !== "string")) return shape;
+      if (branch.pattern !== undefined) {
+        if (typeof branch.pattern !== "string" || branch.enum !== undefined) return shape;
+        try { new RegExp(branch.pattern, "u"); } catch { return shape; }
+        patterns.push(branch.pattern);
+      } else if (branch.enum === undefined) unrestricted = true;
+      else {
+        if (!Array.isArray(branch.enum) || !branch.enum.length || branch.enum.some(value => typeof value !== "string")) return shape;
+        values.push(...branch.enum as string[]);
+      }
     } else return shape;
   }
-  if (!unrestricted) return shape;
   const { anyOf, ...annotations } = shape;
+  if (!unrestricted) {
+    if (nullable || patterns.length !== 1 || !values.length) return shape;
+    const literals = values.map(value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+    // Keep the original pattern's search semantics; enum literals match the entire value.
+    return { ...annotations, type: "string", pattern: `(?:${patterns[0]})|^(?:${literals})(?![\\s\\S])` };
+  }
   return { ...annotations, type: "string", ...(nullable ? { nullable: true } : {}) };
 }
 

@@ -18,7 +18,7 @@ import { responseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
 import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } from "./operation-capabilities.ts";
-import { configureQueryArray } from "./query-serialization.ts";
+import { acceptsScalarQueryExplode, configureQueryArray } from "./query-serialization.ts";
 import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { providerPathSecurity } from "./provider-path-bindings.ts";
 
@@ -80,7 +80,7 @@ function resolve(input: unknown, document: Value): Value
 function inputSchema(input: unknown, document: Value, depth: number, ancestors: Set<unknown>, binary: boolean, rootPropertyBudget = 200): InputSchema
 {
   if (depth > 8 || ancestors.has(input)) return json();
-  const shape = normalizeStringUnion(resolve(input, document));
+  const shape = normalizeStringUnion(resolve(input, document), branch => resolve(branch, document));
   const variants = shape.anyOf ?? shape.oneOf;
   if (Array.isArray(variants) && variants.length === 2)
   {
@@ -271,10 +271,11 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                       location === "query" && parameter.explode === false);
                     const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
                     const csv = configureQueryArray(input, parameter);
+                    const scalarQuery = acceptsScalarQueryExplode(input, parameter);
                     const pathArray = configureSimplePathArray(input, parameter);
                     if (parameter.content) throw new Error("Content-encoded parameters are not supported; declare a schema-based parameter.");
                     if (parameter.style !== undefined && parameter.style !== style
-                      || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray
+                      || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray && !scalarQuery
                       || location !== "query" && ["object", "array"].includes(input.type) && !pathArray)
                       throw new Error("Unsupported parameter serialization; use primitive values, simple path arrays or supported form/deepObject query parameters.");
                     fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);

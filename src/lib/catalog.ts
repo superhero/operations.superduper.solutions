@@ -18,7 +18,7 @@ import { codexExecutionLimitation, type NativeRpcContract } from "./native-rpc.t
 import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
 import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 import { withOperationCapabilities, type OperationCapabilities, type CapabilitySummary } from "./operation-capabilities.ts";
-import { configureQueryArray, type QuerySerialization } from "./query-serialization.ts";
+import { acceptsScalarQueryExplode, configureQueryArray, type QuerySerialization } from "./query-serialization.ts";
 import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -143,7 +143,7 @@ function text(value: unknown, fallback: string): string
 function inputSchema(value: unknown, document: RecordValue, context: string, depth = 0): InputSchema
 {
   if (depth > 12) throw new Error(`${context}: schema nesting exceeds 12 levels or contains a recursive reference.`);
-  const shape = normalizeStringUnion(resolve(value, document, context));
+  const shape = normalizeStringUnion(resolve(value, document, context), branch => resolve(branch, document, context));
   const union = Array.isArray(shape.type) ? shape.type : undefined;
   if (union && (union.length !== 2 || !union.includes("null") || new Set(union).size !== 2))
     throw new Error(`${context}: unsupported input type union.`);
@@ -155,12 +155,18 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   if (type === "string" && shape.format === "binary") keys.push("format");
   if (primitiveTypes.includes(type)) keys.push("enum");
   if (type === "number" || type === "integer") keys.push("minimum", "maximum");
-  if (type === "string") keys.push("minLength", "maxLength");
+  if (type === "string") keys.push("minLength", "maxLength", "pattern");
   if (type === "array") keys.push("items", "minItems", "maxItems");
   if (type === "object") keys.push("properties", "required", "additionalProperties");
   // Validate misplaced numeric constraints explicitly, keeping useful diagnostics.
   supported(shape, [...keys, "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"], context);
   const result: InputSchema = { type, ...(nullable ? { nullable: true } : {}) };
+  if (shape.pattern !== undefined) {
+    if (typeof shape.pattern !== "string") throw new Error(`${context}: pattern must be a string.`);
+    try { new RegExp(shape.pattern, "u"); }
+    catch { throw new Error(`${context}: invalid pattern constraint.`); }
+    result.pattern = shape.pattern;
+  }
   if (shape.format === "binary") result.format = "binary";
   if (result.format) validateBinarySchema(shape);
   if (shape.enum !== undefined)
@@ -306,10 +312,11 @@ export function extractOperations(value: unknown, source: string): Operation[]
           const style = query ? input.type === "object" ? "deepObject" : "form" : "simple";
           try {
             const csv = configureQueryArray(input, parameter);
+            const scalarQuery = acceptsScalarQueryExplode(input, parameter);
             const pathArray = configureSimplePathArray(input, parameter);
             if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
               || parameter.style !== undefined && parameter.style !== style
-              || parameter.explode !== undefined && parameter.explode !== query && !csv && !pathArray
+              || parameter.explode !== undefined && parameter.explode !== query && !csv && !pathArray && !scalarQuery
               || parameter.allowReserved !== undefined && parameter.allowReserved !== false
               || parameter.allowEmptyValue !== undefined && parameter.allowEmptyValue !== false
               || !query && !primitiveTypes.includes(input.type) && !pathArray
