@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "07e44696f89a0637340615b0bf230cf247eb50d573def5fc5aaa12ff216f91fd",
+  "adapterRevision": "3011d5b015ed9568101e2380e1c71ceff2a9c7ba3e56c73f33fe8870b5a609a7",
   "indexes": [
     {
       "id": "anthropic",
@@ -3107,9 +3107,9 @@
     {
       "id": "xai",
       "sourceRevision": "1361ade8ea7ae8c3931e28410f996fae95eea3cfcaf8e6cd54850c31174be1b0",
-      "bytes": 18189,
-      "compressedBytes": 2873,
-      "sha256": "c3f59b7f731ec724aa0eedd9de6cfd4c9d32d0b39c51c34b23cb263a09920847",
+      "bytes": 17952,
+      "compressedBytes": 2770,
+      "sha256": "3ffb0ed063188c2b8293975e9f7c3a674f0e3128e1dcee6dc8f2db932fdcf009",
       "summary": {
         "name": "xAI's REST API",
         "serverUrl": "https://api.x.ai/v1",

@@ -288,5 +288,10 @@
     "method": "GET",
     "path": "/v1/language-models",
     "name": "List language models"
+  },
+  "xai:handle_list_files_request": {
+    "method": "GET",
+    "path": "/v1/files",
+    "name": "List team files"
   }
 }
