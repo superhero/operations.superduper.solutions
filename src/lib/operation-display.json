@@ -383,5 +383,10 @@
     "method": "GET",
     "path": "/rest/api/3/permissionscheme",
     "description": "Returns all permission schemes."
+  },
+  "jira:setApplicationProperty": {
+    "method": "PUT",
+    "path": "/rest/api/3/application-properties/{id}",
+    "description": "Changes the value of an application property. For example, you can change the value of the `jira.clone.prefix` from its default value of *CLONE -* to *Clone -* if you prefer sentence case capitalization. Editable properties are described below along with their default values."
   }
 }

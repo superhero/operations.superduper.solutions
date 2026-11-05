@@ -90,3 +90,4 @@ Feature: Qualified operation display metadata
       | jira:evaluateJSISJiraExpression |
       | jira:evaluateJiraExpression |
       | jira:getAllPermissionSchemes |
+      | jira:setApplicationProperty |
