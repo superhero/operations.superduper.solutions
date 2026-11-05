@@ -243,5 +243,10 @@
     "method": "PUT",
     "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/networkConfig/virtualNetwork",
     "name": "Create or update slot virtual network connection"
+  },
+  "azure-app-service:WebApps_ListBackupStatusSecrets": {
+    "method": "POST",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups/{backupId}/list",
+    "name": "Get app backup status and secrets"
   }
 }
