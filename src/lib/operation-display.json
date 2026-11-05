@@ -68,5 +68,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}.json",
     "name": "Fetch available phone number country"
+  },
+  "twilio:FetchCallNotification": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Notifications/{Sid}.json",
+    "name": "Fetch call notification"
   }
 }

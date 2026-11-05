@@ -24,3 +24,4 @@ Feature: Qualified operation display metadata
       | twilio:DeleteUsageTrigger |
       | twilio:FetchAddress |
       | twilio:FetchAvailablePhoneNumberCountry |
+      | twilio:FetchCallNotification |
