@@ -283,5 +283,10 @@
     "method": "GET",
     "path": "/v1/chat/deferred-completion/{request_id}",
     "name": "Get deferred completion"
+  },
+  "xai:handle_language_models_list_request": {
+    "method": "GET",
+    "path": "/v1/language-models",
+    "name": "List language models"
   }
 }

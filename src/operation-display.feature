@@ -67,3 +67,4 @@ Feature: Qualified operation display metadata
       | xai:handle_create_public_url_request |
       | xai:handle_generic_model_request |
       | xai:handle_get_deferred_completion_request |
+      | xai:handle_language_models_list_request |
