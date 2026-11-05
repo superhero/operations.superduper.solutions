@@ -223,5 +223,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/Conferences/{Sid}.json",
     "name": "Update conference"
+  },
+  "twilio:UpdateKey": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json",
+    "name": "Update key"
   }
 }
