@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "a76b8c72212e83b11b47259ead6ae99b86595b38d75e1e3fb96881b09efe76a9",
+  "adapterRevision": "f6883b4abc15ac09446d77a8c3423881cc3d566a8b45994093ddb56f2fb882c9",
   "indexes": [
     {
       "id": "anthropic",
@@ -3065,9 +3065,9 @@
     {
       "id": "twilio",
       "sourceRevision": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
-      "bytes": 90076,
-      "compressedBytes": 6998,
-      "sha256": "1f51d6fab2b92cf2f7516e9d0ccdafabe4527e8918f74a9833f3cd830e970440",
+      "bytes": 90109,
+      "compressedBytes": 7018,
+      "sha256": "4eeacb277960dc00e579d6f9bd72252429a1f411a1d517caacd985cd9eb5ab8f",
       "summary": {
         "name": "Twilio - Api",
         "serverUrl": "https://api.twilio.com",

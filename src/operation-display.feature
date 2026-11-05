@@ -47,3 +47,4 @@ Feature: Qualified operation display metadata
       | twilio:ListSigningKey |
       | twilio:ListUsageRecordAllTime |
       | twilio:ListUsageRecordDaily |
+      | twilio:ListUsageRecordLastMonth |
