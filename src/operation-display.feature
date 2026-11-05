@@ -11,3 +11,4 @@ Feature: Qualified operation display metadata
     Examples:
       | id |
       | twilio:CreateAddress |
+      | twilio:CreateIncomingPhoneNumberLocal |

@@ -3,5 +3,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/Addresses.json",
     "name": "Create address"
+  },
+  "twilio:CreateIncomingPhoneNumberLocal": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Local.json",
+    "name": "Create local incoming phone number"
   }
 }
