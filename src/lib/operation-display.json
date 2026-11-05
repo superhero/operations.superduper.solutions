@@ -168,5 +168,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions.json",
     "name": "List recording transcriptions"
+  },
+  "twilio:ListSigningKey": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys.json",
+    "name": "List signing keys"
   }
 }
