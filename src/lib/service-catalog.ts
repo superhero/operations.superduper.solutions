@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -210,6 +211,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
       const group = Array.isArray(source.tags) ? text(source.tags[0], "Operations") : "Operations";
       const operation: Operation = { id: identity, name: text(source.summary, text(source.operationId, `${method.toUpperCase()} ${path}`)),
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
+      operation.name = operationDisplayName(operation);
       const issues: CapabilityIssue[] = [];
       const inspect = (area: CapabilityArea, code: string, check: () => void): boolean => {
         try { check(); return true; }

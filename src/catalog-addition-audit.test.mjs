@@ -3,7 +3,18 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
-import { auditOperations } from '../tests/catalog-additions/audit.mjs';
+import { auditOperations, selectOperations } from '../tests/catalog-additions/audit.mjs';
+
+Then('the catalog audit selects exact operation identifiers without hiding unknown selections', () => {
+  const inventory = [{ id: 'a:one', catalog: 'a' }, { id: 'b:two', catalog: 'b' }, { id: 'a:three', catalog: 'a' }];
+  assert.deepEqual(selectOperations(inventory), inventory);
+  assert.deepEqual(selectOperations(inventory, { catalogs: ['a'] }), [inventory[0], inventory[2]]);
+  assert.deepEqual(selectOperations(inventory, { operations: ['a:three', 'a:one', 'a:one'], limit: 1 }), [inventory[0]]);
+  assert.deepEqual(selectOperations(inventory, { catalogs: ['a'], operations: ['a:three'] }), [inventory[2]]);
+  assert.throws(() => selectOperations(inventory, { catalogs: ['unknown'] }), /Unknown catalog/);
+  assert.throws(() => selectOperations(inventory, { operations: ['missing'] }), /Unknown operation/);
+  assert.throws(() => selectOperations(inventory, { catalogs: ['a'], operations: ['b:two'] }), /Unknown operation/);
+});
 
 const inventory = ['one', 'two', 'three'].map(id => ({ id }));
 function fixture() {

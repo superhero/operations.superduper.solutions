@@ -3,6 +3,15 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { randomUUID } from 'node:crypto';
 
+/** Exact selections fail closed on typos; selection never hides an outcome. */
+export function selectOperations(inventory, { catalogs = [], operations = [], limit } = {}) {
+  for (const catalog of catalogs) if (!inventory.some(row => row.catalog === catalog)) throw new Error(`Unknown catalog ${catalog}`);
+  const selected = inventory.filter(row => !catalogs.length || catalogs.includes(row.catalog));
+  for (const id of operations) if (!selected.some(row => row.id === id)) throw new Error(`Unknown operation in selected catalogs: ${id}`);
+  const exact = selected.filter(row => !operations.length || operations.includes(row.id));
+  return limit ? exact.slice(0, limit) : exact;
+}
+
 /** Continue after insertion failures, but never continue with a retained workflow. */
 export async function auditOperations(operations, adapter, record, nextId = randomUUID) {
   const ids = new Set();

@@ -1,0 +1,7 @@
+{
+  "twilio:CreateAddress": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses.json",
+    "name": "Create address"
+  }
+}

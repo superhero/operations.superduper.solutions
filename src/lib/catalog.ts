@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -278,6 +279,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
         const model: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),
           description: text(operation.description, ""), group: Array.isArray(operation.tags) ? String(operation.tags[0]) : "Operations",
           method: method.toUpperCase(), path, fields: [], bodyRequired: false };
+        model.name = operationDisplayName(model);
         if (wire) configureAwsWire(model, wire); else if (s3) configureS3Files(model, s3); else configureCloudflareUpload(model, upload!);
         const security = inspectOperationSecurity(document, operation);
         if (security !== undefined) model.security = security;
@@ -387,6 +389,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       const extracted: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),
         description: text(operation.description, ""), group: Array.isArray(tags) && tags.length ? tags[0] : "Operations",
         method: method.toUpperCase(), path, fields, bodyRequired, ...responseDetails(operation, document, id) };
+      extracted.name = operationDisplayName(extracted);
       if (bodyMediaType) extracted.bodyMediaType = bodyMediaType;
       if (binaryMediaTypes) extracted.binaryMediaTypes = binaryMediaTypes;
       if (bodyValue) extracted.bodyValue = true;

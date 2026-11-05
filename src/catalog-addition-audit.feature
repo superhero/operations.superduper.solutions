@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Bounded catalog addition audit
+  Scenario: Exact operation selections reject typos and keep isolated identities
+    Then the catalog audit selects exact operation identifiers without hiding unknown selections
+
   Scenario: Every attempt starts with a distinct empty workflow
     Then the catalog audit deletes each workflow before attempting the next operation
 

@@ -10,16 +10,17 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { build } from 'vite';
-import { auditOperations } from './audit.mjs';
+import { auditOperations, selectOperations } from './audit.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 process.chdir(root);
 const directory = resolve(root, 'tmp/test/catalog-additions');
 const args = process.argv.slice(2);
-const options = { resume: false, catalogs: [], limit: undefined };
+const options = { resume: false, catalogs: [], operations: [], limit: undefined };
 for (let index = 0; index < args.length; index++) {
   if (args[index] === '--resume') options.resume = true;
   else if (args[index] === '--catalog' && args[index + 1]) options.catalogs.push(...args[++index].split(','));
+  else if (args[index] === '--operation' && args[index + 1]) options.operations.push(args[++index]);
   else if (args[index] === '--limit' && /^[1-9]\d*$/.test(args[index + 1] ?? '')) options.limit = Number(args[++index]);
   else throw new Error(`Unknown or incomplete argument: ${args[index]}`);
 }
@@ -40,6 +41,7 @@ if (options.resume) {
   const previous = JSON.parse(await readFile(metadataFile, 'utf8'));
   assert.equal(previous.sourceFingerprint, sourceFingerprint, 'Cannot resume results from different source bytes.');
   assert.deepEqual(previous.options.catalogs, options.catalogs, 'Resume must use the same catalog selection.');
+  assert.deepEqual(previous.options.operations ?? [], options.operations, 'Resume must use the same operation selection.');
   assert.equal(previous.options.limit, options.limit, 'Resume must use the same limit.');
   results = (await readFile(resultsFile, 'utf8')).split('\n').filter(Boolean).map(line => JSON.parse(line));
   metadata = { ...previous, completed: false, resumedAt: new Date().toISOString(), options };
@@ -116,9 +118,7 @@ try {
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] });
   allOperations = await openContext(baseURL);
   assert.equal(new Set(allOperations.map(operation => operation.id)).size, allOperations.length, 'Inventory must contain unique operation identities.');
-  selected = allOperations.filter(operation => !options.catalogs.length || options.catalogs.includes(operation.catalog));
-  for (const catalog of options.catalogs) assert.ok(selected.some(operation => operation.catalog === catalog), `Unknown catalog ${catalog}`);
-  if (options.limit) selected = selected.slice(0, options.limit);
+  selected = selectOperations(allOperations, options);
   const inventoryHash = createHash('sha256').update(JSON.stringify(selected)).digest('hex');
   if (metadata.inventoryHash) assert.equal(metadata.inventoryHash, inventoryHash, 'Resume inventory changed.');
   metadata.inventoryHash = inventoryHash;
