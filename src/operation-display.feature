@@ -43,3 +43,4 @@ Feature: Qualified operation display metadata
       | twilio:ListIncomingPhoneNumberMobile |
       | twilio:ListIncomingPhoneNumberTollFree |
       | twilio:ListKey |
+      | twilio:ListRecordingTranscription |
