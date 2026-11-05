@@ -40,3 +40,4 @@ Feature: Qualified operation display metadata
       | twilio:ListCallNotification |
       | twilio:ListDependentPhoneNumber |
       | twilio:ListIncomingPhoneNumberLocal |
+      | twilio:ListIncomingPhoneNumberMobile |
