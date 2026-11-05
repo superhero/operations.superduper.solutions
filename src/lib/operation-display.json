@@ -133,5 +133,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Voip.json",
     "name": "List available VoIP phone numbers"
+  },
+  "twilio:ListCallNotification": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Notifications.json",
+    "name": "List call notifications"
   }
 }

@@ -37,3 +37,4 @@ Feature: Qualified operation display metadata
       | twilio:ListAvailablePhoneNumberSharedCost |
       | twilio:ListAvailablePhoneNumberTollFree |
       | twilio:ListAvailablePhoneNumberVoip |
+      | twilio:ListCallNotification |
