@@ -8,5 +8,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Local.json",
     "name": "Create local incoming phone number"
+  },
+  "twilio:CreateIncomingPhoneNumberMobile": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Mobile.json",
+    "name": "Create mobile incoming phone number"
   }
 }
