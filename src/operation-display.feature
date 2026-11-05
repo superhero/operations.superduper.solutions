@@ -28,3 +28,4 @@ Feature: Qualified operation display metadata
       | twilio:FetchKey |
       | twilio:FetchRecordingTranscription |
       | twilio:FetchSigningKey |
+      | twilio:ListAddress |
