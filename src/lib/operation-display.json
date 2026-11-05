@@ -258,5 +258,10 @@
     "method": "PATCH",
     "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/networkConfig/virtualNetwork",
     "name": "Update app virtual network connection"
+  },
+  "azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheckSlot": {
+    "method": "PATCH",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/networkConfig/virtualNetwork",
+    "name": "Update slot virtual network connection"
   }
 }

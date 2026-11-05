@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "0c9dc1c4445e194811f4c34600d4901ab650f952db04d147be93529f3bfc4d20",
+  "adapterRevision": "9ff4fc91c96546bab91b5db9c94d7d829277198402c2a2d7c52e9d10446205bd",
   "indexes": [
     {
       "id": "anthropic",
@@ -2743,9 +2743,9 @@
     {
       "id": "azure-app-service",
       "sourceRevision": "a4667a581be4897ab9d5a572f3f3c608442d7ab990f47e863fe986a60c5fb819",
-      "bytes": 359678,
-      "compressedBytes": 22399,
-      "sha256": "3f80c4c62de995fc8346dba0402d69072854535595f41e619cf679504b596535",
+      "bytes": 359438,
+      "compressedBytes": 22258,
+      "sha256": "84efda6515344e9153f4af9e3dcf1aaad17e1c968421a4c8bff818db65252763",
       "summary": {
         "name": "WebApps API Client",
         "serverUrl": "https://management.azure.com",
