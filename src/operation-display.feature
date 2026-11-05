@@ -86,3 +86,4 @@ Feature: Qualified operation display metadata
       | bitbucket:createPipelineForRepository |
       | bitbucket-dc:PUT /insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key} |
       | github:migrations/get-import-status |
+      | github:repos/compare-commits |
