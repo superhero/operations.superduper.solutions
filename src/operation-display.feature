@@ -21,3 +21,4 @@ Feature: Qualified operation display metadata
       | twilio:DeleteKey |
       | twilio:DeleteRecordingTranscription |
       | twilio:DeleteSigningKey |
+      | twilio:DeleteUsageTrigger |
