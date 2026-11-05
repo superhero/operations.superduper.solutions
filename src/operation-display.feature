@@ -52,3 +52,4 @@ Feature: Qualified operation display metadata
       | twilio:ListUsageRecordThisMonth |
       | twilio:ListUsageRecordToday |
       | twilio:ListUsageRecordYearly |
+      | twilio:ListUsageRecordYesterday |

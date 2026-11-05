@@ -208,5 +208,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Yearly.json",
     "name": "List yearly usage records"
+  },
+  "twilio:ListUsageRecordYesterday": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Yesterday.json",
+    "name": "List yesterday’s usage records"
   }
 }
