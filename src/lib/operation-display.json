@@ -118,5 +118,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/National.json",
     "name": "List available national phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberSharedCost": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/SharedCost.json",
+    "name": "List available shared-cost phone numbers"
   }
 }
