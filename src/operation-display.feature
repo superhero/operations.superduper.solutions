@@ -60,3 +60,4 @@ Feature: Qualified operation display metadata
       | azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheck |
       | azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheckSlot |
       | azure-app-service:WebApps_ListBackupStatusSecrets |
+      | azure-app-service:WebApps_ListBackupStatusSecretsSlot |
