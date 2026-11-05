@@ -33,5 +33,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/OutgoingCallerIds.json",
     "name": "Create validation request"
+  },
+  "twilio:DeleteAddress": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json",
+    "name": "Delete address"
   }
 }
