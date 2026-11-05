@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/schema-pack-codec.test.mjs",
     "src/github-notification-auth.test.mjs",
     "src/google-storage-upload.test.mjs",
     "src/bigquery-jobs.test.mjs",
@@ -109,6 +110,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/schema-pack-codec.feature",
     "src/github-notification-auth.feature",
     "src/google-storage-upload.feature",
     "src/bigquery-jobs.feature",

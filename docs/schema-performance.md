@@ -587,3 +587,29 @@ zero additional swap and 512 processes, with no GPU. The focused Gherkin case is
 `tests/browser/browser-settings-building.feature`. Raw baseline, intermediate and
 corrected captures and resource receipts are retained under the ignored
 `.agents/tmp/browser-settings-flicker-20261102/` run directory.
+
+
+## 2026-11-05: Offline schema transport and the deployment size limit
+
+The 80 operation-metadata corrections raised the single-file HTML to
+26,242,175 bytes, above the deployment guard of 26,214,400 bytes.
+The build now encodes bundled gzip schema/discovery assets with a delimiter-safe
+85-symbol alphabet. It decodes the exact original gzip bytes before the existing
+uncompressed-length, SHA-256 and JSON checks. Schema files, source identities,
+full documentation and offline loading remain unchanged; no new requests or
+runtime dependency are introduced. Legacy Base64 transport remains supported.
+
+The same Node 26.7.0 / Vite 8.3.2 production build on sds-01, capped at 4 CPUs,
+8 GiB RAM, zero additional swap, 512 PIDs and no GPU, produces 25,038,414
+bytes: 1,203,761 fewer bytes and 1,175,986 bytes
+of headroom. These are deterministic artifact sizes, not latency measurements.
+Vite's reported gzip transfer size rises from about 16.70 MB to 16.86 MB; the
+tradeoff preserves the existing single-file distribution within its hard limit.
+
+All 448 schema/index gzip files roundtrip byte-for-byte, malformed frames and
+changed document hashes are rejected, the production bundle contract passes,
+and all 80 corrected operations pass the compact-transport Chromium
+hydration/graph/save/readback/delete audit with one fresh workflow per operation.
+The focused source cases are in `src/schema-pack-codec.feature`; runtime receipts
+and exact before/after sizes are under the ignored
+`.agents/tmp/catalog-80-release-20261105/` run directory.
