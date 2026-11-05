@@ -38,5 +38,10 @@
     "method": "DELETE",
     "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json",
     "name": "Delete address"
+  },
+  "twilio:DeleteKey": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json",
+    "name": "Delete key"
   }
 }
