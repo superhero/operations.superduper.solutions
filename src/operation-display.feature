@@ -41,3 +41,4 @@ Feature: Qualified operation display metadata
       | twilio:ListDependentPhoneNumber |
       | twilio:ListIncomingPhoneNumberLocal |
       | twilio:ListIncomingPhoneNumberMobile |
+      | twilio:ListIncomingPhoneNumberTollFree |

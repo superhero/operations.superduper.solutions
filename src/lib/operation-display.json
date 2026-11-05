@@ -153,5 +153,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Mobile.json",
     "name": "List mobile incoming phone numbers"
+  },
+  "twilio:ListIncomingPhoneNumberTollFree": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/TollFree.json",
+    "name": "List toll-free incoming phone numbers"
   }
 }
