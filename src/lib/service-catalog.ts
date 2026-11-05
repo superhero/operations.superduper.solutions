@@ -297,7 +297,13 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
             if (source.requestBody !== undefined)
             {
               const body = resolve(source.requestBody, document);
+              if (body.required !== undefined && typeof body.required !== "boolean") throw new Error("Request body required must be Boolean.");
+              if (!body.content || typeof body.content !== "object" || Array.isArray(body.content)) throw new Error("Request body content must be an object of declared media types.");
               const content = value(body.content);
+              if (!Object.keys(content).length) {
+                if (body.required === true) throw new Error("Required request body has no declared media types.");
+                return;
+              }
               const binaryMediaTypes = Object.keys(content).filter(type => {
                 const schema = resolve(value(content[type]).schema, document);
                 return isBinaryMediaType(type) && schema.type === "string" && schema.format === "binary";

@@ -354,43 +354,46 @@ export function extractOperations(value: unknown, source: string): Operation[]
         bodyRequired = body.required === true;
         const content = object(body.content, `${id}: request content`);
         const mediaTypes = Object.keys(content);
-        const binary = mediaTypes.length > 0 && mediaTypes.every(type => {
-          const shape = resolve(object(content[type], id).schema ?? {}, document, id);
-          return isBinaryMediaType(type) && shape.type === "string" && shape.format === "binary";
-        });
-        if (!binary && (mediaTypes.length !== 1 || !["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].includes(mediaTypes[0]!)))
-          throw new Error(`${id}: choose one supported request media type: application/json, text/plain, application/x-www-form-urlencoded or multipart/form-data.`);
-        bodyMediaType = mediaTypes[0] as BodyMediaType;
-        const media = object(content[bodyMediaType], id);
-        const form = bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data";
-        supported(media, ["schema", "example", "examples", ...(form ? ["encoding"] : [])], id);
-        const shape = resolve(media.schema, document, id);
-        const schema = inputSchema(shape, document, id);
-        bodySchema = schema;
-        if (binary) {
-          if (schema.nullable) throw new Error(`${id}: nullable raw-file bodies have no qualified wire encoding.`);
-          if (mediaTypes.some(type => {
-            const alternative = object(content[type], id);
-            supported(alternative, ["schema", "example", "examples"], id);
-            return JSON.stringify(inputSchema(alternative.schema, document, id)) !== JSON.stringify(schema);
-          }))
-            throw new Error(`${id}: binary media alternatives must use the same file schema.`);
-          binaryMediaTypes = mediaTypes;
-        }
-        else if (bodyMediaType !== "multipart/form-data" && containsBinaryInput(schema)) throw new Error(`${id}: binary fields require a raw file body or multipart/form-data.`);
-        if (bodyMediaType === "text/plain" && schema.type !== "string") throw new Error(`${id}: text/plain requires a string schema.`);
-        if (form) {
-          try { validateFormBody(schema, bodyMediaType === "multipart/form-data", media.encoding); }
-          catch (error) { throw new Error(`${id}: ${(error as Error).message}`, { cause: error }); }
-        }
-        if (schema.type === "object" && !schema.nullable)
-          for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
-        else
-        {
-          bodyValue = true;
-          const input = field(media.schema, document, "body", "$", true);
-          input.label = text(shape.title, "Request body");
-          fields.push(input);
+        if (!mediaTypes.length && bodyRequired) throw new Error(`${id}: required request body has no declared media types.`);
+        if (mediaTypes.length) {
+          const binary = mediaTypes.length > 0 && mediaTypes.every(type => {
+            const shape = resolve(object(content[type], id).schema ?? {}, document, id);
+            return isBinaryMediaType(type) && shape.type === "string" && shape.format === "binary";
+          });
+          if (!binary && (mediaTypes.length !== 1 || !["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].includes(mediaTypes[0]!)))
+            throw new Error(`${id}: choose one supported request media type: application/json, text/plain, application/x-www-form-urlencoded or multipart/form-data.`);
+          bodyMediaType = mediaTypes[0] as BodyMediaType;
+          const media = object(content[bodyMediaType], id);
+          const form = bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data";
+          supported(media, ["schema", "example", "examples", ...(form ? ["encoding"] : [])], id);
+          const shape = resolve(media.schema, document, id);
+          const schema = inputSchema(shape, document, id);
+          bodySchema = schema;
+          if (binary) {
+            if (schema.nullable) throw new Error(`${id}: nullable raw-file bodies have no qualified wire encoding.`);
+            if (mediaTypes.some(type => {
+              const alternative = object(content[type], id);
+              supported(alternative, ["schema", "example", "examples"], id);
+              return JSON.stringify(inputSchema(alternative.schema, document, id)) !== JSON.stringify(schema);
+            }))
+              throw new Error(`${id}: binary media alternatives must use the same file schema.`);
+            binaryMediaTypes = mediaTypes;
+          }
+          else if (bodyMediaType !== "multipart/form-data" && containsBinaryInput(schema)) throw new Error(`${id}: binary fields require a raw file body or multipart/form-data.`);
+          if (bodyMediaType === "text/plain" && schema.type !== "string") throw new Error(`${id}: text/plain requires a string schema.`);
+          if (form) {
+            try { validateFormBody(schema, bodyMediaType === "multipart/form-data", media.encoding); }
+            catch (error) { throw new Error(`${id}: ${(error as Error).message}`, { cause: error }); }
+          }
+          if (schema.type === "object" && !schema.nullable)
+            for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
+          else
+          {
+            bodyValue = true;
+            const input = field(media.schema, document, "body", "$", true);
+            input.label = text(shape.title, "Request body");
+            fields.push(input);
+          }
         }
       }
       try { validatePathParameters(path, fields); }

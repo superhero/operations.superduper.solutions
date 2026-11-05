@@ -149,6 +149,8 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
     throw new WorkflowBodyError("MEDIA");
   }
   const bytes = await readBytes(response, signal, kind === "binary" ? maxWorkflowUploadBytes : textLimit);
+  // An empty success with no declared or actual media has no JSON representation.
+  if (!bytes.length && response.ok && raw === null && !operation.responseMediaType && !definitions) return { body: null };
   if (kind === "binary") return { body: encodeWorkflowBinary(responseFileName(response.headers.get("Content-Disposition")), bytes, mediaType), bodyType: "binary", mediaType };
   const metadata = definitions ? { mediaType } : {};
   const text = new TextDecoder().decode(bytes);

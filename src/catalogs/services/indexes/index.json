@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "8195128cb7b53613ad76a14660cfe90a03fcef166e9fb881026e85a8ccfa6edd",
+  "adapterRevision": "65a37eeb32de74a397510700ad2fdb5824716ea551aa64fe765459f94b6c8fc5",
   "indexes": [
     {
       "id": "anthropic",
@@ -2995,15 +2995,15 @@
     {
       "id": "render",
       "sourceRevision": "97a86252d35cbe6b66c141483ad2cc52a323d8dfb0ecd5d73e11ac8cfc7dc3e3",
-      "bytes": 75132,
-      "compressedBytes": 6389,
-      "sha256": "a16e74fa5582e9fa11a4ffc2555585a247d35318f15ef9b4fe10ef2b456080ff",
+      "bytes": 75007,
+      "compressedBytes": 6316,
+      "sha256": "78a2abe132b4d610e9a136627b7550acb69d3695524307457668893b5e9d27b2",
       "summary": {
         "name": "Render Public API",
         "serverUrl": "https://api.render.com/v1",
         "description": "Manage everything about your Render services",
         "operationCount": 228,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
