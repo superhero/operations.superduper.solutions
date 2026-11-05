@@ -66,3 +66,4 @@ Feature: Qualified operation display metadata
       | groq:uploadFile |
       | xai:handle_create_public_url_request |
       | xai:handle_generic_model_request |
+      | xai:handle_get_deferred_completion_request |

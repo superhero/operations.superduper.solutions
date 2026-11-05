@@ -278,5 +278,10 @@
     "method": "POST",
     "path": "/v1/responses",
     "name": "Generate a response"
+  },
+  "xai:handle_get_deferred_completion_request": {
+    "method": "GET",
+    "path": "/v1/chat/deferred-completion/{request_id}",
+    "name": "Get deferred completion"
   }
 }
