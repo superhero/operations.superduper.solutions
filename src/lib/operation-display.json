@@ -343,5 +343,10 @@
     "method": "POST",
     "path": "/snippets",
     "description": "Creates a new snippet under the authenticated user's account."
+  },
+  "bitbucket:PUT /snippets/{workspace}/{encoded_id}": {
+    "method": "PUT",
+    "path": "/snippets/{workspace}/{encoded_id}",
+    "description": "Used to update a snippet. Use this to add and delete files and to change a snippet's title."
   }
 }
