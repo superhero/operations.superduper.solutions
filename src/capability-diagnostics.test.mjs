@@ -176,3 +176,23 @@ Then('compact capability records preserve reason references and reject invalid w
     { i: [], r: [['credentials', 42]] }];
   for (const value of malformed) assert.throws(() => validateCapabilitySummary(value), /diagnostics/);
 });
+
+Then('malformed union branches and form encoding metadata fail with precise diagnostics', async () => {
+  const { normalizeStringUnion, validateFormBody } = await import('./lib/form-input.ts');
+  const { parameterContext } = await import('./lib/parameter-serialization.ts');
+  for (const branch of [null, 'string', []]) {
+    const shape = { anyOf: [branch, { type: 'string' }] };
+    assert.equal(normalizeStringUnion(shape), shape, 'Malformed branches cannot be silently normalized.');
+  }
+  const empty = { type: 'object' };
+  assert.doesNotThrow(() => validateFormBody(empty, false));
+  for (const encoding of [null, 42, []])
+    assert.throws(() => validateFormBody(empty, false, encoding), /Form part encoding must be an object keyed by field name/);
+  for (const settings of [null, 42, [], {}])
+    assert.throws(() => validateFormBody(empty, true, { file: settings }), /Form part "file": custom encoding is not supported/);
+  assert.equal(parameterContext({}), 'unknown parameter "<unnamed>" (type=unknown, style="simple", explode=false)');
+  assert.equal(parameterContext({ in: 42, name: null, style: {}, explode: [] }, 'array'),
+    'unknown parameter "<unnamed>" (type=array, style=<invalid object>, explode=<invalid object>)');
+  assert.equal(parameterContext({ in: 'query', name: 'key', style: null, explode: null }),
+    'query parameter "key" (type=unknown, style=null, explode=null)');
+});
