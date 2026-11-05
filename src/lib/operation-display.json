@@ -318,5 +318,10 @@
     "method": "GET",
     "path": "/repositories/{workspace}/{repo_slug}/pullrequests/activity",
     "description": "Returns a paginated list of the pull request's activity log."
+  },
+  "bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity": {
+    "method": "GET",
+    "path": "/repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity",
+    "description": "Returns a paginated list of the pull request's activity log."
   }
 }
