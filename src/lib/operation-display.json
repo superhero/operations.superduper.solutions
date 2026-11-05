@@ -293,5 +293,10 @@
     "method": "GET",
     "path": "/v1/files",
     "name": "List team files"
+  },
+  "xai:handle_revoke_public_url_request": {
+    "method": "POST",
+    "path": "/v1/files/{file_id}/public-url/revoke",
+    "name": "Revoke public file URL"
   }
 }

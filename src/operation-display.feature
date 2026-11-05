@@ -69,3 +69,4 @@ Feature: Qualified operation display metadata
       | xai:handle_get_deferred_completion_request |
       | xai:handle_language_models_list_request |
       | xai:handle_list_files_request |
+      | xai:handle_revoke_public_url_request |
