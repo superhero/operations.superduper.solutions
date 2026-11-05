@@ -27,7 +27,7 @@ type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
 const primitives = ["string", "number", "integer", "boolean", "null"];
 const annotation = new Set(["title", "description", "default", "example", "examples", "deprecated", "format", "externalDocs", "xml", "readOnly", "writeOnly"]);
-const constraints = new Set(["type", "nullable", "enum", "const", "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "uniqueItems", "pattern", "properties", "required", "additionalProperties", "items"]);
+const constraints = new Set(["type", "nullable", "enum", "const", "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "uniqueItems", "minProperties", "maxProperties", "propertyNames", "pattern", "properties", "required", "additionalProperties", "items"]);
 const value = (input: unknown): Value => input && typeof input === "object" && !Array.isArray(input) ? input as Value : {};
 const text = (input: unknown, fallback = ""): string => typeof input === "string" ? input : fallback;
 const json = (): InputSchema => ({ type: "json" });
@@ -101,6 +101,12 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   if (shape.enum !== undefined && (!Array.isArray(shape.enum) || shape.enum.some(item => item !== null && !["string", "number", "boolean"].includes(typeof item)))) return json();
   if (Object.hasOwn(shape, "const") && shape.const !== null && !["string", "number", "boolean"].includes(typeof shape.const)) return json();
   const result: InputSchema = { type: inferred as InputSchema["type"] };
+  for (const key of ["minProperties", "maxProperties"] as const) if (shape[key] !== undefined) {
+    if (inferred !== "object" || typeof shape[key] !== "number" || !Number.isSafeInteger(shape[key]) || (shape[key] as number) < 0) return json();
+    result[key] = shape[key] as number;
+  }
+  if (result.minProperties !== undefined && result.maxProperties !== undefined && result.minProperties > result.maxProperties) return json();
+  if (shape.propertyNames !== undefined && inferred !== "object") return json();
   if (shape.uniqueItems !== undefined) {
     if (inferred !== "array" || typeof shape.uniqueItems !== "boolean") return json();
     result.uniqueItems = shape.uniqueItems;
@@ -121,6 +127,10 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   if (inferred === "array") result.items = inputSchema(shape.items, document, depth + 1, next, binary);
   if (inferred === "object")
   {
+    if (shape.propertyNames !== undefined) {
+      result.propertyNames = inputSchema(shape.propertyNames, document, depth + 1, next, true);
+      if (result.propertyNames.type !== "string" || result.propertyNames.format) return json();
+    }
     const properties = Object.entries(value(shape.properties)).filter(([, property]) => resolve(property, document).readOnly !== true);
     if (properties.length > (depth === 0 ? rootPropertyBudget : 200)) return json();
     result.properties = Object.fromEntries(properties.map(([name, property]) => {

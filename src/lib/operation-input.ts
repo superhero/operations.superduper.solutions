@@ -102,6 +102,10 @@ function validate(input: InputField, schema: InputSchema, value: JsonValue, path
   if (type === "object")
   {
     const properties = value as Record<string, JsonValue>;
+    const names = Object.keys(properties);
+    if (schema.minProperties !== undefined && names.length < schema.minProperties || schema.maxProperties !== undefined && names.length > schema.maxProperties)
+      fail(input, `${path} property count is outside the allowed range.`);
+    if (schema.propertyNames) for (const name of names) validate(input, schema.propertyNames, name, `${path} property name ${JSON.stringify(name)}`);
     for (const name of schema.required ?? []) if (!Object.hasOwn(properties, name)) fail(input, `${path}.${name} is required.`);
     for (const [name, item] of Object.entries(properties))
     {

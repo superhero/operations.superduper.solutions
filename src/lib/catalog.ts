@@ -36,6 +36,9 @@ export type InputSchema = {
   minItems?: number;
   maxItems?: number;
   uniqueItems?: boolean;
+  minProperties?: number;
+  maxProperties?: number;
+  propertyNames?: InputSchema;
   properties?: Record<string, InputSchema>;
   additionalProperties?: boolean | InputSchema;
   required?: string[];
@@ -159,9 +162,9 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   if (type === "number" || type === "integer") keys.push("minimum", "maximum");
   if (type === "string") keys.push("minLength", "maxLength", "pattern");
   if (type === "array") keys.push("items", "minItems", "maxItems", "uniqueItems");
-  if (type === "object") keys.push("properties", "required", "additionalProperties");
+  if (type === "object") keys.push("properties", "required", "additionalProperties", "minProperties", "maxProperties", "propertyNames");
   // Validate misplaced numeric constraints explicitly, keeping useful diagnostics.
-  supported(shape, [...keys, "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"], context);
+  supported(shape, [...keys, "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "minProperties", "maxProperties"], context);
   const result: InputSchema = { type, ...(nullable ? { nullable: true } : {}) };
   if (shape.uniqueItems !== undefined) {
     if (typeof shape.uniqueItems !== "boolean") throw new Error(`${context}: uniqueItems must be Boolean.`);
@@ -183,24 +186,31 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
       throw new Error(`${context}: enum values must match the input type.`);
     result.enum = shape.enum;
   }
-  for (const key of ["minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"] as const)
+  for (const key of ["minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "minProperties", "maxProperties"] as const)
   {
     const value = shape[key];
     if (value === undefined) continue;
     const length = key === "minLength" || key === "maxLength";
     const items = key === "minItems" || key === "maxItems";
+    const properties = key === "minProperties" || key === "maxProperties";
     if (typeof value !== "number" || !Number.isFinite(value)
-      || (length || items ? type !== (length ? "string" : "array") || !Number.isInteger(value) || value < 0 : type !== "number" && type !== "integer"))
+      || (length || items || properties ? type !== (length ? "string" : items ? "array" : "object") || !Number.isInteger(value) || value < 0 : type !== "number" && type !== "integer"))
       throw new Error(`${context}: invalid ${key} constraint.`);
     result[key] = value;
   }
   if (result.minimum !== undefined && result.maximum !== undefined && result.minimum > result.maximum
     || result.minLength !== undefined && result.maxLength !== undefined && result.minLength > result.maxLength
-    || result.minItems !== undefined && result.maxItems !== undefined && result.minItems > result.maxItems)
+    || result.minItems !== undefined && result.maxItems !== undefined && result.minItems > result.maxItems
+    || result.minProperties !== undefined && result.maxProperties !== undefined && result.minProperties > result.maxProperties)
     throw new Error(`${context}: minimum exceeds maximum.`);
   if (type === "array") result.items = inputSchema(shape.items, document, `${context}[]`, depth + 1);
   if (type === "object")
   {
+    if (shape.propertyNames !== undefined) {
+      result.propertyNames = inputSchema(shape.propertyNames, document, `${context}: property names`, depth + 1);
+      if (result.propertyNames.type !== "string" || result.propertyNames.format)
+        throw new Error(`${context}: property names require a string schema.`);
+    }
     if (shape.additionalProperties !== undefined)
     {
       if (typeof shape.additionalProperties === "boolean") result.additionalProperties = shape.additionalProperties;

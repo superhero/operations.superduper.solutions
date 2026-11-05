@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "0de9d1bc605c03f5f8660783237ab87aff03a31ed3771f1358aa923a50954f30",
+  "adapterRevision": "88a6374682a5356065871c7b4012ea36e58aa9cdc2f4a4c901ef41c89d9d38b8",
   "indexes": [
     {
       "id": "anthropic",
@@ -2952,15 +2952,15 @@
     {
       "id": "openai",
       "sourceRevision": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
-      "bytes": 124330,
-      "compressedBytes": 10028,
-      "sha256": "2a2d564557bb0e1828f17d6138cc0dea0f83de67384178c28b205f78ba769322",
+      "bytes": 123812,
+      "compressedBytes": 9975,
+      "sha256": "4da86e2955fbe575bec0f04d60bf8ba549283b6cff75da07d9a3071631e0974c",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",
         "description": "The OpenAI REST API. Please see https://platform.openai.com/docs/api-reference for more details.",
         "operationCount": 360,
-        "unavailableCount": 14
+        "unavailableCount": 12
       }
     },
     {

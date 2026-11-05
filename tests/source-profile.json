@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/metadata-query.test.mjs",
     "src/catalog-path-bindings.test.mjs",
     "src/json-request-media.test.mjs",
     "src/empty-request-body.test.mjs",
@@ -116,6 +117,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/metadata-query.feature",
     "src/catalog-path-bindings.feature",
     "src/json-request-media.feature",
     "src/empty-request-body.feature",
