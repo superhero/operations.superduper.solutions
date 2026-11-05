@@ -368,5 +368,10 @@
     "method": "GET",
     "path": "/repos/{owner}/{repo}/compare/{basehead}",
     "description": "Compares two commits against one another. You can compare refs (branches or tags) and commit SHAs in the same repository, or you can compare refs and commit SHAs that exist in different repositories within the same repository network, including fork branches. For more information about how to view a repository's network, see \"[Understanding connections between repositories](https://docs.github.com/repositories/viewing-activity-and-data-for-your-repository/understanding-connections-between-repositories).\""
+  },
+  "jira:evaluateJSISJiraExpression": {
+    "method": "POST",
+    "path": "/rest/api/3/expression/evaluate",
+    "description": "Evaluates a Jira expression and returns its value. The difference between this and `eval` is that this endpoint uses the enhanced search API when evaluating JQL queries. This API is eventually consistent, unlike the strongly consistent `eval` API. This allows for better performance and scalability. In addition, this API's response for JQL evaluation is based on a scrolling view (backed by a `nextPageToken`) instead of a paginated view (backed by `startAt` and `totalCount`)."
   }
 }
