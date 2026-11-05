@@ -20,6 +20,7 @@ import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 import { withOperationCapabilities, type OperationCapabilities, type CapabilitySummary } from "./operation-capabilities.ts";
 import { acceptsScalarQueryExplode, configureQueryArray, type QuerySerialization } from "./query-serialization.ts";
 import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
+import { isJsonRequestMediaType } from "./request-media.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -360,8 +361,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
             const shape = resolve(object(content[type], id).schema ?? {}, document, id);
             return isBinaryMediaType(type) && shape.type === "string" && shape.format === "binary";
           });
-          if (!binary && (mediaTypes.length !== 1 || !["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].includes(mediaTypes[0]!)))
-            throw new Error(`${id}: choose one supported request media type: application/json, text/plain, application/x-www-form-urlencoded or multipart/form-data.`);
+          if (!binary && (mediaTypes.length !== 1 || !isJsonRequestMediaType(mediaTypes[0]!) && !["text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].includes(mediaTypes[0]!)))
+            throw new Error(`${id}: choose one supported request media type: JSON (application/json or +json), text/plain, application/x-www-form-urlencoded or multipart/form-data. Declared: ${mediaTypes.join(", ")}.`);
           bodyMediaType = mediaTypes[0] as BodyMediaType;
           const media = object(content[bodyMediaType], id);
           const form = bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data";

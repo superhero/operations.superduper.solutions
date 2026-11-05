@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/json-request-media.test.mjs",
     "src/empty-request-body.test.mjs",
     "src/query-schema.test.mjs",
     "src/atlassian-dc-authentication.test.mjs",
@@ -114,6 +115,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/json-request-media.feature",
     "src/empty-request-body.feature",
     "src/query-schema.feature",
     "src/atlassian-dc-authentication.feature",

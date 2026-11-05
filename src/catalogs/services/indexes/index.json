@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "65a37eeb32de74a397510700ad2fdb5824716ea551aa64fe765459f94b6c8fc5",
+  "adapterRevision": "83e0083763af16c8823ce84e2bf6ced088d04f90fc930ac9ddc8c3e18ee23f33",
   "indexes": [
     {
       "id": "anthropic",
@@ -180,15 +180,15 @@
     {
       "id": "bitbucket-dc",
       "sourceRevision": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
-      "bytes": 222440,
-      "compressedBytes": 15823,
-      "sha256": "1c75daa95e4b4163f74550aa45d256dce06390c4ba83bf682c7ae5218c17db4b",
+      "bytes": 222762,
+      "compressedBytes": 15858,
+      "sha256": "392f14512fb43f3d668e9607732b46c0f2a7935dce53e8201e01d11acab6658c",
       "summary": {
         "name": "Bitbucket Data Center",
         "serverUrl": "http://example.com:7990/rest",
         "description": "This is the reference document for the Atlassian Bitbucket REST API. The REST API is for developers who want to: \n\n - integrate Bitbucket with other applications;\n\n - create scripts that interact with Bitbucket; or\n\n - develop plugins that enhance the Bitbucket UI, using REST to interact with the backend. \n\n You can read more about developing Bitbucket plugins in the [Bitbucket Developer Documentation](https://developer.atlassian.com/bitbucket/server/docs/latest/).",
         "operationCount": 574,
-        "unavailableCount": 26
+        "unavailableCount": 24
       }
     },
     {
@@ -262,9 +262,9 @@
     {
       "id": "atlassian-confluence-v1",
       "sourceRevision": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
-      "bytes": 92159,
-      "compressedBytes": 5314,
-      "sha256": "f0483508edfd7ea972e0940f515fd6f80858d13a23a79a9aa21598f0673aba25",
+      "bytes": 92194,
+      "compressedBytes": 5331,
+      "sha256": "265be88d61754f9900fb4db5f6665e9a95de7a65b20299253320ef82eb536e7a",
       "summary": {
         "name": "The Confluence Cloud REST API",
         "serverUrl": "",
@@ -290,9 +290,9 @@
     {
       "id": "crowd-dc",
       "sourceRevision": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
-      "bytes": 48780,
-      "compressedBytes": 4437,
-      "sha256": "547979920f45667bb8f50b0dbe49c1531a2b973b52f63a69de206c9eaf187892",
+      "bytes": 48836,
+      "compressedBytes": 4459,
+      "sha256": "e1d89e820ac0b3196397b2d73dff8c40809e9c71bed8dcefd64cb4095fec896d",
       "summary": {
         "name": "Crowd Data Center",
         "serverUrl": "http://example.com:8095/rest",
@@ -386,15 +386,15 @@
     {
       "id": "jira",
       "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
-      "bytes": 229216,
-      "compressedBytes": 19149,
-      "sha256": "09214c8325adcfd2e47f635f37a07b923b74f82ae0c8d7f68a6871d14b64e735",
+      "bytes": 228946,
+      "compressedBytes": 19265,
+      "sha256": "8379ce0a0214c71c17e4cd809ee953063237906645e142e33f08564a9c4316f1",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
         "description": "Jira Cloud platform REST API documentation",
         "operationCount": 630,
-        "unavailableCount": 7
+        "unavailableCount": 4
       }
     },
     {
@@ -414,9 +414,9 @@
     {
       "id": "jira-service-management-dc",
       "sourceRevision": "952e361d41d9757483318893bf27cec2a6517c778e46fd9c0eef776e362837a4",
-      "bytes": 218370,
-      "compressedBytes": 17011,
-      "sha256": "f3b737b59608e240c8d5bcb3ce932896c4053d400817ab1329d7b9ab175ebb3d",
+      "bytes": 218487,
+      "compressedBytes": 17056,
+      "sha256": "0f48966d5ee99c4376153c124abed30164d59dcedf259ff1a209238ba30fed37",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
@@ -456,9 +456,9 @@
     {
       "id": "jira-dc",
       "sourceRevision": "8dfa96c50de9e8b19eda1e8129b2ba30c373bc096980182dcb74ac613a0db628",
-      "bytes": 169870,
-      "compressedBytes": 14266,
-      "sha256": "275214e3ab9f71ba4eea6d35144c33bd932f9e27d271437fdb0d869265df4fa7",
+      "bytes": 169952,
+      "compressedBytes": 14294,
+      "sha256": "1c0fa4110034f817ac01a6dcb076e7ddb035e843e5d67bf435406db518a76a9f",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
@@ -470,14 +470,14 @@
     {
       "id": "atlassian-marketplace",
       "sourceRevision": "7489e7bda44df7b659db8a8b448f1e918afab0ec8164370bac021ae5aed30f0a",
-      "bytes": 58886,
-      "compressedBytes": 4141,
-      "sha256": "21d63d26f812ac6044d14d70a2bbb101df6f6db302589bfd50064f9c3eeccb7f",
+      "bytes": 58261,
+      "compressedBytes": 4055,
+      "sha256": "ceb2b81db72c72906885a0bf3070f87c0cbbffab978ec910cc947c684bb5ab04",
       "summary": {
         "name": "Atlassian Marketplace API",
         "serverUrl": "https://marketplace.atlassian.com/rest/2",
         "operationCount": 143,
-        "unavailableCount": 5
+        "unavailableCount": 0
       }
     },
     {
@@ -648,9 +648,9 @@
     {
       "id": "aws-autoscaling",
       "sourceRevision": "3dfd2af80a4764189fc0d3ea5a28bc9479e45447b1aae5efddf26d60a919ae3f",
-      "bytes": 92070,
-      "compressedBytes": 3617,
-      "sha256": "91be677e6660592199b8250a2157193f36cbb4e3e10384104078bbd55eeb1600",
+      "bytes": 94390,
+      "compressedBytes": 3639,
+      "sha256": "b02159f64bb7a25be70dae87f978099a43773504e2b173e2ae423ba21b6d3f5b",
       "summary": {
         "name": "Auto Scaling",
         "serverUrl": "http://autoscaling.us-east-1.amazonaws.com",
@@ -704,9 +704,9 @@
     {
       "id": "aws-cloudformation",
       "sourceRevision": "4a68c9cffa40499b55c50b970591ff86129e779b0ef9e8bdfcaef552ebc14e3f",
-      "bytes": 99960,
-      "compressedBytes": 4026,
-      "sha256": "7ac79fdcaacf4bec687452f1908b8f74c94d29c68d43064c20c0381a0abf0857",
+      "bytes": 102760,
+      "compressedBytes": 4049,
+      "sha256": "de67117d0c88ca37df1823100516b6b49050bb0021ec8d541aa6f8a92a881471",
       "summary": {
         "name": "AWS CloudFormation",
         "serverUrl": "http://cloudformation.us-east-1.amazonaws.com",
@@ -718,9 +718,9 @@
     {
       "id": "aws-cloudfront",
       "sourceRevision": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
-      "bytes": 67667,
-      "compressedBytes": 3331,
-      "sha256": "541f8d28de126a9d5f1a613f7e47b755ab3a87d096b115dcdb5225d0b52452e6",
+      "bytes": 69227,
+      "compressedBytes": 3353,
+      "sha256": "7dd1034cd518478c58b9c5d72d8071a1ed9d3b11a1bd0daf11d5a9bbf9759f1d",
       "summary": {
         "name": "Amazon CloudFront",
         "serverUrl": "https://cloudfront.amazonaws.com",
@@ -760,9 +760,9 @@
     {
       "id": "aws-monitoring",
       "sourceRevision": "85ff979bad127aab83a73b775f9905aac586238122296feb00b685d8deff936a",
-      "bytes": 54083,
-      "compressedBytes": 2617,
-      "sha256": "84907ea229ac028bf62eac368b7bb453dc12e0883dd2cd4683f0b19a5dce2a3e",
+      "bytes": 55603,
+      "compressedBytes": 2644,
+      "sha256": "36ef670c8580b03bbac1ae5029519c4a3a32b969911fcccbef3f2956ca4d1c98",
       "summary": {
         "name": "Amazon CloudWatch",
         "serverUrl": "http://monitoring.us-east-1.amazonaws.com",
@@ -872,9 +872,9 @@
     {
       "id": "aws-ec2",
       "sourceRevision": "ea5b1da045efed071bd26efab3b896f71282f662cc1e1683194d66023d3cfd04",
-      "bytes": 835446,
-      "compressedBytes": 26169,
-      "sha256": "c37e32d76ed6a351e1cd98beb54be64a4acef32805ce18f150ddc3a885c8cade",
+      "bytes": 859206,
+      "compressedBytes": 26223,
+      "sha256": "7b3c0fab35731e0ed328754f9e7f4a47995d0b41fa9194b2a7ff968303a7666d",
       "summary": {
         "name": "Amazon Elastic Compute Cloud",
         "serverUrl": "http://ec2.us-east-1.amazonaws.com",
@@ -942,9 +942,9 @@
     {
       "id": "aws-elasticloadbalancingv2",
       "sourceRevision": "9bb94556618707f774795169f97fedcdc28f89a69a39627c6c14500ed5d6ada5",
-      "bytes": 51904,
-      "compressedBytes": 2663,
-      "sha256": "8cf862758821ea7cdc74dcc7e39fda25084ae750ba02ae81027d8edaffd1961b",
+      "bytes": 53264,
+      "compressedBytes": 2686,
+      "sha256": "ca822d5474e2fe8e409ba59aca28daf45886049d538f41ad93c762f8f24345e3",
       "summary": {
         "name": "Elastic Load Balancing",
         "serverUrl": "http://elasticloadbalancing.us-east-1.amazonaws.com",
@@ -956,9 +956,9 @@
     {
       "id": "aws-elasticache",
       "sourceRevision": "f73df542876aded5810cd60675f944fa512810eb4875ab4b05e9cca1a42d3f7e",
-      "bytes": 93670,
-      "compressedBytes": 3712,
-      "sha256": "ca82f35646306ddadaaf731229784f453ab7e4d536c6ab34adbcb15294932622",
+      "bytes": 96270,
+      "compressedBytes": 3735,
+      "sha256": "56f96a64f96128202e8f03c5ffd9c8a00e650e17959a215ef1294888ec5560ca",
       "summary": {
         "name": "Amazon ElastiCache",
         "serverUrl": "http://elasticache.us-east-1.amazonaws.com",
@@ -1012,9 +1012,9 @@
     {
       "id": "aws-iam",
       "sourceRevision": "75b86d2d22322f224d07485f0a74f0927ec4b6bb90d6f4108c6cf98f89132b3d",
-      "bytes": 215872,
-      "compressedBytes": 7159,
-      "sha256": "d01bf8e15532bbb8940d1027e1179bc9cbb658a7340a653be05c8982ad97dc93",
+      "bytes": 222032,
+      "compressedBytes": 7200,
+      "sha256": "b99fedfd3af29717c2d9a6174ebfbe290d3e3d1b6c6cf2a59f5e2d6796fb345f",
       "summary": {
         "name": "AWS Identity and Access Management",
         "serverUrl": "https://iam.amazonaws.com",
@@ -1110,9 +1110,9 @@
     {
       "id": "aws-rds",
       "sourceRevision": "c21871f272a1f369d3802e13d76f0625eac5dfc240c320f38c3a547da1901be5",
-      "bytes": 203568,
-      "compressedBytes": 7522,
-      "sha256": "c04d7e1832b9906af972488eead6fad881de1ebe68b5f48fa6d315734e0f1036",
+      "bytes": 209288,
+      "compressedBytes": 7552,
+      "sha256": "f33c1b521764a9f654a51bff694b57030ea4c3d200dfcea469b2f0ffb026d0de",
       "summary": {
         "name": "Amazon Relational Database Service",
         "serverUrl": "http://rds.us-east-1.amazonaws.com",
@@ -1124,9 +1124,9 @@
     {
       "id": "aws-redshift",
       "sourceRevision": "d6271729a44df045024d5dff64e01968f4d1def0470f8aec3eac648fc8ec8b28",
-      "bytes": 175535,
-      "compressedBytes": 6470,
-      "sha256": "81420041dacc26e70a088cb3a120696560165654b673bd1c28c790713cbf2e67",
+      "bytes": 180415,
+      "compressedBytes": 6494,
+      "sha256": "92102c28666e9a63c6e9e431041f09b04a1a94ba44e9f4856eb7170643e4e8c5",
       "summary": {
         "name": "Amazon Redshift",
         "serverUrl": "http://redshift.us-east-1.amazonaws.com",
@@ -1152,9 +1152,9 @@
     {
       "id": "aws-route53",
       "sourceRevision": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
-      "bytes": 42113,
-      "compressedBytes": 2741,
-      "sha256": "5d4e385d9e0344a9643ebe5f2e6b58fe83eab66ee7f1425c0329fb3de5531322",
+      "bytes": 42953,
+      "compressedBytes": 2764,
+      "sha256": "ca4383c87fc7ce2d56141f37872fa50974d9d7a6f06216afb051e43c5bf4bd29",
       "summary": {
         "name": "Amazon Route 53",
         "serverUrl": "https://route53.amazonaws.com",
@@ -1166,9 +1166,9 @@
     {
       "id": "aws-s3",
       "sourceRevision": "1abeda3df1f4fc0835e5c91144542f89542e3d92e3bceab95e497b1393547586",
-      "bytes": 62712,
-      "compressedBytes": 3209,
-      "sha256": "4bfeb0cce160097e0146f02d46478d1fa7b17203cf25a38d7c05047de0ad7611",
+      "bytes": 64112,
+      "compressedBytes": 3229,
+      "sha256": "d503e364d70f13df740a34fd993ae6e8f1a2dfddec775c71f8be4f7702587b4d",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "http://s3.us-east-1.amazonaws.com",
@@ -1180,9 +1180,9 @@
     {
       "id": "aws-s3control",
       "sourceRevision": "983b1815b0cd68eaf86d6cd316ba6177013be242600789992bf0d9cb83808e32",
-      "bytes": 45027,
-      "compressedBytes": 2194,
-      "sha256": "7261b25f15b6880ec04ad2ba2664cdb29d88bd6fdeb27c5bf77e63e0e4fd65de",
+      "bytes": 45827,
+      "compressedBytes": 2223,
+      "sha256": "f8f0d511046ae57717e7f86e40cc8cf447257f8cad0b06cf52d1f130244ba0db",
       "summary": {
         "name": "AWS S3 Control",
         "serverUrl": "http://s3-control.us-east-1.amazonaws.com",
@@ -1250,9 +1250,9 @@
     {
       "id": "aws-sns",
       "sourceRevision": "14a210cbd1167e49aeb461e4ba8bff533c7bb6473f7cb8ff91f83beaf932f195",
-      "bytes": 60074,
-      "compressedBytes": 2972,
-      "sha256": "5bdd9243c60962e30d9250e14252c06be1391f31c82507bbf21c735df770ebe9",
+      "bytes": 61754,
+      "compressedBytes": 2995,
+      "sha256": "b60ff89c450e78842533a5ae2f615ebcb5127f09bfef620bbb5bd254e64aa822",
       "summary": {
         "name": "Amazon Simple Notification Service",
         "serverUrl": "http://sns.us-east-1.amazonaws.com",
@@ -1264,9 +1264,9 @@
     {
       "id": "aws-sqs",
       "sourceRevision": "5ba8e13697b8c58dd867c87318478c346afe694fdf47ccecae7404474d6b890b",
-      "bytes": 35453,
-      "compressedBytes": 2340,
-      "sha256": "7bbe98e7a8923357340bd12761497a321d4c717d8dd40e3aaa1f68715f13a83a",
+      "bytes": 36373,
+      "compressedBytes": 2363,
+      "sha256": "ca361c9172ceaa7d06f7dbfbfa854e048a46c7e976698956994bc3aa7eb22189",
       "summary": {
         "name": "Amazon Simple Queue Service",
         "serverUrl": "http://sqs.us-east-1.amazonaws.com",
@@ -1292,9 +1292,9 @@
     {
       "id": "aws-sts",
       "sourceRevision": "886ede5b183bd23c14cd512169cab958f68d53a849c6e62fd4e7e30e977cda65",
-      "bytes": 11358,
-      "compressedBytes": 1214,
-      "sha256": "f56bd89c78f4b95be9ed328173861e8e2a47c2a8d61617943380d88a1153bc28",
+      "bytes": 11638,
+      "compressedBytes": 1233,
+      "sha256": "b21d69a50f38831cbfb6ce0d374387cdabfce3424030b8e93286b2b7d4491c14",
       "summary": {
         "name": "AWS Security Token Service",
         "serverUrl": "https://sts.amazonaws.com",
@@ -1376,9 +1376,9 @@
     {
       "id": "bluesky-app",
       "sourceRevision": "02fc57bf6b47faca285b60712403939e36ed4e997ad13ca52b2c523862df20ba",
-      "bytes": 55737,
-      "compressedBytes": 4982,
-      "sha256": "89fa11bb9b1a856e29c2281ba318c85dcf04379918b9b64d1cb4bf4bcb181311",
+      "bytes": 55869,
+      "compressedBytes": 5024,
+      "sha256": "9f3d8f7d11a2000a63d8f71e2170f4d42de231fa728f88f1775c8659929a3be3",
       "summary": {
         "name": "Bluesky HTTP API Reference — Bluesky App",
         "serverUrl": "https://bsky.social",
@@ -1418,15 +1418,15 @@
     {
       "id": "cloudflare",
       "sourceRevision": "ca3f09b346bba9872f2aee6b4f243dbaf19da995f896b9d1de846994250e226a",
-      "bytes": 1630165,
-      "compressedBytes": 120299,
-      "sha256": "1e594709da62b9636e407b978f61c90f01a9759f728d3f601458c6d9096fe084",
+      "bytes": 1629464,
+      "compressedBytes": 120222,
+      "sha256": "fb39efcabe27ee7ba053584328fa080af7cb7e40e35b4f52a8af784d67ee6ab2",
       "summary": {
         "name": "Cloudflare API",
         "serverUrl": "https://api.cloudflare.com/client/v4",
         "description": "Welcome to Cloudflare's API documentation site. We are experimenting with an updated version of our API documentation - check out [developers.cloudflare.com/api-next/](https://developers.cloudflare.com/api-next/) to test out the new experience.\n\nTo get started using Cloudflare's products and services via the API, refer to [how to interact with Cloudflare](https://developers.cloudflare.com/fundamentals/basic-tasks/interact-with-cloudflare/), which covers using tools like [Terraform](https://developers.cloudflare.com/terraform/#cloudflare-terraform) and the [official SDKs](https://developers.cloudflare.com/fundamentals/api/reference/sdks/) to maintain your Cloudflare resources.\n\nUsing the Cloudflare API requires authentication so that Cloudflare knows who is making requests and what permissions you have. Create an API token to grant access to the API to perform actions. You can also authenticate with [API keys](https://developers.cloudflare.com/fundamentals/api/get-started/keys/), but these keys have [several limitations](https://developers.cloudflare.com/fundamentals/api/get-started/keys/#limitations) that make them less secure than API tokens. Whenever possible, use API tokens to interact with the Cloudflare API.\n\nTo create an API token, from the Cloudflare dashboard, go to My Profile > API Tokens and select Create Token. For more information on how to create and troubleshoot API tokens, refer to\nour [API fundamentals](https://developers.cloudflare.com/fundamentals/api/).\n\nFor information regarding rate limits, refer to our [API Rate Limits](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/platform/limits/#api-rate-limits).\n\nTotally new to Cloudflare? [Start here](https://developers.cloudflare.com/fundamentals/get-started/).",
         "operationCount": 3761,
-        "unavailableCount": 19
+        "unavailableCount": 13
       }
     },
     {
@@ -1473,9 +1473,9 @@
     {
       "id": "digitalocean",
       "sourceRevision": "5626dec576f33c3e55f04713ea83242bb246bec91c4bb623587a6a900b378738",
-      "bytes": 318282,
-      "compressedBytes": 24421,
-      "sha256": "1e085756d28243becfecaeaf8a350265312b427c161da423f2fea5b3f9090ee7",
+      "bytes": 318332,
+      "compressedBytes": 24444,
+      "sha256": "caef2f30cc1f7958b037df012767b88d5c9439e47350e932cd9d358c39a9218f",
       "summary": {
         "name": "DigitalOcean API",
         "serverUrl": "https://api.digitalocean.com",
@@ -1681,9 +1681,9 @@
     {
       "id": "gcp-artifactregistry",
       "sourceRevision": "f0b2069f264e1ec82dd0dd8d9b367c02f38496efd1c0fc91d1ecec8c936a0d0d",
-      "bytes": 15130,
-      "compressedBytes": 1232,
-      "sha256": "271007a34b8da4f93b78e910bd30f778c5ca3db479578c8e69b56cfec3ddc30e",
+      "bytes": 15410,
+      "compressedBytes": 1262,
+      "sha256": "c69972be3cde04816a09f32444d351ad26a256a14fa34a3224e73996664c8e8d",
       "summary": {
         "name": "Artifact Registry API",
         "serverUrl": "https://artifactregistry.googleapis.com",
@@ -2477,9 +2477,9 @@
     {
       "id": "google-chat",
       "sourceRevision": "376ea9392e52f5c11e643539539645636b450103da8f97bc5b8cace6fe1a9d39",
-      "bytes": 8211,
-      "compressedBytes": 1020,
-      "sha256": "ebf8ee1c317eac7c954f5af71f099a3fb2b4298145e5bcc56b9e7b0ed91797b8",
+      "bytes": 8267,
+      "compressedBytes": 1047,
+      "sha256": "36533ffca339c82a09cb539bced7034b16f26d2647e523f87361a1cd84a19374",
       "summary": {
         "name": "Google Chat API",
         "serverUrl": "https://chat.googleapis.com",
@@ -2533,9 +2533,9 @@
     {
       "id": "google-drive",
       "sourceRevision": "3eb1cb005a27f06c51a7f3880dcb3fa7ffdec18f30f3343202f503b6110f03c7",
-      "bytes": 23093,
-      "compressedBytes": 1772,
-      "sha256": "a793505efc0c8ed329d3a808fd819d12a31287e00e355239bad6def9365313ed",
+      "bytes": 23205,
+      "compressedBytes": 1802,
+      "sha256": "2d2f39369fbd88dc278b6ecf919616d6b9a5a8c68c1b119beb9e3975a78b48da",
       "summary": {
         "name": "Google Drive API",
         "serverUrl": "https://www.googleapis.com/drive/v3",
@@ -2575,9 +2575,9 @@
     {
       "id": "google-gmail",
       "sourceRevision": "ce3d1b266163f6bcdd13342d06cae5e2daad26bd0d13e43522d08e6b3f2b3032",
-      "bytes": 38297,
-      "compressedBytes": 2288,
-      "sha256": "8a03bec3a237a8308385dd3cc971530a9ed7ab22058f576d643a98c3c00817a1",
+      "bytes": 41033,
+      "compressedBytes": 2476,
+      "sha256": "f6f5c8aec3574a9501b8bfbbfa8991c32c158105f9db2e13df23a7f962828dbb",
       "summary": {
         "name": "Gmail API",
         "serverUrl": "https://gmail.googleapis.com",
@@ -2687,9 +2687,9 @@
     {
       "id": "google-youtube",
       "sourceRevision": "1fea92aedfb6713b9b61a7aeb6ea523dea30689c054725e02c0e2a5edb0174bc",
-      "bytes": 37720,
-      "compressedBytes": 2585,
-      "sha256": "fe89f080ab005ec9d5c96d2adbbac8f9127382dece44a1cd363a6f9ef9e60085",
+      "bytes": 40042,
+      "compressedBytes": 3214,
+      "sha256": "97c5dce583dc8e60b82c12cdafa6495dab63d6db0c93cb9fc5aaf874bb2224dd",
       "summary": {
         "name": "YouTube Data API v3",
         "serverUrl": "https://youtube.googleapis.com",

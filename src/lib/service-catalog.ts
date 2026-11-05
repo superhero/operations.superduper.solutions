@@ -21,6 +21,7 @@ import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } 
 import { acceptsScalarQueryExplode, configureQueryArray } from "./query-serialization.ts";
 import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { providerPathSecurity } from "./provider-path-bindings.ts";
+import { isJsonRequestMediaType } from "./request-media.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -308,8 +309,9 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                 const schema = resolve(value(content[type]).schema, document);
                 return isBinaryMediaType(type) && schema.type === "string" && schema.format === "binary";
               });
-              const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type]) ?? binaryMediaTypes[0];
-              if (!mediaType) throw new Error("This request requires an unsupported binary or streaming media type.");
+              const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type])
+                ?? Object.keys(content).find(isJsonRequestMediaType) ?? binaryMediaTypes[0];
+              if (!mediaType) throw new Error(`This request requires an unsupported binary or streaming media type. Declared request media types: ${Object.keys(content).join(", ")}.`);
               const schema = resolve(value(content[mediaType]).schema, document);
               const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
               const parsed = inputSchema(schema, document, 0, new Set(), binary,
