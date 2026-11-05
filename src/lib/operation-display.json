@@ -143,5 +143,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{AddressSid}/DependentPhoneNumbers.json",
     "name": "List dependent phone numbers"
+  },
+  "twilio:ListIncomingPhoneNumberLocal": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Local.json",
+    "name": "List local incoming phone numbers"
   }
 }

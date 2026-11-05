@@ -39,3 +39,4 @@ Feature: Qualified operation display metadata
       | twilio:ListAvailablePhoneNumberVoip |
       | twilio:ListCallNotification |
       | twilio:ListDependentPhoneNumber |
+      | twilio:ListIncomingPhoneNumberLocal |
