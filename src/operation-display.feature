@@ -54,3 +54,4 @@ Feature: Qualified operation display metadata
       | twilio:ListUsageRecordYearly |
       | twilio:ListUsageRecordYesterday |
       | twilio:UpdateAddress |
+      | twilio:UpdateConference |
