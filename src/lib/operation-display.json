@@ -113,5 +113,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Mobile.json",
     "name": "List available mobile phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberNational": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/National.json",
+    "name": "List available national phone numbers"
   }
 }

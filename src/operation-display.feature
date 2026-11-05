@@ -33,3 +33,4 @@ Feature: Qualified operation display metadata
       | twilio:ListAvailablePhoneNumberLocal |
       | twilio:ListAvailablePhoneNumberMachineToMachine |
       | twilio:ListAvailablePhoneNumberMobile |
+      | twilio:ListAvailablePhoneNumberNational |
