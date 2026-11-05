@@ -213,5 +213,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Yesterday.json",
     "name": "List yesterday’s usage records"
+  },
+  "twilio:UpdateAddress": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json",
+    "name": "Update address"
   }
 }
