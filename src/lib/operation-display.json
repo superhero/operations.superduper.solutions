@@ -333,5 +333,10 @@
     "method": "GET",
     "path": "/snippets/{workspace}/{encoded_id}",
     "description": "Retrieves a single snippet."
+  },
+  "bitbucket:POST /repositories/{workspace}/{repo_slug}/src": {
+    "method": "POST",
+    "path": "/repositories/{workspace}/{repo_slug}/src",
+    "description": "This endpoint is used to create new commits in the repository by uploading files."
   }
 }
