@@ -233,5 +233,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys/{Sid}.json",
     "name": "Update signing key"
+  },
+  "azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheck": {
+    "method": "PUT",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/networkConfig/virtualNetwork",
+    "name": "Create or update app virtual network connection"
   }
 }
