@@ -13,3 +13,4 @@ Feature: Qualified operation display metadata
       | twilio:CreateAddress |
       | twilio:CreateIncomingPhoneNumberLocal |
       | twilio:CreateIncomingPhoneNumberMobile |
+      | twilio:CreateIncomingPhoneNumberTollFree |

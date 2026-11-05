@@ -13,5 +13,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Mobile.json",
     "name": "Create mobile incoming phone number"
+  },
+  "twilio:CreateIncomingPhoneNumberTollFree": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/TollFree.json",
+    "name": "Create toll-free incoming phone number"
   }
 }
