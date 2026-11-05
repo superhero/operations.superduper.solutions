@@ -84,3 +84,4 @@ Feature: Qualified operation display metadata
       | bitbucket:POST /snippets |
       | bitbucket:PUT /snippets/{workspace}/{encoded_id} |
       | bitbucket:createPipelineForRepository |
+      | bitbucket-dc:PUT /insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key} |

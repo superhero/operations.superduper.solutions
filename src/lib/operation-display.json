@@ -353,5 +353,10 @@
     "method": "POST",
     "path": "/repositories/{workspace}/{repo_slug}/pipelines",
     "description": "Endpoint to create and initiate a pipeline. There are a number of different options to initiate a pipeline, where the payload of the request will determine which type of pipeline will be instantiated."
+  },
+  "bitbucket-dc:PUT /insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key}": {
+    "method": "PUT",
+    "path": "/insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key}",
+    "description": "Create a new insight report, or replace the existing one if a report already exists for the given repository, commit, and report key. A request to replace an existing report will be rejected if the authenticated user was not the creator of the specified report."
   }
 }
