@@ -29,3 +29,4 @@ Feature: Qualified operation display metadata
       | twilio:FetchRecordingTranscription |
       | twilio:FetchSigningKey |
       | twilio:ListAddress |
+      | twilio:ListAvailablePhoneNumberCountry |

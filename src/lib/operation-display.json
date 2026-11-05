@@ -93,5 +93,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Addresses.json",
     "name": "List addresses"
+  },
+  "twilio:ListAvailablePhoneNumberCountry": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers.json",
+    "name": "List countries with available phone numbers"
   }
 }
