@@ -348,5 +348,10 @@
     "method": "PUT",
     "path": "/snippets/{workspace}/{encoded_id}",
     "description": "Used to update a snippet. Use this to add and delete files and to change a snippet's title."
+  },
+  "bitbucket:createPipelineForRepository": {
+    "method": "POST",
+    "path": "/repositories/{workspace}/{repo_slug}/pipelines",
+    "description": "Endpoint to create and initiate a pipeline. There are a number of different options to initiate a pipeline, where the payload of the request will determine which type of pipeline will be instantiated."
   }
 }

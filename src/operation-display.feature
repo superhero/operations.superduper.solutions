@@ -83,3 +83,4 @@ Feature: Qualified operation display metadata
       | bitbucket:POST /repositories/{workspace}/{repo_slug}/src |
       | bitbucket:POST /snippets |
       | bitbucket:PUT /snippets/{workspace}/{encoded_id} |
+      | bitbucket:createPipelineForRepository |
