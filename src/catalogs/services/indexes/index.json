@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "6ff28f316a84df479eb234bf486950fae84433f0fcf7826cb93bee98ca47f475",
+  "adapterRevision": "8195128cb7b53613ad76a14660cfe90a03fcef166e9fb881026e85a8ccfa6edd",
   "indexes": [
     {
       "id": "anthropic",
@@ -593,14 +593,14 @@
     {
       "id": "trello",
       "sourceRevision": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
-      "bytes": 91336,
-      "compressedBytes": 7029,
-      "sha256": "43054179618f265003e68dd4961f5b747d248ddf9a5ddf69679204dcbfd75624",
+      "bytes": 91082,
+      "compressedBytes": 6947,
+      "sha256": "2bc8dc2f2bad075aa52b2dfe999243cc94af893f430134c1d0c930f7f75a8040",
       "summary": {
         "name": "Trello REST API",
         "serverUrl": "https://api.trello.com/1",
         "operationCount": 261,
-        "unavailableCount": 5
+        "unavailableCount": 4
       }
     },
     {
@@ -3093,15 +3093,15 @@
     {
       "id": "x",
       "sourceRevision": "10fb1c13f21c82f42839f63b8874205968a9650e18c9a332b78a339ab675dd13",
-      "bytes": 119246,
-      "compressedBytes": 6060,
-      "sha256": "ff9500348f8059744c911e1191390e64f80c9d67191e4a642608ebe024abdee8",
+      "bytes": 51365,
+      "compressedBytes": 4680,
+      "sha256": "31ff53f26973c3edb0a8bde4befdfc7cad6384bd14100ef0d995f0fb1eb83ffe",
       "summary": {
         "name": "X API v2",
         "serverUrl": "https://api.x.com",
         "description": "X API v2 available endpoints",
         "operationCount": 156,
-        "unavailableCount": 78
+        "unavailableCount": 0
       }
     },
     {

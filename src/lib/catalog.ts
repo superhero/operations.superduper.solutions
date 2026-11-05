@@ -34,6 +34,7 @@ export type InputSchema = {
   maxLength?: number;
   minItems?: number;
   maxItems?: number;
+  uniqueItems?: boolean;
   properties?: Record<string, InputSchema>;
   additionalProperties?: boolean | InputSchema;
   required?: string[];
@@ -156,11 +157,15 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   if (primitiveTypes.includes(type)) keys.push("enum");
   if (type === "number" || type === "integer") keys.push("minimum", "maximum");
   if (type === "string") keys.push("minLength", "maxLength", "pattern");
-  if (type === "array") keys.push("items", "minItems", "maxItems");
+  if (type === "array") keys.push("items", "minItems", "maxItems", "uniqueItems");
   if (type === "object") keys.push("properties", "required", "additionalProperties");
   // Validate misplaced numeric constraints explicitly, keeping useful diagnostics.
   supported(shape, [...keys, "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"], context);
   const result: InputSchema = { type, ...(nullable ? { nullable: true } : {}) };
+  if (shape.uniqueItems !== undefined) {
+    if (typeof shape.uniqueItems !== "boolean") throw new Error(`${context}: uniqueItems must be Boolean.`);
+    result.uniqueItems = shape.uniqueItems;
+  }
   if (shape.pattern !== undefined) {
     if (typeof shape.pattern !== "string") throw new Error(`${context}: pattern must be a string.`);
     try { new RegExp(shape.pattern, "u"); }

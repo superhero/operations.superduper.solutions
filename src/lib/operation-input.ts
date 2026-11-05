@@ -51,6 +51,14 @@ function validateJson(input: InputField, value: JsonValue, path: string): void
   for (const [name, item] of Object.entries(value)) validateJson(input, item, `${path}.${name}`);
 }
 
+/** JSON equality ignores object member order and preserves array order. */
+function equalityKey(value: JsonValue): string {
+  if (Array.isArray(value)) return `[${value.map(equalityKey).join(",")}]`;
+  if (value !== null && typeof value === "object") return `{${Object.keys(value).sort()
+    .map(key => `${JSON.stringify(key)}:${equalityKey(value[key]!)}`).join(",")}}`;
+  return JSON.stringify(value);
+}
+
 function validate(input: InputField, schema: InputSchema, value: JsonValue, path: string): void
 {
   const type = schema.type;
@@ -88,6 +96,8 @@ function validate(input: InputField, schema: InputSchema, value: JsonValue, path
       fail(input, `${path} item count is outside the allowed range.`);
     items.forEach((item, index) => schema.items ? validate(input, schema.items, item, `${path}[${index}]`)
       : validateJson(input, item, `${path}[${index}]`));
+    if (schema.uniqueItems && new Set(items.map(equalityKey)).size !== items.length)
+      fail(input, `${path} items must be unique.`);
   }
   if (type === "object")
   {

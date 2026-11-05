@@ -5,11 +5,11 @@ import type { InputSchema } from "./catalog.ts";
 
 const unionAnnotations = new Set(["title", "description", "example", "examples", "default", "deprecated"]);
 
-/** An unrestricted string branch subsumes enum suggestions in anyOf, never oneOf. */
+/** Lossless string unions; exclusive alternatives must be provably disjoint. */
 export function normalizeStringUnion(shape: Record<string, unknown>, resolveBranch: (branch: unknown) => unknown = branch => branch): Record<string, unknown> {
-  const variants = shape.anyOf;
+  const keyword = shape.anyOf === undefined ? "oneOf" : "anyOf", variants = shape[keyword], exclusive = keyword === "oneOf";
   if (!Array.isArray(variants) || !variants.length
-    || Object.keys(shape).some(key => key !== "anyOf" && !unionAnnotations.has(key))) return shape;
+    || Object.keys(shape).some(key => key !== keyword && !unionAnnotations.has(key))) return shape;
   let unrestricted = false, nullable = false;
   const patterns: string[] = [], values: string[] = [];
   for (const raw of variants) {
@@ -30,7 +30,9 @@ export function normalizeStringUnion(shape: Record<string, unknown>, resolveBran
       }
     } else return shape;
   }
-  const { anyOf, ...annotations } = shape;
+  const annotations = Object.fromEntries(Object.entries(shape).filter(([key]) => key !== keyword));
+  if (exclusive && (variants.length !== 2 || unrestricted || nullable || patterns.length !== 1 || !values.length
+    || values.some(value => new RegExp(patterns[0], "u").test(value)))) return shape;
   if (!unrestricted) {
     if (nullable || patterns.length !== 1 || !values.length) return shape;
     const literals = values.map(value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");

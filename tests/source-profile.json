@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/query-schema.test.mjs",
     "src/atlassian-dc-authentication.test.mjs",
     "src/scalar-query.test.mjs",
     "src/schema-pack-codec.test.mjs",
@@ -112,6 +113,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/query-schema.feature",
     "src/atlassian-dc-authentication.feature",
     "src/scalar-query.feature",
     "src/schema-pack-codec.feature",

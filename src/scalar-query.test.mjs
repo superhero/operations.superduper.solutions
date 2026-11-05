@@ -82,7 +82,7 @@ Then('referenced pattern and enum string alternatives retain their exact validat
 Then('scalar query normalization preserves ambiguous or unsupported string unions', () => {
   const string = { type: 'string' }, pattern = { type: 'string', pattern: '^id$' }, enumeration = { type: 'string', enum: ['null'] };
   for (const source of [
-    { oneOf: [pattern, enumeration] }, { anyOf: [] }, { anyOf: [null, string] }, { anyOf: [[string], string] },
+    { oneOf: [pattern, { type: 'string', enum: ['id'] }] }, { anyOf: [] }, { anyOf: [null, string] }, { anyOf: [[string], string] },
     { anyOf: [pattern, enumeration], minLength: 2 }, { anyOf: [{ ...pattern, minLength: 2 }, enumeration] },
     { anyOf: [{ ...pattern, enum: ['id'] }, enumeration] }, { anyOf: [{ type: 'string', pattern: '[' }, enumeration] },
     { anyOf: [{ type: 'string', pattern: 2 }, enumeration] }, { anyOf: [{ type: 'string', enum: [] }, string] },
