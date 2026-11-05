@@ -13,7 +13,8 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
 import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
@@ -119,6 +120,8 @@ for (const source of sources) {
     }
   }
   const json = JSON.stringify(document);
+  if (source.profile === 'atlassian-dc-authentication' && sha(json) !== atlassianDcAuthenticationSources[source.id])
+    throw new Error('Atlassian Data Center authentication requires requalification before updating the pinned native source.');
   if (source.profile === 'github-auth' && sha(json) !== githubAuthenticationSourceSha256)
     throw new Error('GitHub authentication requires requalification before updating the pinned native source.');
   if (source.profile === 'http-streaming' && sha(json) !== httpResponseStreamingSources[source.id])
@@ -145,6 +148,7 @@ for (const source of sources) {
     throw new Error('ECB registration parameters require requalification before updating the pinned native source.');
   const patches = source.id === 'ecb' ? [ecbRegistrationParameters]
     : source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
+    : source.profile === 'atlassian-dc-authentication' ? [atlassianDcAuthentication]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
     : source.profile === 'azure-eventgrid-auth' ? [azureEventGridManagementAuth]

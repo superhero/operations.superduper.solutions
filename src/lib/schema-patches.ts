@@ -7,6 +7,7 @@ export { awsWireSources } from "./aws-wire.ts";
 import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
+import { bindAtlassianDcAuthentication } from "./atlassian-dc-authentication.ts";
 import { bindProviderPaths } from "./provider-path-bindings.ts";
 import { bindAtlassianServers } from "./atlassian-server-bindings.ts";
 import { configureS3Files, s3SigningProfile } from "./s3-files.ts";
@@ -14,7 +15,8 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export const atlassianDcAuthentication: SchemaPatch = { id: "atlassian-dc-authentication", version: 1 };
 export const ecbRegistrationParameters: SchemaPatch = { id: "ecb-registration-parameters", version: 1 };
 export const ecbRegistrationSourceSha256 = "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020";
 export const bigqueryJobMetadata: SchemaPatch = { id: "bigquery-job-metadata", version: 1 };
@@ -44,7 +46,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "ecb-registration-parameters" ? "ECB registration path parameters"
+  return patch.id === "atlassian-dc-authentication" ? "Atlassian Data Center bearer permissions"
+    : patch.id === "ecb-registration-parameters" ? "ECB registration path parameters"
     : patch.id === "bigquery-job-metadata" ? "BigQuery JSON job metadata"
     : patch.id === "google-storage-media" ? "Google Storage media upload"
     : patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
@@ -602,10 +605,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "ecb-registration-parameters") registrationParameters(document);
+    if (patch.id === "atlassian-dc-authentication") bindAtlassianDcAuthentication(document);
+    else if (patch.id === "ecb-registration-parameters") registrationParameters(document);
     else if (patch.id === "bigquery-job-metadata") bigqueryMetadata(document);
     else if (patch.id === "google-storage-media") storageMedia(document);
     else if (patch.id === "google-oauth-alternatives") googleAlternatives(document);

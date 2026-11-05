@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/atlassian-dc-authentication.test.mjs",
     "src/scalar-query.test.mjs",
     "src/schema-pack-codec.test.mjs",
     "src/github-notification-auth.test.mjs",
@@ -111,6 +112,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/atlassian-dc-authentication.feature",
     "src/scalar-query.feature",
     "src/schema-pack-codec.feature",
     "src/github-notification-auth.feature",

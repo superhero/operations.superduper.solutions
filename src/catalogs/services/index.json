@@ -198,6 +198,7 @@
     "url": "https://dac-static.atlassian.com/server/bamboo/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/bamboo/rest",
     "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication",
     "version": "12.1.12",
     "openapi": "3.0.1",
     "operations": 404,
@@ -205,7 +206,15 @@
     "sha256": "a5f54819ac94622e3855a4a809404b538858fd98ac51690e25960643634a2b4e",
     "sourceSha256": "3d6e237ee6a5deb5c3d3cacf2964d3be6cc4f02b1fd9c5ffddc152ab646dfab9",
     "bytes": 593182,
-    "compressedBytes": 51740
+    "compressedBytes": 51740,
+    "patches": [
+      {
+        "id": "atlassian-dc-authentication",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "fc79736d2a5c3904419440887446b4af21db6c8101c8f2e3f44c5d4690af1022",
+    "effectiveBytes": 613997
   },
   {
     "id": "bitbucket",
@@ -502,6 +511,7 @@
     "url": "https://dac-static.atlassian.com/server/jira-servicedesk/11.3.swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/jira-servicedesk/rest/",
     "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication",
     "version": "11.3.12",
     "openapi": "3.0.1",
     "operations": 514,
@@ -509,7 +519,15 @@
     "sha256": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
     "sourceSha256": "9c01dc60ef7b6699852d3216694864d05e27b2417e6221513bd6984aadc1820d",
     "bytes": 760421,
-    "compressedBytes": 89095
+    "compressedBytes": 89095,
+    "patches": [
+      {
+        "id": "atlassian-dc-authentication",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "952e361d41d9757483318893bf27cec2a6517c778e46fd9c0eef776e362837a4",
+    "effectiveBytes": 785816
   },
   {
     "id": "jira-service-management-ops",
@@ -566,6 +584,7 @@
     "url": "https://dac-static.atlassian.com/server/jira/platform/jira_software_dc_11003_swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/jira/platform/rest/",
     "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication",
     "version": "11.3.12",
     "openapi": "3.0.1",
     "operations": 437,
@@ -573,7 +592,15 @@
     "sha256": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
     "sourceSha256": "1c2671f61cc8e7a7f6e6fcd238397a54eeb58dfe548d8e82a01699f517e92408",
     "bytes": 608325,
-    "compressedBytes": 80847
+    "compressedBytes": 80847,
+    "patches": [
+      {
+        "id": "atlassian-dc-authentication",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "8dfa96c50de9e8b19eda1e8129b2ba30c373bc096980182dcb74ac613a0db628",
+    "effectiveBytes": 633720
   },
   {
     "id": "atlassian-marketplace",
