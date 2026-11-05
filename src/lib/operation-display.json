@@ -173,5 +173,10 @@
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys.json",
     "name": "List signing keys"
+  },
+  "twilio:ListUsageRecordAllTime": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/AllTime.json",
+    "name": "List all-time usage records"
   }
 }

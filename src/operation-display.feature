@@ -45,3 +45,4 @@ Feature: Qualified operation display metadata
       | twilio:ListKey |
       | twilio:ListRecordingTranscription |
       | twilio:ListSigningKey |
+      | twilio:ListUsageRecordAllTime |
