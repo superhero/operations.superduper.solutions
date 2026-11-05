@@ -92,3 +92,4 @@ Feature: Qualified operation display metadata
       | jira:getAllPermissionSchemes |
       | jira:setApplicationProperty |
       | jira:workflowCapabilities |
+      | together:realtime-transcription |
