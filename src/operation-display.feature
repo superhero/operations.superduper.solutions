@@ -16,3 +16,4 @@ Feature: Qualified operation display metadata
       | twilio:CreateIncomingPhoneNumberTollFree |
       | twilio:CreateNewKey |
       | twilio:CreateParticipant |
+      | twilio:CreateValidationRequest |

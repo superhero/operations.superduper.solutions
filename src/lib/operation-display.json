@@ -28,5 +28,10 @@
     "method": "POST",
     "path": "/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Participants.json",
     "name": "Create participant"
+  },
+  "twilio:CreateValidationRequest": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/OutgoingCallerIds.json",
+    "name": "Create validation request"
   }
 }
