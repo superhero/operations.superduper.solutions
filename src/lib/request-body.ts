@@ -27,7 +27,12 @@ export function requestBody(request: PreparedRequest): BodyInit | null {
     const form = request.contentType === "multipart/form-data" ? new FormData() : new URLSearchParams();
     for (const [name, value] of Object.entries(request.body as Record<string, JsonValue>)) {
       if (Array.isArray(value)) {
-        for (const item of value) form.append(name, formText(item));
+        for (const item of value) {
+          if (form instanceof FormData && item && typeof item === "object") {
+            const file = validateWorkflowBinary(item);
+            form.append(name, workflowBinaryBlob(file), file.name);
+          } else form.append(name, formText(item));
+        }
       } else if (form instanceof FormData && value && typeof value === "object") {
         const file = validateWorkflowBinary(value);
         form.append(name, workflowBinaryBlob(file), file.name);

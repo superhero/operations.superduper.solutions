@@ -17,10 +17,14 @@
       {
         "id": "anthropic-authentication",
         "version": 1
+      },
+      {
+        "id": "multipart-file-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "986cca3a187a8388cc1d73418112bb1976799a1ad6691795f6ef9e8299d04b9a",
-    "effectiveBytes": 1662627
+    "effectiveSha256": "4a6f8b775586161003f07d2da2fdb299d8e9852b8f5c65b812d2c6c317503b19",
+    "effectiveBytes": 1663675
   },
   {
     "id": "atlassian-admin-api-access",
@@ -2296,12 +2300,16 @@
         "version": 1
       },
       {
+        "id": "multipart-file-contracts",
+        "version": 1
+      },
+      {
         "id": "private-credential-results",
         "version": 1
       }
     ],
-    "effectiveSha256": "120b511772210c021f0bdde32a469b6f2c125f99d716e7b81e484646d9f83565",
-    "effectiveBytes": 2792652
+    "effectiveSha256": "d3fe2293361601ac7d21110df426128e20396e32f07c8bc66dbcb20128b2258f",
+    "effectiveBytes": 2795607
   },
   {
     "id": "alfred",

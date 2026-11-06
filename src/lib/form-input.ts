@@ -52,11 +52,12 @@ function textField(schema: InputSchema): boolean {
   return !schema.nullable && primitiveField(schema);
 }
 
-/** Default form encoding repeats primitive array items under the same field name. */
+/** Default form encoding repeats primitive or multipart file items by field name. */
 export function supportsFormField(schema: Pick<InputSchema, "type" | "nullable" | "format" | "items" | "enum">, multipart: boolean): boolean {
   return primitiveField(schema)
     || multipart && schema.type === "string" && schema.format === "binary"
-    || schema.type === "array" && !schema.nullable && !!schema.items && textField(schema.items);
+    || schema.type === "array" && !schema.nullable && !!schema.items
+      && (textField(schema.items) || multipart && schema.items.type === "string" && schema.items.format === "binary" && !schema.items.nullable);
 }
 
 export function validateFormBody(schema: InputSchema, multipart: boolean, encoding?: unknown): void {
@@ -67,7 +68,7 @@ export function validateFormBody(schema: InputSchema, multipart: boolean, encodi
     const fields = Object.entries(schema.properties ?? {});
     if (schema.additionalProperties && typeof schema.additionalProperties === "object") fields.push(["<additional properties>", schema.additionalProperties]);
     for (const [name, field] of fields) if (!supportsFormField(field, multipart)) {
-      const reason = field.type === "array" ? "arrays require non-null primitive items"
+      const reason = field.type === "array" ? "arrays require non-null primitive items or multipart binary files"
         : field.type === "json" ? "the schema union or constraints cannot be represented by a supported form field"
         : "use a primitive value, a primitive array or a multipart binary file";
       issues.push(`Form field ${JSON.stringify(name)} (type=${field.type}): ${reason}.`);
