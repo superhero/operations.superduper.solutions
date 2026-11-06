@@ -5,3 +5,8 @@
 export function isJsonRequestMediaType(media: string): boolean {
   return media === media.trim() && /^(?:application\/json|[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+\+json)$/i.test(media);
 }
+
+/** YAML 1.2 accepts the JSON flow representation of structured input values. */
+export function isYamlRequestMediaType(media: string): boolean {
+  return media === media.trim() && /^(?:application\/(?:x-)?yaml|text\/(?:x-)?yaml)$/i.test(media);
+}

@@ -35,5 +35,7 @@ export function requestBody(request: PreparedRequest): BodyInit | null {
     }
     return form;
   }
+  // JSON is also YAML 1.2 flow syntax. Keep typed values and quoted strings,
+  // without evaluating YAML tags or aliases; the declared Content-Type is retained.
   return JSON.stringify(request.body);
 }
