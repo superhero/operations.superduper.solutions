@@ -2511,6 +2511,10 @@
         "version": 1
       },
       {
+        "id": "cloudflare-logo-upload",
+        "version": 1
+      },
+      {
         "id": "multipart-part-contracts",
         "version": 1
       },
@@ -2523,8 +2527,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "768cd0a87c258e444b9ad1de7158a7a18a8f11a351f46e143d98be3314acc608",
-    "effectiveBytes": 13600391
+    "effectiveSha256": "8dc18e4f062587f51e2d8a44a091d889e4cf3936c2f50722ec7d57ff142fc9ff",
+    "effectiveBytes": 13600548
   },
   {
     "id": "cloudflare-realtime-sfu",

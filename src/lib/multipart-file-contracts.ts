@@ -5,6 +5,7 @@ export const multipartFileSources: Record<string, string> = {
   anthropic: "c23b4e84fb0d699275f74767c41af4d3c62f1f9457a75bf55e02559abf44e1cd",
   elevenlabs: "8cee136ec627a5557c61fca7650f69feeeb63d45fc4b1aea097f6f76b69f5c9e",
 };
+export const cloudflareLogoSourceSha256 = "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778";
 const object = (value: unknown): value is Record<string, any> => !!value && typeof value === "object" && !Array.isArray(value);
 function requireContract(value: unknown): asserts value {
   if (!value) throw new Error("Multipart file fields require their reviewed provider source contract.");
@@ -50,4 +51,25 @@ export function bindMultipartFiles(document: Record<string, any>): void {
     }
     schema["x-upstream-form-schema"] = original;
   }
+}
+
+/** The pinned official Go SDK sends LogoNewParams via MarshalMultipart.
+ * https://github.com/cloudflare/cloudflare-go/blob/271c78b7908a931f4d53caca99b5b123f421fe56/brand_protection/logo.go#L95
+ * Retain the conflicting native declaration without changing its file schema.
+ */
+export function bindCloudflareLogo(document: Record<string, any>): void {
+  const item = document.paths?.["/accounts/{account_id}/brand-protection/logos"], operation = item?.post;
+  const body = operation?.requestBody, content = body?.content, media = content?.["application/x-www-form-urlencoded"];
+  const schema = document.components?.schemas?.["brand-protection-api_ImageFile"];
+  if (!(document.openapi === "3.0.3" && document.info?.title === "Cloudflare API" && document.info.version === "4.0.0"
+    && document.servers?.length === 1 && document.servers[0].url === "https://api.cloudflare.com/client/v4"
+    && object(item) && object(operation) && item.servers === undefined && operation.servers === undefined
+    && operation.operationId === "postAccountsAccountIdBrandProtectionLogos" && body?.required === true
+    && object(content) && Object.keys(content).length === 1 && object(media)
+    && media.schema?.$ref === "#/components/schemas/brand-protection-api_ImageFile"
+    && JSON.stringify(schema) === JSON.stringify({ type: "object", properties: { image: { type: "string", format: "binary" } } })
+    && operation["x-upstream-logo-request-body"] === undefined))
+    throw new Error("Cloudflare logo image multipart body does not match its reviewed source contract.");
+  operation["x-upstream-logo-request-body"] = structuredClone(body);
+  operation.requestBody = { ...body, content: { "multipart/form-data": media } };
 }

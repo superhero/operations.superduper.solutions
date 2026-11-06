@@ -27,8 +27,9 @@ import { credentialResultSources } from '../src/lib/credential-results.ts';
 import { bitbucketContentSourceSha256 } from '../src/lib/parameter-content.ts';
 import { trelloParameterSourceSha256 } from '../src/lib/trello-parameter-arrays.ts';
 import { catalogPathBindingSources } from '../src/lib/catalog-path-bindings.ts';
-import { commerceAuthentication } from '../src/lib/schema-patches.ts';
+import { commerceAuthentication, cloudflareLogoUpload } from '../src/lib/schema-patches.ts';
 import { commerceAuthenticationSourceSha256 } from '../src/lib/atlassian-commerce-authentication.ts';
+import { cloudflareLogoSourceSha256 } from '../src/lib/multipart-file-contracts.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { awsRestSourcePins } from '../src/lib/aws-rest-bindings.ts';
 import { awsQuerySourcePins } from '../src/lib/aws-query-bindings.ts';
@@ -167,6 +168,8 @@ for (const source of sources) {
     throw new Error(`${source.id}: catalog path bindings require requalification before updating the pinned native source.`);
   if (source.profile === 'atlassian-dc-authentication' && sha(json) !== atlassianDcAuthenticationSources[source.id])
     throw new Error('Atlassian Data Center authentication requires requalification before updating the pinned native source.');
+  if (source.id === 'cloudflare' && sha(json) !== cloudflareLogoSourceSha256)
+    throw new Error('Cloudflare logo file transport requires requalification before updating the pinned source.');
   if (source.id === 'atlassian-commerce' && sha(json) !== commerceAuthenticationSourceSha256)
     throw new Error('Commerce authentication requires requalification before updating the pinned source.');
   if (source.profile === 'github-auth' && sha(json) !== githubAuthenticationSourceSha256)
@@ -217,6 +220,7 @@ for (const source of sources) {
     : source.profile === 'aws-s3-files' ? [awsS3Files]
     : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
 
+  if (source.id === 'cloudflare') patches.push(cloudflareLogoUpload);
   if (source.id === 'atlassian-commerce') patches.push(commerceAuthentication);
   if (Object.hasOwn(betaRouteSources, source.id)) patches.push(betaRouteContracts);
   if (Object.hasOwn(multipartFileSources, source.id)) patches.push(multipartFileContracts);
