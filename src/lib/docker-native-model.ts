@@ -4,12 +4,32 @@
 import type { InputField, InputSchema, Operation } from "./catalog.ts";
 import { dockerNativeApi, dockerNativeOperationId, dockerNativeProfile } from "./docker-native-contract.ts";
 import { withOperationCapabilities } from "./operation-capabilities.ts";
+import { dockerAttachOperationId, dockerAttachPath, dockerAttachParameters } from "./docker-http.ts";
+import { sameSchemaValue } from "./schema-merge.ts";
 type ObjectValue = Record<string, unknown>;
 const object = (value: unknown): ObjectValue => value && typeof value === "object" && !Array.isArray(value) ? value as ObjectValue : {};
 
-/** A transport alternative for one reviewed HTTP operation, without inventing a server URL. */
+/** Explicit read transports retain native identities without inventing a server URL. */
 export function dockerNativeReadOperation(document: ObjectValue, base: Pick<Operation, "id" | "method" | "path">): Operation | undefined {
   const info = object(document.info), path = object(object(document.paths)[base.path]), source = object(path.get);
+  if (base.id === dockerAttachOperationId) {
+    if (base.method !== "GET" || base.path !== dockerAttachPath || info.version !== dockerNativeApi || info.title !== "Docker Engine API"
+      || source.operationId !== "ContainerAttachWebsocket" || source["x-operations-docker-attach"] !== "read-v1"
+      || source.requestBody !== undefined || path.parameters !== undefined
+      || [document.security, path.security, source.security].some(value => value !== undefined && (!Array.isArray(value) || value.length))
+      || ["x-operations-credential-result", "x-operations-private-path", "x-operations-cloudflare-upload", "x-operations-response-stream"].some(key => source[key] !== undefined)
+      || !sameSchemaValue(source.parameters, dockerAttachParameters())) return;
+    for (const status of ["101", "200"]) if (!sameSchemaValue(object(object(source.responses)[status]).content,
+      { "application/octet-stream": { schema: { type: "string", format: "binary" } } })) return;
+    const fields = dockerAttachParameters().map(parameter => ({ key: parameter.in + ":" + parameter.name, name: parameter.name,
+      label: parameter.name, description: parameter.description ?? "", location: parameter.in, required: parameter.required === true,
+      type: parameter.schema.type, schema: structuredClone(parameter.schema),
+      ...(parameter.schema.default !== undefined ? { defaultValue: JSON.stringify(parameter.schema.default) } : {}) })) as InputField[];
+    return withOperationCapabilities({ id: base.id, method: "GET", path: base.path, group: "Container", name: String(source.summary ?? "Read container attachment"),
+      description: String(source.description ?? ""), fields, bodyRequired: false, responseMediaType: "application/octet-stream",
+      responseContent: { "101": { "application/octet-stream": "binary" }, "200": { "application/octet-stream": "binary" } },
+      dockerNative: { profile: dockerNativeProfile, apiVersion: dockerNativeApi } });
+  }
   const response = object(object(object(object(source.responses)["200"]).content)["application/json"]);
   if (base.id !== dockerNativeOperationId || base.method !== "GET" || base.path !== "/containers/json" || info.version !== dockerNativeApi
     || info.title !== "Docker Engine API" || source.operationId !== "ContainerList" || source.requestBody !== undefined || path.parameters !== undefined

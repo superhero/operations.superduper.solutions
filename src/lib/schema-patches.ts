@@ -12,6 +12,7 @@ import { bindMultipartFiles, bindCloudflareLogo } from "./multipart-file-contrac
 import { bindUploadBodies } from "./upload-body-contracts.ts";
 import { bindDigitalOceanDestinations } from "./digitalocean-destinations.ts";
 import { bindAtlassianRelativeServers } from "./atlassian-relative-servers.ts";
+import { bindDockerHttp } from "./docker-http.ts";
 import { bindAwsRest } from "./aws-rest-bindings.ts";
 import { bindAwsJson } from "./aws-json-bindings.ts";
 import { bindAwsQuery } from "./aws-query-bindings.ts";
@@ -37,8 +38,9 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "atlassian-relative-servers" | "digitalocean-destinations" | "upload-body-contracts" | "cloudflare-logo-upload" | "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "docker-http-contracts" | "atlassian-relative-servers" | "digitalocean-destinations" | "upload-body-contracts" | "cloudflare-logo-upload" | "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
 export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
+export const dockerHttpContracts: SchemaPatch = { id: "docker-http-contracts", version: 1 };
 export const atlassianRelativeServers: SchemaPatch = { id: "atlassian-relative-servers", version: 1 };
 export const digitalOceanDestinations: SchemaPatch = { id: "digitalocean-destinations", version: 1 };
 export const uploadBodyContractsPatch: SchemaPatch = { id: "upload-body-contracts", version: 1 };
@@ -101,6 +103,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "aws-query-contracts" ? "AWS Query actions and XML wire contracts"
     : patch.id === "aws-json-target-contracts" ? "AWS JSON targets and private results"
     : patch.id === "beta-route-contracts" ? "Beta routes and private work results"
+    : patch.id === "docker-http-contracts" ? "Docker destinations, streams and private registry values"
     : patch.id === "atlassian-relative-servers" ? "Atlassian relative destinations and required authentication"
     : patch.id === "digitalocean-destinations" ? "DigitalOcean agent and private upload destinations"
     : patch.id === "upload-body-contracts" ? "Reviewed native upload body contracts"
@@ -673,7 +676,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["atlassian-relative-servers", "digitalocean-destinations", "upload-body-contracts", "cloudflare-logo-upload", "atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["docker-http-contracts", "atlassian-relative-servers", "digitalocean-destinations", "upload-body-contracts", "cloudflare-logo-upload", "atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "gmail-message-contracts") bindGmailMessages(document);
@@ -687,6 +690,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "aws-json-target-contracts") bindAwsJson(document);
     else if (patch.id === "aws-rest-contracts") bindAwsRest(document);
     else if (patch.id === "beta-route-contracts") bindBetaRoutes(document);
+    else if (patch.id === "docker-http-contracts") bindDockerHttp(document);
     else if (patch.id === "atlassian-relative-servers") bindAtlassianRelativeServers(document);
     else if (patch.id === "digitalocean-destinations") bindDigitalOceanDestinations(document);
     else if (patch.id === "upload-body-contracts") bindUploadBodies(document);

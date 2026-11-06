@@ -7,15 +7,17 @@ import { lstat, readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { createDockerCompanion } from './host.mjs';
 import { openDockerSocket } from './runtime.mjs';
+import { dockerReadOperations } from '../../src/lib/docker-native-contract.ts';
 
 export async function runDockerCompanion(environment = process.env) {
   const file = environment.OPERATIONS_DOCKER_PAIRING_KEY_FILE, metadata = await lstat(file);
   if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.mode & 0o077 || metadata.uid !== process.getuid?.() || metadata.size > 512)
     throw new Error('An owner-only Docker pairing key file is required.');
   const pairingKey = (await readFile(file, 'utf8')).trim(), hostname = environment.OPERATIONS_DOCKER_LISTEN_HOST ?? '127.0.0.1';
-  const runtime = await openDockerSocket({ hostId: environment.OPERATIONS_DOCKER_HOST_ID, socketPath: environment.OPERATIONS_DOCKER_SOCKET });
+  const operations = dockerReadOperations(environment.OPERATIONS_DOCKER_OPERATIONS === undefined ? undefined : JSON.parse(environment.OPERATIONS_DOCKER_OPERATIONS));
+  const runtime = await openDockerSocket({ hostId: environment.OPERATIONS_DOCKER_HOST_ID, socketPath: environment.OPERATIONS_DOCKER_SOCKET, operations });
   const companion = createDockerCompanion({ publicOrigin: environment.OPERATIONS_DOCKER_PUBLIC_ORIGIN, pairingKey,
-    allowedOrigins: JSON.parse(environment.OPERATIONS_DOCKER_ALLOWED_ORIGINS ?? '[]') }, runtime);
+    allowedOrigins: JSON.parse(environment.OPERATIONS_DOCKER_ALLOWED_ORIGINS ?? '[]'), operations }, runtime);
   const tls = environment.OPERATIONS_DOCKER_TLS_KEY_FILE && environment.OPERATIONS_DOCKER_TLS_CERT_FILE
     ? { key: await readFile(environment.OPERATIONS_DOCKER_TLS_KEY_FILE), cert: await readFile(environment.OPERATIONS_DOCKER_TLS_CERT_FILE) } : undefined;
   if (!tls && (environment.OPERATIONS_DOCKER_TRUSTED_TLS_PROXY !== '1' || !['127.0.0.1', '::1'].includes(hostname))) throw new Error('Trusted HTTPS is required.');

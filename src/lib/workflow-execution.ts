@@ -5,6 +5,7 @@
 import { requestBody } from "./request-body.ts";
 import { supportedSecurityAlternative } from "./operation-security.ts";
 import { privateResultInputKeys } from "./credential-results.ts";
+import { hasDockerNestedPrivateInput, dockerAttachOperationId } from "./docker-http.ts";
 import { operationForId, operationOrigin, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
@@ -89,6 +90,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
+      if (canonical.id === dockerAttachOperationId || hasDockerNestedPrivateInput(canonical, values)) throw new VaultError("PERMISSION");
       if (canonical.credentialResult || context?.variables !== undefined || context?.binding.connection
         || privateResultInputKeys(canonical).some(key => values[key] !== undefined && values[key] !== null && values[key] !== "")) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);

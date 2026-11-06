@@ -12,6 +12,7 @@ import { WorkflowBodyError } from "./workflow-body-error.ts";
 import { readResponseStream, responseStreamProfile, streamMediaType, type ResponseStreamProfile, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
 import { isJsonResponseStream, isMistralResponseStream, type ResponseValueCallback } from "./workflow-response-stream.ts";
 import { readJsonStream } from "./workflow-json-stream.ts";
+import { dockerLegacyJsonStream, dockerHttpOperation } from "./docker-http.ts";
 export { WorkflowBodyError } from "./workflow-body-error.ts";
 
 export type ResponseKind = "json" | "text" | "binary" | "stream" | "unsupported";
@@ -148,7 +149,7 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
   if (response.ok && isMistralResponseStream(profile) && mediaType !== "text/event-stream") {
     void response.body?.cancel().catch(() => {}); throw new WorkflowBodyError("MEDIA");
   }
-  if (response.ok && profile && mediaType === streamMediaType(profile) && selected === "stream" && declared?.["application/json"] === "json") {
+  if (response.ok && profile && mediaType && (mediaType === streamMediaType(profile) && selected === "stream" || dockerLegacyJsonStream(operation, mediaType)) && declared?.["application/json"] === "json") {
     streaming?.onStart();
     const final = isJsonResponseStream(profile)
       ? await readJsonStream(response, profile === "sse-json", signal, streaming?.onProgress, streaming?.onValue)
@@ -169,6 +170,18 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
   if (kind === "binary") return { body: encodeWorkflowBinary(responseFileName(response.headers.get("Content-Disposition")), bytes, mediaType), bodyType: "binary", mediaType };
   const metadata = definitions ? { mediaType } : {};
   const text = new TextDecoder().decode(bytes);
+  const docker = dockerHttpOperation(operation);
+  if (response.ok && (docker === "SecretInspect" || docker === "SecretList")) {
+    let body: unknown;
+    try { body = JSON.parse(text); } catch { throw new WorkflowBodyError("FRAME"); }
+    if (docker === "SecretList" ? !Array.isArray(body) : !body || typeof body !== "object" || Array.isArray(body)) throw new WorkflowBodyError("FRAME");
+    const rows = docker === "SecretList" && Array.isArray(body) ? body : [body];
+    if (rows.some(row => !row || typeof row !== "object" || Array.isArray(row)
+      || object(row).Spec !== undefined && (!object(row).Spec || typeof object(row).Spec !== "object" || Array.isArray(object(row).Spec)))) throw new WorkflowBodyError("FRAME");
+    if (rows.some(row => { const data = object(object(row).Spec).Data; return data !== undefined && data !== null && data !== ""; }))
+      throw new WorkflowBodyError("PROVIDER");
+    return { body, mediaType: "application/json", ...(mediaType !== "application/json" ? { transportMediaType: mediaType } : {}) };
+  }
   if (!text && method === "OPTIONS") return { body: null, ...metadata };
   if (kind === "json") {
     try { return { body: JSON.parse(text), ...metadata }; }

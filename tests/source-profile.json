@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/docker-http.test.mjs",
     "src/atlassian-relative.test.mjs",
     "src/digitalocean-destinations.test.mjs",
     "src/upload-bodies.test.mjs",
@@ -146,6 +147,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/docker-http.feature",
     "src/atlassian-relative.feature",
     "src/digitalocean-destinations.feature",
     "src/upload-bodies.feature",

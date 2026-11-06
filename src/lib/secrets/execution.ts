@@ -19,6 +19,7 @@ import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
 import { digitalOceanUploadUrl } from "./digitalocean-upload.ts";
 import { requiresConnectJwt } from "../atlassian-relative-servers.ts";
+import { assertDockerPrivateBindings, dockerHttpRedactions } from "./docker-http.ts";
 import { managedAtprotoSecrets } from "./atproto-state.ts";
 import { managedGitlabSecrets, validateGitlabTokenState } from "./gitlab-oauth.ts";
 import { validateGitlabMetadata } from "./gitlab-config.ts";
@@ -138,6 +139,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         || !variables.some(variable => variable.key === key && !variable.path.length))) throw new VaultError("PERMISSION");
     }
     const injected = new Headers();
+    assertDockerPrivateBindings(approved.operation, inputSnapshot, variables);
     const injectedQueries = new Map<string, string>();
     let pathToken: string | undefined;
     let oauth1: OAuth1Values | undefined, uploadReference: string | undefined;
@@ -250,6 +252,12 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
     let publicRequest = prepareRequest(approved.operation, inputSnapshot, fields);
     let request = publicRequest;
+    const dockerSecrets = dockerHttpRedactions(approved.operation, request);
+    if (dockerSecrets.length) {
+      const derived = dockerSecrets.flatMap(value => [value, JSON.stringify(value).slice(1, -1)])
+        .flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]);
+      secrets = [...new Set([...secrets, ...derived])].sort((a, b) => b.length - a.length);
+    }
     if (privateUpload) {
       const prepared = options.uploadSessions!.authorize(approved, request, bindingSnapshot, uploadReference);
       request = prepared.request; uploadLease = prepared.lease;

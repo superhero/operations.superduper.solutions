@@ -22,7 +22,9 @@ import { DockerCompanionBroker, type DockerCompanionRuntime } from "./docker-com
 import { approvedDockerOperation, type ApprovedDockerOperation } from "./docker-policy.ts";
 import { storedDockerConnections, validateDockerConnection, validateDockerInput, validateDockerReference, validateDockerBinding,
   type DockerHostInput, type DockerHostReference, type DockerBinding } from "./docker-config.ts";
-import { dockerNativeProfile, dockerReadParams } from "../docker-native-contract.ts";
+import { dockerOperationParams, dockerNativeProfile, dockerNativeOperationId, dockerNativeAttachOperationId } from "../docker-native-contract.ts";
+import { validateWorkflowBinary } from "../workflow-binary.ts";
+import { binaryContainsSecret } from "../workflow-response-body.ts";
 import { prepareDockerReadRequest } from "../docker-operation-input.ts";
 import type { WorkflowExecutionResult } from "../workflow-execution.ts";
 import { nativeAgentMethods, isNativeWorkflowMethod, type NativeDecision, type NativeLoginKind, type NativeProgressCallback,
@@ -295,8 +297,9 @@ export class VaultSession {
     if (storedDockerConnections(records).length >= 32) throw new VaultError("LIMIT");
     const id = crypto.randomUUID(), guard = this.dockerGuard(generation, descriptor, signal);
     try {
-      const pair = await this.dockerCompanion.check(id, input.host, record.value, descriptor.fingerprint, undefined, guard, signal);
-      const config = { id, revision: 1, ...input, profile: dockerNativeProfile, keyHash: await nativeHash(record.value), modelFingerprint: descriptor.fingerprint, identity: pair.identity };
+      const pair = await this.dockerCompanion.check(id, input.host, record.value, descriptor.fingerprint, undefined, guard, signal, descriptor.operation.id);
+      const config = { id, revision: 1, ...input, profile: dockerNativeProfile, operation: descriptor.operation.id,
+        keyHash: await nativeHash(record.value), modelFingerprint: descriptor.fingerprint, identity: pair.identity };
       const connection = validateDockerConnection({ ...config, fingerprint: await nativeHash(config) });
       record.dockerConnections = [...record.dockerConnections ?? [], connection];
       await guard(); await this.save(records, undefined, undefined, undefined, signal);
@@ -310,6 +313,7 @@ export class VaultSession {
     if (!connection || connection.revision !== reference.revision || connection.fingerprint !== reference.fingerprint) throw new VaultError("CONFLICT");
     const record = records.find(value => value.id === connection.pairingKeyId), { fingerprint, ...config } = connection;
     if (!record || record.oauthState !== undefined || connection.keyHash !== await nativeHash(record.value) || connection.modelFingerprint !== descriptor.fingerprint
+      || (connection.operation ?? dockerNativeOperationId) !== descriptor.operation.id
       || fingerprint !== await nativeHash(config)) { this.dockerCompanion.close(connection.id); throw new VaultError("DOCKER_AUTHORITY"); }
     const guard = this.dockerGuard(generation, descriptor, signal); await guard();
     return { connection, record, records, descriptor, guard };
@@ -318,7 +322,7 @@ export class VaultSession {
   async checkDockerHost(value: DockerHostReference, selection: Pick<ApprovedDockerOperation, "operation" | "document">, signal?: AbortSignal) {
     try {
       const a = await this.dockerAuthority(value, selection, signal);
-      await this.dockerCompanion.check(a.connection.id, a.connection.host, a.record.value, a.descriptor.fingerprint, a.connection.identity, a.guard, signal);
+      await this.dockerCompanion.check(a.connection.id, a.connection.host, a.record.value, a.descriptor.fingerprint, a.connection.identity, a.guard, signal, a.descriptor.operation.id);
       return { ...a.connection, connected: true };
     } catch (error) { this.dockerCompanion.close(value.id); throw error; }
   }
@@ -341,15 +345,20 @@ export class VaultSession {
     const binding = validateDockerBinding(input), a = await this.dockerAuthority(binding.host, selection, signal);
     if (binding.fingerprint !== a.descriptor.fingerprint || Object.keys(values).some(key => !a.descriptor.operation.fields.some(field => field.key === key))) throw new VaultError("PERMISSION");
     const request = prepareDockerReadRequest(a.descriptor.operation, values);
-    const params = dockerReadParams(request.query);
+    const params = dockerOperationParams(a.descriptor.operation.id, request.query);
     const inputScrub = redactor(a.records.map(record => record.value)); inputScrub.value(params);
     if (inputScrub.changed) throw new VaultError("REDACTED");
     try {
-      const response = await this.dockerCompanion.read(a.connection.id, a.connection.host, a.record.value, a.descriptor.fingerprint, a.connection.identity, params, a.guard, signal);
+      const response = await this.dockerCompanion.read(a.connection.id, a.connection.host, a.record.value, a.descriptor.fingerprint, a.connection.identity, params, a.guard, signal, a.descriptor.operation.id);
+      if (response.bodyType === "binary") {
+        const file = validateWorkflowBinary(response.body), secrets = a.records.map(record => record.value);
+        if (binaryContainsSecret(Uint8Array.from(atob(file.base64), c => c.charCodeAt(0)), secrets)
+          || secrets.some(secret => file.base64.includes(secret))) throw new VaultError("REDACTED");
+      }
       const scrub = redactor(a.records.map(record => record.value).sort((a, b) => b.length - a.length));
       const safe = scrub.value(response) as typeof response;
       if (scrub.changed) throw new VaultError("REDACTED"); await a.guard();
-      if (safe.status < 200 || safe.status >= 300) throw new CredentialResponseError("The Docker daemon returned HTTP " + safe.status + ".", safe);
+      if (!(a.descriptor.operation.id === dockerNativeAttachOperationId && safe.status === 101) && (safe.status < 200 || safe.status >= 300)) throw new CredentialResponseError("The Docker daemon returned HTTP " + safe.status + ".", safe);
       return { request, response: safe };
     } catch (error) { this.dockerCompanion.close(binding.host.id); throw error; }
   }

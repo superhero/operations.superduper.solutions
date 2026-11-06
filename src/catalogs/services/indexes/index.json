@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "4b80de8c9f9ee1f85d347c414ea43f221d4b2c4ddacd1be87044e3f4e120b8a8",
+  "adapterRevision": "e276c5ae5189aa67dea7eea4bafe8a451f8168eddcf0206a5ef0a9ea41a70676",
   "indexes": [
     {
       "id": "anthropic",
@@ -1499,16 +1499,16 @@
     },
     {
       "id": "docker",
-      "sourceRevision": "84e994fb0d80850cb01d1a098c89ead30ca0c9cd8aff6cdbcd46f258304d88ba",
-      "bytes": 54138,
-      "compressedBytes": 4585,
-      "sha256": "ab076c10ecea038570a34330653e38adefafe77d3dcc759f2c23960b39b511a2",
+      "sourceRevision": "0e7e325542813c441fb33ad88a5c13b8eb77aae9d7b6933cb9cd6cbc11aae4b6",
+      "bytes": 52690,
+      "compressedBytes": 4619,
+      "sha256": "00295f3f077aaece533d3d991ba632f7cb3fc93b8278bae072b795d5d0d928d7",
       "summary": {
         "name": "Docker Engine API",
         "serverUrl": "",
         "description": "The Engine API is an HTTP API served by Docker Engine. It is the API the\nDocker client uses to communicate with the Engine, so everything the Docker\nclient can do can be done with the API.\n\nMost of the client's commands map directly to API endpoints (e.g. `docker ps`\nis `GET /containers/json`). The notable exception is running containers,\nwhich consists of several API calls.\n\n# Errors\n\nThe API uses standard HTTP status codes to indicate the success or failure\nof the API call. The body of the response will be JSON in the following\nformat:\n\n```\n{\n  \"message\": \"page not found\"\n}\n```\n\n# Versioning\n\nThe API is usually changed in each release, so API calls are versioned to\nensure that clients don't break. To lock to a specific version of the API,\nyou prefix the URL with its version, for example, call `/v1.30/info` to use\nthe v1.30 version of the `/info` endpoint. If the API version specified in\nthe URL is not supported by the daemon, a HTTP `400 Bad Request` error message\nis returned.\n\nIf you omit the version-prefix, the current version of the API is used.\nFor example, calling `/info` is the same as calling `/v1.57/info`. Using the\nAPI without a version-prefix is deprecated and will be removed in a future release.\n\nEngine releases in the near future should support this version of the API,\nso your client will continue to work even if it is talking to a newer Engine.\n\nThe API uses an open schema model, which means the server may add extra properties\nto responses. Likewise, the server will ignore any extra query parameters and\nrequest body properties. When you write clients, you need to ignore additional\nproperties in responses to ensure they do not break when talking to newer\ndaemons.\n\n\n# Authentication\n\nAuthentication for registries is handled client side. The client has to send\nauthentication details to various endpoints that need to communicate with\nregistries, such as `POST /images/(name)/push`. These are sent as\n`X-Registry-Auth` header as a [base64url encoded](https://tools.ietf.org/html/rfc4648#section-5)\n(JSON) string with the following structure:\n\n```\n{\n  \"username\": \"string\",\n  \"password\": \"string\",\n  \"serveraddress\": \"string\"\n}\n```\n\nThe `serveraddress` is a domain/IP without a protocol. Throughout this\nstructure, double quotes are required.\n\nIf you have already got an identity token from the [`/auth` endpoint](#operation/SystemAuth),\nyou can just pass this instead of credentials:\n\n```\n{\n  \"identitytoken\": \"9cbaf023786cd7...\"\n}\n```",
         "operationCount": 108,
-        "unavailableCount": 107
+        "unavailableCount": 0
       }
     },
     {

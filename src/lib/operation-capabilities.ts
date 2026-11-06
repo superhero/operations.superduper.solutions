@@ -49,7 +49,9 @@ export function withOperationCapabilities<T extends Operation>(operation: T, iss
     { code: "native-workspace", message: "Select the runtime's authorized private workspace." },
     { code: "native-method", message: "Enable the selected workflow method and approve any supported interaction explicitly." },
     { code: "native-terminal", message: "The owned turn must produce a terminal result before the workflow continues." });
-  if (operation.dockerNative) requirements.push({ code: "docker-destination", message: "Select a separately paired Docker host or a configured absolute HTTP server." });
+  if (operation.dockerNative) requirements.push({ code: "docker-destination", message: operation.id === "docker:ContainerAttachWebsocket"
+    ? "Select a separately paired Docker host that enables read-only container attachment. Stdin is unavailable."
+    : "Select a separately paired Docker host or a configured absolute HTTP server." });
   if (unique.length || alternatives?.length || requirements.length) operation.capabilities = {
     issues: unique, ...(alternatives?.length ? { alternatives } : {}), ...(requirements.length ? { requirements } : {}) };
   if (unique.length) operation.unavailableReason ??= unique[0]!.message;

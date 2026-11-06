@@ -36,6 +36,8 @@ import { digitalOceanDestinations } from '../src/lib/schema-patches.ts';
 import { digitalOceanDestinationSourceSha256 } from '../src/lib/digitalocean-destinations.ts';
 import { atlassianRelativeServers } from '../src/lib/schema-patches.ts';
 import { atlassianRelativeSources } from '../src/lib/atlassian-relative-servers.ts';
+import { dockerHttpContracts } from '../src/lib/schema-patches.ts';
+import { dockerHttpSourceSha256 } from '../src/lib/docker-http.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { awsRestSourcePins } from '../src/lib/aws-rest-bindings.ts';
 import { awsQuerySourcePins } from '../src/lib/aws-query-bindings.ts';
@@ -236,6 +238,10 @@ for (const source of sources) {
   if (Object.hasOwn(atlassianRelativeSources, source.id)) {
     if (sha(json) !== atlassianRelativeSources[source.id]) throw new Error('Atlassian relative destinations require requalification before updating the native source.');
     patches.push(atlassianRelativeServers);
+  }
+  if (source.id === 'docker') {
+    if (sha(json) !== dockerHttpSourceSha256) throw new Error('Docker destinations require requalification before updating the native source.');
+    patches.push(dockerHttpContracts);
   }
   if (source.id === 'cloudflare') patches.push(cloudflareLogoUpload);
   if (source.id === 'atlassian-commerce') patches.push(commerceAuthentication);

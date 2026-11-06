@@ -21,6 +21,7 @@ import { extractCredentialPermissions, extractOperationSecurity, supportedSecuri
 import { serverUrlHasPlaceholder, telegramBotOrigin, telegramPathSecurity, digitalOceanPathSecurity } from "../server-url.ts";
 import { digitalOceanStorageOrigin, validDigitalOceanUpload } from "../digitalocean-destinations.ts";
 import { connectJwtOriginAllowed, requiresConnectJwt } from "../atlassian-relative-servers.ts";
+import { dockerAttachOperationId } from "../docker-http.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
 const encoder = new TextEncoder();
@@ -92,6 +93,7 @@ export function normalizeCredentialOrigin(origin: string): string
 
 function validateOperation(operation: Operation): void
 {
+  if (operation.id === dockerAttachOperationId) throw new VaultError("PERMISSION");
   if (operation && operationBlockReason(operation) || (operation?.credentialResult !== undefined || operation?.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new VaultError("PERMISSION");
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");

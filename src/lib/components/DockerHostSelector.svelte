@@ -10,6 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { Operation } from "../catalog.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { dockerHostSelection } from "../secrets/docker-client.ts";
+  import { isDockerReadOperation, dockerNativeAttachOperationId } from "../docker-native-contract.ts";
   import { approvedDockerOperation } from "../secrets/docker-policy.ts";
   import { dockerReference, type DockerConnection, type DockerBinding } from "../secrets/docker-config.ts";
   import { readVaultStatus, subscribeVaultLock, vaultCall, readVaultConnections } from "../secrets/client.ts";
@@ -28,11 +29,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function refresh() {
     busy = true; error = "";
     try {
-      const selection = await dockerHostSelection(), descriptor = await approvedDockerOperation(selection.operation, selection.document);
+      if (!isDockerReadOperation(operation.id)) throw new Error("This Docker read is not supported by the companion.");
+      const selection = await dockerHostSelection(operation.id), descriptor = await approvedDockerOperation(selection.operation, selection.document);
       const latest = await readVaultStatus(), available = latest.unlocked ? await readVaultConnections("dockerConnections") : [];
       if (!alive) return;
       fingerprint = descriptor.fingerprint; status = latest; connections = available.filter(value => value.modelFingerprint === fingerprint);
-      try { http = workflowExecutionForOperation(operation).origin; } catch { http = ""; }
+      try { http = operation.id === dockerNativeAttachOperationId ? "" : workflowExecutionForOperation(operation).origin; } catch { http = ""; }
       const prior = initial && initial.fingerprint === fingerprint ? connections.find(value => value.id === initial.host.id
         && value.revision === initial.host.revision && value.fingerprint === initial.host.fingerprint) : undefined;
       // A stale saved native destination requires an explicit new choice.
@@ -65,7 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if status?.exists && !status.unlocked}
     <VaultAuthentication {status} bind:this={authentication} disabled={disabled || busy} portalZIndex={90} />
     <button type="button" disabled={disabled || busy} onclick={unlock}>Unlock Docker hosts</button>
-  {:else if status && !connections.length}<p class="hint">Pair a Docker host for this schema in Settings → Secrets → Docker hosts, or configure its HTTP server.</p>{/if}
+  {:else if status && !connections.length}<p class="hint">Pair a Docker host for this read operation in Settings → Secrets → Docker hosts{operation.id === dockerNativeAttachOperationId ? "." : ", or configure its HTTP server."}</p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
 </section>
 <style>.docker-selector { display: grid; gap: 12px; min-width: 0; } .hint { color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }</style>

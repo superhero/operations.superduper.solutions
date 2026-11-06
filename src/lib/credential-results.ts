@@ -9,11 +9,12 @@ import { awsQueryEndpoint, awsQueryPrivateInputKeys } from './aws-query.ts';
 import data from './credential-results.json' with { type: 'json' };
 import type { Operation } from './catalog.ts';
 import { connectJwtOriginAllowed } from './atlassian-relative-servers.ts';
+import { dockerHttpOperation, dockerHttpEndpoint, dockerHttpPrivateInputs } from './docker-http.ts';
 
 type Value = Record<string, any>;
 export type PrivateResultResponse = { status: number; path: string[]; required: boolean[]; nullable: boolean[]; parentFields: (string[] | null)[]; leaf: Value };
 export type PrivateResultContract = { catalog: string; method: string; path: string; responses: PrivateResultResponse[];
-  privateInputs: string[]; masked: boolean; exampleOnly: boolean; awsJson?: { id: string; revision: string }; awsQuery?: { id: string; revision: string }; digitalOceanUpload?: true };
+  privateInputs: string[]; masked: boolean; exampleOnly: boolean; awsJson?: { id: string; revision: string }; awsQuery?: { id: string; revision: string }; digitalOceanUpload?: true; dockerAuth?: true };
 const contracts = structuredClone(data) as { version: number; sources: Record<string, { title: string; version: string; openapi: string; origins: string[]; sha256: string }>;
   profiles: Record<string, PrivateResultContract> };
 export const privateResultVersion = 'private-result-v1';
@@ -33,13 +34,14 @@ export function supportsCredentialResults(operation: Operation): boolean {
   try { return !!credentialResultProfile(operation); } catch { return false; }
 }
 export function privateResultInputKeys(operation: Operation): string[] {
-  return [...new Set([...(credentialResultProfile(operation)?.privateInputs ?? []), ...awsRestPrivateInputKeys(operation),
+  return [...new Set([...(credentialResultProfile(operation)?.privateInputs ?? []), ...dockerHttpPrivateInputs(operation), ...awsRestPrivateInputKeys(operation),
     ...(operation.awsJson ? awsJsonPrivateInputKeys(operation) : []), ...(operation.awsQuery ? awsQueryPrivateInputKeys(operation) : [])])];
 }
 export function privateResultOriginAllowed(operation: Operation, origin: string): boolean {
   const profile = credentialResultProfile(operation); if (!profile) return false;
   try {
     const url = new URL(origin);
+    if (profile.catalog === 'docker') return !!dockerHttpOperation(operation) && dockerHttpEndpoint(origin) === origin.replace(/\/$/, '');
     if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash) return false;
     if (profile.catalog.startsWith('aws-')) return operation.awsQuery ? !!awsQueryEndpoint(origin, operation) : operation.awsJson ? !!awsJsonEndpoint(origin, operation) : !!awsRestEndpoint(origin, operation);
     if (profile.catalog === 'atlassian-assets') return url.origin === 'https://api.atlassian.com'
