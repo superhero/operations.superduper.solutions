@@ -6,6 +6,7 @@ import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
 import { validAwsWireModel, awsWireEndpoint } from "../aws-wire.ts";
 import { validAwsSigningModel, lambdaSigningRegion } from "../aws-signing.ts";
+import { awsRestEndpoint } from "../aws-rest.ts";
 import { validS3FilesModel, s3SigningEndpoint } from "../s3-files.ts";
 import { cloudflareOrigin, configureCloudflareUpload, cloudflareUploadProfile, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
@@ -160,7 +161,7 @@ export async function approvedOperation(operation: Operation, origin: string): P
     const normalized = normalizeCredentialOrigin(origin);
     if (sanitized.credentialResult && !privateResultOriginAllowed(sanitized, normalized)) throw new VaultError("PERMISSION");
     if (sanitized.security?.flat().some(scheme => scheme.kind === "aws-sigv4")
-      && !(sanitized.awsWire ? awsWireEndpoint(normalized, sanitized.awsWire) : sanitized.s3Files ? s3SigningEndpoint(normalized) : lambdaSigningRegion(normalized))) throw new VaultError("PERMISSION");
+      && !(sanitized.awsRest ? awsRestEndpoint(normalized, sanitized) : sanitized.awsWire ? awsWireEndpoint(normalized, sanitized.awsWire) : sanitized.s3Files ? s3SigningEndpoint(normalized) : lambdaSigningRegion(normalized))) throw new VaultError("PERMISSION");
     if (sanitized.cloudflareUpload && normalized !== cloudflareOrigin) throw new VaultError("PERMISSION");
     if (sanitized.security?.some(option => option.some(scheme => scheme.kind === "oauth1"))
       && (normalized !== "https://api.x.com" || !sanitized.path.startsWith("/2/"))) throw new VaultError("PERMISSION");

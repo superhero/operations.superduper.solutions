@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { awsRestEndpoint, awsRestPrivateInputKeys } from './aws-rest.ts';
 import data from './credential-results.json' with { type: 'json' };
 import type { Operation } from './catalog.ts';
 
@@ -27,13 +28,14 @@ export function supportsCredentialResults(operation: Operation): boolean {
   try { return !!credentialResultProfile(operation); } catch { return false; }
 }
 export function privateResultInputKeys(operation: Operation): string[] {
-  return credentialResultProfile(operation)?.privateInputs ?? [];
+  return [...new Set([...(credentialResultProfile(operation)?.privateInputs ?? []), ...awsRestPrivateInputKeys(operation)])];
 }
 export function privateResultOriginAllowed(operation: Operation, origin: string): boolean {
   const profile = credentialResultProfile(operation); if (!profile) return false;
   try {
     const url = new URL(origin);
     if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash) return false;
+    if (profile.catalog.startsWith('aws-')) return !!awsRestEndpoint(origin, operation);
     if (profile.catalog === 'atlassian-assets') return url.origin === 'https://api.atlassian.com'
       && /^\/ex\/jira\/[A-Za-z0-9-]+\/jsm\/assets\/workspace\/[A-Za-z0-9-]+\/v1\/?$/.test(url.pathname);
     return contracts.sources[profile.catalog]!.origins.some(value => new URL(value).href === url.href);
@@ -74,7 +76,11 @@ function project(input: Value, response: PrivateResultResponse, document: Value,
   }
   const segment = response.path[depth]!;
   if (Array.isArray(node.allOf)) {
-    const matching = node.allOf.flatMap((part: Value, index: number) => Object.hasOwn(resolve(part, document).properties ?? {}, segment) ? [index] : []);
+    const matching = node.allOf.flatMap((part: Value, index: number) => {
+      const candidate = resolve(part, document);
+      return (segment === '*' ? candidate.type === 'array' && object(candidate.items)
+        : Object.hasOwn(candidate.properties ?? {}, segment)) ? [index] : [];
+    });
     requireContract(matching.length === 1);
     return { ...node, allOf: node.allOf.map((part: Value, index: number) => matching[0] === index ? project(part, response, document, depth) : part) };
   }

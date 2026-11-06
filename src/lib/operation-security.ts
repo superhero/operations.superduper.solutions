@@ -3,11 +3,12 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { telegramPrivateEndpoint, telegramPathSecurity } from "./server-url.ts";
 import { awsRestProfile, awsSigningMarker } from "./aws-signing.ts";
+import { awsRestSigningProfile, type AwsRestSigningProfile } from "./aws-rest.ts";
 import { awsWireSigningProfiles, type AwsWireSigningProfile } from "./aws-wire.ts";
 import { s3SigningProfile } from "./s3-files.ts";
 
 export type OperationSecurityScheme =
-  | { name: string; kind: "aws-sigv4"; header: "Authorization"; profile: "lambda-list-functions" | "s3-object" | AwsWireSigningProfile; query?: never; path?: never }
+  | { name: string; kind: "aws-sigv4"; header: "Authorization"; profile: "lambda-list-functions" | "s3-object" | AwsWireSigningProfile | AwsRestSigningProfile; query?: never; path?: never }
   | { name: string; kind: "cloudflare-upload"; header: "Authorization"; profile: "workers" | "pages"; query?: never; path?: never }
   | { name: string; kind: "oauth1"; header: "Authorization"; profile: "x-hmac-sha1"; query?: never; path?: never }
   | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never; path?: never }
@@ -120,11 +121,14 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean, 
   if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))
     throw new Error(`${context}: unsupported security scheme fields.`);
   const signing = definition["x-operations-aws-sigv4"] ?? requestedSigning;
-  if (requestedSigning !== undefined && requestedSigning !== s3SigningProfile && !awsWireSigningProfiles.includes(requestedSigning as AwsWireSigningProfile)
+  if (requestedSigning !== undefined && requestedSigning !== awsRestSigningProfile && requestedSigning !== s3SigningProfile && !awsWireSigningProfiles.includes(requestedSigning as AwsWireSigningProfile)
     || requestedSigning !== undefined && definition["x-operations-aws-sigv4"] !== undefined && definition["x-operations-aws-sigv4"] !== requestedSigning)
     throw new Error(`${context}: unsupported or conflicting AWS signing profile.`);
   if (awsSigningMarker(definition))
-    result = definition["x-amazon-apigateway-authtype"] === "awsSigv4" && signing === awsRestProfile
+    result = ["awsSigv4", "awsS3"].includes(String(definition["x-amazon-apigateway-authtype"])) && signing === awsRestSigningProfile
+      && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsRestSigningProfile }
+      : definition["x-amazon-apigateway-authtype"] === "awsSigv4" && signing === awsRestProfile
       && result.kind === "apiKey" && result.header === "Authorization"
       ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsRestProfile }
       : definition["x-amazon-apigateway-authtype"] === "awsSigv4" && awsWireSigningProfiles.includes(signing as AwsWireSigningProfile) && result.kind === "apiKey" && result.header === "Authorization"

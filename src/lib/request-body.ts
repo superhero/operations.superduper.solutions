@@ -15,6 +15,10 @@ function formText(value: JsonValue): string {
 /** Both HTTP executors serialize the same validated request, without JSON-encoding files. */
 export function requestBody(request: PreparedRequest): BodyInit | null {
   if (request.body === undefined) return null;
+  if (request.bodyFormat === "text") {
+    if (typeof request.body !== "string") throw new Error("A serialized text body must be a string.");
+    return request.body;
+  }
   if (request.bodyFormat === "cloudflare-assets" || request.bodyFormat === "cloudflare-module") return cloudflareMultipart(request);
   if (request.bodyFormat === "binary") return workflowBinaryBlob(request.body, request.contentType);
   if (request.contentType === "text/plain") return String(request.body);

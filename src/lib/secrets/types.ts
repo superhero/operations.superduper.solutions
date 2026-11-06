@@ -53,9 +53,10 @@ export type HttpConnection = HttpConnectionReference & {
   label: string; account: string; provider: string; endpoint: string; runtime: "browser-http";
   alternative: number; security: import("../operation-security.ts").OperationSecurityScheme[];
   credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata | JiraOAuthMetadata | AtprotoOAuthMetadata;
+  relay?: import("./aws-get-body.ts").AwsGetBodyRelay;
 };
 export type HttpConnectionInput = { label: string; account: string; format: HttpTokenFormat;
-  reference?: HttpConnectionReference; expiresAt?: number };
+  reference?: HttpConnectionReference; expiresAt?: number; relay?: import("./aws-get-body.ts").AwsGetBodyRelayInput };
 export type CredentialBinding = {
   alternative: number; credentials: Record<string, CredentialReference>; fingerprint: string;
   connection?: HttpConnectionReference;
@@ -75,8 +76,9 @@ export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
   | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN"
-  | "S3_INTEGRITY" | "WRITE_UNCONFIRMED" | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX";
+  | "S3_INTEGRITY" | "WRITE_UNCONFIRMED" | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX" | "AWS_GET_BODY_TRANSPORT";
 const messages: Record<VaultErrorCode, string> = {
+  AWS_GET_BODY_TRANSPORT: "EFS pagination requires a GET request body. Select a saved HTTP connection with an EFS companion, or leave the optional pagination fields empty.",
   DOCKER_UNAVAILABLE: "The paired Docker host could not complete its read. Check the companion and configured daemon socket.",
   DOCKER_VERSION: "The Docker daemon does not support the paired API version 1.57.",
   DOCKER_AUTHORITY: "The Docker host, daemon, socket or approved source changed. Pair the selected host again.",

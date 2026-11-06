@@ -888,7 +888,15 @@
     "sha256": "fec5b78bf48681187bd549d526da351d49a8e04d76e99a3248c37deb20c50f18",
     "sourceSha256": "dcb635027e79e66a88a46322a75a652d51511cb78f7316599df6edd25cb7f7e8",
     "bytes": 386074,
-    "compressedBytes": 47572
+    "compressedBytes": 47572,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "49b4c6d6181033d461cfccf68636622337d271197899109a67b2ff873a07cc50",
+    "effectiveBytes": 472181
   },
   {
     "id": "aws-apigateway",
@@ -907,7 +915,19 @@
     "sha256": "356f372e1b3a48d7a22aed61c7c0797dc8af5c4ed550ac8e8babab68d83b8917",
     "sourceSha256": "b38e21b01a2eab0363c36ee4266efaef995d760f19fb6225bb34004bbf6cb470",
     "bytes": 392645,
-    "compressedBytes": 47931
+    "compressedBytes": 47931,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4202d0a7984dfcb7303299b285188fdcf7eabe13c43751395f7b05edcb577464",
+    "effectiveBytes": 557271
   },
   {
     "id": "aws-athena",
@@ -964,7 +984,15 @@
     "sha256": "421781af6fbb43cf42a8d55dfbe68431a0df8c08d47afdd9c52404281a5e5990",
     "sourceSha256": "8e8bb24810515b456a0f3d9dd7335a963724f61e175bc8e7e7aaad4124c5c65b",
     "bytes": 346573,
-    "compressedBytes": 43200
+    "compressedBytes": 43200,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "344eacceed7cf3b30bbc01142a49618d481caae9f3bfa920398dec9866b25053",
+    "effectiveBytes": 445883
   },
   {
     "id": "aws-batch",
@@ -983,7 +1011,15 @@
     "sha256": "d3b0ea44f93b92609c9766312593952f9fb10b8cbbd0c294445e8538c6ff86e2",
     "sourceSha256": "d0ff1b6d9e45f8d2f6eeb4eea80541fcd53dad2fe6404377e9c379629785dbcc",
     "bytes": 388567,
-    "compressedBytes": 62461
+    "compressedBytes": 62461,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d5baa945d0ad6b0dea7a5e35d7959f5e5c48aae7d2d925b162dfa46209b48565",
+    "effectiveBytes": 629435
   },
   {
     "id": "aws-budgets",
@@ -1040,7 +1076,15 @@
     "sha256": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
     "sourceSha256": "5faba00e57ef0af89609f6e45e48fbf28a879d43920b1039c3035578d1d62f53",
     "bytes": 623245,
-    "compressedBytes": 79291
+    "compressedBytes": 79291,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d8953ee7f13e82439df3d14dd987a0cae5626d8fed2ddcdbf767c9afa930414a",
+    "effectiveBytes": 655868
   },
   {
     "id": "aws-cloudtrail",
@@ -1315,7 +1359,15 @@
     "sha256": "dade2231707fbb8542eaecdf0215aa791cb409dd608c7ee8336c4f1dee408bf2",
     "sourceSha256": "fb9df1d57d591b6f9af74733a7d3a6301f7adf8c324a814fbaba226566d24c29",
     "bytes": 152163,
-    "compressedBytes": 24538
+    "compressedBytes": 24538,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "95e61b56f5a776fb137e598685ccea239993ed2f5860dcac48d8bcb78d103251",
+    "effectiveBytes": 191733
   },
   {
     "id": "aws-eks",
@@ -1334,7 +1386,15 @@
     "sha256": "476f3cff5ca1a16490dcf49ef5aee2c1041b9a1fa71289ae9ed5e5f7f643d302",
     "sourceSha256": "586aed26ac973ed9da25f7d11e6673d767fb934ed4b7ef9d165767604f2ae009",
     "bytes": 244360,
-    "compressedBytes": 37095
+    "compressedBytes": 37095,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "628b08a693aad82fdba9bba04b43be9a6a74784870337fee3a392cae83dcf545",
+    "effectiveBytes": 320166
   },
   {
     "id": "aws-elasticloadbalancingv2",
@@ -1505,7 +1565,19 @@
     "sha256": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
     "sourceSha256": "9c96dc5c3cd3ee0e49c18e7aafbec47027368d30acca009d364a0b9fc3db990f",
     "bytes": 383934,
-    "compressedBytes": 53669
+    "compressedBytes": 53669,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2f10fd0a47b0e2691a03401c89b450a826a0eb2487bad71d9c557cd201488257",
+    "effectiveBytes": 526623
   },
   {
     "id": "aws-opensearch",
@@ -1524,7 +1596,15 @@
     "sha256": "01d0ee509fc29cefc2403b8dff507be3bba690f3583710fe9b95bedb5a519d9e",
     "sourceSha256": "d537e000277e9c960befad3110df5c2c174927dde71f4f1fb3f4cfa0b8f236e8",
     "bytes": 328909,
-    "compressedBytes": 43252
+    "compressedBytes": 43252,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "5aade02c066380fdfde2418315e23ba10cf0a1236bbb3592afb4e99d6478ef85",
+    "effectiveBytes": 426435
   },
   {
     "id": "aws-organizations",
@@ -1562,7 +1642,15 @@
     "sha256": "62fa911eba1d9141664783718fa74d34c1ba257025cd72df5a057e54d796ff55",
     "sourceSha256": "7308cacb7da4a95d11264a335030fe6f8328c3b383a5cfc23e535a27db98d2f0",
     "bytes": 55206,
-    "compressedBytes": 8687
+    "compressedBytes": 8687,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c80de7b5d9a12b9ea320f8509d908f1fa622f7976e47616dac5632efd91cd7a5",
+    "effectiveBytes": 71280
   },
   {
     "id": "aws-rds",
@@ -1638,7 +1726,15 @@
     "sha256": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
     "sourceSha256": "d773387958a187f8f1b8c217cf0059dccbdd5d5cf16372dbcd41475b60b44206",
     "bytes": 447841,
-    "compressedBytes": 71369
+    "compressedBytes": 71369,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "b6d07b480b96c94209bf973161a9cea718e0aee2d924eb5469c0e2eda645d774",
+    "effectiveBytes": 482724
   },
   {
     "id": "aws-s3",
@@ -1663,10 +1759,14 @@
       {
         "id": "aws-s3-files",
         "version": 1
+      },
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "1abeda3df1f4fc0835e5c91144542f89542e3d92e3bceab95e497b1393547586",
-    "effectiveBytes": 781954
+    "effectiveSha256": "c9614be11779bb74de920c7b344aafad15ebed00c1bb8b3a8b56778535cf048b",
+    "effectiveBytes": 793886
   },
   {
     "id": "aws-s3control",
@@ -1723,7 +1823,15 @@
     "sha256": "d8a12efce47afa804033ea5428ae5168ebb8e100397672464aecc0ca6a16b7bf",
     "sourceSha256": "912f2d9a7076b49d0b46462a120207ec693c29aadbf68bf530064c0ac826f51a",
     "bytes": 19803,
-    "compressedBytes": 4252
+    "compressedBytes": 4252,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d42aa6ed9e77500fa52061be8b41f5876f07280182188d05a5b10ad27741f64b",
+    "effectiveBytes": 25873
   },
   {
     "id": "aws-secretsmanager",
@@ -1761,7 +1869,15 @@
     "sha256": "d8193d3b10ba22cf265b0fe76ff4474dbe8eb052a8b407c96eeda4d20b564aa5",
     "sourceSha256": "0d6df7185ed1e5fe01d9240af61fed579435a5fb9696db3074a187280bcac2be",
     "bytes": 398329,
-    "compressedBytes": 54514
+    "compressedBytes": 54514,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "94df9f9261778c9fe707cf1414e79772f5068e429a157aef008458e0ec76b6d0",
+    "effectiveBytes": 525997
   },
   {
     "id": "aws-sns",

@@ -1,5 +1,7 @@
 {
   "import": [
+    "src/aws-rest-private.test.mjs",
+    "src/aws-rest.test.mjs",
     "src/atlassian-tenant-servers.test.mjs",
     "src/tenant-readiness.test.mjs",
     "src/credential-results.test.mjs",
@@ -122,6 +124,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/aws-rest.feature",
     "src/atlassian-tenant-servers.feature",
     "src/tenant-readiness.feature",
     "src/credential-results.feature",

@@ -7,6 +7,7 @@ import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
+import { awsRestSigningProfile } from "./aws-rest.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
@@ -229,6 +230,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
       const group = Array.isArray(source.tags) ? text(source.tags[0], "Operations") : "Operations";
       const operation: Operation = { id: identity, name: text(source.summary, text(source.operationId, `${method.toUpperCase()} ${path}`)),
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
+      if (source["x-operations-aws-signing"] === awsRestSigningProfile) operation.awsRest = awsRestSigningProfile;
       operation.name = operationDisplayName(operation);
       const issues: CapabilityIssue[] = [];
       const inspect = (area: CapabilityArea, code: string, check: () => void): boolean => {

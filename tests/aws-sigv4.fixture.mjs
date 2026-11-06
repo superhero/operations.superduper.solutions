@@ -9,13 +9,13 @@ const digest = input => createHash('sha256').update(input).digest('hex');
 const hmac = (key, input) => createHmac('sha256', key).update(input).digest();
 const encode = input => encodeURIComponent(input).replace(/[!'()*]/g, c => '%'+c.charCodeAt(0).toString(16).toUpperCase());
 const compare = (a,b) => a < b ? -1 : a > b ? 1 : 0;
-function verify(url, init, expected = values, service = 'lambda') {
+function verify(url, init, expected = values, service = 'lambda', expectedRegion) {
   const target = new URL(url), headers = new Headers(init.headers), authorization = headers.get('Authorization');
   const match = /^AWS4-HMAC-SHA256 Credential=([^/]+)\/([^,]+), SignedHeaders=([^,]+), Signature=([a-f0-9]{64})$/.exec(authorization);
   assert.ok(match); assert.equal(match[1], expected.accessKeyId);
   const scope = match[2], [day,region,signedService,terminator] = scope.split('/');
   const hostRegion = service === 's3' ? /(?:^|\.)s3\.([^.]+)\.amazonaws\.com$/.exec(target.hostname)?.[1] : target.hostname.split('.')[1];
-  assert.equal(region, hostRegion); assert.equal(signedService, service); assert.equal(terminator, 'aws4_request');
+  assert.equal(region, expectedRegion ?? hostRegion); assert.equal(signedService, service); assert.equal(terminator, 'aws4_request');
   const date = headers.get('X-Amz-Date'); assert.match(date, /^\d{8}T\d{6}Z$/); assert.equal(date.slice(0,8),day);
   const names = match[3].split(';'); assert.deepEqual(names, [...names].sort()); assert.ok(names.includes('host'));
   const canonicalHeaders = names.map(name => name+':'+(name === 'host' ? target.host : headers.get(name)).trim().replace(/\s+/g, ' ')+'\n').join('');

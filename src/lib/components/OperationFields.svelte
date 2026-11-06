@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
-  import { privateResultInputKeys, supportsCredentialResults } from "../credential-results.ts";
+  import { privateResultInputKeys } from "../credential-results.ts";
   import type { InputField, Operation } from "../catalog.ts";
   import { inputAllowsNull, type InputValues, type InputValidationError } from "../operation-input.ts";
   import OperationFieldControl from "./OperationFieldControl.svelte";
@@ -22,7 +22,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   const locations = [{ key: "path", label: "Path" }, { key: "query", label: "Query" },
     { key: "header", label: "Headers" }, { key: "body", label: "Request body" }, { key: "params", label: "Parameters" }] as const;
-  const privateInputs = $derived(supportsCredentialResults(operation) ? privateResultInputKeys(operation) : []);
+  const privateInputs = $derived(privateResultInputKeys(operation));
   let fieldHelp = $state<string[]>([]);
   let drafts = $state<Record<string, string>>({});
   let includedValues = $state<InputValues>({});

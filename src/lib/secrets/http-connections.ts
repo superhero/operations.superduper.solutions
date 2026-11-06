@@ -5,6 +5,7 @@ import { atprotoOAuthAlternative, validateAtprotoMetadata } from "./atproto-conf
 import { jiraOAuthAlternative, validateJiraMetadata } from "./jira-config.ts";
 import { gitlabOAuthAlternative, validateGitlabMetadata } from "./gitlab-config.ts";
 import { awsWireSigningProfiles } from "../aws-wire.ts";
+import { awsGetBodyEligible, validateAwsGetBodyRelay, awsGetBodyKeyHash, resolveAwsGetBodyKey } from "./aws-get-body.ts";
 import { canonicalPolicyValue, validateApprovedOperation } from "./policy.ts";
 import { credentialObject, credentialReferenceIds, isBasicCredentialReference, isOAuth1CredentialReference, isAwsCredentialReference, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
@@ -20,8 +21,8 @@ function ownObject(value: unknown, required: readonly string[], optional: readon
 }
 const schemaId = (descriptor: ApprovedOperation) => descriptor.operation.id.slice(0, descriptor.operation.id.indexOf(":"));
 export const httpConnectionReference = ({ id, revision, fingerprint }: HttpConnection): HttpConnectionReference => ({ id, revision, fingerprint });
-export const connectionCredentialIds = (connection: Pick<HttpConnection, "credentials">): string[] => [...new Set(Object.values(connection.credentials)
-  .flatMap(credentialReferenceIds))].sort();
+export const connectionCredentialIds = (connection: Pick<HttpConnection, "credentials" | "relay">): string[] => [...new Set([
+  ...Object.values(connection.credentials).flatMap(credentialReferenceIds), ...(connection.relay ? [connection.relay.pairingKeyId] : [])])].sort();
 
 /** These are wire formats, not user-supplied templates or new secret types. */
 export function httpTokenFormats(descriptor: ApprovedOperation, alternative: number): HttpTokenFormat[] {
@@ -38,7 +39,7 @@ export function httpTokenFormats(descriptor: ApprovedOperation, alternative: num
 
 export function validateHttpConnection(value: unknown): HttpConnection {
   const item = ownObject(value, ["id", "revision", "fingerprint", "label", "account", "provider", "endpoint", "runtime",
-    "alternative", "security", "credentials", "format"], ["expiresAt", "oauth"]);
+    "alternative", "security", "credentials", "format"], ["expiresAt", "oauth", "relay"]);
   validateHttpConnectionReference({ id: item.id, revision: item.revision, fingerprint: item.fingerprint });
   if ([item.label, item.account].some(value => typeof value !== "string" || !value.trim() || value.length > 120 || /[\u0000-\u001f\u007f]/.test(value))
     || typeof item.provider !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(item.provider)
@@ -53,7 +54,7 @@ export function validateHttpConnection(value: unknown): HttpConnection {
   const security = item.security.map(scheme => {
     ownObject(scheme, ["name", "kind", scheme.path !== undefined ? "path" : scheme.query === undefined ? "header" : "query", ...(["oauth1", "aws-sigv4"].includes(scheme.kind) ? ["profile"] : [])]);
     if (scheme.kind === "oauth1" && (scheme.profile !== "x-hmac-sha1" || scheme.header !== "Authorization")) throw new VaultError("INVALID");
-    if (scheme.kind === "aws-sigv4" && (!["lambda-list-functions", "s3-object", ...awsWireSigningProfiles].includes(scheme.profile) || scheme.header !== "Authorization")) throw new VaultError("INVALID");
+    if (scheme.kind === "aws-sigv4" && (!["lambda-list-functions", "s3-object", "aws-rest-v1", ...awsWireSigningProfiles].includes(scheme.profile) || scheme.header !== "Authorization")) throw new VaultError("INVALID");
     if (typeof scheme.name !== "string" || typeof (scheme.header ?? scheme.query ?? scheme.path) !== "string"
       || !Object.hasOwn(binding.credentials, scheme.name)) throw new VaultError("INVALID");
     return { ...scheme };
@@ -70,6 +71,11 @@ export function validateHttpConnection(value: unknown): HttpConnection {
     item.oauth = validateAtprotoMetadata(item.oauth);
     if (item.endpoint + "/" !== (item.oauth as AtprotoOAuthMetadata).pds) throw new VaultError("INVALID");
   } else if (item.oauth !== undefined) throw new VaultError("INVALID");
+  if (item.relay !== undefined) {
+    if (item.provider !== "aws-elasticfilesystem" || item.format !== "schema" || security.length !== 1 || security[0]!.kind !== "aws-sigv4"
+      || security[0]!.profile !== "aws-rest-v1") throw new VaultError("INVALID");
+    item.relay = validateAwsGetBodyRelay(item.relay);
+  }
   return { ...item, security, credentials: binding.credentials } as HttpConnection;
 }
 
@@ -91,6 +97,7 @@ export function httpConnectionMatches(connection: HttpConnection, descriptor: Ap
   return schemaId(descriptor) === connection.provider && descriptor.origin === connection.endpoint
     && supportedSecurityAlternative(security) && security.length > 0
     && canonicalPolicyValue(security) === canonicalPolicyValue(connection.security)
+    && (!connection.relay || awsGetBodyEligible(descriptor))
     && (connection.format === "gitlab-oauth" ? gitlabOAuthAlternative(descriptor) === connection.alternative && !!connection.oauth
       : connection.format === "jira-companion" ? jiraOAuthAlternative(descriptor) === connection.alternative && connection.oauth?.profile === "atlassian-jira-3lo-v1" && connection.oauth.siteUrl === descriptor.origin
       : connection.format === "atproto-oauth" ? atprotoOAuthAlternative(descriptor) === connection.alternative && !!connection.oauth
@@ -110,7 +117,7 @@ function assertReferences(connection: HttpConnection, records: readonly VaultCre
 }
 
 export async function resolveHttpConnection(descriptor: ApprovedOperation, binding: CredentialBinding, records: readonly VaultCredential[]):
-  Promise<{ binding: CredentialBinding; format: HttpTokenFormat; expiresAt?: number; oauth?: HttpConnection["oauth"] }> {
+  Promise<{ binding: CredentialBinding; format: HttpTokenFormat; expiresAt?: number; oauth?: HttpConnection["oauth"]; relay?: HttpConnection["relay"] }> {
   if (!binding.connection) return { binding, format: "schema" };
   const selected = validateCredentialBinding(binding), reference = selected.connection!;
   const connection = storedHttpConnections(records).find(item => item.id === reference.id);
@@ -120,14 +127,16 @@ export async function resolveHttpConnection(descriptor: ApprovedOperation, bindi
   const { fingerprint: saved, ...config } = connection;
   if (saved !== await fingerprint(config)) throw new VaultError("PERMISSION");
   assertReferences(connection, records);
+  if (connection.relay) await resolveAwsGetBodyKey(connection.relay, records);
   return { binding: { alternative: connection.alternative, fingerprint: descriptor.fingerprint, credentials: structuredClone(connection.credentials) },
-    format: connection.format, ...(connection.oauth ? { oauth: connection.oauth } : {}), ...(connection.expiresAt === undefined ? {} : { expiresAt: connection.expiresAt }) };
+    format: connection.format, ...(connection.oauth ? { oauth: connection.oauth } : {}), ...(connection.relay ? { relay: connection.relay } : {}),
+    ...(connection.expiresAt === undefined ? {} : { expiresAt: connection.expiresAt }) };
 }
 
 /** Profiles live in existing encrypted records; their fields contain metadata and references only. */
 export async function createHttpConnection(input: HttpConnectionInput, descriptor: ApprovedOperation, selected: CredentialBinding,
   records: readonly VaultCredential[]): Promise<HttpConnection> {
-  ownObject(input, ["label", "account", "format"], ["reference", "expiresAt"]);
+  ownObject(input, ["label", "account", "format"], ["reference", "expiresAt", "relay"]);
   const approved = await validateApprovedOperation(descriptor), binding = validateCredentialBinding(selected);
   const security = approved.operation.security?.[binding.alternative];
   if (binding.connection || binding.fingerprint !== approved.fingerprint || !supportedSecurityAlternative(security) || !security.length
@@ -135,10 +144,17 @@ export async function createHttpConnection(input: HttpConnectionInput, descripto
   const all = storedHttpConnections(records), previous = input.reference && all.find(item => item.id === validateHttpConnectionReference(input.reference).id);
   if (input.reference && (!previous || previous.revision !== input.reference.revision || previous.fingerprint !== input.reference.fingerprint)) throw new VaultError("CONFLICT");
   if (!previous && all.length >= httpConnectionLimit || previous?.revision === Number.MAX_SAFE_INTEGER) throw new VaultError("LIMIT");
+  let relay: HttpConnection["relay"];
+  if (input.relay !== undefined) {
+    if (!awsGetBodyEligible(approved) || input.format !== "schema") throw new VaultError("PERMISSION");
+    const selected = validateAwsGetBodyRelay(input.relay, false), key = records.find(record => record.id === selected.pairingKeyId);
+    if (!key || key.kind !== "secret" || key.oauthState) throw new VaultError("PERMISSION");
+    relay = { host: selected.host, pairingKeyId: selected.pairingKeyId, keyHash: await awsGetBodyKeyHash(key.value) };
+  }
   const config: Omit<HttpConnection, "fingerprint"> = { id: previous?.id ?? crypto.randomUUID(), revision: (previous?.revision ?? 0) + 1,
     label: input.label, account: input.account, provider: schemaId(approved), endpoint: approved.origin, runtime: "browser-http",
     alternative: binding.alternative, security: structuredClone(security), credentials: binding.credentials, format: input.format,
-    ...(input.expiresAt === undefined ? {} : { expiresAt: input.expiresAt }) };
+    ...(input.expiresAt === undefined ? {} : { expiresAt: input.expiresAt }), ...(relay ? { relay } : {}) };
   const connection = validateHttpConnection({ ...config, fingerprint: await fingerprint(config) });
   assertReferences(connection, records);
   if (all.some(item => item.id !== connection.id && item.provider === connection.provider

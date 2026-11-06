@@ -8,6 +8,7 @@ import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
+import { awsRestSigningProfile } from "./aws-rest.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel, type S3FilesProfile } from "./s3-files.ts";
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
@@ -66,6 +67,8 @@ export type Operation = {
   /** Native wire schemas resolve against this operation's scoped model document. */
   rpc?: NativeRpcContract;
   awsWire?: import("./aws-wire.ts").AwsWireProfile;
+  awsRest?: import("./aws-rest.ts").AwsRestSigningProfile;
+  awsRestRevision?: string;
   s3Files?: S3FilesProfile;
   /** Navigation-only descriptor. Execution requires a separately hydrated model. */
   deferred?: true;
@@ -428,6 +431,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       const extracted: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),
         description: text(operation.description, ""), group: Array.isArray(tags) && tags.length ? tags[0] : "Operations",
         method: method.toUpperCase(), path, fields, bodyRequired, ...responseDetails(operation, document, id) };
+      if (operation["x-operations-aws-signing"] === awsRestSigningProfile) extracted.awsRest = awsRestSigningProfile;
       extracted.name = operationDisplayName(extracted);
       if (bodyMediaType) extracted.bodyMediaType = bodyMediaType;
       if (binaryMediaTypes) extracted.binaryMediaTypes = binaryMediaTypes;
@@ -439,11 +443,13 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (responseContent) extracted.responseContent = responseContent;
       const privatePath = privatePathProfile(operation["x-operations-private-path"]);
       if (privatePath) extracted.privatePath = privatePath;
+      if (operation["x-operations-credential-result"] === true) extracted.credentialResult = true;
+      if (operation["x-operations-private-result"] === privateResultVersion) extracted.credentialResultProfile = privateResultVersion;
       const security = inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
       if (security?.flat().some(scheme => scheme.kind === "aws-sigv4")) {
         configureAwsSigning(extracted);
-        if (!validAwsSigningModel(extracted)) throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
+        if (!validAwsSigningModel(extracted)) throw new Error(`${id}: this AWS operation requires a supported REST request and response profile.`);
       }
       if (operation["x-operations-credential-result"] === true) {
         extracted.credentialResult = true;

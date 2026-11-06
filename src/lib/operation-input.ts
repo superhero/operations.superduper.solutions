@@ -4,6 +4,8 @@
 
 import { supportsCredentialResults } from "./credential-results.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
+import { awsRestUsesS3Keys } from "./aws-rest.ts";
+import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
 import { prepareAwsWireRequest } from "./aws-wire.ts";
 import { encodeS3Key, validateS3Bucket, s3MetadataHeaders } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
@@ -30,7 +32,7 @@ export type PreparedRequest = {
   body?: JsonValue;
   headers?: Record<string, string>;
   contentType?: Exclude<BodyMediaType, "application/json">;
-  bodyFormat?: "binary" | "cloudflare-assets" | "cloudflare-module";
+  bodyFormat?: "binary" | "text" | "cloudflare-assets" | "cloudflare-module";
 };
 
 export class InputValidationError extends Error
@@ -186,7 +188,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
-  if (operation.s3Files || operation.awsWire) for (const [key, value] of Object.entries(values)) {
+  if (operation.s3Files || operation.awsWire || operation.awsRest) for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && !fields.some(field => field.key === key))
       throw new InputValidationError(key, "This input is outside the supported AWS operation profile.");
   }
@@ -225,7 +227,9 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
         if (input.type === "array" && !operation.s3Files) encoded = encodeSimplePathArray(input, value);
         else {
           if (value !== null && typeof value === "object") throw new Error("path values must be primitive values or supported simple arrays.");
-          encoded = operation.s3Files ? input.name === "Key" ? encodeS3Key(String(value)) : encodeURIComponent(validateS3Bucket(String(value))) : encodeURIComponent(String(value));
+          encoded = operation.s3Files || awsRestUsesS3Keys(operation)
+            ? input.name === "Key" ? encodeS3Key(String(value)) : input.name === "Bucket" ? encodeURIComponent(validateS3Bucket(String(value))) : encodeURIComponent(String(value))
+            : encodeURIComponent(String(value));
         }
       }
       catch (cause) { fail(input, (cause as Error).message); }
@@ -291,5 +295,5 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if (["workers-version", "workers-module", "platform-module"].includes(operation.cloudflareUpload ?? "")) {
     request.bodyFormat = "cloudflare-module"; request.contentType = "multipart/form-data";
   }
-  return operation.awsWire ? prepareAwsWireRequest(operation, request) : request;
+  return operation.awsRest ? prepareAwsRestRequest(operation, request) : operation.awsWire ? prepareAwsWireRequest(operation, request) : request;
 }

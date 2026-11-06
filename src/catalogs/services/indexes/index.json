@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "f6011e387d0c64dc6aa2d5136b4a7b78962e122018318363522546b8718b2fd5",
+  "adapterRevision": "cc09db265cf29dad0bb414da764ff0b39c1a12ff1bfab28643977e71bffe2642",
   "indexes": [
     {
       "id": "anthropic",
@@ -605,30 +605,30 @@
     },
     {
       "id": "aws-apigatewayv2",
-      "sourceRevision": "fec5b78bf48681187bd549d526da351d49a8e04d76e99a3248c37deb20c50f18",
-      "bytes": 38325,
-      "compressedBytes": 2149,
-      "sha256": "a3a67b030ff9787b4866a5a023812f5f34f1092777aec89eaee94fa777ece3d0",
+      "sourceRevision": "49b4c6d6181033d461cfccf68636622337d271197899109a67b2ff873a07cc50",
+      "bytes": 24396,
+      "compressedBytes": 2060,
+      "sha256": "b8be65489f8e503deb7faa1060ee6e04da0ad0868979d2dea44307a15082e57f",
       "summary": {
         "name": "AmazonApiGatewayV2",
-        "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
+        "serverUrl": "https://apigateway.us-east-1.amazonaws.com",
         "description": "Amazon API Gateway V2",
         "operationCount": 72,
-        "unavailableCount": 72
+        "unavailableCount": 2
       }
     },
     {
       "id": "aws-apigateway",
-      "sourceRevision": "356f372e1b3a48d7a22aed61c7c0797dc8af5c4ed550ac8e8babab68d83b8917",
-      "bytes": 64867,
-      "compressedBytes": 3343,
-      "sha256": "26aa91252a55a91413e1ffd0f71b02429b3eb0c8a94ef1a0706802029639531c",
+      "sourceRevision": "4202d0a7984dfcb7303299b285188fdcf7eabe13c43751395f7b05edcb577464",
+      "bytes": 41783,
+      "compressedBytes": 3177,
+      "sha256": "5b776348eb296b472fbf91bbba5608960fbd2dd57b736bed738f7767d21d624c",
       "summary": {
         "name": "Amazon API Gateway",
-        "serverUrl": "http://apigateway.us-east-1.amazonaws.com",
+        "serverUrl": "https://apigateway.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon API Gateway</fullname> <p>Amazon API Gateway helps developers deliver robust, secure, and scalable mobile and web application back ends. API Gateway allows developers to securely connect mobile and web applications to APIs that run on AWS Lambda, Amazon EC2, or other publicly addressable web services that are hosted outside of AWS.</p>",
         "operationCount": 120,
-        "unavailableCount": 120
+        "unavailableCount": 4
       }
     },
     {
@@ -661,30 +661,30 @@
     },
     {
       "id": "aws-backup",
-      "sourceRevision": "421781af6fbb43cf42a8d55dfbe68431a0df8c08d47afdd9c52404281a5e5990",
-      "bytes": 38618,
-      "compressedBytes": 2461,
-      "sha256": "e60d0113e5adcd73d79a1bec081888b25b0999883315567808c803f12e635167",
+      "sourceRevision": "344eacceed7cf3b30bbc01142a49618d481caae9f3bfa920398dec9866b25053",
+      "bytes": 24490,
+      "compressedBytes": 2339,
+      "sha256": "5d7a29b7a13a30c3091c2cffb83066000d2b2dc7f64f08407db20a8feee121e5",
       "summary": {
         "name": "AWS Backup",
-        "serverUrl": "http://backup.us-east-1.amazonaws.com",
+        "serverUrl": "https://backup.us-east-1.amazonaws.com",
         "description": "<fullname>Backup</fullname> <p>Backup is a unified backup service designed to protect Amazon Web Services services and their associated data. Backup simplifies the creation, migration, restoration, and deletion of backups, while also providing reporting and auditing.</p>",
         "operationCount": 72,
-        "unavailableCount": 72
+        "unavailableCount": 1
       }
     },
     {
       "id": "aws-batch",
-      "sourceRevision": "d3b0ea44f93b92609c9766312593952f9fb10b8cbbd0c294445e8538c6ff86e2",
-      "bytes": 14837,
-      "compressedBytes": 1671,
-      "sha256": "2d1157d7db0f020c87f61551b342a029b60c8f7b1ad3c378314276695f25ff2c",
+      "sourceRevision": "d5baa945d0ad6b0dea7a5e35d7959f5e5c48aae7d2d925b162dfa46209b48565",
+      "bytes": 10261,
+      "compressedBytes": 1650,
+      "sha256": "5c28f78e905e32fd715e5796b918632b8415ff412092778f9cf510c58e59f65d",
       "summary": {
         "name": "AWS Batch",
-        "serverUrl": "http://batch.us-east-1.amazonaws.com",
+        "serverUrl": "https://batch.us-east-1.amazonaws.com",
         "description": "<fullname>Batch</fullname> <p>Using Batch, you can run batch computing workloads on the Amazon Web Services Cloud. Batch computing is a common means for developers, scientists, and engineers to access large amounts of compute resources. Batch uses the advantages of the batch computing to remove the undifferentiated heavy lifting of configuring and managing required infrastructure. At the same time, it also adopts a familiar batch computing software approach. You can use Batch to efficiently provision resources d, and work toward eliminating capacity constraints, reducing your overall compute costs, and delivering results more quickly.</p> <p>As a fully managed service, Batch can run batch computing workloads of any scale. Batch automatically provisions compute resources and optimizes workload distribution based on the quantity and scale of your specific workloads. With Batch, there's no need to install or manage batch computing software. This means that you can focus on analyzing results and solving your specific problems instead.</p>",
         "operationCount": 24,
-        "unavailableCount": 24
+        "unavailableCount": 1
       }
     },
     {
@@ -717,16 +717,16 @@
     },
     {
       "id": "aws-cloudfront",
-      "sourceRevision": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
-      "bytes": 69227,
-      "compressedBytes": 3353,
-      "sha256": "7dd1034cd518478c58b9c5d72d8071a1ed9d3b11a1bd0daf11d5a9bbf9759f1d",
+      "sourceRevision": "d8953ee7f13e82439df3d14dd987a0cae5626d8fed2ddcdbf767c9afa930414a",
+      "bytes": 56888,
+      "compressedBytes": 3277,
+      "sha256": "805d6159446bcae8335b0d1037d55ff5995255effa5fbc1e2746fde4b7263aab",
       "summary": {
         "name": "Amazon CloudFront",
         "serverUrl": "https://cloudfront.amazonaws.com",
         "description": "<fullname>Amazon CloudFront</fullname> <p>This is the <i>Amazon CloudFront API Reference</i>. This guide is for developers who need detailed information about CloudFront API actions, data types, and errors. For detailed information about CloudFront features, see the <i>Amazon CloudFront Developer Guide</i>.</p>",
         "operationCount": 106,
-        "unavailableCount": 106
+        "unavailableCount": 44
       }
     },
     {
@@ -913,30 +913,30 @@
     },
     {
       "id": "aws-elasticfilesystem",
-      "sourceRevision": "dade2231707fbb8542eaecdf0215aa791cb409dd608c7ee8336c4f1dee408bf2",
-      "bytes": 18705,
-      "compressedBytes": 1673,
-      "sha256": "eb51d92cb2a1801cce063158548679ed0da488901adaecab6dbbb73955dc6fc8",
+      "sourceRevision": "95e61b56f5a776fb137e598685ccea239993ed2f5860dcac48d8bcb78d103251",
+      "bytes": 12935,
+      "compressedBytes": 1620,
+      "sha256": "5bc30f9a0560d361d3e93631f2e068a9757cda9aee85fbf35eeb3e8f0dce63ea",
       "summary": {
         "name": "Amazon Elastic File System",
-        "serverUrl": "http://elasticfilesystem.us-east-1.amazonaws.com",
+        "serverUrl": "https://elasticfilesystem.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Elastic File System</fullname> <p>Amazon Elastic File System (Amazon EFS) provides simple, scalable file storage for use with Amazon EC2 Linux and Mac instances in the Amazon Web Services Cloud. With Amazon EFS, storage capacity is elastic, growing and shrinking automatically as you add and remove files, so that your applications have the storage they need, when they need it. For more information, see the <a href=\"https://docs.aws.amazon.com/efs/latest/ug/api-reference.html\">Amazon Elastic File System API Reference</a> and the <a href=\"https://docs.aws.amazon.com/efs/latest/ug/whatisefs.html\">Amazon Elastic File System User Guide</a>.</p>",
         "operationCount": 30,
-        "unavailableCount": 30
+        "unavailableCount": 1
       }
     },
     {
       "id": "aws-eks",
-      "sourceRevision": "476f3cff5ca1a16490dcf49ef5aee2c1041b9a1fa71289ae9ed5e5f7f643d302",
-      "bytes": 20318,
-      "compressedBytes": 1849,
-      "sha256": "d83b650b3d286fda2e74570f3a7bf444e8a7c3188ec0dc31df0d9e8420d3a5a4",
+      "sourceRevision": "628b08a693aad82fdba9bba04b43be9a6a74784870337fee3a392cae83dcf545",
+      "bytes": 13752,
+      "compressedBytes": 1795,
+      "sha256": "180ac1a3ea654fad302e4787bd1c0ee16d1d1b437a83844a4c5fca51a8318de6",
       "summary": {
         "name": "Amazon Elastic Kubernetes Service",
-        "serverUrl": "http://eks.us-east-1.amazonaws.com",
+        "serverUrl": "https://eks.us-east-1.amazonaws.com",
         "description": "<p>Amazon Elastic Kubernetes Service (Amazon EKS) is a managed service that makes it easy for you to run Kubernetes on Amazon Web Services without needing to stand up or maintain your own Kubernetes control plane. Kubernetes is an open-source system for automating the deployment, scaling, and management of containerized applications. </p> <p>Amazon EKS runs up-to-date versions of the open-source Kubernetes software, so you can use all the existing plugins and tooling from the Kubernetes community. Applications running on Amazon EKS are fully compatible with applications running on any standard Kubernetes environment, whether running in on-premises data centers or public clouds. This means that you can easily migrate any standard Kubernetes application to Amazon EKS without any code modification required.</p>",
         "operationCount": 35,
-        "unavailableCount": 35
+        "unavailableCount": 2
       }
     },
     {
@@ -1053,30 +1053,30 @@
     },
     {
       "id": "aws-lambda",
-      "sourceRevision": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
-      "bytes": 44063,
-      "compressedBytes": 3761,
-      "sha256": "908494c3057247f82870a8025fde4f31ba8c6237713839af5174e9fefe247843",
+      "sourceRevision": "2f10fd0a47b0e2691a03401c89b450a826a0eb2487bad71d9c557cd201488257",
+      "bytes": 32323,
+      "compressedBytes": 3626,
+      "sha256": "30bbf99de89d45773e23d6c1c958e83767ab3ca37d07cb665a7e3d9d3b146195",
       "summary": {
         "name": "AWS Lambda",
-        "serverUrl": "http://lambda.us-east-1.amazonaws.com",
+        "serverUrl": "https://lambda.us-east-1.amazonaws.com",
         "description": "<fullname>Lambda</fullname> <p> <b>Overview</b> </p> <p>Lambda is a compute service that lets you run code without provisioning or managing servers. Lambda runs your code on a high-availability compute infrastructure and performs all of the administration of the compute resources, including server and operating system maintenance, capacity provisioning and automatic scaling, code monitoring and logging. With Lambda, you can run code for virtually any type of application or backend service. For more information about the Lambda service, see <a href=\"https://docs.aws.amazon.com/lambda/latest/dg/welcome.html\">What is Lambda</a> in the <b>Lambda Developer Guide</b>.</p> <p>The <i>Lambda API Reference</i> provides information about each of the API methods, including details about the parameters in each API request and response. </p> <p/> <p>You can use Software Development Kits (SDKs), Integrated Development Environment (IDE) Toolkits, and command line tools to access the API. For installation instructions, see <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>. </p> <p>For a list of Region-specific endpoints that Lambda supports, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/lambda-service.html/\">Lambda endpoints and quotas </a> in the <i>Amazon Web Services General Reference.</i>. </p> <p>When making the API calls, you will need to authenticate your request by providing a signature. Lambda supports signature version 4. For more information, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html\">Signature Version 4 signing process</a> in the <i>Amazon Web Services General Reference.</i>. </p> <p> <b>CA certificates</b> </p> <p>Because Amazon Web Services SDKs use the CA certificates from your computer, changes to the certificates on the Amazon Web Services servers can cause connection failures when you attempt to use an SDK. You can prevent these failures by keeping your computer's CA certificates and operating system up-to-date. If you encounter this issue in a corporate environment and do not manage your own computer, you might need to ask an administrator to assist with the update process. The following list shows minimum operating system and Java versions:</p> <ul> <li> <p>Microsoft Windows versions that have updates from January 2005 or later installed contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Mac OS X 10.4 with Java for Mac OS X 10.4 Release 5 (February 2007), Mac OS X 10.5 (October 2007), and later versions contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Red Hat Enterprise Linux 5 (March 2007), 6, and 7 and CentOS 5, 6, and 7 all contain at least one of the required CAs in their default trusted CA list. </p> </li> <li> <p>Java 1.4.2_12 (May 2006), 5 Update 2 (March 2005), and all later versions, including Java 6 (December 2006), 7, and 8, contain at least one of the required CAs in their default trusted CA list. </p> </li> </ul> <p>When accessing the Lambda management console or Lambda API endpoints, whether through browsers or programmatically, you will need to ensure your client machines support any of the following CAs: </p> <ul> <li> <p>Amazon Root CA 1</p> </li> <li> <p>Starfield Services Root Certificate Authority - G2</p> </li> <li> <p>Starfield Class 2 Certification Authority</p> </li> </ul> <p>Root certificates from the first two authorities are available from <a href=\"https://www.amazontrust.com/repository/\">Amazon trust services</a>, but keeping your computer up-to-date is the more straightforward solution. To learn more about ACM-provided certificates, see <a href=\"http://aws.amazon.com/certificate-manager/faqs/#certificates\">Amazon Web Services Certificate Manager FAQs.</a> </p>",
         "operationCount": 66,
-        "unavailableCount": 65
+        "unavailableCount": 6
       }
     },
     {
       "id": "aws-opensearch",
-      "sourceRevision": "01d0ee509fc29cefc2403b8dff507be3bba690f3583710fe9b95bedb5a519d9e",
-      "bytes": 31689,
-      "compressedBytes": 2330,
-      "sha256": "6c19e95931712ab04e45e36cb43dea3234b98e7bd08eafabc5f59afe2efa0dc5",
+      "sourceRevision": "5aade02c066380fdfde2418315e23ba10cf0a1236bbb3592afb4e99d6478ef85",
+      "bytes": 21143,
+      "compressedBytes": 2220,
+      "sha256": "2893348384946dd2e386e6a05f1c96ba5edeef06795badc480c85a0c0a7ff17f",
       "summary": {
         "name": "Amazon OpenSearch Service",
-        "serverUrl": "http://es.us-east-1.amazonaws.com",
+        "serverUrl": "https://es.us-east-1.amazonaws.com",
         "description": "<p>Use the Amazon OpenSearch Service configuration API to create, configure, and manage OpenSearch Service domains.</p> <p>For sample code that uses the configuration API, see the <a href=\"https://docs.aws.amazon.com/opensearch-service/latest/developerguide/opensearch-configuration-samples.html\"> <i>Amazon OpenSearch Service Developer Guide</i> </a>. The guide also contains <a href=\"https://docs.aws.amazon.com/opensearch-service/latest/developerguide/request-signing.html\">sample code</a> for sending signed HTTP requests to the OpenSearch APIs. The endpoint for configuration service requests is Region specific: es.<i>region</i>.amazonaws.com. For example, es.us-east-1.amazonaws.com. For a current list of supported Regions and endpoints, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/rande.html#service-regions\">Amazon Web Services service endpoints</a>.</p>",
         "operationCount": 54,
-        "unavailableCount": 54
+        "unavailableCount": 1
       }
     },
     {
@@ -1095,16 +1095,16 @@
     },
     {
       "id": "aws-polly",
-      "sourceRevision": "62fa911eba1d9141664783718fa74d34c1ba257025cd72df5a057e54d796ff55",
-      "bytes": 5726,
-      "compressedBytes": 948,
-      "sha256": "bca13c039c82b03f9096910686cee672e435b6634719500ef246a924cd1cb051",
+      "sourceRevision": "c80de7b5d9a12b9ea320f8509d908f1fa622f7976e47616dac5632efd91cd7a5",
+      "bytes": 3937,
+      "compressedBytes": 844,
+      "sha256": "ea0cb0f532f51c1e597d038936ba9774614c1f75253355eed60e533ee2ceafb4",
       "summary": {
         "name": "Amazon Polly",
-        "serverUrl": "http://polly.us-east-1.amazonaws.com",
+        "serverUrl": "https://polly.us-east-1.amazonaws.com",
         "description": "<p>Amazon Polly is a web service that makes it easy to synthesize speech from text.</p> <p>The Amazon Polly service provides API operations for synthesizing high-quality speech from plain text and Speech Synthesis Markup Language (SSML), along with managing pronunciations lexicons that enable you to get the best results for your application domain.</p>",
         "operationCount": 9,
-        "unavailableCount": 9
+        "unavailableCount": 0
       }
     },
     {
@@ -1151,30 +1151,30 @@
     },
     {
       "id": "aws-route53",
-      "sourceRevision": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
-      "bytes": 42953,
-      "compressedBytes": 2764,
-      "sha256": "ca4383c87fc7ce2d56141f37872fa50974d9d7a6f06216afb051e43c5bf4bd29",
+      "sourceRevision": "b6d07b480b96c94209bf973161a9cea718e0aee2d924eb5469c0e2eda645d774",
+      "bytes": 33998,
+      "compressedBytes": 2706,
+      "sha256": "7cc80d168b2bbd7fe2f064560505fabe505583941756de90bb52d8ac5f038768",
       "summary": {
         "name": "Amazon Route 53",
         "serverUrl": "https://route53.amazonaws.com",
         "description": "<p>Amazon Route 53 is a highly available and scalable Domain Name System (DNS) web service.</p> <p>You can use Route 53 to:</p> <ul> <li> <p>Register domain names.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/welcome-domain-registration.html\">How domain registration works</a>.</p> </li> <li> <p>Route internet traffic to the resources for your domain</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/welcome-dns-service.html\">How internet traffic is routed to your website or web application</a>.</p> </li> <li> <p>Check the health of your resources.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/welcome-health-checks.html\">How Route 53 checks the health of your resources</a>.</p> </li> </ul>",
         "operationCount": 70,
-        "unavailableCount": 70
+        "unavailableCount": 25
       }
     },
     {
       "id": "aws-s3",
-      "sourceRevision": "1abeda3df1f4fc0835e5c91144542f89542e3d92e3bceab95e497b1393547586",
-      "bytes": 64112,
-      "compressedBytes": 3229,
-      "sha256": "d503e364d70f13df740a34fd993ae6e8f1a2dfddec775c71f8be4f7702587b4d",
+      "sourceRevision": "c9614be11779bb74de920c7b344aafad15ebed00c1bb8b3a8b56778535cf048b",
+      "bytes": 63119,
+      "compressedBytes": 3204,
+      "sha256": "797590cd378b98bf9fd21bd1908389c69f0910d6ca77428ff2fe1e98bd18d748",
       "summary": {
         "name": "Amazon Simple Storage Service",
-        "serverUrl": "http://s3.us-east-1.amazonaws.com",
+        "serverUrl": "https://s3.us-east-1.amazonaws.com",
         "description": "<p/>",
         "operationCount": 97,
-        "unavailableCount": 95
+        "unavailableCount": 90
       }
     },
     {
@@ -1207,16 +1207,16 @@
     },
     {
       "id": "aws-runtime-sagemaker",
-      "sourceRevision": "d8a12efce47afa804033ea5428ae5168ebb8e100397672464aecc0ca6a16b7bf",
-      "bytes": 1942,
-      "compressedBytes": 682,
-      "sha256": "e9e1bf124af3beacc77fa0300ceb86bbb731dfb5012930f622a7dba9c4d7d833",
+      "sourceRevision": "d42aa6ed9e77500fa52061be8b41f5876f07280182188d05a5b10ad27741f64b",
+      "bytes": 1745,
+      "compressedBytes": 694,
+      "sha256": "7bee4e028d0d4a5b2bac6e45055e971bdc8333f9d9acd8d84e6e048735f67e00",
       "summary": {
         "name": "Amazon SageMaker Runtime",
-        "serverUrl": "http://runtime.sagemaker.us-east-1.amazonaws.com",
+        "serverUrl": "https://runtime.sagemaker.us-east-1.amazonaws.com",
         "description": "The Amazon SageMaker runtime API.",
         "operationCount": 2,
-        "unavailableCount": 2
+        "unavailableCount": 1
       }
     },
     {
@@ -1235,16 +1235,16 @@
     },
     {
       "id": "aws-sesv2",
-      "sourceRevision": "d8193d3b10ba22cf265b0fe76ff4474dbe8eb052a8b407c96eeda4d20b564aa5",
-      "bytes": 49287,
-      "compressedBytes": 3059,
-      "sha256": "348c978093027e4219967b004670c46e1f18f5fbdf31bb6dad9150f799ba0ea3",
+      "sourceRevision": "94df9f9261778c9fe707cf1414e79772f5068e429a157aef008458e0ec76b6d0",
+      "bytes": 32982,
+      "compressedBytes": 2879,
+      "sha256": "ffbd592a305f7aefd22f8428dfda3dba4fdbe27b6a0dd60ef7605c7c89af6eec",
       "summary": {
         "name": "Amazon Simple Email Service",
-        "serverUrl": "http://email.us-east-1.amazonaws.com",
+        "serverUrl": "https://email.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon SES API v2</fullname> <p> <a href=\"http://aws.amazon.com/ses\">Amazon SES</a> is an Amazon Web Services service that you can use to send email messages to your customers.</p> <p>If you're new to Amazon SES API v2, you might find it helpful to review the <a href=\"https://docs.aws.amazon.com/ses/latest/DeveloperGuide/\">Amazon Simple Email Service Developer Guide</a>. The <i>Amazon SES Developer Guide</i> provides information and code samples that demonstrate how to use Amazon SES API v2 features programmatically.</p>",
         "operationCount": 87,
-        "unavailableCount": 87
+        "unavailableCount": 5
       }
     },
     {

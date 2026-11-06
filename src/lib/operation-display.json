@@ -398,5 +398,25 @@
     "method": "GET",
     "path": "/realtime",
     "description": "Establishes a WebSocket connection for real-time audio transcription. This endpoint uses WebSocket protocol (wss://api.together.ai/v1/realtime) for bidirectional streaming communication."
+  },
+  "aws-batch:CreateComputeEnvironment": {
+    "method": "POST",
+    "path": "/v1/createcomputeenvironment",
+    "description": "Create a managed or unmanaged AWS Batch compute environment."
+  },
+  "aws-elasticfilesystem:CreateMountTarget": {
+    "method": "POST",
+    "path": "/2015-02-01/mount-targets",
+    "description": "Create an Amazon EFS mount target in a subnet, with its configured IP address and security groups."
+  },
+  "aws-lambda:CreateFunction": {
+    "method": "POST",
+    "path": "/2015-03-31/functions",
+    "description": "Create an AWS Lambda function from a deployment package or container image, with its execution role and runtime configuration."
+  },
+  "aws-s3:HeadObject": {
+    "method": "HEAD",
+    "path": "/{Bucket}/{Key}",
+    "description": "Retrieve an Amazon S3 object's metadata without returning its contents. Configure any required encryption and conditional request headers."
   }
 }

@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { credentialResultProfile } from "../credential-results.ts";
+import { credentialResultProfile, privateResultInputKeys } from "../credential-results.ts";
 import { prepareCredentialResults, type AcquiredValue, type AcquiredReference } from "./credential-results.ts";
 import { readWorkflowResponseBody, binaryContainsSecret, WorkflowBodyError } from "../workflow-response-body.ts";
 import { validateWorkflowBinary } from "../workflow-binary.ts";
@@ -27,6 +27,9 @@ import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
 import { signAwsRequest, type AwsSigningValues } from "./aws-sigv4.ts";
 import { awsCredentialParts, isAwsCredentialReference } from "./bindings.ts";
 import { awsSigningHeaders, lambdaSigningRegion } from "../aws-signing.ts";
+import { awsRestEndpoint, awsRestUsesS3Keys, awsRestTransportAccept } from "../aws-rest.ts";
+import { awsRestRequestUrl } from "../aws-rest-codec.ts";
+import { fetchAwsGetBody } from "./aws-get-body.ts";
 import { awsWireEndpoint } from "../aws-wire.ts";
 import { s3SigningEndpoint, s3ObjectUrl } from "../s3-files.ts";
 import { s3PayloadChecksum, verifyS3Object } from "./s3-files.ts";
@@ -124,7 +127,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (bindingSnapshot.fingerprint !== approved.fingerprint || !Number.isInteger(bindingSnapshot.alternative)
       || !supportedSecurityAlternative(alternative) || !alternative.length && !variables.length && !acquisition || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
       throw new VaultError("PERMISSION");
-    for (const key of acquisition?.privateInputs ?? []) {
+    for (const key of privateResultInputKeys(approved.operation)) {
       const value = inputSnapshot[key];
       if (value !== undefined && value !== null && value !== "" && (value !== vaultVariablePlaceholder
         || !variables.some(variable => variable.key === key && !variable.path.length))) throw new VaultError("PERMISSION");
@@ -157,7 +160,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         delete inputSnapshot[cloudflareSessionField];
       } else if (scheme.kind === "aws-sigv4") {
         if (!isAwsCredentialReference(reference) || alternative.length !== 1
-          || !(approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire) : approved.operation.s3Files ? s3SigningEndpoint(approved.origin) : lambdaSigningRegion(approved.origin))) throw new VaultError("PERMISSION");
+          || !(approved.operation.awsRest ? awsRestEndpoint(approved.origin, approved.operation) : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire) : approved.operation.s3Files ? s3SigningEndpoint(approved.origin) : lambdaSigningRegion(approved.origin))) throw new VaultError("PERMISSION");
         aws = Object.fromEntries(awsCredentialParts.flatMap(part => reference[part] ? [[part, credentialValue(reference[part]!, "aws-sigv4")]] : [])) as AwsSigningValues;
       } else if (scheme.kind === "oauth1") {
         if (!isOAuth1CredentialReference(reference) || scheme.profile !== "x-hmac-sha1" || alternative.length !== 1
@@ -244,15 +247,16 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       secrets.push(...prepared.secrets);
       secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     }
-    if (!approved.operation.s3Files) validateCredentialPath(request.path);
-    const url = approved.operation.s3Files ? s3ObjectUrl(approved.origin, request.path)
+    if (!approved.operation.s3Files && !awsRestUsesS3Keys(approved.operation)) validateCredentialPath(request.path);
+    const url = approved.operation.awsRest ? awsRestRequestUrl(approved.operation, approved.origin, request.path)
+      : approved.operation.s3Files ? s3ObjectUrl(approved.origin, request.path)
       : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken!) : new URL(`${approved.origin}${request.path}`);
     if (approved.operation.s3Files) publicRequest = { ...publicRequest, path: url.pathname };
     if (approved.operation.privatePath) secrets.push(...privateUrlRedactions(url.href));
     const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));
     if (Object.keys(request.query).some(key => authQueries.has(key))) throw new VaultError("PERMISSION");
     appendRequestQuery(url, request, injectedQueries);
-    const headers = new Headers({ Accept: responseAccept(approved.operation.responseStream, approved.operation.responseMediaType, request.body) });
+    const headers = new Headers({ Accept: awsRestTransportAccept(approved.operation) ?? responseAccept(approved.operation.responseStream, approved.operation.responseMediaType, request.body) });
     const publicHeaders = new Set<string>();
     const authHeaders = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.header === undefined ? [] : [scheme.header.toLowerCase()]));
     for (const [name, value] of Object.entries(request.headers ?? {}))
@@ -270,7 +274,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       await options.assertCurrent(); if (signal.aborted) throw new VaultError("CANCELLED");
       if (s3Upload) headers.set("x-amz-checksum-sha256", await s3PayloadChecksum(body));
       else if (approved.operation.s3Files) headers.set("x-amz-checksum-mode", "ENABLED");
-      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire)! : approved.operation.s3Files
+      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.awsRest ? awsRestEndpoint(approved.origin, approved.operation)! : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire)! : approved.operation.s3Files
         ? { service: "s3", region: s3SigningEndpoint(approved.origin)!.region } : { service: "lambda", region: lambdaSigningRegion(approved.origin)! });
       for (const [name, value] of signed.headers) headers.set(name, value);
       body = signed.body ?? null; awsSignedAt = signed.signedAt;
@@ -293,9 +297,14 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (managed && managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");
     if (awsSignedAt !== undefined && Math.abs(Date.now() - awsSignedAt) > 60000) throw new VaultError("PERMISSION");
     phase = "request";
-    const response = await (options.fetchRequest ?? globalThis.fetch)(url.href, {
+    const init: RequestInit = {
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,
-    });
+    };
+    const nativeGetBody = !!approved.operation.awsRest && request.method === "GET" && body !== null;
+    if (nativeGetBody && !connection.relay) throw new VaultError("AWS_GET_BODY_TRANSPORT");
+    const response = nativeGetBody
+      ? await fetchAwsGetBody(approved, connection.relay!, credentialSnapshot, url.href, init, options.fetchRequest ?? globalThis.fetch, options.assertCurrent)
+      : await (options.fetchRequest ?? globalThis.fetch)(url.href, init);
     responseStatus = response.status;
     if (response.redirected) throw new VaultError("NETWORK");
     const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes,
@@ -357,7 +366,23 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         scrub.mark();
       }
       // Never redact inside a base64 file: either retain exact bytes or withhold it entirely.
-    } else safeBody = scrub.value(safeBody);
+    } else {
+      // REST blob and event-stream payloads are files inside logical SDK
+      // envelopes. Apply the same byte guard before their base64 reaches a page.
+      const privateFile = (value: unknown): boolean => {
+        if (Array.isArray(value)) return value.some(privateFile);
+        if (!value || typeof value !== "object") return false;
+        if ((value as Record<string, unknown>).kind === "workflow-file") {
+          const file = validateWorkflowBinary(value);
+          const bytes = Uint8Array.from(atob(file.base64), character => character.charCodeAt(0));
+          return binaryContainsSecret(bytes, secrets) || secrets.some(secret => file.base64.includes(secret))
+            || scrub.text(file.name) !== file.name || scrub.text(file.mediaType) !== file.mediaType;
+        }
+        return Object.values(value).some(privateFile);
+      };
+      if (approved.operation.awsRest && privateFile(safeBody)) { safeBody = null; scrub.mark(); }
+      else safeBody = scrub.value(safeBody);
+    }
     const safe: CredentialResponse = { ...result, status: response.status, statusText: privateUpload || acquisition ? "" : scrub.text(response.statusText),
       headers: Object.fromEntries(safeHeaders), body: safeBody };
     if (safeBody === null) delete safe.bodyType;
