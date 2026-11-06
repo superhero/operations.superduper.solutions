@@ -211,7 +211,14 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     const value = convert(input, raw!);
     if (input.querySerialization !== undefined && (input.querySerialization !== "form-csv" || input.location !== "query" || input.type !== "array"))
       fail(input, "this query serialization is not supported.");
-    if (input.location === "path") {
+    if (input.parameterContentType !== undefined) {
+      if (input.parameterContentType !== "application/json" || !["path", "query"].includes(input.location) || input.querySerialization !== undefined)
+        fail(input, "this content parameter serialization is not supported.");
+      const serialized = JSON.stringify(value);
+      if (input.location === "path") request.path = request.path.replaceAll(`{${input.name}}`, encodeURIComponent(serialized));
+      else set(request.query, input.name, serialized);
+    }
+    else if (input.location === "path") {
       let encoded: string;
       try {
         if (input.type === "array" && !operation.s3Files) encoded = encodeSimplePathArray(input, value);

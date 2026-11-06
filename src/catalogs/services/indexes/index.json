@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "dd644a8d780d8a125b248c124e5767d4a9d62a1d82d6d63f6e1c649344685d8f",
+  "adapterRevision": "9d9afabf4a91560d6a7615def4beeca4c78feeac1c4195ed772de1612b6ceae0",
   "indexes": [
     {
       "id": "anthropic",
@@ -179,16 +179,16 @@
     },
     {
       "id": "bitbucket-dc",
-      "sourceRevision": "f4e8fb1544dc3341bbb70d0247b2b88c5d904e4248d8f6a89cb49668e690084c",
-      "bytes": 221707,
-      "compressedBytes": 15823,
-      "sha256": "fd5e68aa223d744738869847d52e9777198e01c26452848514f27d8c680147c0",
+      "sourceRevision": "1de7e8b005debdfef8598236a01a7a857e404d0c93ab9166c4e57f49bcf31e6e",
+      "bytes": 221235,
+      "compressedBytes": 15623,
+      "sha256": "e20fa4008543f1c09c5deb1ec29d6ecff04eb6c21a93112e84a88b956afc90b6",
       "summary": {
         "name": "Bitbucket Data Center",
         "serverUrl": "http://example.com:7990/rest",
         "description": "This is the reference document for the Atlassian Bitbucket REST API. The REST API is for developers who want to: \n\n - integrate Bitbucket with other applications;\n\n - create scripts that interact with Bitbucket; or\n\n - develop plugins that enhance the Bitbucket UI, using REST to interact with the backend. \n\n You can read more about developing Bitbucket plugins in the [Bitbucket Developer Documentation](https://developer.atlassian.com/bitbucket/server/docs/latest/).",
         "operationCount": 574,
-        "unavailableCount": 20
+        "unavailableCount": 18
       }
     },
     {
@@ -2924,15 +2924,15 @@
     {
       "id": "mistral",
       "sourceRevision": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
-      "bytes": 74961,
-      "compressedBytes": 6865,
-      "sha256": "153bdb9ed91b77ec5d832f560e1816d044ee0ba7ecdc230df124711a5fbb1c2b",
+      "bytes": 74336,
+      "compressedBytes": 6776,
+      "sha256": "3492e7d5f0bc6dad2a217e582e6cd56e732a98d33c29694f3a64e3a1659e90d1",
       "summary": {
         "name": "Mistral AI API",
         "serverUrl": "https://api.mistral.ai",
         "description": "Our Chat Completion and Embeddings APIs specification. Create your account on [La Plateforme](https://console.mistral.ai) to get access and read the [docs](https://docs.mistral.ai) to learn how to use it.",
         "operationCount": 173,
-        "unavailableCount": 12
+        "unavailableCount": 9
       }
     },
     {

@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
@@ -282,17 +283,23 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                     const location = text(parameter.in);
                     if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string")
                       throw new Error("Only named path, query and header parameters are supported.");
-                    input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description,
-                      location === "query" && parameter.explode === false);
-                    const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
-                    const csv = configureQueryArray(input, parameter);
-                    const scalarQuery = acceptsScalarQueryExplode(input, parameter);
-                    const pathArray = configureSimplePathArray(input, parameter);
-                    if (parameter.content) throw new Error("Content-encoded parameters are not supported; declare a schema-based parameter.");
-                    if (parameter.style !== undefined && parameter.style !== style
-                      || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray && !scalarQuery
-                      || location !== "query" && ["object", "array"].includes(input.type) && !pathArray)
-                      throw new Error("Unsupported parameter serialization; use primitive values, simple path arrays or supported form/deepObject query parameters.");
+                    const content = parameterContentSchema(parameter);
+                    input = field(parameter.name, location as InputField["location"], content ?? parameter.schema, parameter.required === true, document, parameter.description,
+                      !!content || location === "query" && parameter.explode === false);
+                    if (content) {
+                      if (containsBinaryInput(input.schema!)) throw new Error("JSON content parameters cannot contain binary files.");
+                      input.parameterContentType = "application/json";
+                    }
+                    else {
+                      const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
+                      const csv = configureQueryArray(input, parameter);
+                      const scalarQuery = acceptsScalarQueryExplode(input, parameter);
+                      const pathArray = configureSimplePathArray(input, parameter);
+                      if (parameter.style !== undefined && parameter.style !== style
+                        || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray && !scalarQuery
+                        || location !== "query" && ["object", "array"].includes(input.type) && !pathArray)
+                        throw new Error("Unsupported parameter serialization; use primitive values, simple path arrays or supported form/deepObject query parameters.");
+                    }
                     fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
                   } catch (error) {
                     throw new Error(`${parameterContext(parameter, input?.type)}: ${(error as Error).message}`, { cause: error });

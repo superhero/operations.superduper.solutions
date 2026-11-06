@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/parameter-content.test.mjs",
     "src/trello-parameter-arrays.test.mjs",
     "src/metadata-query.test.mjs",
     "src/catalog-path-bindings.test.mjs",
@@ -118,6 +119,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/parameter-content.feature",
     "src/trello-parameter-arrays.feature",
     "src/metadata-query.feature",
     "src/catalog-path-bindings.feature",

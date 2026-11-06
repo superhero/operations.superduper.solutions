@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
@@ -53,6 +54,7 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
   location: "path" | "query" | "header" | "body" | "params";
   required: boolean;
   querySerialization?: QuerySerialization;
+  parameterContentType?: "application/json";
   schema?: InputSchema;
 };
 export type BodyMediaType = `${string}/${string}`;
@@ -318,27 +320,36 @@ export function extractOperations(value: unknown, source: string): Operation[]
         for (const raw of parameters)
         {
           const parameter = resolve(raw, document, id);
-          supported(parameter, ["name", "in", "required", "schema", "description", "deprecated", "style", "explode", "allowReserved", "allowEmptyValue"], `${id}: ${parameterContext(parameter)}`);
+          supported(parameter, ["name", "in", "required", "schema", "content", "description", "deprecated", "style", "explode", "allowReserved", "allowEmptyValue"], `${id}: ${parameterContext(parameter)}`);
           if (!["path", "query", "header"].includes(String(parameter.in)) || typeof parameter.name !== "string" || !parameter.name
             || parameter.required !== undefined && typeof parameter.required !== "boolean"
             || parameter.in === "path" && parameter.required !== true)
             throw new Error(`${id}: ${parameterContext(parameter)}: inputs require a name and a supported path/query/header location; path inputs must be required.`);
-          const input = field(parameter.schema, document, parameter.in as InputField["location"], parameter.name, parameter.required === true);
+          let content;
+          try { content = parameterContentSchema(parameter); }
+          catch (error) { throw new Error(`${id}: ${parameterContext(parameter)}: ${(error as Error).message}`, { cause: error }); }
+          const input = field(content ?? parameter.schema, document, parameter.in as InputField["location"], parameter.name, parameter.required === true);
           const query = input.location === "query";
           const style = query ? input.type === "object" ? "deepObject" : "form" : "simple";
           try {
-            const csv = configureQueryArray(input, parameter);
-            const scalarQuery = acceptsScalarQueryExplode(input, parameter);
-            const pathArray = configureSimplePathArray(input, parameter);
-            if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
-              || parameter.style !== undefined && parameter.style !== style
-              || parameter.explode !== undefined && parameter.explode !== query && !csv && !pathArray && !scalarQuery
-              || parameter.allowReserved !== undefined && parameter.allowReserved !== false
-              || parameter.allowEmptyValue !== undefined && parameter.allowEmptyValue !== false
-              || !query && !primitiveTypes.includes(input.type) && !pathArray
-              || input.type === "array" && !primitiveTypes.includes(input.schema!.items!.type)
-              || input.type === "object" && objectSchemas(input.schema!).some(property => !primitiveTypes.includes(property.type)))
-              throw new Error("unsupported parameter serialization; use primitive values, simple path arrays, form query arrays or flat deepObject query objects.");
+            if (content) {
+              if (containsBinaryInput(input.schema ?? { ...input, required: [] })) throw new Error("JSON content parameters cannot contain binary files.");
+              input.parameterContentType = "application/json";
+            }
+            else {
+              const csv = configureQueryArray(input, parameter);
+              const scalarQuery = acceptsScalarQueryExplode(input, parameter);
+              const pathArray = configureSimplePathArray(input, parameter);
+              if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
+                || parameter.style !== undefined && parameter.style !== style
+                || parameter.explode !== undefined && parameter.explode !== query && !csv && !pathArray && !scalarQuery
+                || parameter.allowReserved !== undefined && parameter.allowReserved !== false
+                || parameter.allowEmptyValue !== undefined && parameter.allowEmptyValue !== false
+                || !query && !primitiveTypes.includes(input.type) && !pathArray
+                || input.type === "array" && !primitiveTypes.includes(input.schema!.items!.type)
+                || input.type === "object" && objectSchemas(input.schema!).some(property => !primitiveTypes.includes(property.type)))
+                throw new Error("unsupported parameter serialization; use primitive values, simple path arrays, form query arrays or flat deepObject query objects.");
+            }
           } catch (error) {
             throw new Error(`${id}: ${parameterContext(parameter, input.type)}: ${(error as Error).message}`, { cause: error });
           }

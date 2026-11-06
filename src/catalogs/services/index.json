@@ -262,10 +262,14 @@
       {
         "id": "catalog-path-bindings",
         "version": 1
+      },
+      {
+        "id": "bitbucket-content-parameters",
+        "version": 1
       }
     ],
-    "effectiveSha256": "f4e8fb1544dc3341bbb70d0247b2b88c5d904e4248d8f6a89cb49668e690084c",
-    "effectiveBytes": 1311423
+    "effectiveSha256": "1de7e8b005debdfef8598236a01a7a857e404d0c93ab9166c4e57f49bcf31e6e",
+    "effectiveBytes": 1311787
   },
   {
     "id": "atlassian-capacity-planning",

@@ -102,6 +102,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       throw new VaultError("INVALID");
     secrets = [...new Set([...credentialSnapshot.flatMap(credential => [credential.value, ...managedGitlabSecrets(credential.oauthState ?? ""), ...managedAtprotoSecrets(credential.oauthState ?? "")]), ...(options.privateSecrets ?? [])]
       .filter(value => typeof value === "string" && value.length > 0)
+      .flatMap(value => [value, JSON.stringify(value).slice(1, -1)])
       .flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
@@ -222,7 +223,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         Object.defineProperty(parent, last, { value: resolved, enumerable: true, writable: true, configurable: true });
       }
     }
-    secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
+    secrets = [...new Set(secrets.flatMap(value => [value, JSON.stringify(value).slice(1, -1)]).flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
     let publicRequest = prepareRequest(approved.operation, inputSnapshot, fields);
     let request = publicRequest;

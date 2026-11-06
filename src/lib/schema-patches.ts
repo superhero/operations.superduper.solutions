@@ -7,6 +7,7 @@ export { awsWireSources } from "./aws-wire.ts";
 import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
+import { bindBitbucketContentParameters } from "./parameter-content.ts";
 import { bindTrelloParameterArrays } from "./trello-parameter-arrays.ts";
 import { bindCatalogPaths } from "./catalog-path-bindings.ts";
 import { bindAtlassianDcAuthentication } from "./atlassian-dc-authentication.ts";
@@ -17,7 +18,8 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export const bitbucketContentParameters: SchemaPatch = { id: "bitbucket-content-parameters", version: 1 };
 export const trelloParameterArrays: SchemaPatch = { id: "trello-parameter-arrays", version: 1 };
 export const catalogPathBindings: SchemaPatch = { id: "catalog-path-bindings", version: 1 };
 export const atlassianDcAuthentication: SchemaPatch = { id: "atlassian-dc-authentication", version: 1 };
@@ -50,7 +52,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "trello-parameter-arrays" ? "Trello primitive parameter arrays"
+  return patch.id === "bitbucket-content-parameters" ? "Bitbucket scalar content parameter corrections"
+    : patch.id === "trello-parameter-arrays" ? "Trello primitive parameter arrays"
     : patch.id === "catalog-path-bindings" ? "Reviewed catalog path parameter bindings"
     : patch.id === "atlassian-dc-authentication" ? "Atlassian Data Center bearer permissions"
     : patch.id === "ecb-registration-parameters" ? "ECB registration path parameters"
@@ -611,10 +614,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "trello-parameter-arrays") bindTrelloParameterArrays(document);
+    if (patch.id === "bitbucket-content-parameters") bindBitbucketContentParameters(document);
+    else if (patch.id === "trello-parameter-arrays") bindTrelloParameterArrays(document);
     else if (patch.id === "catalog-path-bindings") bindCatalogPaths(document);
     else if (patch.id === "atlassian-dc-authentication") bindAtlassianDcAuthentication(document);
     else if (patch.id === "ecb-registration-parameters") registrationParameters(document);
