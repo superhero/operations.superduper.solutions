@@ -54,7 +54,7 @@ export function validateHttpConnection(value: unknown): HttpConnection {
   const security = item.security.map(scheme => {
     ownObject(scheme, ["name", "kind", scheme.path !== undefined ? "path" : scheme.query === undefined ? "header" : "query", ...(["oauth1", "aws-sigv4"].includes(scheme.kind) ? ["profile"] : [])]);
     if (scheme.kind === "oauth1" && (scheme.profile !== "x-hmac-sha1" || scheme.header !== "Authorization")) throw new VaultError("INVALID");
-    if (scheme.kind === "aws-sigv4" && (!["lambda-list-functions", "s3-object", "aws-rest-v1", ...awsWireSigningProfiles].includes(scheme.profile) || scheme.header !== "Authorization")) throw new VaultError("INVALID");
+    if (scheme.kind === "aws-sigv4" && (!["lambda-list-functions", "s3-object", "aws-rest-v1", "aws-json-v1", ...awsWireSigningProfiles].includes(scheme.profile) || scheme.header !== "Authorization")) throw new VaultError("INVALID");
     if (typeof scheme.name !== "string" || typeof (scheme.header ?? scheme.query ?? scheme.path) !== "string"
       || !Object.hasOwn(binding.credentials, scheme.name)) throw new VaultError("INVALID");
     return { ...scheme };

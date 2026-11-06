@@ -418,5 +418,125 @@
     "method": "HEAD",
     "path": "/{Bucket}/{Key}",
     "description": "Retrieve an Amazon S3 object's metadata without returning its contents. Configure any required encryption and conditional request headers."
+  },
+  "aws-dynamodb:BatchWriteItem": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=DynamoDB_20120810.BatchWriteItem",
+    "description": "Write or delete multiple DynamoDB items in a batch. Check unprocessed items before retrying."
+  },
+  "aws-ecs:CreateService": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AmazonEC2ContainerServiceV20141113.CreateService",
+    "description": "Create an ECS service to run and maintain tasks using the selected scheduling and deployment settings."
+  },
+  "aws-ecs:UpdateService": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AmazonEC2ContainerServiceV20141113.UpdateService",
+    "description": "Update an ECS service task count, deployment configuration, or other supported settings."
+  },
+  "aws-events:PutTargets": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AWSEvents.PutTargets",
+    "description": "Add or update targets for an EventBridge rule."
+  },
+  "aws-firehose:CreateDeliveryStream": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=Firehose_20150804.CreateDeliveryStream",
+    "description": "Create a Data Firehose delivery stream with the selected source, destination, and processing configuration."
+  },
+  "aws-kinesis:GetRecords": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=Kinesis_20131202.GetRecords",
+    "description": "Read records from a Kinesis data stream shard using a shard iterator."
+  },
+  "aws-kinesis:PutRecords": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=Kinesis_20131202.PutRecords",
+    "description": "Write multiple records to a Kinesis data stream. Check each result before retrying failed records."
+  },
+  "aws-kms:ConnectCustomKeyStore": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ConnectCustomKeyStore",
+    "description": "Connect an AWS KMS custom key store to its backing key store."
+  },
+  "aws-kms:CreateCustomKeyStore": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.CreateCustomKeyStore",
+    "description": "Create an AWS KMS custom key store backed by AWS CloudHSM or an external key manager."
+  },
+  "aws-kms:CreateKey": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.CreateKey",
+    "description": "Create an AWS KMS key using the requested key specification and usage."
+  },
+  "aws-kms:Decrypt": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.Decrypt",
+    "description": "Decrypt ciphertext with the selected AWS KMS key. Returned plaintext stays in Secrets."
+  },
+  "aws-kms:GenerateDataKey": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.GenerateDataKey",
+    "description": "Generate a data encryption key protected by the selected AWS KMS key. Returned plaintext key material stays in Secrets."
+  },
+  "aws-kms:GenerateDataKeyPair": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.GenerateDataKeyPair",
+    "description": "Generate a data key pair protected by the selected AWS KMS key. Returned plaintext private key material stays in Secrets."
+  },
+  "aws-kms:ImportKeyMaterial": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ImportKeyMaterial",
+    "description": "Import externally generated key material into an eligible AWS KMS key."
+  },
+  "aws-kms:ReEncrypt": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ReEncrypt",
+    "description": "Decrypt and re-encrypt ciphertext under AWS KMS keys without returning plaintext."
+  },
+  "aws-kms:ReplicateKey": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ReplicateKey",
+    "description": "Create a related multi-region replica of an AWS KMS multi-region key."
+  },
+  "aws-kms:UpdateCustomKeyStore": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.UpdateCustomKeyStore",
+    "description": "Update settings for an AWS KMS custom key store."
+  },
+  "aws-kms:UpdatePrimaryRegion": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.UpdatePrimaryRegion",
+    "description": "Change the primary region of an AWS KMS multi-region key."
+  },
+  "aws-organizations:CreateAccount": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AWSOrganizationsV20161128.CreateAccount",
+    "description": "Create an AWS account in this organization. Account creation runs asynchronously."
+  },
+  "aws-organizations:CreateGovCloudAccount": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AWSOrganizationsV20161128.CreateGovCloudAccount",
+    "description": "Create an AWS GovCloud (US) account and its associated commercial AWS account for this organization. Creation runs asynchronously."
+  },
+  "aws-rekognition:DetectLabels": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=RekognitionService.DetectLabels",
+    "description": "Detect labels in an image and return confidence scores and supported image properties."
+  },
+  "aws-rekognition:GetLabelDetection": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=RekognitionService.GetLabelDetection",
+    "description": "Read results from an asynchronous Rekognition video label-detection job."
+  },
+  "aws-rekognition:IndexFaces": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=RekognitionService.IndexFaces",
+    "description": "Detect and index faces in an image into a Rekognition collection."
+  },
+  "aws-sagemaker:CreateEndpoint": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=SageMaker.CreateEndpoint",
+    "description": "Create a SageMaker hosted inference endpoint using the selected endpoint configuration."
   }
 }

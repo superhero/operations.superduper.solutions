@@ -7,6 +7,7 @@ import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin, ServerConfigurationRequiredError } from "./server-url.ts";
 import { awsWirePath, awsWireProfile } from "./aws-wire.ts";
+import { awsJsonContract, awsJsonContracts, awsJsonSigningProfile } from "./aws-json.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { validateAtlassianTenantServer } from "./atlassian-tenant-servers.ts";
 import { validateAtlassianServerBinding } from "./atlassian-server-bindings.ts";
@@ -242,7 +243,12 @@ export function validateSchemaDocument(value: unknown, id: string): {
     const item = resolve(raw, document, path);
     const invocations = Object.entries(item).filter(([method]) => methods.has(method));
     const reviewedWirePath = invocations.length > 0 && invocations.every(([method, raw]) => {
-      const wire = awsWireProfile(object(raw, `${method} ${path}`)["x-operations-aws-wire"]);
+      const operation = object(raw, `${method} ${path}`);
+      if (operation["x-operations-aws-json"] === awsJsonSigningProfile) {
+        const matches = Object.entries(awsJsonContracts().sources).filter(([, source]) => source.title === info.title && source.version === info.version && source.openapi === document.openapi);
+        return matches.length === 1 && !!awsJsonContract({ id: `${matches[0]![0]}:${operation.operationId}`, method: method.toUpperCase(), path });
+      }
+      const wire = awsWireProfile(operation["x-operations-aws-wire"]);
       return wire !== undefined && awsWirePath(path, method.toUpperCase(), wire);
     });
     if (!reviewedWirePath) safePath(path);

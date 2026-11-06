@@ -1,11 +1,14 @@
 {
   "import": [
+    "src/inline-worker-codec.test.mjs",
     "src/literal-query.test.mjs",
     "src/multipart-files.test.mjs",
     "src/jsonl-request-body.test.mjs",
     "src/yaml-request-body.test.mjs",
     "src/header-array.test.mjs",
     "src/aws-rest-private.test.mjs",
+    "src/aws-json-private.test.mjs",
+    "src/aws-json.test.mjs",
     "src/aws-rest.test.mjs",
     "src/atlassian-tenant-servers.test.mjs",
     "src/tenant-readiness.test.mjs",
@@ -129,11 +132,13 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/inline-worker-codec.feature",
     "src/literal-query.feature",
     "src/multipart-files.feature",
     "src/jsonl-request-body.feature",
     "src/yaml-request-body.feature",
     "src/header-array.feature",
+    "src/aws-json.feature",
     "src/aws-rest.feature",
     "src/atlassian-tenant-servers.feature",
     "src/tenant-readiness.feature",

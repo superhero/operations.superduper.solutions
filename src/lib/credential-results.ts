@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { awsRestEndpoint, awsRestPrivateInputKeys } from './aws-rest.ts';
+import { awsJsonEndpoint, awsJsonPrivateInputKeys } from './aws-json.ts';
+import { awsJsonPrivateProfile } from './aws-json-private.ts';
 import data from './credential-results.json' with { type: 'json' };
 import type { Operation } from './catalog.ts';
 
 type Value = Record<string, any>;
 export type PrivateResultResponse = { status: number; path: string[]; required: boolean[]; nullable: boolean[]; parentFields: (string[] | null)[]; leaf: Value };
 export type PrivateResultContract = { catalog: string; method: string; path: string; responses: PrivateResultResponse[];
-  privateInputs: string[]; masked: boolean; exampleOnly: boolean };
+  privateInputs: string[]; masked: boolean; exampleOnly: boolean; awsJson?: { id: string; revision: string } };
 const contracts = structuredClone(data) as { version: number; sources: Record<string, { title: string; version: string; openapi: string; origins: string[]; sha256: string }>;
   profiles: Record<string, PrivateResultContract> };
 export const privateResultVersion = 'private-result-v1';
@@ -18,7 +20,7 @@ export const readCredentialResultContracts = () => structuredClone(contracts);
 /** A marker cannot authorize an unreviewed method or a streaming response. */
 export function credentialResultProfile(operation: Operation): PrivateResultContract | undefined {
   if (operation.credentialResultProfile === undefined) return;
-  const contract = contracts.profiles[operation.id];
+  const contract = contracts.profiles[operation.id] ?? awsJsonPrivateProfile(operation);
   if (operation.credentialResultProfile !== privateResultVersion || operation.credentialResult !== true || !contract
     || operation.method !== contract.method || operation.path !== contract.path || operation.responseStream !== undefined)
     throw new Error('This operation does not match a reviewed private credential-result contract.');
@@ -28,14 +30,15 @@ export function supportsCredentialResults(operation: Operation): boolean {
   try { return !!credentialResultProfile(operation); } catch { return false; }
 }
 export function privateResultInputKeys(operation: Operation): string[] {
-  return [...new Set([...(credentialResultProfile(operation)?.privateInputs ?? []), ...awsRestPrivateInputKeys(operation)])];
+  return [...new Set([...(credentialResultProfile(operation)?.privateInputs ?? []), ...awsRestPrivateInputKeys(operation),
+    ...(operation.awsJson ? awsJsonPrivateInputKeys(operation) : [])])];
 }
 export function privateResultOriginAllowed(operation: Operation, origin: string): boolean {
   const profile = credentialResultProfile(operation); if (!profile) return false;
   try {
     const url = new URL(origin);
     if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash) return false;
-    if (profile.catalog.startsWith('aws-')) return !!awsRestEndpoint(origin, operation);
+    if (profile.catalog.startsWith('aws-')) return operation.awsJson ? !!awsJsonEndpoint(origin, operation) : !!awsRestEndpoint(origin, operation);
     if (profile.catalog === 'atlassian-assets') return url.origin === 'https://api.atlassian.com'
       && /^\/ex\/jira\/[A-Za-z0-9-]+\/jsm\/assets\/workspace\/[A-Za-z0-9-]+\/v1\/?$/.test(url.pathname);
     return contracts.sources[profile.catalog]!.origins.some(value => new URL(value).href === url.href);

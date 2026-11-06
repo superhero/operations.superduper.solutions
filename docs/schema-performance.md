@@ -1,5 +1,37 @@
 # Schema performance
 
+## AWS JSON contracts and bounded inline worker programs (2026-11-06)
+
+Adding the pinned AWS JSON codecs for 1,784 operations produced a 26,769,605-byte
+HTML file, exceeding the 26,214,400-byte deployment limit. Measurements of the
+compiled worker programs identified five programs below 2 MiB with useful gzip
+savings. The build now packs programs of at most 2 MiB when that saves at least
+64 KiB, and decodes their exact bytes inside Vite's original worker constructor.
+Worker options, Blob fallback and URL/error handling retain their original code.
+
+The resulting production HTML is **25,419,141 bytes**, a reduction of 1,350,464
+bytes (5.04%), with 795,259 bytes of headroom. Its SHA-256 is
+`52e3886ad6717b669c084978dc23beff178fb5171346d60f6b0051af72b0399d`.
+The full build and bundle contract pass. The 1,784 isolated workflow additions
+pass across retained first-pass results and 24 targeted description retries;
+each attempt uses a fresh workflow and verified removal.
+
+Packing adds synchronous work when a selected worker is constructed. Three
+alternating paired Node samples, after one warm-up on the same 1-CPU/2-GiB
+Swarm allocation, measured median decode-plus-Blob times of 3.42–22.07 ms,
+versus 0.11–0.89 ms for preparing the original Blob. These are warm Node
+microbenchmarks, not browser startup or field latency measurements. Exact source
+hashes and Blob sizes were checked outside timing; these samples precede the
+final credential-map guard, and identify their measured worker bytes separately. Two focused Gherkin cases
+verify program equality, constructor preservation, bounds and compiler drift;
+the actual compressed vault worker also passes browser initialization,
+lock/unlock, private RPC acquisition and encrypted persistence checks.
+
+[Raw paired samples and artifact identities](schema-inline-workers.json) retain
+the conditions and limits. Recheck the constructor transformation after Vite
+worker-output changes, and reassess the size threshold if worker creation becomes
+a measured interaction bottleneck.
+
 The first optimization was measured on 19 October 2026 against `70c484c`
 (0.0.54). The optimized build keeps all 42 service packs and 13,859 operations,
 plus the two examples. Numeric samples,

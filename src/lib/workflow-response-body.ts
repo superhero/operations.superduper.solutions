@@ -4,6 +4,7 @@
 import { decodeAwsWireResponse, maxStsXmlBytes } from "./aws-wire-response.ts";
 import { awsWireProfile, awsWireContracts } from "./aws-wire.ts";
 import { decodeAwsRestResponse } from "./aws-rest-codec.ts";
+import { decodeAwsJsonBody, validAwsJsonModel } from "./aws-json.ts";
 import type { Operation } from "./catalog.ts";
 import { encodeWorkflowBinary, maxWorkflowUploadBytes } from "./workflow-binary.ts";
 import { WorkflowBodyError } from "./workflow-body-error.ts";
@@ -115,12 +116,13 @@ export function responseFileName(disposition: string | null): string {
 export async function readWorkflowResponseBody(response: Response, operation: Operation, method: string, signal: AbortSignal,
   textLimit = maxWorkflowResponseBytes, streaming?: { onStart: () => void; onProgress?: ResponseProgressCallback; onValue?: ResponseValueCallback }): Promise<{
     body: unknown; bodyType?: "binary"; mediaType?: string; transportMediaType?: string; stream?: ResponseProgress; malformedJson?: boolean }> {
-  if (operation.awsRest) {
+  if (operation.awsRest || operation.awsJson) {
+    if (operation.awsJson && !validAwsJsonModel(operation)) throw new WorkflowBodyError("CODEC");
     const noBody = method === "HEAD" || response.status === 204 || response.status === 205;
     if (noBody) void response.body?.cancel().catch(() => {});
     const bytes = noBody ? new Uint8Array() : await readBytes(response, signal, textLimit);
     const media = responseMediaType(response.headers.get("Content-Type") ?? "");
-    return { body: decodeAwsRestResponse(operation, bytes, response.headers, response.status), mediaType: "application/json",
+    return { body: operation.awsJson ? decodeAwsJsonBody(operation, bytes, response.headers, response.status) : decodeAwsRestResponse(operation, bytes, response.headers, response.status), mediaType: "application/json",
       ...(media ? { transportMediaType: media } : {}) };
   }
   if (method === "HEAD" || response.status === 204 || response.status === 205) {

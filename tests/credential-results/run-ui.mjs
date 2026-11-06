@@ -10,11 +10,14 @@ import { build } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { chromium } from '@playwright/test';
 import { compactSchemaPacks } from '../../build/schema-pack-plugin.mjs';
+import { compactInlineWorkers } from '../../build/inline-worker-plugin.mjs';
 const root=fileURLToPath(new URL('../..',import.meta.url)),directory=resolve(root,'tmp/test/credential-results-ui');
 await mkdir(directory,{recursive:true});let server,browser;const errors=[];let mockedProviderRequests=0;
+const packedWorkerPrograms=[];
 try {
-  const built=await build({root,configFile:false,logLevel:'error',plugins:[svelte(),compactSchemaPacks()],resolve:{alias:{$lib:resolve(root,'src/lib')}},
-    worker:{format:'es',plugins:()=>[compactSchemaPacks()]},build:{write:false,target:'es2024',minify:false,lib:{entry:resolve(root,'tests/credential-results/ui.fixture.ts'),formats:['es']}}});
+  const built=await build({root,configFile:false,logLevel:'error',plugins:[svelte(),compactSchemaPacks(),compactInlineWorkers({onPacked:record=>packedWorkerPrograms.push(record)})],resolve:{alias:{$lib:resolve(root,'src/lib')}},
+    worker:{format:'iife',plugins:()=>[compactSchemaPacks()]},build:{write:false,target:'es2024',minify:true,lib:{entry:resolve(root,'tests/credential-results/ui.fixture.ts'),formats:['es']}}});
+  assert.ok(packedWorkerPrograms.some(record=>record.id.includes('/secrets/vault.worker.ts?worker&inline')),'The browser proof must use a compressed vault worker.');
   const output=Array.isArray(built)?built[0]:built,files=new Map(output.output.map(file=>['/'+file.fileName,file.type==='chunk'?file.code:file.source]));
   files.set('/fixture.js',output.output.find(file=>file.type==='chunk'&&file.isEntry).code);
   server=createServer((request,response)=>{const path=new URL(request.url,'http://localhost').pathname;
@@ -42,6 +45,6 @@ try {
   await page.waitForFunction(()=>!!window.privateResultUi.currentBinding());assert.deepEqual(await page.evaluate(()=>window.privateResultUi.currentBinding().credentials),{});
   const worker = await page.evaluate(()=>window.privateResultUi.acquire());assert.equal(worker.workerAdoption,true);assert.equal(mockedProviderRequests,1);
   await page.evaluate(()=>window.privateResultUi.cleanup());assert.deepEqual(errors,[]);
-  await writeFile(resolve(directory,'result.json'),JSON.stringify({passed:true,anonymousBindingRequiresUnlockedVault:true,lockRevokesBinding:true,unlockRefreshRestoresBinding:true,plaintextTokenInputDisabled:true,...worker,mockedProviderRequests,externalRequests:0,pageErrors:0},null,2)+'\n');
+  await writeFile(resolve(directory,'result.json'),JSON.stringify({passed:true,workerFormat:'iife',anonymousBindingRequiresUnlockedVault:true,lockRevokesBinding:true,unlockRefreshRestoresBinding:true,plaintextTokenInputDisabled:true,...worker,mockedProviderRequests,externalRequests:0,pageErrors:0,packedWorkerPrograms},null,2)+'\n');
   console.log('Private-result browser controls passed: real vault create/lock/unlock, anonymous binding and private input controls.');
 } finally {await browser?.close();if(server)await new Promise(resolve=>server.close(resolve));}

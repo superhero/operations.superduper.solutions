@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "963b2a821873a8cbe427f6d6c5926824932fa602de1532353b0877fcafc583b0",
+  "adapterRevision": "827589043d545ac68e5d454b002b99094138ae1a07c83c43f08b043c51151ce7",
   "indexes": [
     {
       "id": "anthropic",
@@ -633,16 +633,16 @@
     },
     {
       "id": "aws-athena",
-      "sourceRevision": "1f4e7736ea3b962dd749aa5746575c4845f91a175d334c6974c505bfeee9c1ff",
-      "bytes": 45889,
-      "compressedBytes": 2581,
-      "sha256": "8f711e13089b8e6337b3e0de862245bd635d7ea488f4273f4f00d3840e97740b",
+      "sourceRevision": "81bb414f439804128a281b71d2da4acc57f80516312600556ef036bc53784185",
+      "bytes": 25558,
+      "compressedBytes": 2305,
+      "sha256": "1e4f3ef81e52ec23e19bca07d0ee608344f4ca64e1ed9510f11c54923389f637",
       "summary": {
         "name": "Amazon Athena",
-        "serverUrl": "http://athena.us-east-1.amazonaws.com",
+        "serverUrl": "https://athena.us-east-1.amazonaws.com",
         "description": "<p>Amazon Athena is an interactive query service that lets you use standard SQL to analyze data directly in Amazon S3. You can point Athena at your data in Amazon S3 and run ad-hoc queries and get results in seconds. Athena is serverless, so there is no infrastructure to set up or manage. You pay only for the queries you run. Athena scales automatically—executing queries in parallel—so results are fast, even with large datasets and complex queries. For more information, see <a href=\"http://docs.aws.amazon.com/athena/latest/ug/what-is.html\">What is Amazon Athena</a> in the <i>Amazon Athena User Guide</i>.</p> <p>If you connect to Athena using the JDBC driver, use version 1.1.0 of the driver or later with the Amazon Athena API. Earlier version drivers do not support the API. For more information and to download the driver, see <a href=\"https://docs.aws.amazon.com/athena/latest/ug/connect-with-jdbc.html\">Accessing Amazon Athena with JDBC</a>.</p> <p>For code samples using the Amazon Web Services SDK for Java, see <a href=\"https://docs.aws.amazon.com/athena/latest/ug/code-samples.html\">Examples and Code Samples</a> in the <i>Amazon Athena User Guide</i>.</p>",
         "operationCount": 68,
-        "unavailableCount": 68
+        "unavailableCount": 0
       }
     },
     {
@@ -689,16 +689,16 @@
     },
     {
       "id": "aws-budgets",
-      "sourceRevision": "53960528036628b78617ff8ed599d3b17b8fc0621acee9b2042d5daf222af954",
-      "bytes": 19566,
-      "compressedBytes": 1836,
-      "sha256": "440e450a707e3c070cb4cd389b88cefcfb11a651155e0fda3e430f9377e79027",
+      "sourceRevision": "c462c9b788ba911fa8691388a557278a2f299cf4bac3293e622be612c1eddf87",
+      "bytes": 12688,
+      "compressedBytes": 1662,
+      "sha256": "df9a2c3a7f8d0d6815c822ea101d312a1b827af2d88a121472d513b9e9995939",
       "summary": {
         "name": "AWS Budgets",
         "serverUrl": "https://budgets.amazonaws.com",
         "description": "<p>Use the Amazon Web Services Budgets API to plan your service usage, service costs, and instance reservations. This API reference provides descriptions, syntax, and usage examples for each of the actions and data types for the Amazon Web Services Budgets feature. </p> <p>Budgets provide you with a way to see the following information:</p> <ul> <li> <p>How close your plan is to your budgeted amount or to the free tier limits</p> </li> <li> <p>Your usage-to-date, including how much you've used of your Reserved Instances (RIs)</p> </li> <li> <p>Your current estimated charges from Amazon Web Services, and how much your predicted usage will accrue in charges by the end of the month</p> </li> <li> <p>How much of your budget has been used</p> </li> </ul> <p>Amazon Web Services updates your budget status several times a day. Budgets track your unblended costs, subscriptions, refunds, and RIs. You can create the following types of budgets:</p> <ul> <li> <p> <b>Cost budgets</b> - Plan how much you want to spend on a service.</p> </li> <li> <p> <b>Usage budgets</b> - Plan how much you want to use one or more services.</p> </li> <li> <p> <b>RI utilization budgets</b> - Define a utilization threshold, and receive alerts when your RI usage falls below that threshold. This lets you see if your RIs are unused or under-utilized.</p> </li> <li> <p> <b>RI coverage budgets</b> - Define a coverage threshold, and receive alerts when the number of your instance hours that are covered by RIs fall below that threshold. This lets you see how much of your instance usage is covered by a reservation.</p> </li> </ul> <p>Service Endpoint</p> <p>The Amazon Web Services Budgets API provides the following endpoint:</p> <ul> <li> <p>https://budgets.amazonaws.com</p> </li> </ul> <p>For information about costs that are associated with the Amazon Web Services Budgets API, see <a href=\"https://aws.amazon.com/aws-cost-management/pricing/\">Amazon Web Services Cost Management Pricing</a>.</p>",
         "operationCount": 23,
-        "unavailableCount": 23
+        "unavailableCount": 0
       }
     },
     {
@@ -731,30 +731,30 @@
     },
     {
       "id": "aws-cloudtrail",
-      "sourceRevision": "8d2daf1667f87143c7310a436a53e35517a8679054cf84b3e295bddc497019d8",
-      "bytes": 34074,
-      "compressedBytes": 2264,
-      "sha256": "7f6ab0f9dd56a89d3944f18da099cbff09eca601a47fb7650f4e8764dea1f9c3",
+      "sourceRevision": "ef4cbe4170486e32e304bc3a9cfcc0a19c01d8aa8e4716d5fdff027eb545f6f6",
+      "bytes": 20321,
+      "compressedBytes": 2033,
+      "sha256": "142dc7c64b6ebefd992b43ef963e1c5325e953ae32b8ffc900fd41754a19219e",
       "summary": {
         "name": "AWS CloudTrail",
-        "serverUrl": "http://cloudtrail.us-east-1.amazonaws.com",
+        "serverUrl": "https://cloudtrail.us-east-1.amazonaws.com",
         "description": "<fullname>CloudTrail</fullname> <p>This is the CloudTrail API Reference. It provides descriptions of actions, data types, common parameters, and common errors for CloudTrail.</p> <p>CloudTrail is a web service that records Amazon Web Services API calls for your Amazon Web Services account and delivers log files to an Amazon S3 bucket. The recorded information includes the identity of the user, the start time of the Amazon Web Services API call, the source IP address, the request parameters, and the response elements returned by the service.</p> <note> <p>As an alternative to the API, you can use one of the Amazon Web Services SDKs, which consist of libraries and sample code for various programming languages and platforms (Java, Ruby, .NET, iOS, Android, etc.). The SDKs provide programmatic access to CloudTrail. For example, the SDKs handle cryptographically signing requests, managing errors, and retrying requests automatically. For more information about the Amazon Web Services SDKs, including how to download and install them, see <a href=\"http://aws.amazon.com/tools/\">Tools to Build on Amazon Web Services</a>.</p> </note> <p>See the <a href=\"https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html\">CloudTrail User Guide</a> for information about the data that is included with each Amazon Web Services API call listed in the log files.</p>",
         "operationCount": 46,
-        "unavailableCount": 46
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-logs",
-      "sourceRevision": "738f035ec0d944b378fa9f82c98c4f4af7689cbe4816aa07064b4831a88886b6",
-      "bytes": 36119,
-      "compressedBytes": 2501,
-      "sha256": "74c6e40b0c02574890367f7fc156076367959b4263930046f24c017cb3a64b00",
+      "sourceRevision": "6e0eaffec69510a30df16ac0956e4a18459b712edae100a2e52ce3f739d529ec",
+      "bytes": 20871,
+      "compressedBytes": 2239,
+      "sha256": "5d5103872a84feb9e9932db3d21f14eb74139edc4b1ff10614debc7fd6a9f4ce",
       "summary": {
         "name": "Amazon CloudWatch Logs",
-        "serverUrl": "http://logs.us-east-1.amazonaws.com",
+        "serverUrl": "https://logs.us-east-1.amazonaws.com",
         "description": "<p>You can use Amazon CloudWatch Logs to monitor, store, and access your log files from EC2 instances, CloudTrail, and other sources. You can then retrieve the associated log data from CloudWatch Logs using the CloudWatch console. Alternatively, you can use CloudWatch Logs commands in the Amazon Web Services CLI, CloudWatch Logs API, or CloudWatch Logs SDK.</p> <p>You can use CloudWatch Logs to:</p> <ul> <li> <p> <b>Monitor logs from EC2 instances in real time</b>: You can use CloudWatch Logs to monitor applications and systems using log data. For example, CloudWatch Logs can track the number of errors that occur in your application logs. Then, it can send you a notification whenever the rate of errors exceeds a threshold that you specify. CloudWatch Logs uses your log data for monitoring so no code changes are required. For example, you can monitor application logs for specific literal terms (such as \"NullReferenceException\"). You can also count the number of occurrences of a literal term at a particular position in log data (such as \"404\" status codes in an Apache access log). When the term you are searching for is found, CloudWatch Logs reports the data to a CloudWatch metric that you specify.</p> </li> <li> <p> <b>Monitor CloudTrail logged events</b>: You can create alarms in CloudWatch and receive notifications of particular API activity as captured by CloudTrail. You can use the notification to perform troubleshooting.</p> </li> <li> <p> <b>Archive log data</b>: You can use CloudWatch Logs to store your log data in highly durable storage. You can change the log retention setting so that any log events earlier than this setting are automatically deleted. The CloudWatch Logs agent helps to quickly send both rotated and non-rotated log data off of a host and into the log service. You can then access the raw log data when you need it.</p> </li> </ul>",
         "operationCount": 51,
-        "unavailableCount": 51
+        "unavailableCount": 0
       }
     },
     {
@@ -773,100 +773,100 @@
     },
     {
       "id": "aws-codebuild",
-      "sourceRevision": "0e6b6a34f533bb23aef8395ee8b4b1c968dff7940c2e501672ce755ebb17553d",
-      "bytes": 30761,
-      "compressedBytes": 1948,
-      "sha256": "074d95713712ee6d6ea7c98de355c243d2fd4bee00b1079b7cfac23e129bc44d",
+      "sourceRevision": "3abb442b5bfd69bc75cbc99487af452d104c489abff31c2c93bfb9be94034637",
+      "bytes": 17307,
+      "compressedBytes": 1701,
+      "sha256": "2225292d8aba681f10c73ff98492219b0bc29cd325a5f6c8ae6a4e2e67e0962d",
       "summary": {
         "name": "AWS CodeBuild",
-        "serverUrl": "http://codebuild.us-east-1.amazonaws.com",
+        "serverUrl": "https://codebuild.us-east-1.amazonaws.com",
         "description": "<fullname>CodeBuild</fullname> <p>CodeBuild is a fully managed build service in the cloud. CodeBuild compiles your source code, runs unit tests, and produces artifacts that are ready to deploy. CodeBuild eliminates the need to provision, manage, and scale your own build servers. It provides prepackaged build environments for the most popular programming languages and build tools, such as Apache Maven, Gradle, and more. You can also fully customize build environments in CodeBuild to use your own build tools. CodeBuild scales automatically to meet peak build requests. You pay only for the build time you consume. For more information about CodeBuild, see the <i> <a href=\"https://docs.aws.amazon.com/codebuild/latest/userguide/welcome.html\">CodeBuild User Guide</a>.</i> </p>",
         "operationCount": 45,
-        "unavailableCount": 45
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-codepipeline",
-      "sourceRevision": "5cc1dc46e043c2a4abdbb902cbff0a14e441bd3245ea93ac9695716caf6824b1",
-      "bytes": 37889,
-      "compressedBytes": 3251,
-      "sha256": "4bc8e9b255be30ddff3c2b4d18b9214fb2b46a69dc8d4e5143be8844004755c0",
+      "sourceRevision": "ef779ab8c34acb70b6f3c4a84891ecc50e5a4f17cc0c32c7faac278cef705af1",
+      "bytes": 26229,
+      "compressedBytes": 3022,
+      "sha256": "8907275b054eeda37690e9c13aac2eae72e629dac77a6ccaa5026e59e51c4518",
       "summary": {
         "name": "AWS CodePipeline",
-        "serverUrl": "http://codepipeline.us-east-1.amazonaws.com",
+        "serverUrl": "https://codepipeline.us-east-1.amazonaws.com",
         "description": "<fullname>CodePipeline</fullname> <p> <b>Overview</b> </p> <p>This is the CodePipeline API Reference. This guide provides descriptions of the actions and data types for CodePipeline. Some functionality for your pipeline can only be configured through the API. For more information, see the <a href=\"https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html\">CodePipeline User Guide</a>.</p> <p>You can use the CodePipeline API to work with pipelines, stages, actions, and transitions.</p> <p> <i>Pipelines</i> are models of automated release processes. Each pipeline is uniquely named, and consists of stages, actions, and transitions. </p> <p>You can work with pipelines by calling:</p> <ul> <li> <p> <a>CreatePipeline</a>, which creates a uniquely named pipeline.</p> </li> <li> <p> <a>DeletePipeline</a>, which deletes the specified pipeline.</p> </li> <li> <p> <a>GetPipeline</a>, which returns information about the pipeline structure and pipeline metadata, including the pipeline Amazon Resource Name (ARN).</p> </li> <li> <p> <a>GetPipelineExecution</a>, which returns information about a specific execution of a pipeline.</p> </li> <li> <p> <a>GetPipelineState</a>, which returns information about the current state of the stages and actions of a pipeline.</p> </li> <li> <p> <a>ListActionExecutions</a>, which returns action-level details for past executions. The details include full stage and action-level details, including individual action duration, status, any errors that occurred during the execution, and input and output artifact location details.</p> </li> <li> <p> <a>ListPipelines</a>, which gets a summary of all of the pipelines associated with your account.</p> </li> <li> <p> <a>ListPipelineExecutions</a>, which gets a summary of the most recent executions for a pipeline.</p> </li> <li> <p> <a>StartPipelineExecution</a>, which runs the most recent revision of an artifact through the pipeline.</p> </li> <li> <p> <a>StopPipelineExecution</a>, which stops the specified pipeline execution from continuing through the pipeline.</p> </li> <li> <p> <a>UpdatePipeline</a>, which updates a pipeline with edits or changes to the structure of the pipeline.</p> </li> </ul> <p>Pipelines include <i>stages</i>. Each stage contains one or more actions that must complete before the next stage begins. A stage results in success or failure. If a stage fails, the pipeline stops at that stage and remains stopped until either a new version of an artifact appears in the source location, or a user takes action to rerun the most recent artifact through the pipeline. You can call <a>GetPipelineState</a>, which displays the status of a pipeline, including the status of stages in the pipeline, or <a>GetPipeline</a>, which returns the entire structure of the pipeline, including the stages of that pipeline. For more information about the structure of stages and actions, see <a href=\"https://docs.aws.amazon.com/codepipeline/latest/userguide/pipeline-structure.html\">CodePipeline Pipeline Structure Reference</a>.</p> <p>Pipeline stages include <i>actions</i> that are categorized into categories such as source or build actions performed in a stage of a pipeline. For example, you can use a source action to import artifacts into a pipeline from a source such as Amazon S3. Like stages, you do not work with actions directly in most cases, but you do define and interact with actions when working with pipeline operations such as <a>CreatePipeline</a> and <a>GetPipelineState</a>. Valid action categories are:</p> <ul> <li> <p>Source</p> </li> <li> <p>Build</p> </li> <li> <p>Test</p> </li> <li> <p>Deploy</p> </li> <li> <p>Approval</p> </li> <li> <p>Invoke</p> </li> </ul> <p>Pipelines also include <i>transitions</i>, which allow the transition of artifacts from one stage to the next in a pipeline after the actions in one stage complete.</p> <p>You can work with transitions by calling:</p> <ul> <li> <p> <a>DisableStageTransition</a>, which prevents artifacts from transitioning to the next stage in a pipeline.</p> </li> <li> <p> <a>EnableStageTransition</a>, which enables transition of artifacts between stages in a pipeline. </p> </li> </ul> <p> <b>Using the API to integrate with CodePipeline</b> </p> <p>For third-party integrators or developers who want to create their own integrations with CodePipeline, the expected sequence varies from the standard API user. To integrate with CodePipeline, developers need to work with the following items:</p> <p> <b>Jobs</b>, which are instances of an action. For example, a job for a source action might import a revision of an artifact from a source. </p> <p>You can work with jobs by calling:</p> <ul> <li> <p> <a>AcknowledgeJob</a>, which confirms whether a job worker has received the specified job.</p> </li> <li> <p> <a>GetJobDetails</a>, which returns the details of a job.</p> </li> <li> <p> <a>PollForJobs</a>, which determines whether there are any jobs to act on.</p> </li> <li> <p> <a>PutJobFailureResult</a>, which provides details of a job failure. </p> </li> <li> <p> <a>PutJobSuccessResult</a>, which provides details of a job success.</p> </li> </ul> <p> <b>Third party jobs</b>, which are instances of an action created by a partner action and integrated into CodePipeline. Partner actions are created by members of the Amazon Web Services Partner Network.</p> <p>You can work with third party jobs by calling:</p> <ul> <li> <p> <a>AcknowledgeThirdPartyJob</a>, which confirms whether a job worker has received the specified job.</p> </li> <li> <p> <a>GetThirdPartyJobDetails</a>, which requests the details of a job for a partner action.</p> </li> <li> <p> <a>PollForThirdPartyJobs</a>, which determines whether there are any jobs to act on. </p> </li> <li> <p> <a>PutThirdPartyJobFailureResult</a>, which provides details of a job failure.</p> </li> <li> <p> <a>PutThirdPartyJobSuccessResult</a>, which provides details of a job success.</p> </li> </ul>",
         "operationCount": 39,
-        "unavailableCount": 39
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-cognito-idp",
-      "sourceRevision": "ba12458942a09007e006e4406e4aa86577b23b7b14ef07618da8a9b277a57e98",
-      "bytes": 75587,
-      "compressedBytes": 3951,
-      "sha256": "e27196696ffca11a1a17157a34d3d56db25b7d2282b1e4e7e5381cf2c44e6146",
+      "sourceRevision": "f9ded31629c4c46aea619e491a88d17efe3a3ac1781d93b6a5371613b63e654f",
+      "bytes": 42944,
+      "compressedBytes": 3523,
+      "sha256": "a56343731cbc6965554834561ce67bfa33fc5289a602d0f26188c7aaaa607a41",
       "summary": {
         "name": "Amazon Cognito Identity Provider",
-        "serverUrl": "http://cognito-idp.us-east-1.amazonaws.com",
+        "serverUrl": "https://cognito-idp.us-east-1.amazonaws.com",
         "description": "<p>With the Amazon Cognito user pools API, you can set up user pools and app clients, and authenticate users. To authenticate users from third-party identity providers (IdPs) in this API, you can <a href=\"https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-identity-federation-consolidate-users.html\">link IdP users to native user profiles</a>. Learn more about the authentication and authorization of federated users in the <a href=\"https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-userpools-server-contract-reference.html\">Using the Amazon Cognito user pools API and user pool endpoints</a>.</p> <p>This API reference provides detailed information about API operations and object types in Amazon Cognito. At the bottom of the page for each API operation and object, under <i>See Also</i>, you can learn how to use it in an Amazon Web Services SDK in the language of your choice.</p> <p>Along with resource management operations, the Amazon Cognito user pools API includes classes of operations and authorization models for client-side and server-side user operations. For more information, see <a href=\"https://docs.aws.amazon.com/cognito/latest/developerguide/user-pools-API-operations.html\">Using the Amazon Cognito native and OIDC APIs</a> in the <i>Amazon Cognito Developer Guide</i>.</p> <p>You can also start reading about the <code>CognitoIdentityProvider</code> client in the following SDK guides.</p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/index.html#cli-aws-cognito-idp\">Amazon Web Services Command Line Interface</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/sdkfornet/v3/apidocs/items/CognitoIdentityProvider/TCognitoIdentityProviderClient.html\">Amazon Web Services SDK for .NET</a> </p> </li> <li> <p> <a href=\"https://sdk.amazonaws.com/cpp/api/LATEST/aws-cpp-sdk-cognito-idp/html/class_aws_1_1_cognito_identity_provider_1_1_cognito_identity_provider_client.html\">Amazon Web Services SDK for C++</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/sdk-for-go/api/service/cognitoidentityprovider/#CognitoIdentityProvider\">Amazon Web Services SDK for Go</a> </p> </li> <li> <p> <a href=\"https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cognitoidentityprovider/CognitoIdentityProviderClient.html\">Amazon Web Services SDK for Java V2</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CognitoIdentityServiceProvider.html\">Amazon Web Services SDK for JavaScript</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/aws-sdk-php/v3/api/api-cognito-idp-2016-04-18.html\">Amazon Web Services SDK for PHP V3</a> </p> </li> <li> <p> <a href=\"https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html\">Amazon Web Services SDK for Python</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/CognitoIdentityProvider/Client.html\">Amazon Web Services SDK for Ruby V3</a> </p> </li> </ul> <p>To get started with an Amazon Web Services SDK, see <a href=\"http://aws.amazon.com/developer/tools/\">Tools to Build on Amazon Web Services</a>. For example actions and scenarios, see <a href=\"https://docs.aws.amazon.com/cognito/latest/developerguide/service_code_examples_cognito-identity-provider.html\">Code examples for Amazon Cognito Identity Provider using Amazon Web Services SDKs</a>.</p>",
         "operationCount": 103,
-        "unavailableCount": 103
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-comprehend",
-      "sourceRevision": "93f4ec0615f3af4ec36b57402ba5546693ebf41575fb61b334a38075be84905a",
-      "bytes": 56841,
-      "compressedBytes": 2473,
-      "sha256": "89c8139a86f3ff09db191cfd8558337fb4fcaa23779d188222527d2f76f569ee",
+      "sourceRevision": "66d0d25da00cca4b25a531a577a0e7a924925824390f9a1f29746f3bb09b8212",
+      "bytes": 31726,
+      "compressedBytes": 2143,
+      "sha256": "2b92394417da641e463c222b83ba940d3e063f2b3e001a8b77f59984ff3b39be",
       "summary": {
         "name": "Amazon Comprehend",
-        "serverUrl": "http://comprehend.us-east-1.amazonaws.com",
+        "serverUrl": "https://comprehend.us-east-1.amazonaws.com",
         "description": "Amazon Comprehend is an Amazon Web Services service for gaining insight into the content of documents. Use these actions to determine the topics contained in your documents, the topics they discuss, the predominant sentiment expressed in them, the predominant language used, and more.",
         "operationCount": 84,
-        "unavailableCount": 84
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-ce",
-      "sourceRevision": "73470bd31bb69e4c637bd5e031c47906412bd2ec3e3c4f3ed067dd51adcc10b1",
-      "bytes": 26993,
-      "compressedBytes": 1857,
-      "sha256": "f7e0b0c63fa80c56a9d75b650759ce52c181a6013760007e5eaaa76d3ac289bb",
+      "sourceRevision": "57ffd65e1d7c3e863407a368af18128a5ffb84578cbba57db9db44ae037a21a5",
+      "bytes": 15632,
+      "compressedBytes": 1639,
+      "sha256": "10dc0cd0f787231c8df79c0315b92d9b5d8997a91645a759806641cff01eedad",
       "summary": {
         "name": "AWS Cost Explorer Service",
-        "serverUrl": "http://ce.us-east-1.amazonaws.com",
+        "serverUrl": "https://ce.us-east-1.amazonaws.com",
         "description": "<p>You can use the Cost Explorer API to programmatically query your cost and usage data. You can query for aggregated data such as total monthly costs or total daily usage. You can also query for granular data. This might include the number of daily write operations for Amazon DynamoDB database tables in your production environment. </p> <p>Service Endpoint</p> <p>The Cost Explorer API provides the following endpoint:</p> <ul> <li> <p> <code>https://ce.us-east-1.amazonaws.com</code> </p> </li> </ul> <p>For information about the costs that are associated with the Cost Explorer API, see <a href=\"http://aws.amazon.com/aws-cost-management/pricing/\">Amazon Web Services Cost Management Pricing</a>.</p>",
         "operationCount": 38,
-        "unavailableCount": 38
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-firehose",
-      "sourceRevision": "d4ce44694309b05adfc13f5ff0304ef1a357340252c0aa8335df84d93c062522",
-      "bytes": 9013,
-      "compressedBytes": 1051,
-      "sha256": "67567c1a124edbc0de8ab7f73fe5eb85d8f8aa176457062e78e2cb99d0858064",
+      "sourceRevision": "db21f97315bf96be32db80fc0e467f37a9582e4d960f1d8ffaccf9eb301ee19c",
+      "bytes": 5426,
+      "compressedBytes": 891,
+      "sha256": "46d49b8f1d95bf6b8dfbff84894ba0b50f30ea55084d5b05399ce2c084ee146f",
       "summary": {
         "name": "Amazon Kinesis Firehose",
-        "serverUrl": "http://firehose.us-east-1.amazonaws.com",
+        "serverUrl": "https://firehose.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Kinesis Data Firehose API Reference</fullname> <p>Amazon Kinesis Data Firehose is a fully managed service that delivers real-time streaming data to destinations such as Amazon Simple Storage Service (Amazon S3), Amazon OpenSearch Service, Amazon Redshift, Splunk, and various other supportd destinations.</p>",
         "operationCount": 12,
-        "unavailableCount": 12
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-dynamodb",
-      "sourceRevision": "24a1381ac9a7039886253dc4b4ac9ff947cfbd85a15ba906054e0d91bd62038f",
-      "bytes": 35978,
-      "compressedBytes": 2382,
-      "sha256": "ab0fffbf6cf876e2fbe494120a8d3fc0011c7e85963181a079fe1c73b4bc9b2e",
+      "sourceRevision": "8d6e276606b042de12d3bfcb207a95266e8ee30ed0e54657ebbb5df7ac8455a6",
+      "bytes": 20730,
+      "compressedBytes": 2101,
+      "sha256": "152316269ffd4c71739bc23cb86de0fb7358ff0c480a5b0043d107806f6d9c51",
       "summary": {
         "name": "Amazon DynamoDB",
-        "serverUrl": "http://dynamodb.us-east-1.amazonaws.com",
+        "serverUrl": "https://dynamodb.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon DynamoDB</fullname> <p>Amazon DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability. DynamoDB lets you offload the administrative burdens of operating and scaling a distributed database, so that you don't have to worry about hardware provisioning, setup and configuration, replication, software patching, or cluster scaling.</p> <p>With DynamoDB, you can create database tables that can store and retrieve any amount of data, and serve any level of request traffic. You can scale up or scale down your tables' throughput capacity without downtime or performance degradation, and use the Amazon Web Services Management Console to monitor resource utilization and performance metrics.</p> <p>DynamoDB automatically spreads the data and traffic for your tables over a sufficient number of servers to handle your throughput and storage requirements, while maintaining consistent and fast performance. All of your data is stored on solid state disks (SSDs) and automatically replicated across multiple Availability Zones in an Amazon Web Services Region, providing built-in high availability and data durability.</p>",
         "operationCount": 53,
-        "unavailableCount": 51
+        "unavailableCount": 0
       }
     },
     {
@@ -885,30 +885,30 @@
     },
     {
       "id": "aws-ecr",
-      "sourceRevision": "fbeab5c68abfe83723d66352c751edc87347a72204c1b68e6607c1043250d01b",
-      "bytes": 29125,
-      "compressedBytes": 1947,
-      "sha256": "7c5d43df3411d49dd3990d876f0318d8da7b339a2a91d0c716f2cba503b90252",
+      "sourceRevision": "bcfb14e39f0ed4c91750bbf63cb104ff1a85d7914feeadb9c8f88a8fdc0d5e52",
+      "bytes": 16867,
+      "compressedBytes": 1725,
+      "sha256": "2092b0597b894662611c96aeb09e33d2598ba50f52779768f9c162575653aa44",
       "summary": {
         "name": "Amazon EC2 Container Registry",
-        "serverUrl": "http://api.ecr.us-east-1.amazonaws.com",
+        "serverUrl": "https://api.ecr.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Elastic Container Registry</fullname> <p>Amazon Elastic Container Registry (Amazon ECR) is a managed container image registry service. Customers can use the familiar Docker CLI, or their preferred client, to push, pull, and manage images. Amazon ECR provides a secure, scalable, and reliable registry for your Docker or Open Container Initiative (OCI) images. Amazon ECR supports private repositories with resource-based permissions using IAM so that specific users or Amazon EC2 instances can access repositories and images.</p> <p>Amazon ECR has service endpoints in each supported Region. For more information, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/ecr.html\">Amazon ECR endpoints</a> in the <i>Amazon Web Services General Reference</i>.</p>",
         "operationCount": 41,
-        "unavailableCount": 41
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-ecs",
-      "sourceRevision": "4bf57dddad6c0cc36532b5b8fa76f9c110f786db7172982f133f5b4e7171d314",
-      "bytes": 38948,
-      "compressedBytes": 2323,
-      "sha256": "4aa057833c9b68b4e0bf2ddbf296b0adc4ca10e132979a5fd8a9cd1daefd704c",
+      "sourceRevision": "73fb99178004d7307565500b4bf26eaee6583e55b1f185527b47617c632210a6",
+      "bytes": 22205,
+      "compressedBytes": 2069,
+      "sha256": "951c9430deae9e17506e5bce593fcee4eec648cfbc7d8a8a61d6860dfa71857b",
       "summary": {
         "name": "Amazon EC2 Container Service",
-        "serverUrl": "http://ecs.us-east-1.amazonaws.com",
+        "serverUrl": "https://ecs.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Elastic Container Service</fullname> <p>Amazon Elastic Container Service (Amazon ECS) is a highly scalable, fast, container management service. It makes it easy to run, stop, and manage Docker containers. You can host your cluster on a serverless infrastructure that's managed by Amazon ECS by launching your services or tasks on Fargate. For more control, you can host your tasks on a cluster of Amazon Elastic Compute Cloud (Amazon EC2) or External (on-premises) instances that you manage.</p> <p>Amazon ECS makes it easy to launch and stop container-based applications with simple API calls. This makes it easy to get the state of your cluster from a centralized service, and gives you access to many familiar Amazon EC2 features.</p> <p>You can use Amazon ECS to schedule the placement of containers across your cluster based on your resource needs, isolation policies, and availability requirements. With Amazon ECS, you don't need to operate your own cluster management and configuration management systems. You also don't need to worry about scaling your management infrastructure.</p>",
         "operationCount": 56,
-        "unavailableCount": 56
+        "unavailableCount": 0
       }
     },
     {
@@ -969,44 +969,44 @@
     },
     {
       "id": "aws-events",
-      "sourceRevision": "f8db1a08e00a64700d8561f161bb4df554a848193db9e5128b00f7be72f895d9",
-      "bytes": 34093,
-      "compressedBytes": 2184,
-      "sha256": "ed40069272ae474a6cdb47e08a23ff887acbc27cf1999337dc77bf2a53d30d6f",
+      "sourceRevision": "65ca79e269ab091c9855b60489c63d3636a2ec1ad23d5b121cb95b243a40c518",
+      "bytes": 18845,
+      "compressedBytes": 1926,
+      "sha256": "233dd53a002814d8fcebed913af343e7c36b4973325ffbed5db55b0f5c5303b7",
       "summary": {
         "name": "Amazon CloudWatch Events",
-        "serverUrl": "http://events.us-east-1.amazonaws.com",
+        "serverUrl": "https://events.us-east-1.amazonaws.com",
         "description": "<p>Amazon EventBridge helps you to respond to state changes in your Amazon Web Services resources. When your resources change state, they automatically send events to an event stream. You can create rules that match selected events in the stream and route them to targets to take action. You can also use rules to take action on a predetermined schedule. For example, you can configure rules to:</p> <ul> <li> <p>Automatically invoke an Lambda function to update DNS entries when an event notifies you that Amazon EC2 instance enters the running state.</p> </li> <li> <p>Direct specific API records from CloudTrail to an Amazon Kinesis data stream for detailed analysis of potential security or availability risks.</p> </li> <li> <p>Periodically invoke a built-in target to create a snapshot of an Amazon EBS volume.</p> </li> </ul> <p>For more information about the features of Amazon EventBridge, see the <a href=\"https://docs.aws.amazon.com/eventbridge/latest/userguide\">Amazon EventBridge User Guide</a>.</p>",
         "operationCount": 51,
-        "unavailableCount": 51
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-fsx",
-      "sourceRevision": "34700f933d923f7e41dd007eac9345e3ad706486bde3df7a1cf9bea6bd84aa85",
-      "bytes": 27350,
-      "compressedBytes": 1571,
-      "sha256": "6a686a0e7a60ef99ca77c7da4d089003c63e9d476ed5cb39626e35c1c02fca49",
+      "sourceRevision": "eda43251baa031eee3497d685fc070153109a044479cc2f188dca34ead26b73a",
+      "bytes": 15092,
+      "compressedBytes": 1346,
+      "sha256": "b3d71b1f6a49f99b5f7c5be71ccec43ab425cbd87478a1f4a736cf43e7eacc47",
       "summary": {
         "name": "Amazon FSx",
-        "serverUrl": "http://fsx.us-east-1.amazonaws.com",
+        "serverUrl": "https://fsx.us-east-1.amazonaws.com",
         "description": "Amazon FSx is a fully managed service that makes it easy for storage and application administrators to launch and use shared file storage.",
         "operationCount": 41,
-        "unavailableCount": 41
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-glue",
-      "sourceRevision": "27f1694cedeb25ce41ed5dc9b119ddd7953e18e4a96677498ca0ab7801ceceb6",
-      "bytes": 125542,
-      "compressedBytes": 4736,
-      "sha256": "bcd333824b9e9a26caf9f9332cc9ed837f172cade295d03d3ec33bb2dd73e0c1",
+      "sourceRevision": "b9e85e9807b76273794dd86295abce4a30843c7d55180a11804468eddb11ff7f",
+      "bytes": 65144,
+      "compressedBytes": 4072,
+      "sha256": "af13e79867db33b30223a13cd03ae7183a3a652906dd45aac00cbbb5c534808a",
       "summary": {
         "name": "AWS Glue",
-        "serverUrl": "http://glue.us-east-1.amazonaws.com",
+        "serverUrl": "https://glue.us-east-1.amazonaws.com",
         "description": "<fullname>Glue</fullname> <p>Defines the public endpoint for the Glue service.</p>",
         "operationCount": 202,
-        "unavailableCount": 202
+        "unavailableCount": 0
       }
     },
     {
@@ -1025,30 +1025,30 @@
     },
     {
       "id": "aws-kinesis",
-      "sourceRevision": "bd4ea6c0e6f082d9b9fbbce188a623c034dee5ffa136b5d3aaa2325ead224ba5",
-      "bytes": 18644,
-      "compressedBytes": 1353,
-      "sha256": "06ca52dc253fe804421ed8bf089b329a8de203ee99391cb86e1a02b06f5601fe",
+      "sourceRevision": "5e1ac27cb3bb3c8bbb46f85ecb0293639cc4912ca413861310384a2e21e7510b",
+      "bytes": 10273,
+      "compressedBytes": 1150,
+      "sha256": "13ad3a2aefda508a57113bd69c981df1a997ce0b04990cc1367cde1b14cccb15",
       "summary": {
         "name": "Amazon Kinesis",
-        "serverUrl": "http://kinesis.us-east-1.amazonaws.com",
+        "serverUrl": "https://kinesis.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Kinesis Data Streams Service API Reference</fullname> <p>Amazon Kinesis Data Streams is a managed service that scales elastically for real-time processing of streaming big data.</p>",
         "operationCount": 28,
-        "unavailableCount": 28
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-kms",
-      "sourceRevision": "f0c9733d4dd7ce2c51e3a49dea35531a37711c1ef2fecc09aa12615cf0500cb4",
-      "bytes": 40406,
-      "compressedBytes": 3428,
-      "sha256": "461ca2b9f5eca6944960393112f0965c10eb67e46f919f251f72e7c3a793e317",
+      "sourceRevision": "7e7b41c4d73a6d073e8669848e4c75cb57795b7e9d223f6b7e1db90f8b13c798",
+      "bytes": 25457,
+      "compressedBytes": 3194,
+      "sha256": "77fec7d52ada6a2cdad4e90267fd6e32115a05c875d64d8ebc9e71a396ca2c81",
       "summary": {
         "name": "AWS Key Management Service",
-        "serverUrl": "http://kms.us-east-1.amazonaws.com",
+        "serverUrl": "https://kms.us-east-1.amazonaws.com",
         "description": "<fullname>Key Management Service</fullname> <p>Key Management Service (KMS) is an encryption and key management web service. This guide describes the KMS operations that you can call programmatically. For general information about KMS, see the <a href=\"https://docs.aws.amazon.com/kms/latest/developerguide/\"> <i>Key Management Service Developer Guide</i> </a>.</p> <note> <p>KMS has replaced the term <i>customer master key (CMK)</i> with <i>KMS key</i> and <i>KMS key</i>. The concept has not changed. To prevent breaking changes, KMS is keeping some variations of this term.</p> <p>Amazon Web Services provides SDKs that consist of libraries and sample code for various programming languages and platforms (Java, Ruby, .Net, macOS, Android, etc.). The SDKs provide a convenient way to create programmatic access to KMS and other Amazon Web Services services. For example, the SDKs take care of tasks such as signing requests (see below), managing errors, and retrying requests automatically. For more information about the Amazon Web Services SDKs, including how to download and install them, see <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>.</p> </note> <p>We recommend that you use the Amazon Web Services SDKs to make programmatic API calls to KMS.</p> <p>If you need to use FIPS 140-2 validated cryptographic modules when communicating with Amazon Web Services, use the FIPS endpoint in your preferred Amazon Web Services Region. For more information about the available FIPS endpoints, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/kms.html#kms_region\">Service endpoints</a> in the Key Management Service topic of the <i>Amazon Web Services General Reference</i>.</p> <p>All KMS API calls must be signed and be transmitted using Transport Layer Security (TLS). KMS recommends you always use the latest supported TLS version. Clients must also support cipher suites with Perfect Forward Secrecy (PFS) such as Ephemeral Diffie-Hellman (DHE) or Elliptic Curve Ephemeral Diffie-Hellman (ECDHE). Most modern systems such as Java 7 and later support these modes.</p> <p> <b>Signing Requests</b> </p> <p>Requests must be signed using an access key ID and a secret access key. We strongly recommend that you do not use your Amazon Web Services account root access key ID and secret access key for everyday work. You can use the access key ID and secret access key for an IAM user or you can use the Security Token Service (STS) to generate temporary security credentials and use those to sign requests. </p> <p>All KMS requests must be signed with <a href=\"https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html\">Signature Version 4</a>.</p> <p> <b>Logging API Requests</b> </p> <p>KMS supports CloudTrail, a service that logs Amazon Web Services API calls and related events for your Amazon Web Services account and delivers them to an Amazon S3 bucket that you specify. By using the information collected by CloudTrail, you can determine what requests were made to KMS, who made the request, when it was made, and so on. To learn more about CloudTrail, including how to turn it on and find your log files, see the <a href=\"https://docs.aws.amazon.com/awscloudtrail/latest/userguide/\">CloudTrail User Guide</a>.</p> <p> <b>Additional Resources</b> </p> <p>For more information about credentials and request signing, see the following:</p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html\">Amazon Web Services Security Credentials</a> - This topic provides general information about the types of credentials used to access Amazon Web Services.</p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html\">Temporary Security Credentials</a> - This section of the <i>IAM User Guide</i> describes how to create and use temporary security credentials.</p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html\">Signature Version 4 Signing Process</a> - This set of topics walks you through the process of signing a request using an access key ID and a secret access key.</p> </li> </ul> <p> <b>Commonly Used API Operations</b> </p> <p>Of the API operations discussed in this guide, the following will prove the most useful for most applications. You will likely perform operations other than these, such as creating keys and assigning policies, by using the console.</p> <ul> <li> <p> <a>Encrypt</a> </p> </li> <li> <p> <a>Decrypt</a> </p> </li> <li> <p> <a>GenerateDataKey</a> </p> </li> <li> <p> <a>GenerateDataKeyWithoutPlaintext</a> </p> </li> </ul>",
         "operationCount": 50,
-        "unavailableCount": 50
+        "unavailableCount": 0
       }
     },
     {
@@ -1081,16 +1081,16 @@
     },
     {
       "id": "aws-organizations",
-      "sourceRevision": "a16e015497cbd98a09e67d6321e123d68bfb0fa916af5ccab77d815dfcb37f3c",
-      "bytes": 43702,
-      "compressedBytes": 2905,
-      "sha256": "e168f03c4a04f7e6bacf0730f0f53fd3f366778d4e6320a005bf8c486a5c03a1",
+      "sourceRevision": "2b2d0f4abf96907b53bead74aabc0a1d7de8d3cc712297dc8b21508de98f1ce7",
+      "bytes": 27258,
+      "compressedBytes": 2645,
+      "sha256": "917c381b2d68e0f23088239d7b686cd81e20c4bb90a71feb2433479e9fe92211",
       "summary": {
         "name": "AWS Organizations",
-        "serverUrl": "http://organizations.us-east-1.amazonaws.com",
+        "serverUrl": "https://organizations.us-east-1.amazonaws.com",
         "description": "<p>Organizations is a web service that enables you to consolidate your multiple Amazon Web Services accounts into an <i>organization</i> and centrally manage your accounts and their resources.</p> <p>This guide provides descriptions of the Organizations operations. For more information about using this service, see the <a href=\"https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html\">Organizations User Guide</a>.</p> <p> <b>Support and feedback for Organizations</b> </p> <p>We welcome your feedback. Send your comments to <a href=\"mailto:feedback-awsorganizations@amazon.com\">feedback-awsorganizations@amazon.com</a> or post your feedback and questions in the <a href=\"http://forums.aws.amazon.com/forum.jspa?forumID=219\">Organizations support forum</a>. For more information about the Amazon Web Services support forums, see <a href=\"http://forums.aws.amazon.com/help.jspa\">Forums Help</a>.</p> <p> <b>Endpoint to call When using the CLI or the Amazon Web Services SDK</b> </p> <p>For the current release of Organizations, specify the <code>us-east-1</code> region for all Amazon Web Services API and CLI calls made from the commercial Amazon Web Services Regions outside of China. If calling from one of the Amazon Web Services Regions in China, then specify <code>cn-northwest-1</code>. You can do this in the CLI by using these parameters and commands:</p> <ul> <li> <p>Use the following parameter with each command to specify both the endpoint and its region:</p> <p> <code>--endpoint-url https://organizations.us-east-1.amazonaws.com</code> <i>(from commercial Amazon Web Services Regions outside of China)</i> </p> <p>or</p> <p> <code>--endpoint-url https://organizations.cn-northwest-1.amazonaws.com.cn</code> <i>(from Amazon Web Services Regions in China)</i> </p> </li> <li> <p>Use the default endpoint, but configure your default region with this command:</p> <p> <code>aws configure set default.region us-east-1</code> <i>(from commercial Amazon Web Services Regions outside of China)</i> </p> <p>or</p> <p> <code>aws configure set default.region cn-northwest-1</code> <i>(from Amazon Web Services Regions in China)</i> </p> </li> <li> <p>Use the following parameter with each command to specify the endpoint:</p> <p> <code>--region us-east-1</code> <i>(from commercial Amazon Web Services Regions outside of China)</i> </p> <p>or</p> <p> <code>--region cn-northwest-1</code> <i>(from Amazon Web Services Regions in China)</i> </p> </li> </ul> <p> <b>Recording API Requests</b> </p> <p>Organizations supports CloudTrail, a service that records Amazon Web Services API calls for your Amazon Web Services account and delivers log files to an Amazon S3 bucket. By using information collected by CloudTrail, you can determine which requests the Organizations service received, who made the request and when, and so on. For more about Organizations and its support for CloudTrail, see <a href=\"https://docs.aws.amazon.com/organizations/latest/userguide/orgs_incident-response.html#orgs_cloudtrail-integration\">Logging Organizations Events with CloudTrail</a> in the <i>Organizations User Guide</i>. To learn more about CloudTrail, including how to turn it on and find your log files, see the <a href=\"https://docs.aws.amazon.com/awscloudtrail/latest/userguide/what_is_cloud_trail_top_level.html\">CloudTrail User Guide</a>.</p>",
         "operationCount": 55,
-        "unavailableCount": 55
+        "unavailableCount": 0
       }
     },
     {
@@ -1137,16 +1137,16 @@
     },
     {
       "id": "aws-rekognition",
-      "sourceRevision": "eb61aa3f8f2f58f7890b06fd3af72bddddb454e7f372bcecadd2eb7fcbf2194f",
-      "bytes": 67284,
-      "compressedBytes": 3006,
-      "sha256": "0acfa72ca35c6d535df274f374238abff17c149e0601077544ccdbd35bf0bd5b",
+      "sourceRevision": "7e105e191f0d3a2a3c40b10b8d70983cd3c8d6563c5dc447463a254b859d6c1f",
+      "bytes": 45757,
+      "compressedBytes": 2712,
+      "sha256": "21f4542d4b07ea42dceb3a11e0f4f8a8d96f140da458e889b158f68395bd3e98",
       "summary": {
         "name": "Amazon Rekognition",
-        "serverUrl": "http://rekognition.us-east-1.amazonaws.com",
+        "serverUrl": "https://rekognition.us-east-1.amazonaws.com",
         "description": "<p>This is the API Reference for <a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/images.html\">Amazon Rekognition Image</a>, <a href=\"https://docs.aws.amazon.com/rekognition/latest/customlabels-dg/what-is.html\">Amazon Rekognition Custom Labels</a>, <a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/video.html\">Amazon Rekognition Stored Video</a>, <a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/streaming-video.html\">Amazon Rekognition Streaming Video</a>. It provides descriptions of actions, data types, common parameters, and common errors.</p> <p> <b>Amazon Rekognition Image</b> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_AssociateFaces.html\">AssociateFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CompareFaces.html\">CompareFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CreateCollection.html\">CreateCollection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CreateUser.html\">CreateUser</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteCollection.html\">DeleteCollection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteFaces.html\">DeleteFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteUser.html\">DeleteUser</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DescribeCollection.html\">DescribeCollection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DetectFaces.html\">DetectFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DetectLabels.html\">DetectLabels</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DetectModerationLabels.html\">DetectModerationLabels</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DetectProtectiveEquipment.html\">DetectProtectiveEquipment</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DetectText.html\">DetectText</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DisassociateFaces.html\">DisassociateFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetCelebrityInfo.html\">GetCelebrityInfo</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_IndexFaces.html\">IndexFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_ListCollections.html\">ListCollections</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_ListFaces.html\">ListFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_ListFaces.html\">ListUsers</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_RecognizeCelebrities.html\">RecognizeCelebrities</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_SearchFaces.html\">SearchFaces</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_SearchFacesByImage.html\">SearchFacesByImage</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_SearchUsers.html\">SearchUsers</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_SearchUsersByImage.html\">SearchUsersByImage</a> </p> </li> </ul> <p> <b>Amazon Rekognition Custom Labels</b> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CopyProjectVersion.html\">CopyProjectVersion</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CreateDataset.html\">CreateDataset</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CreateProject.html\">CreateProject</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CreateProjectVersion.html\">CreateProjectVersion</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteDataset.html\">DeleteDataset</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteProject.html\">DeleteProject</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteProjectPolicy.html\">DeleteProjectPolicy</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteProjectVersion.html\">DeleteProjectVersion</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DescribeDataset.html\">DescribeDataset</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DescribeProjects.html\">DescribeProjects</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DescribeProjectVersions.html\">DescribeProjectVersions</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DetectCustomLabels.html\">DetectCustomLabels</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DistributeDatasetEntries.html\">DistributeDatasetEntries</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_ListDatasetEntries.html\">ListDatasetEntries</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_ListDatasetLabels.html\">ListDatasetLabels</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_ListProjectPolicies.html\">ListProjectPolicies</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_PutProjectPolicy.html\">PutProjectPolicy</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartProjectVersion.html\">StartProjectVersion</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StopProjectVersion.html\">StopProjectVersion</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_UpdateDatasetEntries.html\">UpdateDatasetEntries</a> </p> </li> </ul> <p> <b>Amazon Rekognition Video Stored Video</b> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetCelebrityRecognition.html\">GetCelebrityRecognition</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetContentModeration.html\">GetContentModeration</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetFaceDetection.html\">GetFaceDetection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetFaceSearch.html\">GetFaceSearch</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetLabelDetection.html\">GetLabelDetection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetPersonTracking.html\">GetPersonTracking</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetSegmentDetection.html\">GetSegmentDetection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_GetTextDetection.html\">GetTextDetection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartCelebrityRecognition.html\">StartCelebrityRecognition</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartContentModeration.html\">StartContentModeration</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartFaceDetection.html\">StartFaceDetection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartFaceSearch.html\">StartFaceSearch</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartLabelDetection.html\">StartLabelDetection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartPersonTracking.html\">StartPersonTracking</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartSegmentDetection.html\">StartSegmentDetection</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartTextDetection.html\">StartTextDetection</a> </p> </li> </ul> <p> <b>Amazon Rekognition Video Streaming Video</b> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_CreateStreamProcessor.html\">CreateStreamProcessor</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DeleteStreamProcessor.html\">DeleteStreamProcessor</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_DescribeStreamProcessor.html\">DescribeStreamProcessor</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_ListStreamProcessors.html\">ListStreamProcessors</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StartStreamProcessor.html\">StartStreamProcessor</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_StopStreamProcessor.html\">StopStreamProcessor</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/rekognition/latest/APIReference/API_UpdateStreamProcessor.html\">UpdateStreamProcessor</a> </p> </li> </ul>",
         "operationCount": 72,
-        "unavailableCount": 72
+        "unavailableCount": 0
       }
     },
     {
@@ -1193,16 +1193,16 @@
     },
     {
       "id": "aws-sagemaker",
-      "sourceRevision": "2847fe69e459daa1eeafb95e2dffd5a52cee372709c718ff8f2e52ca6103ae09",
-      "bytes": 195494,
-      "compressedBytes": 7256,
-      "sha256": "287459bce971c760ea66a8c17bbfdbbf3b03dbd07f5d4107d8ecda59d7240cff",
+      "sourceRevision": "4a597e328efe2be0ac1f7a935e823d8ae56ad5b44c438c9958b6c3c91f6e4d7f",
+      "bytes": 104598,
+      "compressedBytes": 6247,
+      "sha256": "7437474be00a68071f53ebb1fb8bcfbbb16d5f56e2843233f5b48d36d5e9e1b2",
       "summary": {
         "name": "Amazon SageMaker Service",
-        "serverUrl": "http://api.sagemaker.us-east-1.amazonaws.com",
+        "serverUrl": "https://api.sagemaker.us-east-1.amazonaws.com",
         "description": "<p>Provides APIs for creating and managing SageMaker resources. </p> <p>Other Resources:</p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html#first-time-user\">SageMaker Developer Guide</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/augmented-ai/2019-11-07/APIReference/Welcome.html\">Amazon Augmented AI Runtime API Reference</a> </p> </li> </ul>",
         "operationCount": 304,
-        "unavailableCount": 304
+        "unavailableCount": 0
       }
     },
     {
@@ -1221,16 +1221,16 @@
     },
     {
       "id": "aws-secretsmanager",
-      "sourceRevision": "1c7ad235b89a6ebf714a9116d5be5055aced880a9227adabfb76a43a0c06f795",
-      "bytes": 19459,
-      "compressedBytes": 1843,
-      "sha256": "a731d9d41ae668ab8ad153fcfb8ac8351fb4849cb22de6c5e60779acbcaefaef",
+      "sourceRevision": "e75e60895cc7b80e9d088e4db3b6f816ae360a9c9d027a105fcbfd1ce77d2aa6",
+      "bytes": 12882,
+      "compressedBytes": 1664,
+      "sha256": "b019565c85922f1b1de4ae1d830955bf185419f94b5b7de3fe8ca6d5c1e29448",
       "summary": {
         "name": "AWS Secrets Manager",
-        "serverUrl": "http://secretsmanager.us-east-1.amazonaws.com",
+        "serverUrl": "https://secretsmanager.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Web Services Secrets Manager</fullname> <p>Amazon Web Services Secrets Manager provides a service to enable you to store, manage, and retrieve, secrets.</p> <p>This guide provides descriptions of the Secrets Manager API. For more information about using this service, see the <a href=\"https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html\">Amazon Web Services Secrets Manager User Guide</a>.</p> <p> <b>API Version</b> </p> <p>This version of the Secrets Manager API Reference documents the Secrets Manager API version 2017-10-17.</p> <p>For a list of endpoints, see <a href=\"https://docs.aws.amazon.com/secretsmanager/latest/userguide/asm_access.html#endpoints\">Amazon Web Services Secrets Manager endpoints</a>.</p> <p> <b>Support and Feedback for Amazon Web Services Secrets Manager</b> </p> <p>We welcome your feedback. Send your comments to <a href=\"mailto:awssecretsmanager-feedback@amazon.com\">awssecretsmanager-feedback@amazon.com</a>, or post your feedback and questions in the <a href=\"http://forums.aws.amazon.com/forum.jspa?forumID=296\">Amazon Web Services Secrets Manager Discussion Forum</a>. For more information about the Amazon Web Services Discussion Forums, see <a href=\"http://forums.aws.amazon.com/help.jspa\">Forums Help</a>.</p> <p> <b>Logging API Requests</b> </p> <p>Amazon Web Services Secrets Manager supports Amazon Web Services CloudTrail, a service that records Amazon Web Services API calls for your Amazon Web Services account and delivers log files to an Amazon S3 bucket. By using information that's collected by Amazon Web Services CloudTrail, you can determine the requests successfully made to Secrets Manager, who made the request, when it was made, and so on. For more about Amazon Web Services Secrets Manager and support for Amazon Web Services CloudTrail, see <a href=\"https://docs.aws.amazon.com/secretsmanager/latest/userguide/monitoring.html#monitoring_cloudtrail\">Logging Amazon Web Services Secrets Manager Events with Amazon Web Services CloudTrail</a> in the <i>Amazon Web Services Secrets Manager User Guide</i>. To learn more about CloudTrail, including enabling it and find your log files, see the <a href=\"https://docs.aws.amazon.com/awscloudtrail/latest/userguide/what_is_cloud_trail_top_level.html\">Amazon Web Services CloudTrail User Guide</a>.</p>",
         "operationCount": 22,
-        "unavailableCount": 22
+        "unavailableCount": 0
       }
     },
     {
@@ -1277,16 +1277,16 @@
     },
     {
       "id": "aws-states",
-      "sourceRevision": "015f7480d4276fe656b24c7dcd8880473ec534e0ea37445dc417cacfb830165e",
-      "bytes": 24640,
-      "compressedBytes": 1936,
-      "sha256": "fc3f32d3c5a0487309be9863b51c8e5a67c292288296d3db68cf89e9e442309a",
+      "sourceRevision": "741ed022b669a3cd8c70ebaca54bf5061c1452115b1e3d7b9e239ac3151b06e4",
+      "bytes": 14475,
+      "compressedBytes": 1723,
+      "sha256": "a42361ccb15a5ccec1f4fb1d05a53e8da813fc9a3405fe6a0f1a7a83b0dbdbaa",
       "summary": {
         "name": "AWS Step Functions",
-        "serverUrl": "http://states.us-east-1.amazonaws.com",
+        "serverUrl": "https://states.us-east-1.amazonaws.com",
         "description": "<fullname>Step Functions</fullname> <p>Step Functions is a service that lets you coordinate the components of distributed applications and microservices using visual workflows.</p> <p>You can use Step Functions to build applications from individual components, each of which performs a discrete function, or <i>task</i>, allowing you to scale and change applications quickly. Step Functions provides a console that helps visualize the components of your application as a series of steps. Step Functions automatically triggers and tracks each step, and retries steps when there are errors, so your application executes predictably and in the right order every time. Step Functions logs the state of each step, so you can quickly diagnose and debug any issues.</p> <p>Step Functions manages operations and underlying infrastructure to ensure your application is available at any scale. You can run tasks on Amazon Web Services, your own servers, or any system that has access to Amazon Web Services. You can access and use Step Functions using the console, the Amazon Web Services SDKs, or an HTTP API. For more information about Step Functions, see the <i> <a href=\"https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html\">Step Functions Developer Guide</a> </i>.</p>",
         "operationCount": 34,
-        "unavailableCount": 34
+        "unavailableCount": 0
       }
     },
     {
@@ -1305,72 +1305,72 @@
     },
     {
       "id": "aws-ssm",
-      "sourceRevision": "ea1da9646ab7a272056e2f0d41fb933a0efc86c777f8aaefd35c111678cc7628",
-      "bytes": 92519,
-      "compressedBytes": 4210,
-      "sha256": "df7f7ca1b21f197d3fba0ae8dee9204320f1b33ee450c9bcc4346c9faf5211ca",
+      "sourceRevision": "bb56a489928ade4838ed7358074f059bc3407a7b17732a3850e6be5aa7089ec2",
+      "bytes": 51257,
+      "compressedBytes": 3655,
+      "sha256": "0d5dc062510f12f0d61b1bd8915a536f1bf872954dfbc2c428f857108c721fa5",
       "summary": {
         "name": "Amazon Simple Systems Manager (SSM)",
-        "serverUrl": "http://ssm.us-east-1.amazonaws.com",
+        "serverUrl": "https://ssm.us-east-1.amazonaws.com",
         "description": "<p>Amazon Web Services Systems Manager is the operations hub for your Amazon Web Services applications and resources and a secure end-to-end management solution for hybrid cloud environments that enables safe and secure operations at scale.</p> <p>This reference is intended to be used with the <a href=\"https://docs.aws.amazon.com/systems-manager/latest/userguide/\">Amazon Web Services Systems Manager User Guide</a>. To get started, see <a href=\"https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up.html\">Setting up Amazon Web Services Systems Manager</a>.</p> <p class=\"title\"> <b>Related resources</b> </p> <ul> <li> <p>For information about each of the capabilities that comprise Systems Manager, see <a href=\"https://docs.aws.amazon.com/systems-manager-automation-runbooks/latest/userguide/systems-manager-capabilities.html\">Systems Manager capabilities</a> in the <i>Amazon Web Services Systems Manager User Guide</i>.</p> </li> <li> <p>For details about predefined runbooks for Automation, a capability of Amazon Web Services Systems Manager, see the <i> <a href=\"https://docs.aws.amazon.com/systems-manager-automation-runbooks/latest/userguide/automation-runbook-reference.html\">Systems Manager Automation runbook reference</a> </i>.</p> </li> <li> <p>For information about AppConfig, a capability of Systems Manager, see the <i> <a href=\"https://docs.aws.amazon.com/appconfig/latest/userguide/\">AppConfig User Guide</a> </i> and the <i> <a href=\"https://docs.aws.amazon.com/appconfig/2019-10-09/APIReference/\">AppConfig API Reference</a> </i>.</p> </li> <li> <p>For information about Incident Manager, a capability of Systems Manager, see the <i> <a href=\"https://docs.aws.amazon.com/incident-manager/latest/userguide/\">Systems Manager Incident Manager User Guide</a> </i> and the <i> <a href=\"https://docs.aws.amazon.com/incident-manager/latest/APIReference/\">Systems Manager Incident Manager API Reference</a> </i>.</p> </li> </ul>",
         "operationCount": 138,
-        "unavailableCount": 138
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-textract",
-      "sourceRevision": "d3c0dbdf67385e256a951ed8d08661a9168c2432820433a46c6d3caa3f8b58a3",
-      "bytes": 9137,
-      "compressedBytes": 948,
-      "sha256": "29c63cb2f639bd16cb321a8c5f9cfc58bf4330c2a8c62bbe36858258962ffbd1",
+      "sourceRevision": "d2bec9f20e32f2ff1cb055e2fde555677bacb6a16db0f8944700b0adb55cc771",
+      "bytes": 5251,
+      "compressedBytes": 782,
+      "sha256": "aa621f74bf6360237051cb4313e1205423936f6fe25950f70e6e6f4dba8e21ea",
       "summary": {
         "name": "Amazon Textract",
-        "serverUrl": "http://textract.us-east-1.amazonaws.com",
+        "serverUrl": "https://textract.us-east-1.amazonaws.com",
         "description": "Amazon Textract detects and analyzes text in documents and converts it into machine-readable text. This is the API reference documentation for Amazon Textract.",
         "operationCount": 13,
-        "unavailableCount": 13
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-transcribe",
-      "sourceRevision": "b5cb42260d51188fefc2765402bd2e3fc1229467a15831d7972478268b6a3855",
-      "bytes": 27269,
-      "compressedBytes": 1684,
-      "sha256": "005972c1655e3713fc2db431e49dc7137e3f3bdcbce557a427f159a58e5baccb",
+      "sourceRevision": "3adf1ffdc1be0aba3df0ff496409fd9bb6b46e4f05a31979fd1e92fb47df79d1",
+      "bytes": 15609,
+      "compressedBytes": 1459,
+      "sha256": "ec2811de7bd6611412547e2e91ad1d7260db8faaf1ef7725eacddf96f53c5c27",
       "summary": {
         "name": "Amazon Transcribe Service",
-        "serverUrl": "http://transcribe.us-east-1.amazonaws.com",
+        "serverUrl": "https://transcribe.us-east-1.amazonaws.com",
         "description": "<p>Amazon Transcribe offers three main types of batch transcription: <b>Standard</b>, <b>Medical</b>, and <b>Call Analytics</b>.</p> <ul> <li> <p> <b>Standard transcriptions</b> are the most common option. Refer to for details.</p> </li> <li> <p> <b>Medical transcriptions</b> are tailored to medical professionals and incorporate medical terms. A common use case for this service is transcribing doctor-patient dialogue into after-visit notes. Refer to for details.</p> </li> <li> <p> <b>Call Analytics transcriptions</b> are designed for use with call center audio on two different channels; if you're looking for insight into customer service calls, use this option. Refer to for details.</p> </li> </ul>",
         "operationCount": 39,
-        "unavailableCount": 39
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-transfer",
-      "sourceRevision": "dd19a58db893773435f113141bcc8972b0d9373bac3f0f88eb5e07d0b4337efc",
-      "bytes": 38998,
-      "compressedBytes": 2227,
-      "sha256": "a6c9c584223fed04bbdd0ceeb7ebd325cf44c638a5a084d577f1834c292dc054",
+      "sourceRevision": "bbc3a693a86ecadc3f5defac3d1dabfe60711f8c517817d3a2e17739c7fdbffb",
+      "bytes": 21358,
+      "compressedBytes": 1964,
+      "sha256": "189a415a2adc7543b4eb1dcf3416fe32aef3a72c5d3b5476d9af93635c821943",
       "summary": {
         "name": "AWS Transfer Family",
-        "serverUrl": "http://transfer.us-east-1.amazonaws.com",
+        "serverUrl": "https://transfer.us-east-1.amazonaws.com",
         "description": "Transfer Family is a fully managed service that enables the transfer of files over the File Transfer Protocol (FTP), File Transfer Protocol over SSL (FTPS), or Secure Shell (SSH) File Transfer Protocol (SFTP) directly into and out of Amazon Simple Storage Service (Amazon S3) or Amazon EFS. Additionally, you can use Applicability Statement 2 (AS2) to transfer files into and out of Amazon S3. Amazon Web Services helps you seamlessly migrate your file transfer workflows to Transfer Family by integrating with existing authentication systems, and providing DNS routing with Amazon Route 53 so nothing changes for your customers and partners, or their applications. With your data in Amazon S3, you can use it with Amazon Web Services for processing, analytics, machine learning, and archiving. Getting started with Transfer Family is easy since there is no infrastructure to buy and set up.",
         "operationCount": 59,
-        "unavailableCount": 59
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-translate",
-      "sourceRevision": "1f9b0d20961033124575dd053bf84a7a63ba22d85816406cc7aaaf6cefa0e433",
-      "bytes": 13168,
-      "compressedBytes": 1099,
-      "sha256": "e2c96d2d5dca78c248c5a9ac0ecab321b1f242884286a9c2942688213cac066f",
+      "sourceRevision": "35972f04963ffc6d8816ff6c5e410bc0c6622ab145d93ae604dc1c85490eb0fc",
+      "bytes": 7488,
+      "compressedBytes": 913,
+      "sha256": "5076136edfec87ff001641179e40f48ecd58db0baa089a950eea755a019251b4",
       "summary": {
         "name": "Amazon Translate",
-        "serverUrl": "http://translate.us-east-1.amazonaws.com",
+        "serverUrl": "https://translate.us-east-1.amazonaws.com",
         "description": "Provides translation of the input content from the source language to the target language.",
         "operationCount": 19,
-        "unavailableCount": 19
+        "unavailableCount": 0
       }
     },
     {

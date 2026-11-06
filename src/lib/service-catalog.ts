@@ -8,6 +8,7 @@ import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
 import { awsRestSigningProfile } from "./aws-rest.ts";
+import { awsJsonSigningProfile, configureAwsJson, validAwsJsonModel } from "./aws-json.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
@@ -232,6 +233,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
       const operation: Operation = { id: identity, name: text(source.summary, text(source.operationId, `${method.toUpperCase()} ${path}`)),
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
       if (source["x-operations-aws-signing"] === awsRestSigningProfile) operation.awsRest = awsRestSigningProfile;
+      const jsonTarget = source["x-operations-aws-json"] === awsJsonSigningProfile;
+      if (jsonTarget) { operation.awsJson = awsJsonSigningProfile; configureAwsJson(operation); }
       operation.name = operationDisplayName(operation);
       const issues: CapabilityIssue[] = [];
       const inspect = (area: CapabilityArea, code: string, check: () => void): boolean => {
@@ -277,9 +280,9 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         });
         inspect("endpoint", "unsupported-contract", () => {
           const wirePath = literalQueryRoute(path)?.path ?? path;
-          if (!wire && (wirePath.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(wirePath))) throw new Error("This endpoint uses a path or transport that is not supported.");
+          if (!wire && !jsonTarget && (wirePath.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(wirePath))) throw new Error("This endpoint uses a path or transport that is not supported.");
         });
-        if (!upload && !wire && !s3) {
+        if (!upload && !wire && !s3 && !jsonTarget) {
           let parametersValid = true;
           const parameterListsValid = inspect("request", "unsupported-contract", () => {
             const fields = new Map<string, InputField>();
@@ -387,7 +390,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         inspect("authentication", "invalid-contract", () => {
           const authorization = security(document, source, operation);
           if (authorization !== undefined) operation.security = authorization;
-          if (!wire && !s3 && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
+          if (!wire && !s3 && !jsonTarget && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
           if (authorization?.length && !authorization.some(supportedSecurityAlternative)) issues.push({ area: "authentication", code: "unsupported-authentication",
             message: authorization.flat().find(scheme => scheme.kind === "unsupported")!.reason });
         });
@@ -407,8 +410,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           if (wire) configureAwsWire(operation, wire);
         });
         inspect("request", "unsupported-contract", () => {
-          if ((wire || s3 || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4"))
-            && !(wire ? validAwsWireModel(operation) : s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
+          if ((wire || s3 || jsonTarget || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4"))
+            && !(jsonTarget ? validAwsJsonModel(operation) : wire ? validAwsWireModel(operation) : s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
             throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
         });
         if (operation.credentialResultProfile) inspect("response", "invalid-contract", () => { credentialResultProfile(operation); });

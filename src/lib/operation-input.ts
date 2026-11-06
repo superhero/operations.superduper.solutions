@@ -6,6 +6,7 @@ import { supportsCredentialResults } from "./credential-results.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
 import { awsRestUsesS3Keys } from "./aws-rest.ts";
 import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
+import { awsJsonWireRequest, validAwsJsonModel } from "./aws-json.ts";
 import { prepareAwsWireRequest } from "./aws-wire.ts";
 import { encodeS3Key, validateS3Bucket, s3MetadataHeaders } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
@@ -193,7 +194,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   const request: PreparedRequest = { method: operation.method, path: route?.path ?? operation.path, query: { ...route?.query } };
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
-  if (operation.s3Files || operation.awsWire || operation.awsRest) for (const [key, value] of Object.entries(values)) {
+  if (operation.s3Files || operation.awsWire || operation.awsRest || operation.awsJson) for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && !fields.some(field => field.key === key))
       throw new InputValidationError(key, "This input is outside the supported AWS operation profile.");
   }
@@ -311,6 +312,12 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if (operation.cloudflareUpload === "workers-upload") { request.bodyFormat = "cloudflare-assets"; request.contentType = "multipart/form-data"; }
   if (["workers-version", "workers-module", "platform-module"].includes(operation.cloudflareUpload ?? "")) {
     request.bodyFormat = "cloudflare-module"; request.contentType = "multipart/form-data";
+  }
+  if (operation.awsJson) {
+    if (!validAwsJsonModel(operation)) throw new InputValidationError("body", "This AWS JSON target no longer matches its reviewed contract.");
+    const wire = awsJsonWireRequest(operation, request.body);
+    return { ...request, path: wire.path, query: {}, headers: { "X-Amz-Target": wire.headers["X-Amz-Target"] },
+      body: new TextDecoder().decode(wire.bytes), bodyFormat: "text", contentType: wire.headers["Content-Type"] as `${string}/${string}` };
   }
   return operation.awsRest ? prepareAwsRestRequest(operation, request) : operation.awsWire ? prepareAwsWireRequest(operation, request) : request;
 }

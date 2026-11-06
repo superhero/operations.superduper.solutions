@@ -1,0 +1,165 @@
+{
+  "boundary": "Warm Node program decode and Blob preparation; one warm-up and three alternating paired samples. No browser latency claim. No forced GC. Exact program SHA and Blob byte length verified outside timing.",
+  "host": "sds-01",
+  "cpuLimit": 1,
+  "memoryBytes": 2147483648,
+  "records": [
+    {
+      "worker": "decision.worker.ts",
+      "originalBytes": 251412,
+      "packedCharacters": 64182,
+      "sha256": "e1aad426a9bebab75b290c1d07404b570b623a21638a79ddc2b9ac681ac621d5",
+      "baselineMilliseconds": {
+        "samples": [
+          0.10820699999999306,
+          0.25031400000000303,
+          0.17894400000000132
+        ],
+        "median": 0.17894400000000132,
+        "minimum": 0.10820699999999306,
+        "maximum": 0.25031400000000303
+      },
+      "candidateMilliseconds": {
+        "samples": [
+          3.4151719999999983,
+          3.383054999999999,
+          3.6550050000000027
+        ],
+        "median": 3.4151719999999983,
+        "minimum": 3.383054999999999,
+        "maximum": 3.6550050000000027
+      }
+    },
+    {
+      "worker": "metrics-recorder.worker.ts",
+      "originalBytes": 380552,
+      "packedCharacters": 142305,
+      "sha256": "969ab28db83db3dbeece34ec1715067e33895346a4cc82f5095f4737ff494faf",
+      "baselineMilliseconds": {
+        "samples": [
+          0.12319099999999139,
+          0.26349899999999593,
+          0.20585700000000884
+        ],
+        "median": 0.20585700000000884,
+        "minimum": 0.12319099999999139,
+        "maximum": 0.26349899999999593
+      },
+      "candidateMilliseconds": {
+        "samples": [
+          5.893691999999987,
+          5.993088,
+          5.384309000000002
+        ],
+        "median": 5.893691999999987,
+        "minimum": 5.384309000000002,
+        "maximum": 5.993088
+      }
+    },
+    {
+      "worker": "workflow-repository.worker.ts",
+      "originalBytes": 329007,
+      "packedCharacters": 122567,
+      "sha256": "7a5fee2e0e4e0497f149602f4b952a274f5afcbc81e70c5e46d0030f44ca2db2",
+      "baselineMilliseconds": {
+        "samples": [
+          0.0943160000000205,
+          0.13491799999999898,
+          0.11692000000002167
+        ],
+        "median": 0.11692000000002167,
+        "minimum": 0.0943160000000205,
+        "maximum": 0.13491799999999898
+      },
+      "candidateMilliseconds": {
+        "samples": [
+          4.328104999999994,
+          4.524157000000002,
+          4.8129579999999805
+        ],
+        "median": 4.524157000000002,
+        "minimum": 4.328104999999994,
+        "maximum": 4.8129579999999805
+      }
+    },
+    {
+      "worker": "inference.worker.ts",
+      "originalBytes": 430882,
+      "packedCharacters": 130157,
+      "sha256": "90f16b227f46f4f6646734362453c3bd40a85e931c067586d6cdd745b65c3769",
+      "baselineMilliseconds": {
+        "samples": [
+          0.11112800000000789,
+          0.10356600000000071,
+          0.12016699999998082
+        ],
+        "median": 0.11112800000000789,
+        "minimum": 0.10356600000000071,
+        "maximum": 0.12016699999998082
+      },
+      "candidateMilliseconds": {
+        "samples": [
+          5.222381999999982,
+          4.551135999999985,
+          5.060375000000022
+        ],
+        "median": 5.060375000000022,
+        "minimum": 4.551135999999985,
+        "maximum": 5.222381999999982
+      }
+    },
+    {
+      "worker": "vault.worker.ts",
+      "originalBytes": 1114265,
+      "packedCharacters": 699243,
+      "sha256": "496b4348f4d49e83ef60359168759f4311c1d5517df82aa118eb253e6ddcc4a3",
+      "baselineMilliseconds": {
+        "samples": [
+          0.752760999999964,
+          1.0018010000000004,
+          0.8876870000000281
+        ],
+        "median": 0.8876870000000281,
+        "minimum": 0.752760999999964,
+        "maximum": 1.0018010000000004
+      },
+      "candidateMilliseconds": {
+        "samples": [
+          20.637877000000003,
+          22.066794000000016,
+          25.144453999999996
+        ],
+        "median": 22.066794000000016,
+        "minimum": 20.637877000000003,
+        "maximum": 25.144453999999996
+      }
+    }
+  ],
+  "date": "2026-11-06",
+  "baselineHtml": {
+    "bytes": 26769605,
+    "sha256": "c8a34cc12fef1d4f9418a75aeffaf55aa67f2ddbed56175c719081226e6584f6"
+  },
+  "candidateHtml": {
+    "bytes": 25419141,
+    "sha256": "52e3886ad6717b669c084978dc23beff178fb5171346d60f6b0051af72b0399d",
+    "limit": 26214400,
+    "headroom": 795259,
+    "buildReceipt": "qualify-production-aws-json-targets-final.json"
+  },
+  "browserProof": {
+    "receipt": "browser-aws-json-inline-vault-final.json",
+    "passed": true,
+    "providerRequests": "locally fulfilled synthetic response",
+    "checks": "Actual compressed vault worker, initialize/lock/unlock, private RPC acquisition, encrypted persistence, zero page errors or external requests",
+    "workerFormat": "iife"
+  },
+  "limitations": "Node timings measure warm decoding and Blob preparation. Browser RPC is functional evidence, not a startup or field latency measurement. Paired decode samples identify the exact worker bytes before the final prototype-safe credential-map correction. The final production artifact is identified separately by candidateHtml.",
+  "measurementHtml": {
+    "bytes": 25419132,
+    "sha256": "e77ebcb306d12693bee4940b4463f8fe49b11717508a6f3169fca2114820bce5",
+    "limit": 26214400,
+    "headroom": 795268,
+    "buildReceipt": "qualify-production-aws-json-targets-v3.json"
+  }
+}

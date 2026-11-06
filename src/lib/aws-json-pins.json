@@ -1,0 +1,1644 @@
+{
+  "aws-athena": {
+    "sha256": "1f4e7736ea3b962dd749aa5746575c4845f91a175d334c6974c505bfeee9c1ff",
+    "title": "Amazon Athena",
+    "version": "2017-05-18",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://athena.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://athena.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "athena",
+    "endpointPrefix": "athena",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AmazonAthena",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/athena-2017-05-18.normal.json",
+      "sha256": "4bacae0b145206bf797afdc105336160e6347bc5712fa1da97a8456147b74c1f"
+    }
+  },
+  "aws-budgets": {
+    "sha256": "53960528036628b78617ff8ed599d3b17b8fc0621acee9b2042d5daf222af954",
+    "title": "AWS Budgets",
+    "version": "2016-10-20",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://budgets.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://budgets.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "budgets",
+    "endpointPrefix": "budgets",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSBudgetServiceGateway",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/budgets-2016-10-20.normal.json",
+      "sha256": "f913980f1c9c4f19be02ac4700628449b2e8c7dd789b88c1c70a25a216caf27a"
+    }
+  },
+  "aws-ce": {
+    "sha256": "73470bd31bb69e4c637bd5e031c47906412bd2ec3e3c4f3ed067dd51adcc10b1",
+    "title": "AWS Cost Explorer Service",
+    "version": "2017-10-25",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://ce.us-east-1.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://ce.cn-northwest-1.amazonaws.com.cn",
+        "variables": {}
+      }
+    ],
+    "service": "ce",
+    "endpointPrefix": "ce",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSInsightsIndexService",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/ce-2017-10-25.normal.json",
+      "sha256": "03f8f48dc8b55211ee552779210091ddf0f7d400a4978969bcdc4df3d6b9b6e6"
+    }
+  },
+  "aws-cloudtrail": {
+    "sha256": "8d2daf1667f87143c7310a436a53e35517a8679054cf84b3e295bddc497019d8",
+    "title": "AWS CloudTrail",
+    "version": "2013-11-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://cloudtrail.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://cloudtrail.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "cloudtrail",
+    "endpointPrefix": "cloudtrail",
+    "jsonVersion": "1.1",
+    "targetPrefix": "com.amazonaws.cloudtrail.v20131101.CloudTrail_20131101",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/cloudtrail-2013-11-01.normal.json",
+      "sha256": "076475140313ec00aeb69172fde7eebb3f6dc64b02ec6581845d6c5c062b3923"
+    }
+  },
+  "aws-codebuild": {
+    "sha256": "0e6b6a34f533bb23aef8395ee8b4b1c968dff7940c2e501672ce755ebb17553d",
+    "title": "AWS CodeBuild",
+    "version": "2016-10-06",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://codebuild.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://codebuild.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "codebuild",
+    "endpointPrefix": "codebuild",
+    "jsonVersion": "1.1",
+    "targetPrefix": "CodeBuild_20161006",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/codebuild-2016-10-06.normal.json",
+      "sha256": "0d42a930f7ced6ed24727e49f0e67533659e771638256a8220a9ac7bfd5c6d6c"
+    }
+  },
+  "aws-codepipeline": {
+    "sha256": "5cc1dc46e043c2a4abdbb902cbff0a14e441bd3245ea93ac9695716caf6824b1",
+    "title": "AWS CodePipeline",
+    "version": "2015-07-09",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://codepipeline.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://codepipeline.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "codepipeline",
+    "endpointPrefix": "codepipeline",
+    "jsonVersion": "1.1",
+    "targetPrefix": "CodePipeline_20150709",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/codepipeline-2015-07-09.normal.json",
+      "sha256": "f635f93a4ee9f604d1389e54b3649254b495923b70302659a2c6e4d7a3cfa1a7"
+    }
+  },
+  "aws-cognito-idp": {
+    "sha256": "ba12458942a09007e006e4406e4aa86577b23b7b14ef07618da8a9b277a57e98",
+    "title": "Amazon Cognito Identity Provider",
+    "version": "2016-04-18",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://cognito-idp.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://cognito-idp.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "cognito-idp",
+    "endpointPrefix": "cognito-idp",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSCognitoIdentityProviderService",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/cognito-idp-2016-04-18.normal.json",
+      "sha256": "cd311e360fdc2c4d48babee1910a49499732a863b06d165eb0c61d379e505fc0"
+    }
+  },
+  "aws-comprehend": {
+    "sha256": "93f4ec0615f3af4ec36b57402ba5546693ebf41575fb61b334a38075be84905a",
+    "title": "Amazon Comprehend",
+    "version": "2017-11-27",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://comprehend.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://comprehend.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "comprehend",
+    "endpointPrefix": "comprehend",
+    "jsonVersion": "1.1",
+    "targetPrefix": "Comprehend_20171127",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/comprehend-2017-11-27.normal.json",
+      "sha256": "35f734a29785cf4c47382487e88587947923e10abb9950764cc7558c0896375f"
+    }
+  },
+  "aws-dynamodb": {
+    "sha256": "edf78af7371e27e8b8440b0587d04830d881d8681558787f406ffdfe713108e0",
+    "title": "Amazon DynamoDB",
+    "version": "2012-08-10",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://dynamodb.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://dynamodb.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "dynamodb",
+    "endpointPrefix": "dynamodb",
+    "jsonVersion": "1.0",
+    "targetPrefix": "DynamoDB_20120810",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/dynamodb-2012-08-10.normal.json",
+      "sha256": "3babda200e7431fa6bf1fca0aca7200d355a144b055888dd062596e89db66f4c"
+    }
+  },
+  "aws-ecr": {
+    "sha256": "fbeab5c68abfe83723d66352c751edc87347a72204c1b68e6607c1043250d01b",
+    "title": "Amazon EC2 Container Registry",
+    "version": "2015-09-21",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://api.ecr.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://api.ecr.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "ecr",
+    "endpointPrefix": "api.ecr",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AmazonEC2ContainerRegistry_V20150921",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/ecr-2015-09-21.normal.json",
+      "sha256": "6689ec2c49a5797e04ca87e2c70a058f7310d6b2d9d3a68e4f058da716ef4c2d"
+    }
+  },
+  "aws-ecs": {
+    "sha256": "4bf57dddad6c0cc36532b5b8fa76f9c110f786db7172982f133f5b4e7171d314",
+    "title": "Amazon EC2 Container Service",
+    "version": "2014-11-13",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://ecs.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://ecs.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "ecs",
+    "endpointPrefix": "ecs",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AmazonEC2ContainerServiceV20141113",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/ecs-2014-11-13.normal.json",
+      "sha256": "7558664952672b44bb837b018c63fce2d4b62ebd21f6d75f8807941d8f8fa3f1"
+    }
+  },
+  "aws-events": {
+    "sha256": "f8db1a08e00a64700d8561f161bb4df554a848193db9e5128b00f7be72f895d9",
+    "title": "Amazon CloudWatch Events",
+    "version": "2015-10-07",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://events.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://events.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "events",
+    "endpointPrefix": "events",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSEvents",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/events-2015-10-07.normal.json",
+      "sha256": "0ac4f26a73683f1205c186a71891b6440f743acc58adb9ec9ec4883a8e7a5024"
+    }
+  },
+  "aws-firehose": {
+    "sha256": "d4ce44694309b05adfc13f5ff0304ef1a357340252c0aa8335df84d93c062522",
+    "title": "Amazon Kinesis Firehose",
+    "version": "2015-08-04",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://firehose.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://firehose.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "firehose",
+    "endpointPrefix": "firehose",
+    "jsonVersion": "1.1",
+    "targetPrefix": "Firehose_20150804",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/firehose-2015-08-04.normal.json",
+      "sha256": "1f13bea29dcbda5f7568458ca0de2c3fdfd44eca28bb34d15287d7f6eec8a95c"
+    }
+  },
+  "aws-fsx": {
+    "sha256": "34700f933d923f7e41dd007eac9345e3ad706486bde3df7a1cf9bea6bd84aa85",
+    "title": "Amazon FSx",
+    "version": "2018-03-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://fsx.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://fsx.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "fsx",
+    "endpointPrefix": "fsx",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSSimbaAPIService_v20180301",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/fsx-2018-03-01.normal.json",
+      "sha256": "883da77b3bab669a791af95c71a31e1e711e1d110a87aae3d2f08a0714dfab41"
+    }
+  },
+  "aws-glue": {
+    "sha256": "27f1694cedeb25ce41ed5dc9b119ddd7953e18e4a96677498ca0ab7801ceceb6",
+    "title": "AWS Glue",
+    "version": "2017-03-31",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://glue.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://glue.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "glue",
+    "endpointPrefix": "glue",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSGlue",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/glue-2017-03-31.normal.json",
+      "sha256": "4ea77b7f5d0631bfea3588954c3161227d4888df405f5ced2a1b6f567a567203"
+    }
+  },
+  "aws-kinesis": {
+    "sha256": "bd4ea6c0e6f082d9b9fbbce188a623c034dee5ffa136b5d3aaa2325ead224ba5",
+    "title": "Amazon Kinesis",
+    "version": "2013-12-02",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://kinesis.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://kinesis.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "kinesis",
+    "endpointPrefix": "kinesis",
+    "jsonVersion": "1.1",
+    "targetPrefix": "Kinesis_20131202",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/kinesis-2013-12-02.normal.json",
+      "sha256": "1e2d30f2d008c0ea3a668ee5d6c062eb4f7a8125171774f75dd023cf853a5992"
+    }
+  },
+  "aws-kms": {
+    "sha256": "f0c9733d4dd7ce2c51e3a49dea35531a37711c1ef2fecc09aa12615cf0500cb4",
+    "title": "AWS Key Management Service",
+    "version": "2014-11-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://kms.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://kms.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "kms",
+    "endpointPrefix": "kms",
+    "jsonVersion": "1.1",
+    "targetPrefix": "TrentService",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/kms-2014-11-01.normal.json",
+      "sha256": "949e97410b383cc862fc83d934a725685f285ee4830b7bed1a92969620a71039"
+    }
+  },
+  "aws-logs": {
+    "sha256": "738f035ec0d944b378fa9f82c98c4f4af7689cbe4816aa07064b4831a88886b6",
+    "title": "Amazon CloudWatch Logs",
+    "version": "2014-03-28",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://logs.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://logs.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "logs",
+    "endpointPrefix": "logs",
+    "jsonVersion": "1.1",
+    "targetPrefix": "Logs_20140328",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/logs-2014-03-28.normal.json",
+      "sha256": "ccf00cf4a3e9c794080c70f6b87d4f0e42bb857bec32bf3dd69920d4d646def0"
+    }
+  },
+  "aws-organizations": {
+    "sha256": "a16e015497cbd98a09e67d6321e123d68bfb0fa916af5ccab77d815dfcb37f3c",
+    "title": "AWS Organizations",
+    "version": "2016-11-28",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://organizations.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://organizations.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "organizations",
+    "endpointPrefix": "organizations",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSOrganizationsV20161128",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/organizations-2016-11-28.normal.json",
+      "sha256": "d5af791cdbdb57cb918913f9a3be50c2aa85c1505831a6dcb749f35decfa3867"
+    }
+  },
+  "aws-rekognition": {
+    "sha256": "eb61aa3f8f2f58f7890b06fd3af72bddddb454e7f372bcecadd2eb7fcbf2194f",
+    "title": "Amazon Rekognition",
+    "version": "2016-06-27",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://rekognition.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://rekognition.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "rekognition",
+    "endpointPrefix": "rekognition",
+    "jsonVersion": "1.1",
+    "targetPrefix": "RekognitionService",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/rekognition-2016-06-27.normal.json",
+      "sha256": "e55f7f1763c50f523a7a1037a1e9d93a34ce09b8a7e4f43eb884a43fcfa87f76"
+    }
+  },
+  "aws-sagemaker": {
+    "sha256": "2847fe69e459daa1eeafb95e2dffd5a52cee372709c718ff8f2e52ca6103ae09",
+    "title": "Amazon SageMaker Service",
+    "version": "2017-07-24",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://api.sagemaker.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://api.sagemaker.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "sagemaker",
+    "endpointPrefix": "api.sagemaker",
+    "jsonVersion": "1.1",
+    "targetPrefix": "SageMaker",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/sagemaker-2017-07-24.normal.json",
+      "sha256": "1d341d89fea3e65557b6a0d424ae7c34115ab8838f026faff09fd8430baea2d1"
+    }
+  },
+  "aws-secretsmanager": {
+    "sha256": "1c7ad235b89a6ebf714a9116d5be5055aced880a9227adabfb76a43a0c06f795",
+    "title": "AWS Secrets Manager",
+    "version": "2017-10-17",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://secretsmanager.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://secretsmanager.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "secretsmanager",
+    "endpointPrefix": "secretsmanager",
+    "jsonVersion": "1.1",
+    "targetPrefix": "secretsmanager",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/secretsmanager-2017-10-17.normal.json",
+      "sha256": "202a8236abb0c273f202a91e4ae4e458567eaf6afd14a30a2826411460474203"
+    }
+  },
+  "aws-ssm": {
+    "sha256": "ea1da9646ab7a272056e2f0d41fb933a0efc86c777f8aaefd35c111678cc7628",
+    "title": "Amazon Simple Systems Manager (SSM)",
+    "version": "2014-11-06",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://ssm.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://ssm.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "ssm",
+    "endpointPrefix": "ssm",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AmazonSSM",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/ssm-2014-11-06.normal.json",
+      "sha256": "1528465fcb067c46df6373299836db22d193bf2f021614a48bc4854652b0ce09"
+    }
+  },
+  "aws-states": {
+    "sha256": "015f7480d4276fe656b24c7dcd8880473ec534e0ea37445dc417cacfb830165e",
+    "title": "AWS Step Functions",
+    "version": "2016-11-23",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://states.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://states.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "states",
+    "endpointPrefix": "states",
+    "jsonVersion": "1.0",
+    "targetPrefix": "AWSStepFunctions",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/states-2016-11-23.normal.json",
+      "sha256": "1fb631c782ba41945c6ac758a4a58784be8724314457e9f92de34970f663e221"
+    }
+  },
+  "aws-textract": {
+    "sha256": "d3c0dbdf67385e256a951ed8d08661a9168c2432820433a46c6d3caa3f8b58a3",
+    "title": "Amazon Textract",
+    "version": "2018-06-27",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://textract.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://textract.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "textract",
+    "endpointPrefix": "textract",
+    "jsonVersion": "1.1",
+    "targetPrefix": "Textract",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/textract-2018-06-27.normal.json",
+      "sha256": "cd7d0c7270caa0684c91a5bbbe70a7b33fe78dab3c4296006d21e6deb22ba1e8"
+    }
+  },
+  "aws-transcribe": {
+    "sha256": "b5cb42260d51188fefc2765402bd2e3fc1229467a15831d7972478268b6a3855",
+    "title": "Amazon Transcribe Service",
+    "version": "2017-10-26",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://transcribe.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://transcribe.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "transcribe",
+    "endpointPrefix": "transcribe",
+    "jsonVersion": "1.1",
+    "targetPrefix": "Transcribe",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/transcribe-2017-10-26.normal.json",
+      "sha256": "dfcbc13c0a0798ec68ba0875089e72513058825e77772e1d652c5f75b8a79666"
+    }
+  },
+  "aws-transfer": {
+    "sha256": "dd19a58db893773435f113141bcc8972b0d9373bac3f0f88eb5e07d0b4337efc",
+    "title": "AWS Transfer Family",
+    "version": "2018-11-05",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://transfer.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://transfer.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "transfer",
+    "endpointPrefix": "transfer",
+    "jsonVersion": "1.1",
+    "targetPrefix": "TransferService",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/transfer-2018-11-05.normal.json",
+      "sha256": "16a12a36ea477326f985d0dfa29e144f0f3c94b8e93ebd719f5f6872372ca357"
+    }
+  },
+  "aws-translate": {
+    "sha256": "1f9b0d20961033124575dd053bf84a7a63ba22d85816406cc7aaaf6cefa0e433",
+    "title": "Amazon Translate",
+    "version": "2017-07-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://translate.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://translate.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "service": "translate",
+    "endpointPrefix": "translate",
+    "jsonVersion": "1.1",
+    "targetPrefix": "AWSShineFrontendService_20170701",
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/translate-2017-07-01.normal.json",
+      "sha256": "f9b46d825821fc5d941eecf567c22cca41fc96b47fea0c07a4e1f2486ae7a108"
+    }
+  }
+}
