@@ -37,7 +37,18 @@ export function multipartFileOrText(raw: unknown, resolve: (input: unknown) => S
  * Unrepresentable JSON vocabularies keep their existing server-validation role. */
 export function multipartBodySchema(raw: unknown, resolve: (input: unknown) => Shape, parse: (input: unknown) => InputSchema) {
   const root = multipartShape(raw, resolve), properties = Object.fromEntries(Object.entries(root.properties ?? {}).map(([name, value]) => [name, multipartShape(value, resolve)]));
-  const schema = parse({ ...root, properties }), mixed: MultipartParts = {};
+  // Definitions are not assertions. Their references still resolve against the
+  // document; unsupported or unresolved references retain the existing guards.
+  const { $defs: _definitions, ...assertions } = root;
+  const alternatives = root.type === "object" && Array.isArray(root.oneOf) && root.oneOf.length >= 2 && root.oneOf.length <= 16
+    && root.oneOf.every((branch: unknown) => object(branch) && Object.keys(branch).length === 1
+      && Array.isArray(branch.required) && branch.required.length > 0 && branch.required.length <= 200
+      && new Set(branch.required).size === branch.required.length
+      && branch.required.every((name: unknown) => typeof name === "string" && Object.hasOwn(properties, name)))
+    ? root.oneOf.map((branch: Shape) => [...branch.required] as string[]) : undefined;
+  if (alternatives) delete assertions.oneOf;
+  const schema = parse({ ...assertions, properties }), mixed: MultipartParts = {};
+  if (alternatives && schema.type === "object") schema.requiredOneOf = alternatives;
   if (schema.type === "object") for (const [name, value] of Object.entries(properties)) if (multipartFileOrText(value, resolve)) {
     schema.properties ??= {}; schema.properties[name] = { type: "json" };
     Object.defineProperty(mixed, name, { value: { kind: "file-or-text" }, enumerable: true, writable: true, configurable: true });

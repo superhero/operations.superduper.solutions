@@ -187,7 +187,7 @@
   "twilio:ListUsageRecordLastMonth": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/LastMonth.json",
-    "name": "List last month’s usage records"
+    "name": "List last month\u2019s usage records"
   },
   "twilio:ListUsageRecordMonthly": {
     "method": "GET",
@@ -197,12 +197,12 @@
   "twilio:ListUsageRecordThisMonth": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/ThisMonth.json",
-    "name": "List this month’s usage records"
+    "name": "List this month\u2019s usage records"
   },
   "twilio:ListUsageRecordToday": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Today.json",
-    "name": "List today’s usage records"
+    "name": "List today\u2019s usage records"
   },
   "twilio:ListUsageRecordYearly": {
     "method": "GET",
@@ -212,7 +212,7 @@
   "twilio:ListUsageRecordYesterday": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Yesterday.json",
-    "name": "List yesterday’s usage records"
+    "name": "List yesterday\u2019s usage records"
   },
   "twilio:UpdateAddress": {
     "method": "POST",
@@ -538,5 +538,10 @@
     "method": "POST",
     "path": "/#X-Amz-Target=SageMaker.CreateEndpoint",
     "description": "Create a SageMaker hosted inference endpoint using the selected endpoint configuration."
+  },
+  "jira:addAttachment": {
+    "method": "POST",
+    "path": "/rest/api/3/issue/{issueIdOrKey}/attachments",
+    "description": "Attach one or more files to an issue using multipart/form-data. Send attachments as file parts and include X-Atlassian-Token: no-check. Project permissions and issue-level access restrictions apply. See the full operation documentation for upload examples and authentication scopes."
   }
 }

@@ -1,0 +1,519 @@
+{
+  "version": 1,
+  "sources": {
+    "cloudflare": {
+      "sha256": "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778",
+      "title": "Cloudflare API",
+      "version": "4.0.0",
+      "openapi": "3.0.3",
+      "basic": null
+    },
+    "jira": {
+      "sha256": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
+      "title": "The Jira Cloud platform REST API",
+      "version": "1001.0.0-SNAPSHOT-cb5afcc2a0901f4ca3e6469acd6245b98aa5a2ca",
+      "openapi": "3.0.1",
+      "basic": null
+    },
+    "jira-dc": {
+      "sha256": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
+      "title": "Jira Software Data Center REST API Reference",
+      "version": "11.3.12",
+      "openapi": "3.0.1",
+      "basic": {
+        "type": "http",
+        "description": "In order to use basic authorization, provide username:password Base64 encoded in the 'Authorization' header.",
+        "scheme": "basic"
+      }
+    },
+    "jira-service-management": {
+      "sha256": "e2ff7579a087099e6482b78475730ea508e8933e8349af3b4fe58eb1a9cad944",
+      "title": "Service Management Public REST API",
+      "version": "1001.0.0-SNAPSHOT-cb5afcc2a0901f4ca3e6469acd6245b98aa5a2ca",
+      "openapi": "3.0.1",
+      "basic": null
+    },
+    "jira-service-management-dc": {
+      "sha256": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
+      "title": "JIRA Service Management REST API Reference",
+      "version": "11.3.12",
+      "openapi": "3.0.1",
+      "basic": {
+        "type": "http",
+        "description": "In order to use basic authorization, provide username:password Base64 encoded in the 'Authorization' header.",
+        "scheme": "basic"
+      }
+    }
+  },
+  "operations": {
+    "cloudflare:updateZoneSnippet": {
+      "catalog": "cloudflare",
+      "path": "/zones/{zone_id}/snippets/{snippet_name}",
+      "method": "PUT",
+      "operationId": "updateZoneSnippet",
+      "requestBody": {
+        "$ref": "#/components/requestBodies/snippets_Snippet"
+      },
+      "media": {
+        "schema": {
+          "description": "Define a snippet object.",
+          "type": "object",
+          "properties": {
+            "metadata": {
+              "description": "Provide metadata about the snippet.",
+              "type": "object",
+              "properties": {
+                "main_module": {
+                  "$ref": "#/components/schemas/snippets_SnippetMainModule"
+                }
+              },
+              "required": [
+                "main_module"
+              ],
+              "title": "Metadata"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/components/schemas/snippets_SnippetFiles"
+          },
+          "required": [
+            "metadata",
+            "files"
+          ],
+          "title": "Snippet"
+        }
+      },
+      "schema": {
+        "description": "Define a snippet object.",
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "description": "Provide metadata about the snippet.",
+            "type": "object",
+            "properties": {
+              "main_module": {
+                "$ref": "#/components/schemas/snippets_SnippetMainModule"
+              }
+            },
+            "required": [
+              "main_module"
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": {
+          "$ref": "#/components/schemas/snippets_SnippetFiles"
+        },
+        "required": [
+          "metadata",
+          "files"
+        ],
+        "title": "Snippet"
+      },
+      "corrected": {
+        "schema": {
+          "description": "Define a snippet object.",
+          "type": "object",
+          "properties": {
+            "metadata": {
+              "description": "Provide metadata about the snippet.",
+              "type": "object",
+              "properties": {
+                "main_module": {
+                  "$ref": "#/components/schemas/snippets_SnippetMainModule"
+                }
+              },
+              "required": [
+                "main_module"
+              ],
+              "title": "Metadata"
+            },
+            "files": {
+              "description": "Contain files belonging to the snippet.",
+              "type": "array",
+              "items": {
+                "description": "Specify a file belonging to the snippet.",
+                "format": "binary",
+                "title": "File",
+                "type": "string",
+                "x-auditable": true
+              },
+              "minItems": 1,
+              "title": "Files"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "metadata",
+            "files"
+          ],
+          "title": "Snippet"
+        },
+        "encoding": {
+          "metadata": {
+            "contentType": "application/json"
+          }
+        }
+      }
+    },
+    "jira:addAttachment": {
+      "catalog": "jira",
+      "path": "/rest/api/3/issue/{issueIdOrKey}/attachments",
+      "method": "POST",
+      "operationId": "addAttachment",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "items": {
+                "$ref": "#/components/schemas/MultipartFile"
+              },
+              "type": "array"
+            }
+          }
+        },
+        "required": true
+      },
+      "media": {
+        "schema": {
+          "items": {
+            "$ref": "#/components/schemas/MultipartFile"
+          },
+          "type": "array"
+        }
+      },
+      "schema": {
+        "items": {
+          "$ref": "#/components/schemas/MultipartFile"
+        },
+        "type": "array"
+      },
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "binary"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "jira-dc:POST /api/2/issue/{issueIdOrKey}/attachments": {
+      "catalog": "jira-dc",
+      "path": "/api/2/issue/{issueIdOrKey}/attachments",
+      "method": "POST",
+      "operationId": "POST /api/2/issue/{issueIdOrKey}/attachments",
+      "requestBody": {
+        "description": "Attachments to be added",
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      },
+      "media": {
+        "schema": {
+          "type": "string",
+          "format": "binary"
+        }
+      },
+      "schema": {
+        "type": "string",
+        "format": "binary"
+      },
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "binary"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "jira-dc:POST /api/2/user/avatar/temporary": {
+      "catalog": "jira-dc",
+      "path": "/api/2/user/avatar/temporary",
+      "method": "POST",
+      "operationId": "POST /api/2/user/avatar/temporary",
+      "requestBody": {
+        "description": "The file data",
+        "content": {
+          "multipart/form-data": {}
+        },
+        "required": true
+      },
+      "media": {},
+      "schema": {},
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "avatar": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "required": [
+            "avatar"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "jira-service-management:POST /rest/servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile": {
+      "catalog": "jira-service-management",
+      "path": "/rest/servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile",
+      "method": "POST",
+      "operationId": "POST /rest/servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "items": {
+                "$ref": "#/components/schemas/MultipartFile"
+              },
+              "type": "array"
+            }
+          }
+        },
+        "required": true
+      },
+      "media": {
+        "schema": {
+          "items": {
+            "$ref": "#/components/schemas/MultipartFile"
+          },
+          "type": "array"
+        }
+      },
+      "schema": {
+        "items": {
+          "$ref": "#/components/schemas/MultipartFile"
+        },
+        "type": "array"
+      },
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "binary"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "jira-service-management-dc:POST /api/2/issue/{issueIdOrKey}/attachments": {
+      "catalog": "jira-service-management-dc",
+      "path": "/api/2/issue/{issueIdOrKey}/attachments",
+      "method": "POST",
+      "operationId": "POST /api/2/issue/{issueIdOrKey}/attachments",
+      "requestBody": {
+        "description": "Attachments to be added",
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      },
+      "media": {
+        "schema": {
+          "type": "string",
+          "format": "binary"
+        }
+      },
+      "schema": {
+        "type": "string",
+        "format": "binary"
+      },
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "binary"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "jira-service-management-dc:POST /api/2/user/avatar/temporary": {
+      "catalog": "jira-service-management-dc",
+      "path": "/api/2/user/avatar/temporary",
+      "method": "POST",
+      "operationId": "POST /api/2/user/avatar/temporary",
+      "requestBody": {
+        "description": "The file data",
+        "content": {
+          "multipart/form-data": {}
+        },
+        "required": true
+      },
+      "media": {},
+      "schema": {},
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "avatar": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "required": [
+            "avatar"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "jira-service-management-dc:POST /assets/1.0/attachments/object/{objectId}": {
+      "catalog": "jira-service-management-dc",
+      "path": "/assets/1.0/attachments/object/{objectId}",
+      "method": "POST",
+      "operationId": "POST /assets/1.0/attachments/object/{objectId}",
+      "requestBody": {
+        "description": "Attachments to be added",
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      },
+      "media": {
+        "schema": {
+          "type": "string",
+          "format": "binary"
+        }
+      },
+      "schema": {
+        "type": "string",
+        "format": "binary"
+      },
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "jira-service-management-dc:POST /servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile": {
+      "catalog": "jira-service-management-dc",
+      "path": "/servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile",
+      "method": "POST",
+      "operationId": "POST /servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile",
+      "requestBody": {
+        "description": "The files to attach.",
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/FilePart"
+              }
+            }
+          }
+        }
+      },
+      "media": {
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/FilePart"
+          }
+        }
+      },
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FilePart"
+        }
+      },
+      "corrected": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "binary"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "evidence": {
+    "cloudflare": "https://developers.cloudflare.com/rules/snippets/create-api/",
+    "jira-cloud": "https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-attachments/",
+    "jira-dc": "https://developer.atlassian.com/server/jira-servicedesk/rest/v1103/api-group-issue/",
+    "avatar": "https://developer.atlassian.com/server/jira-servicedesk/rest/v1103/api-group-user/",
+    "jsm-cloud": "https://developer.atlassian.com/cloud/jira/service-desk/rest/api-group-servicedesk/",
+    "jsm-dc": "https://developer.atlassian.com/server/jira-servicedesk/rest/v1103/api-group-request-attachment/",
+    "assets": "https://support.atlassian.com/jira/kb/how-to-add-an-attachment-to-an-insight-object-using-rest-api/"
+  }
+}

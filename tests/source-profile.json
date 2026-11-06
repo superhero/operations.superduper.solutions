@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/multipart-roots.test.mjs",
     "src/atlassian-files.test.mjs",
     "src/multipart-parts.test.mjs",
     "src/inline-worker-codec.test.mjs",

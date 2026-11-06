@@ -562,6 +562,8 @@
     "id": "jira",
     "name": "Atlassian / Jira / Cloud",
     "url": "https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/jira/platform/rest/",
+    "provider": "atlassian",
     "version": "1001.0.0-SNAPSHOT-cb5afcc2a0901f4ca3e6469acd6245b98aa5a2ca",
     "openapi": "3.0.1",
     "operations": 630,
@@ -573,8 +575,14 @@
     "sourceSha256": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
     "bytes": 2509957,
     "compressedBytes": 310020,
-    "provider": "atlassian",
-    "provenance": "https://developer.atlassian.com/cloud/jira/platform/rest/"
+    "patches": [
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "b0097ba89a0cf368674e72fa1f1ef2feaef9567184364272d8769dc313a003c0",
+    "effectiveBytes": 2510586
   },
   {
     "id": "jira-service-management",
@@ -590,7 +598,15 @@
     "sha256": "e2ff7579a087099e6482b78475730ea508e8933e8349af3b4fe58eb1a9cad944",
     "sourceSha256": "01a692e5eb65d977c607246e27ba02ed809af2f85877cb418f16620d0fb79354",
     "bytes": 377308,
-    "compressedBytes": 42985
+    "compressedBytes": 42985,
+    "patches": [
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "a87ddb62abcc2cfd5753a824f58d31dac04141d68fbffe076bb9b8dce96f18c6",
+    "effectiveBytes": 378005
   },
   {
     "id": "jira-service-management-dc",
@@ -618,12 +634,16 @@
         "version": 1
       },
       {
+        "id": "multipart-root-contracts",
+        "version": 1
+      },
+      {
         "id": "catalog-path-bindings",
         "version": 1
       }
     ],
-    "effectiveSha256": "cf0304fb650d32c40ed9c92e61e373cb464d457940ff26a76436bc197f4664ca",
-    "effectiveBytes": 788907
+    "effectiveSha256": "3f05737de23bffa1a1d03280d3e8854d5ab747a4c58cfaeb1a90b847ada761ec",
+    "effectiveBytes": 791233
   },
   {
     "id": "jira-service-management-ops",
@@ -703,12 +723,16 @@
         "version": 1
       },
       {
+        "id": "multipart-root-contracts",
+        "version": 1
+      },
+      {
         "id": "catalog-path-bindings",
         "version": 1
       }
     ],
-    "effectiveSha256": "501543918b9d643c743783f7df0bcb6f872c9ed97707faa53f47fd3ef99888f4",
-    "effectiveBytes": 636790
+    "effectiveSha256": "e15852b08f8198aec1fcff5d41a605434f5943b39d93cf5dd837cbe34871075d",
+    "effectiveBytes": 637940
   },
   {
     "id": "atlassian-marketplace",
@@ -2385,10 +2409,14 @@
       {
         "id": "multipart-part-contracts",
         "version": 1
+      },
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "a686c7d20b24dc11139a34b6731aa31fee295ba3a30c066ffd2bc6840601b713",
-    "effectiveBytes": 13598849
+    "effectiveSha256": "2b60671d10b5d290cbcf919588a9d2771542924649a848995a90d7d8779f2317",
+    "effectiveBytes": 13599951
   },
   {
     "id": "cloudflare-realtime-sfu",

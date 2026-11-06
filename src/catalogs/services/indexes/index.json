@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "b492890c49be3660f96ff2f0e6f6d382ec638dfcd39809297c3e9801641d8096",
+  "adapterRevision": "6daf942dc7ff035eba9f43d55d72492e369201df6dd4f41fda8213f8f9ab0ebf",
   "indexes": [
     {
       "id": "anthropic",
@@ -385,44 +385,44 @@
     },
     {
       "id": "jira",
-      "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
-      "bytes": 228946,
-      "compressedBytes": 19265,
-      "sha256": "8379ce0a0214c71c17e4cd809ee953063237906645e142e33f08564a9c4316f1",
+      "sourceRevision": "b0097ba89a0cf368674e72fa1f1ef2feaef9567184364272d8769dc313a003c0",
+      "bytes": 228822,
+      "compressedBytes": 19208,
+      "sha256": "85df0cce4da7ee811e866b535ab4ff2a84644df1c13c1127440181c57accdccf",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
         "description": "Jira Cloud platform REST API documentation",
         "operationCount": 630,
-        "unavailableCount": 4
+        "unavailableCount": 3
       }
     },
     {
       "id": "jira-service-management",
-      "sourceRevision": "e2ff7579a087099e6482b78475730ea508e8933e8349af3b4fe58eb1a9cad944",
-      "bytes": 35926,
-      "compressedBytes": 2522,
-      "sha256": "a24dac345c149f0f709a22477b158d82f1a1633f8f4c21d7109ea16569884950",
+      "sourceRevision": "a87ddb62abcc2cfd5753a824f58d31dac04141d68fbffe076bb9b8dce96f18c6",
+      "bytes": 35802,
+      "compressedBytes": 2439,
+      "sha256": "1f263afcf5a838648fabf899a07bb45f8cfff886db87464a15d3847211c41826",
       "summary": {
         "name": "Service Management Public REST API",
         "serverUrl": "https://your-domain.atlassian.net",
         "description": "Public REST API for Jira Service Management",
         "operationCount": 75,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
       "id": "jira-service-management-dc",
-      "sourceRevision": "cf0304fb650d32c40ed9c92e61e373cb464d457940ff26a76436bc197f4664ca",
-      "bytes": 217629,
-      "compressedBytes": 16944,
-      "sha256": "20c99f2dc0f58c3888dd4699f46ef9e76fe9224d995164e24d700a2008669dc7",
+      "sourceRevision": "3f05737de23bffa1a1d03280d3e8854d5ab747a4c58cfaeb1a90b847ada761ec",
+      "bytes": 217218,
+      "compressedBytes": 16813,
+      "sha256": "caa277648224b4f4aa2286233c54f91e72c05c150a41771b9657b63d45265747",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Service Management Data Center. The REST APIs are for developers who want to integrate Jira Service Management Data Center with other applications, and for administrators who want to script configuration interactions with Jira Service Management Data Center.## Using the REST API\nNot familiar with the Jira Service Management REST APIs? Start with our [Guide to exploring the Jira Service Management domain model via the REST APIs](https://developer.atlassian.com/display/JIRADEV/Guide+-+Exploring+the+JIRA+Service+Desk+domain+model+via+the+REST+APIs), which will help you get a conceptual understanding of the Jira Service Management Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the information on the following topics:\n* [Structure of the REST URIs](/server/jira-servicedesk/info/url-structure)\n* [Authentication](/server/jira-servicedesk/info/authentication)\n* [Expansion](/server/jira-servicedesk/info/expansion)\n* [Special headers](/server/jira-servicedesk/info/special-headers)\n* [Field input formats](/server/jira-servicedesk/info/field-input-formats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 514,
-        "unavailableCount": 7
+        "unavailableCount": 3
       }
     },
     {
@@ -455,16 +455,16 @@
     },
     {
       "id": "jira-dc",
-      "sourceRevision": "501543918b9d643c743783f7df0bcb6f872c9ed97707faa53f47fd3ef99888f4",
-      "bytes": 169095,
-      "compressedBytes": 14178,
-      "sha256": "0461c58407ee2341e066df5dea61d4f5c02c6fcc594c5a90fd45e65db2eae04a",
+      "sourceRevision": "e15852b08f8198aec1fcff5d41a605434f5943b39d93cf5dd837cbe34871075d",
+      "bytes": 168847,
+      "compressedBytes": 14050,
+      "sha256": "15e62cc7d90ca0edfb90c2fddc4cd7faf9ff873f98ae6a084e73a6180b4fe8d0",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Software Data Center. The REST APIs are for developers who want to integrate Jira Data Center with other applications, and for administrators who want to script configuration interactions with Jira Data Center.\n\nJira Data Center is built upon the Jira platform.  As such there is a natural overlap in functionality between what is provided by Jira Data Center and what is provided by the Jira platform.  If you are after an introductory, high-level view of the Jira REST APIs, then the best place to start is the [Jira REST API home](https://developer.atlassian.com/server/jira/platform/rest-apis/).\n## Using the REST API\nNot familiar with the Jira Data Center REST APIs? Start with our [Guide to exploring the Jira Data Center domain model via the REST APIs](https://developer.atlassian.com/server/jira/platform/tutorials_and_guides/), which will help you get a conceptual understanding of the Jira Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the [Appendix](#appendix) at the end of this page (after the resources), where you'll find information on the following topics:\n* [Structure of the REST URIs](#structure)\n* [Authentication](#authentication)\n* [Pagination](#pagination)\n* [Expansion](#expansion)\n* [Special headers](#special-headers)\n* [Field input formats](#fieldformats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 437,
-        "unavailableCount": 4
+        "unavailableCount": 2
       }
     },
     {
@@ -1417,16 +1417,16 @@
     },
     {
       "id": "cloudflare",
-      "sourceRevision": "a686c7d20b24dc11139a34b6731aa31fee295ba3a30c066ffd2bc6840601b713",
-      "bytes": 1626577,
-      "compressedBytes": 119496,
-      "sha256": "4532f2a525dd435a477ebfaed4874b962873b7f43ba5486928544a93725cf20a",
+      "sourceRevision": "2b60671d10b5d290cbcf919588a9d2771542924649a848995a90d7d8779f2317",
+      "bytes": 1626454,
+      "compressedBytes": 119407,
+      "sha256": "39ff4bc5d527e3ba3ceac75d10142385e1221d5524a7fe52fc97d4832ce789bb",
       "summary": {
         "name": "Cloudflare API",
         "serverUrl": "https://api.cloudflare.com/client/v4",
         "description": "Welcome to Cloudflare's API documentation site. We are experimenting with an updated version of our API documentation - check out [developers.cloudflare.com/api-next/](https://developers.cloudflare.com/api-next/) to test out the new experience.\n\nTo get started using Cloudflare's products and services via the API, refer to [how to interact with Cloudflare](https://developers.cloudflare.com/fundamentals/basic-tasks/interact-with-cloudflare/), which covers using tools like [Terraform](https://developers.cloudflare.com/terraform/#cloudflare-terraform) and the [official SDKs](https://developers.cloudflare.com/fundamentals/api/reference/sdks/) to maintain your Cloudflare resources.\n\nUsing the Cloudflare API requires authentication so that Cloudflare knows who is making requests and what permissions you have. Create an API token to grant access to the API to perform actions. You can also authenticate with [API keys](https://developers.cloudflare.com/fundamentals/api/get-started/keys/), but these keys have [several limitations](https://developers.cloudflare.com/fundamentals/api/get-started/keys/#limitations) that make them less secure than API tokens. Whenever possible, use API tokens to interact with the Cloudflare API.\n\nTo create an API token, from the Cloudflare dashboard, go to My Profile > API Tokens and select Create Token. For more information on how to create and troubleshoot API tokens, refer to\nour [API fundamentals](https://developers.cloudflare.com/fundamentals/api/).\n\nFor information regarding rate limits, refer to our [API Rate Limits](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/platform/limits/#api-rate-limits).\n\nTotally new to Cloudflare? [Start here](https://developers.cloudflare.com/fundamentals/get-started/).",
         "operationCount": 3761,
-        "unavailableCount": 4
+        "unavailableCount": 3
       }
     },
     {
@@ -2701,15 +2701,15 @@
     {
       "id": "groq",
       "sourceRevision": "24a6ad42e199c84687dc4037a8173f52bdc721c74ed1670c8c58441805ee1cf2",
-      "bytes": 8896,
-      "compressedBytes": 1511,
-      "sha256": "7663cd9abd5009321f63c420d0e86fe74b14d02da987a157d01b22feb7f44c22",
+      "bytes": 8650,
+      "compressedBytes": 1429,
+      "sha256": "14cf52976e054a0160ceeee91f957f934991d662c6ea3381b381fff051606a0f",
       "summary": {
         "name": "GroqCloud API",
         "serverUrl": "https://api.groq.com",
         "description": "Specification of the Groq cloud API",
         "operationCount": 23,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
@@ -2924,15 +2924,15 @@
     {
       "id": "mistral",
       "sourceRevision": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
-      "bytes": 74336,
-      "compressedBytes": 6776,
-      "sha256": "3492e7d5f0bc6dad2a217e582e6cd56e732a98d33c29694f3a64e3a1659e90d1",
+      "bytes": 74109,
+      "compressedBytes": 6722,
+      "sha256": "43751a3e022a6dbc4d27275edad569300442535e5391b7bd001cf0d9d454d12a",
       "summary": {
         "name": "Mistral AI API",
         "serverUrl": "https://api.mistral.ai",
         "description": "Our Chat Completion and Embeddings APIs specification. Create your account on [La Plateforme](https://console.mistral.ai) to get access and read the [docs](https://docs.mistral.ai) to learn how to use it.",
         "operationCount": 173,
-        "unavailableCount": 9
+        "unavailableCount": 8
       }
     },
     {

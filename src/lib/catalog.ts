@@ -48,6 +48,8 @@ export type InputSchema = {
   properties?: Record<string, InputSchema>;
   additionalProperties?: boolean | InputSchema;
   required?: string[];
+  /** Exactly one required-only object branch must match the supplied names. */
+  requiredOneOf?: string[][];
   items?: InputSchema;
 };
 export type InputField = Omit<InputSchema, "properties" | "required" | "items"> & {
@@ -418,7 +420,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
           const form = bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data";
           supported(media, ["schema", "example", "examples", ...(form ? ["encoding"] : [])], id);
           const shape = resolve(media.schema, document, id);
-          const encodedForm = bodyMediaType === "multipart/form-data" && media.encoding !== undefined;
+          const encodedForm = bodyMediaType === "multipart/form-data" && (media.encoding !== undefined
+            || shape.oneOf !== undefined || shape.$defs !== undefined);
           const compiled = encodedForm ? multipartBodySchema(shape, raw => resolve(raw, document, id), raw => serviceInputSchema(raw, document, true)) : undefined;
           const schema = compiled?.schema ?? inputSchema(shape, document, id);
           bodySchema = schema;

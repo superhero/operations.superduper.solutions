@@ -355,7 +355,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               if (!mediaType) throw new Error(`This request requires an unsupported binary or streaming media type. Declared request media types: ${Object.keys(content).join(", ")}.`);
               const schema = resolve(value(content[mediaType]).schema, document);
               const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
-              const encodedForm = mediaType === "multipart/form-data" && value(content[mediaType]).encoding !== undefined;
+              const encodedForm = mediaType === "multipart/form-data" && (value(content[mediaType]).encoding !== undefined
+                || schema.oneOf !== undefined || schema.$defs !== undefined);
               const compiled = encodedForm ? multipartBodySchema(schema, raw => resolve(raw, document), raw => serviceInputSchema(raw, document, true)) : undefined;
               const parsed = compiled?.schema ?? inputSchema(schema, document, 0, new Set(), binary || isYamlRequestMediaType(mediaType),
                 mediaType === "application/x-www-form-urlencoded" ? formPropertyBudget(operation, schema, document) : 200);

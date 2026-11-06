@@ -111,6 +111,14 @@ function validate(input: InputField, schema: InputSchema, value: JsonValue, path
   {
     const properties = value as Record<string, JsonValue>;
     const names = Object.keys(properties);
+    if (schema.requiredOneOf !== undefined) {
+      if (!Array.isArray(schema.requiredOneOf) || schema.requiredOneOf.length < 2 || schema.requiredOneOf.length > 16
+        || schema.requiredOneOf.some(branch => !Array.isArray(branch) || !branch.length || branch.length > 200
+          || new Set(branch).size !== branch.length || branch.some(name => typeof name !== "string" || !Object.hasOwn(schema.properties ?? {}, name))))
+        fail(input, `${path} has an invalid exclusive required-field contract.`);
+      if (schema.requiredOneOf.filter(branch => branch.every(name => Object.hasOwn(properties, name))).length !== 1)
+        fail(input, `${path} must supply exactly one of ${schema.requiredOneOf.map(branch => branch.map(name => JSON.stringify(name)).join(" + ")).join(" or ")}.`);
+    }
     if (schema.minProperties !== undefined && names.length < schema.minProperties || schema.maxProperties !== undefined && names.length > schema.maxProperties)
       fail(input, `${path} property count is outside the allowed range.`);
     if (schema.propertyNames) for (const name of names) validate(input, schema.propertyNames, name, `${path} property name ${JSON.stringify(name)}`);
