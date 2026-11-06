@@ -7,6 +7,7 @@ import { operationDisplayName } from "./operation-display.ts";
 import { configureGitlabJsonForm } from "./gitlab-form.ts";
 import { configureMistralVariant, mistralVariantRoute } from "./mistral-variant.ts";
 import { configureGmailMessage } from "./gmail-message.ts";
+import { configureMediaUpload } from "./media-upload.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -410,6 +411,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
             }
             configureGitlabJsonForm(operation, source["x-operations-gitlab-form"]);
             configureGmailMessage(operation, source["x-operations-gmail-message"]);
+            configureMediaUpload(operation, source["x-operations-google-media"], source["x-operations-raw-upload"]);
           });
           if (parametersValid) inspect("endpoint", "invalid-contract", () => validatePathParameters(path, operation.fields));
         }

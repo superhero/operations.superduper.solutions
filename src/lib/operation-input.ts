@@ -6,6 +6,7 @@ import { supportsCredentialResults } from "./credential-results.ts";
 import { useGitlabJsonBody } from "./gitlab-form.ts";
 import { mistralVariantRoute, mistralVariantInputs } from "./mistral-variant.ts";
 import { gmailMessageMode, prepareGmailMessage, gmailMimeInputKey } from "./gmail-message.ts";
+import { mediaUploadMode, prepareMediaUpload, mediaUploadInputKey } from "./media-upload.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
 import { awsRestUsesS3Keys } from "./aws-rest.ts";
 import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
@@ -40,7 +41,7 @@ export type PreparedRequest = {
   body?: JsonValue;
   headers?: Record<string, string>;
   contentType?: Exclude<BodyMediaType, "application/json">;
-  bodyFormat?: "binary" | "text" | "cloudflare-assets" | "cloudflare-module" | "gmail-related";
+  bodyFormat?: "binary" | "text" | "cloudflare-assets" | "cloudflare-module" | "gmail-related" | "google-related";
   multipartParts?: MultipartParts;
   /** Derived from a reviewed S3 Control ARN, never from an arbitrary destination. */
   awsRestOutpost?: { region: string; account: string; id: string };
@@ -223,6 +224,9 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   try { validateLiteralQueryFields(operation.path, operation.fields); }
   catch (cause) { throw new InputValidationError("query:beta", (cause as Error).message); }
   const request: PreparedRequest = { method: operation.method, path: variant?.path ?? route?.path ?? operation.path, query: { ...route?.query } };
+  let media: ReturnType<typeof mediaUploadMode>;
+  try { media = mediaUploadMode(operation, values); }
+  catch (cause) { throw new InputValidationError(mediaUploadInputKey, (cause as Error).message); }
   let gmail: ReturnType<typeof gmailMessageMode>;
   try { gmail = gmailMessageMode(operation, values); }
   catch (cause) { throw new InputValidationError(gmailMimeInputKey, (cause as Error).message); }
@@ -233,14 +237,14 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     if (!jsonForm) request.multipartParts = structuredClone(operation.multipartParts);
   }
   const body: Record<string, JsonValue> = {};
-  const fields = operation.fields.filter(field => !gmail || field.key !== gmailMimeInputKey);
+  const fields = operation.fields.filter(field => (!gmail || field.key !== gmailMimeInputKey) && (!media || field.key !== mediaUploadInputKey));
   if (operation.s3Files || operation.awsWire || operation.awsRest || operation.awsJson || operation.awsQuery) for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && !fields.some(field => field.key === key))
       throw new InputValidationError(key, "This input is outside the supported AWS operation profile.");
   }
   for (const candidate of workflowFields)
   {
-    if (gmail && candidate.key === gmailMimeInputKey) continue;
+    if (gmail && candidate.key === gmailMimeInputKey || media && candidate.key === mediaUploadInputKey) continue;
     if (candidate.location !== "body" || fields.some(field => field.key === candidate.key)) continue;
     const input = candidate.key === `body:${candidate.name}` && additionalBodyField(operation, candidate.name, candidate.type);
     if (!input) fail(candidate, "this body property is not allowed by the operation schema.");
@@ -363,5 +367,6 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     return { ...request, path: wire.path, query: {}, headers: { "X-Amz-Target": wire.headers["X-Amz-Target"] },
       body: new TextDecoder().decode(wire.bytes), bodyFormat: "text", contentType: wire.headers["Content-Type"] as `${string}/${string}` };
   }
-  return operation.awsRest ? prepareAwsRestRequest(operation, request) : operation.awsWire ? prepareAwsWireRequest(operation, request) : prepareGmailMessage(request, gmail);
+  return prepareMediaUpload(operation, operation.awsRest ? prepareAwsRestRequest(operation, request)
+    : operation.awsWire ? prepareAwsWireRequest(operation, request) : prepareGmailMessage(request, gmail), media);
 }

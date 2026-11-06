@@ -284,6 +284,10 @@
     "compressedBytes": 119473,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "catalog-path-bindings",
         "version": 1
       },
@@ -292,8 +296,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "1de7e8b005debdfef8598236a01a7a857e404d0c93ab9166c4e57f49bcf31e6e",
-    "effectiveBytes": 1311787
+    "effectiveSha256": "a001bc55f356f0346c2b61f0a59a1ea8c156ce4e66596d264dcd6c6680fee491",
+    "effectiveBytes": 1317129
   },
   {
     "id": "atlassian-capacity-planning",
@@ -435,12 +439,16 @@
     "compressedBytes": 35462,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "atlassian-file-parts",
         "version": 1
       }
     ],
-    "effectiveSha256": "1b9ae7af271997a4be8990104cdbf096643ae88d4f00010e46ae765743cbe1fe",
-    "effectiveBytes": 265471
+    "effectiveSha256": "d0903f37b41afe1d9dfef6b1fad881422b758d1a6f681a0a100a62b0dff3f9db",
+    "effectiveBytes": 265677
   },
   {
     "id": "atlassian-customer-service-management",
@@ -581,12 +589,16 @@
     "compressedBytes": 310020,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "multipart-root-contracts",
         "version": 1
       }
     ],
-    "effectiveSha256": "b0097ba89a0cf368674e72fa1f1ef2feaef9567184364272d8769dc313a003c0",
-    "effectiveBytes": 2510586
+    "effectiveSha256": "54bf4b7cd242c5dd8d3838092ee56fbdeaddf6c5aab80bc78e28cb4c3aa9a698",
+    "effectiveBytes": 2513773
   },
   {
     "id": "jira-service-management",
@@ -630,6 +642,10 @@
     "compressedBytes": 89095,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "atlassian-dc-authentication",
         "version": 1
       },
@@ -646,8 +662,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "3f05737de23bffa1a1d03280d3e8854d5ab747a4c58cfaeb1a90b847ada761ec",
-    "effectiveBytes": 791233
+    "effectiveSha256": "39b039fa15470d2bc9ba2a4aac5eea26b52e577ddbac4977a226857613cf748d",
+    "effectiveBytes": 791714
   },
   {
     "id": "jira-service-management-ops",
@@ -719,6 +735,10 @@
     "compressedBytes": 80847,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "atlassian-dc-authentication",
         "version": 1
       },
@@ -735,8 +755,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "e15852b08f8198aec1fcff5d41a605434f5943b39d93cf5dd837cbe34871075d",
-    "effectiveBytes": 637940
+    "effectiveSha256": "1178580ab3d7002c663baf02d7b519fd2543ce728dfe65c808e1e495d9594ddd",
+    "effectiveBytes": 638269
   },
   {
     "id": "atlassian-marketplace",
@@ -2453,7 +2473,15 @@
     "sha256": "02fc57bf6b47faca285b60712403939e36ed4e997ad13ca52b2c523862df20ba",
     "sourceSha256": "f224143320a72c47d1db9dad939debe53e3e632033ee8fa66effef5fa2161d69",
     "bytes": 557190,
-    "compressedBytes": 51746
+    "compressedBytes": 51746,
+    "patches": [
+      {
+        "id": "upload-body-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "293121bf1dbde034f7080fc23da42c097d787b9e83c1fe27dce2237f1b627bbf",
+    "effectiveBytes": 558487
   },
   {
     "id": "bluesky-dms",
@@ -2956,12 +2984,16 @@
     "compressedBytes": 15815,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "f0b2069f264e1ec82dd0dd8d9b367c02f38496efd1c0fc91d1ecec8c936a0d0d",
-    "effectiveBytes": 107805
+    "effectiveSha256": "591442aa817531e0888dc3410a14e1ed2d0df7ffcb1e917c68ec655ccf36c73c",
+    "effectiveBytes": 108975
   },
   {
     "id": "gcp-cloudasset",
@@ -4554,12 +4586,16 @@
     "compressedBytes": 32558,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "376ea9392e52f5c11e643539539645636b450103da8f97bc5b8cace6fe1a9d39",
-    "effectiveBytes": 170694
+    "effectiveSha256": "c7425f01366354709d0e9725eb83557a141b14e5415dcb58a9bf572f481a1aca",
+    "effectiveBytes": 170915
   },
   {
     "id": "google-classroom",
@@ -4666,12 +4702,16 @@
     "compressedBytes": 22693,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "3eb1cb005a27f06c51a7f3880dcb3fa7ffdec18f30f3343202f503b6110f03c7",
-    "effectiveBytes": 196870
+    "effectiveSha256": "3bb263ed25bb0170c4ef06b5b21523621b9e39ebd3f7d091a4e47fa65f6c57c9",
+    "effectiveBytes": 197272
   },
   {
     "id": "google-drive-labels",
@@ -4978,12 +5018,16 @@
     "compressedBytes": 46475,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "1fea92aedfb6713b9b61a7aeb6ea523dea30689c054725e02c0e2a5edb0174bc",
-    "effectiveBytes": 408504
+    "effectiveSha256": "466a59d4eb07671d19823a4b2efa83acab732fb97fbeacea555b42c42bdf65e2",
+    "effectiveBytes": 409778
   },
   {
     "id": "groq",

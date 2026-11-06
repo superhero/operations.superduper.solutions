@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/upload-bodies.test.mjs",
     "src/cloudflare-logo.test.mjs",
     "src/commerce-authentication.test.mjs",
     "src/gmail-messages.test.mjs",
@@ -143,6 +144,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/upload-bodies.feature",
     "src/cloudflare-logo.feature",
     "src/commerce-authentication.feature",
     "src/inline-worker-codec.feature",

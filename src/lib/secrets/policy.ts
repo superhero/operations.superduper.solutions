@@ -5,6 +5,7 @@ import { literalQueryRoute, validateLiteralQueryFields } from "../literal-query.
 import { validGitlabJsonForm } from "../gitlab-form.ts";
 import { mistralVariantRoute } from "../mistral-variant.ts";
 import { validGmailMessage } from "../gmail-message.ts";
+import { validUploadModel } from "../media-upload.ts";
 import { supportsCredentialResults, privateResultOriginAllowed } from "../credential-results.ts";
 import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
@@ -104,6 +105,7 @@ function validateOperation(operation: Operation): void
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
   if (operation.bodyEncoding !== undefined && !validGitlabJsonForm(operation)) throw new VaultError("PERMISSION");
   if (operation.gmailMessage !== undefined && !validGmailMessage(operation)) throw new VaultError("PERMISSION");
+  if ((operation.googleMedia !== undefined || operation.rawUpload !== undefined) && !validUploadModel(operation)) throw new VaultError("PERMISSION");
   if (operation.multipartParts !== undefined) {
     if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new VaultError("PERMISSION");
     try { validateMultipartParts(operation.multipartParts, operation.bodySchema); } catch { throw new VaultError("PERMISSION"); }

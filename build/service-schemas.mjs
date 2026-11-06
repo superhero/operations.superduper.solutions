@@ -30,6 +30,8 @@ import { catalogPathBindingSources } from '../src/lib/catalog-path-bindings.ts';
 import { commerceAuthentication, cloudflareLogoUpload } from '../src/lib/schema-patches.ts';
 import { commerceAuthenticationSourceSha256 } from '../src/lib/atlassian-commerce-authentication.ts';
 import { cloudflareLogoSourceSha256 } from '../src/lib/multipart-file-contracts.ts';
+import { uploadBodySources } from '../src/lib/upload-body-contracts.ts';
+import { uploadBodyContractsPatch } from '../src/lib/schema-patches.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { awsRestSourcePins } from '../src/lib/aws-rest-bindings.ts';
 import { awsQuerySourcePins } from '../src/lib/aws-query-bindings.ts';
@@ -202,6 +204,8 @@ for (const source of sources) {
     throw new Error('Bitbucket content parameters require requalification before updating the pinned native source.');
   if (Object.hasOwn(credentialResultSources, source.id) && sha(json) !== credentialResultSources[source.id])
     throw new Error('Private credential results require requalification before updating the pinned native source.');
+  if (Object.hasOwn(uploadBodySources, source.id) && sha(json) !== uploadBodySources[source.id].sha256)
+    throw new Error('Upload body contracts require requalification before updating the pinned native source.');
   const patches = source.id === 'ecb' ? [ecbRegistrationParameters]
     : source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
     : source.profile === 'atlassian-dc-authentication' ? [atlassianDcAuthentication]
@@ -220,6 +224,7 @@ for (const source of sources) {
     : source.profile === 'aws-s3-files' ? [awsS3Files]
     : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
 
+  if (Object.hasOwn(uploadBodySources, source.id)) patches.unshift(uploadBodyContractsPatch);
   if (source.id === 'cloudflare') patches.push(cloudflareLogoUpload);
   if (source.id === 'atlassian-commerce') patches.push(commerceAuthentication);
   if (Object.hasOwn(betaRouteSources, source.id)) patches.push(betaRouteContracts);

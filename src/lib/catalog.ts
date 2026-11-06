@@ -8,6 +8,7 @@ import { operationDisplayName } from "./operation-display.ts";
 import { configureGitlabJsonForm } from "./gitlab-form.ts";
 import { configureMistralVariant } from "./mistral-variant.ts";
 import { configureGmailMessage, requireGmailMessageRoute } from "./gmail-message.ts";
+import { configureMediaUpload } from "./media-upload.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -102,6 +103,8 @@ export type Operation = {
   bodyEncoding?: "gitlab-json-or-multipart-v1";
   mistralVariant?: "mistral-fragments-v1";
   gmailMessage?: "gmail-message-v1";
+  googleMedia?: "google-media-v1";
+  rawUpload?: "raw-upload-v1";
   multipartParts?: MultipartParts;
   responseExample?: unknown;
   responseMediaType?: string;
@@ -504,6 +507,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (multipartParts) extracted.multipartParts = multipartParts;
       configureGitlabJsonForm(extracted, operation["x-operations-gitlab-form"]);
       configureGmailMessage(extracted, operation["x-operations-gmail-message"]);
+      configureMediaUpload(extracted, operation["x-operations-google-media"], operation["x-operations-raw-upload"]);
       const stream = responseStreamProfile(operation["x-operations-response-stream"]);
       if (stream) extracted.responseStream = stream;
       configureMistralVariant(extracted, operation["x-operations-mistral-variant"], stream);
@@ -513,7 +517,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (privatePath) extracted.privatePath = privatePath;
       if (operation["x-operations-credential-result"] === true) extracted.credentialResult = true;
       if (operation["x-operations-private-result"] === privateResultVersion) extracted.credentialResultProfile = privateResultVersion;
-      const security = extracted.gmailMessage ? serviceOperationSecurity(document, operation, extracted) : inspectOperationSecurity(document, operation);
+      const security = extracted.gmailMessage || extracted.googleMedia ? serviceOperationSecurity(document, operation, extracted) : inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
       if (security?.flat().some(scheme => scheme.kind === "aws-sigv4")) {
         configureAwsSigning(extracted);

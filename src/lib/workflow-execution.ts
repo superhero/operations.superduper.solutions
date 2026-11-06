@@ -113,7 +113,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         const requestSignal = lifetime.signal;
         let response: Response;
         const headers: Record<string, string> = { Accept: responseAccept(canonical.responseStream, canonical.responseMediaType, request.body), ...request.headers };
-        if (request.body !== undefined && request.contentType !== "multipart/form-data" && request.bodyFormat !== "gmail-related")
+        if (request.body !== undefined && request.contentType !== "multipart/form-data" && request.bodyFormat !== "gmail-related" && request.bodyFormat !== "google-related")
           headers["Content-Type"] = request.contentType ?? "application/json";
         try
         {

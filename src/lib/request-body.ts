@@ -7,6 +7,7 @@ import type { PreparedRequest } from "./operation-input.ts";
 import { validateWorkflowBinary, workflowBinaryBlob } from "./workflow-binary.ts";
 import { appendMultipartPart, multipartBody } from "./multipart-parts.ts";
 import { gmailRelatedBody } from "./gmail-message.ts";
+import { googleRelatedBody } from "./media-upload.ts";
 
 function formText(value: JsonValue): string {
   if (value === null) throw new Error("Explicit null has no qualified form encoding.");
@@ -23,6 +24,7 @@ export function requestBody(request: PreparedRequest): BodyInit | null {
   }
   if (request.bodyFormat === "cloudflare-assets" || request.bodyFormat === "cloudflare-module") return cloudflareMultipart(request);
   if (request.bodyFormat === "gmail-related") return gmailRelatedBody(request.body);
+  if (request.bodyFormat === "google-related") return googleRelatedBody(request.body);
   if (request.bodyFormat === "binary") return workflowBinaryBlob(request.body, request.contentType);
   if (request.contentType === "text/plain") return String(request.body);
   if (request.contentType === "application/x-www-form-urlencoded" || request.contentType === "multipart/form-data") {

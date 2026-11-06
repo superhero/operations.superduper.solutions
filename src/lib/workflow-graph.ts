@@ -159,12 +159,13 @@ function inputGroups(operation: Operation, source: Schema | undefined, pathItem:
   const titles: Record<string, string> = { path: "Path parameters", query: "Query parameters", header: "Headers", cookie: "Cookies" };
   const result = [...groups].map(([id, group]) => ({ id: `input:${id}`, label: titles[id]!,
     schema: { type: "object", properties: group.properties, required: group.required } as unknown }));
-  if (operation.gmailMessage) {
+  if (operation.gmailMessage || operation.googleMedia) {
     const content = source?.requestBody === undefined ? undefined : resolve(source.requestBody, document).schema.content;
     const resource = object(content) && object(content["application/json"]) ? content["application/json"].schema : operation.bodySchema?.properties?.$;
     result.push({ id: "input:body", label: "Request body", schema: { type: "object", additionalProperties: false, properties: {
-      $: { ...(object(resource) ? resource : {}), title: "Message resource" },
-      $mime: { type: "string", format: "binary", minLength: 1, maxLength: maxWorkflowUploadBytes, title: "MIME message" },
+      $: { ...(object(resource) ? resource : {}), title: operation.googleMedia ? "Metadata" : "Message resource" },
+      [operation.googleMedia ? "$media" : "$mime"]: { type: "string", format: "binary", ...(operation.gmailMessage ? { minLength: 1 } : {}),
+        maxLength: maxWorkflowUploadBytes, title: operation.googleMedia ? "Media file" : "MIME message" },
     } } });
   }
   else if (source?.requestBody !== undefined)
@@ -280,7 +281,7 @@ export function createOperationGraph(operation: Operation, position: { x: number
     const groups = input ? inputs : outputs;
     const trees = groups.length ? groups.slice(0, 100).map(group => ({ id: group.id,
       tree: project(group.schema, schemaDocument, group.id, group.label, "", [], 0, budget, direction,
-        input && group.id === "input:body" && (!!operation.binaryMediaTypes || operation.bodyMediaType === "multipart/form-data" || !!operation.gmailMessage)) })) : [{ id: direction,
+        input && group.id === "input:body" && (!!operation.binaryMediaTypes || operation.bodyMediaType === "multipart/form-data" || !!operation.gmailMessage || !!operation.googleMedia)) })) : [{ id: direction,
       tree: { label: input ? "Inputs" : "Outputs", fields: [], children: [], height: 98, span: 98,
         notice: input ? "No input fields documented" : "Response schema not documented" } as Tree }];
     let y = position.y - (trees.reduce((sum, item) => sum + item.tree.span, 0) + (trees.length - 1) * 32) / 2 + 40;

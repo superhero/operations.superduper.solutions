@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "6d45f41afad2a04804563d9296ada9ba3c05e459ab2badea04915e918bda7e67",
+  "adapterRevision": "1888a23a2cb9fdb305f00ad1329569b1ed3f7605d512a9700086038746c3351a",
   "indexes": [
     {
       "id": "anthropic",
@@ -179,16 +179,16 @@
     },
     {
       "id": "bitbucket-dc",
-      "sourceRevision": "1de7e8b005debdfef8598236a01a7a857e404d0c93ab9166c4e57f49bcf31e6e",
-      "bytes": 221235,
-      "compressedBytes": 15623,
-      "sha256": "e20fa4008543f1c09c5deb1ec29d6ecff04eb6c21a93112e84a88b956afc90b6",
+      "sourceRevision": "a001bc55f356f0346c2b61f0a59a1ea8c156ce4e66596d264dcd6c6680fee491",
+      "bytes": 217650,
+      "compressedBytes": 15271,
+      "sha256": "f59839f808153e5098d994bb0aafc41376b4294f02761eb562b632b02ceefab2",
       "summary": {
         "name": "Bitbucket Data Center",
         "serverUrl": "http://example.com:7990/rest",
         "description": "This is the reference document for the Atlassian Bitbucket REST API. The REST API is for developers who want to: \n\n - integrate Bitbucket with other applications;\n\n - create scripts that interact with Bitbucket; or\n\n - develop plugins that enhance the Bitbucket UI, using REST to interact with the backend. \n\n You can read more about developing Bitbucket plugins in the [Bitbucket Developer Documentation](https://developer.atlassian.com/bitbucket/server/docs/latest/).",
         "operationCount": 574,
-        "unavailableCount": 18
+        "unavailableCount": 0
       }
     },
     {
@@ -289,16 +289,16 @@
     },
     {
       "id": "crowd-dc",
-      "sourceRevision": "1b9ae7af271997a4be8990104cdbf096643ae88d4f00010e46ae765743cbe1fe",
-      "bytes": 48712,
-      "compressedBytes": 4429,
-      "sha256": "fc148cc56dcfa625673f9c7fc570ac61df341041e0079f282b2a66abbdb1630f",
+      "sourceRevision": "d0903f37b41afe1d9dfef6b1fad881422b758d1a6f681a0a100a62b0dff3f9db",
+      "bytes": 48502,
+      "compressedBytes": 4331,
+      "sha256": "d88557b2c35f0a5419292cff8f98e64aaf684031095a655c4bba63c235a45936",
       "summary": {
         "name": "Crowd Data Center",
         "serverUrl": "http://example.com:8095/rest",
         "description": "This is the reference document for the Atlassian Crowd DC REST API. The REST API is for developers who want to: \\n\\n - integrate Crowd with other applications;\\n\\n - create scripts that interact with Crowd; or\\n\\n - develop plugins that enhance the Crowd UI, using REST to interact with the backend. \\n\\n You can read more about developing Crowd plugins in the [Crowd Developer Documentation](https://developer.atlassian.com/server/crowd/).",
         "operationCount": 143,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
@@ -385,16 +385,16 @@
     },
     {
       "id": "jira",
-      "sourceRevision": "b0097ba89a0cf368674e72fa1f1ef2feaef9567184364272d8769dc313a003c0",
-      "bytes": 228822,
-      "compressedBytes": 19208,
-      "sha256": "85df0cce4da7ee811e866b535ab4ff2a84644df1c13c1127440181c57accdccf",
+      "sourceRevision": "54bf4b7cd242c5dd8d3838092ee56fbdeaddf6c5aab80bc78e28cb4c3aa9a698",
+      "bytes": 228342,
+      "compressedBytes": 18907,
+      "sha256": "0912b4247c551378c07bbeaa265cdb6596cc60a346c8a62de03cff3f320e5220",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
         "description": "Jira Cloud platform REST API documentation",
         "operationCount": 630,
-        "unavailableCount": 3
+        "unavailableCount": 0
       }
     },
     {
@@ -413,16 +413,16 @@
     },
     {
       "id": "jira-service-management-dc",
-      "sourceRevision": "3f05737de23bffa1a1d03280d3e8854d5ab747a4c58cfaeb1a90b847ada761ec",
-      "bytes": 217218,
-      "compressedBytes": 16813,
-      "sha256": "caa277648224b4f4aa2286233c54f91e72c05c150a41771b9657b63d45265747",
+      "sourceRevision": "39b039fa15470d2bc9ba2a4aac5eea26b52e577ddbac4977a226857613cf748d",
+      "bytes": 216697,
+      "compressedBytes": 16612,
+      "sha256": "d7e7f1f07aaae283e7d1dcfbb41abaccbe22fa9f610203618832ded7dd19a6c9",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Service Management Data Center. The REST APIs are for developers who want to integrate Jira Service Management Data Center with other applications, and for administrators who want to script configuration interactions with Jira Service Management Data Center.## Using the REST API\nNot familiar with the Jira Service Management REST APIs? Start with our [Guide to exploring the Jira Service Management domain model via the REST APIs](https://developer.atlassian.com/display/JIRADEV/Guide+-+Exploring+the+JIRA+Service+Desk+domain+model+via+the+REST+APIs), which will help you get a conceptual understanding of the Jira Service Management Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the information on the following topics:\n* [Structure of the REST URIs](/server/jira-servicedesk/info/url-structure)\n* [Authentication](/server/jira-servicedesk/info/authentication)\n* [Expansion](/server/jira-servicedesk/info/expansion)\n* [Special headers](/server/jira-servicedesk/info/special-headers)\n* [Field input formats](/server/jira-servicedesk/info/field-input-formats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 514,
-        "unavailableCount": 3
+        "unavailableCount": 0
       }
     },
     {
@@ -455,16 +455,16 @@
     },
     {
       "id": "jira-dc",
-      "sourceRevision": "e15852b08f8198aec1fcff5d41a605434f5943b39d93cf5dd837cbe34871075d",
-      "bytes": 168847,
-      "compressedBytes": 14050,
-      "sha256": "15e62cc7d90ca0edfb90c2fddc4cd7faf9ff873f98ae6a084e73a6180b4fe8d0",
+      "sourceRevision": "1178580ab3d7002c663baf02d7b519fd2543ce728dfe65c808e1e495d9594ddd",
+      "bytes": 168515,
+      "compressedBytes": 13937,
+      "sha256": "54902db2e895ffbdc416b800dffdc5fb0fdfa701337168ee3d74518f0ef151ea",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Software Data Center. The REST APIs are for developers who want to integrate Jira Data Center with other applications, and for administrators who want to script configuration interactions with Jira Data Center.\n\nJira Data Center is built upon the Jira platform.  As such there is a natural overlap in functionality between what is provided by Jira Data Center and what is provided by the Jira platform.  If you are after an introductory, high-level view of the Jira REST APIs, then the best place to start is the [Jira REST API home](https://developer.atlassian.com/server/jira/platform/rest-apis/).\n## Using the REST API\nNot familiar with the Jira Data Center REST APIs? Start with our [Guide to exploring the Jira Data Center domain model via the REST APIs](https://developer.atlassian.com/server/jira/platform/tutorials_and_guides/), which will help you get a conceptual understanding of the Jira Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the [Appendix](#appendix) at the end of this page (after the resources), where you'll find information on the following topics:\n* [Structure of the REST URIs](#structure)\n* [Authentication](#authentication)\n* [Pagination](#pagination)\n* [Expansion](#expansion)\n* [Special headers](#special-headers)\n* [Field input formats](#fieldformats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 437,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
@@ -1375,16 +1375,16 @@
     },
     {
       "id": "bluesky-app",
-      "sourceRevision": "02fc57bf6b47faca285b60712403939e36ed4e997ad13ca52b2c523862df20ba",
-      "bytes": 55869,
-      "compressedBytes": 5024,
-      "sha256": "9f3d8f7d11a2000a63d8f71e2170f4d42de231fa728f88f1775c8659929a3be3",
+      "sourceRevision": "293121bf1dbde034f7080fc23da42c097d787b9e83c1fe27dce2237f1b627bbf",
+      "bytes": 55379,
+      "compressedBytes": 4901,
+      "sha256": "bc19a2477060547d002ff6728c66c6cb1abef3b956f909ddc46c16a134b76181",
       "summary": {
         "name": "Bluesky HTTP API Reference — Bluesky App",
         "serverUrl": "https://bsky.social",
         "description": "This is the HTTP API reference for Bluesky. It covers the `app.bsky.*`, `com.atproto.*`, `chat.bsky.*`, and `tools.ozone.*` Lexicon namespaces — the Lexicons implemented by the Bluesky application, its related services (DMs, Ozone moderation), and the AT Protocol [PDS](https://atproto.com/guides/the-at-stack#pds) those services build on. Use the document switcher in the top left to move between endpoints.\n\nThe wider AT Protocol Lexicon ecosystem is open and any service can publish its own Lexicons. For an index of community Lexicons see [lexicon.garden](https://lexicon.garden/), and for the schema language itself see the [Lexicon guide](https://atproto.com/guides/lexicon).\n\n## Authentication and request routing\n\nThese endpoints don't all live on the same host, and where a request should be sent depends on whether the caller is authenticated:\n\n- **Most `app.bsky.*` `GET`s are public** and can be called without authentication against the Bluesky AppView at `https://public.api.bsky.app`. `POST`s (writes) and any endpoint that returns account-private data require auth.\n- **Authenticated requests should be sent to the user's own PDS**. The PDS validates the session and, if needed, proxies the request to the correct backend. Proxied requests should [include an `atproto-proxy` header](https://atproto.com/specs/xrpc#service-proxying). [Bluesky DMs](#bluesky-dms/description/introduction) and [Ozone Moderation](#ozone-moderation/description/introduction) requests always require proxying.\n\nFor client libraries that handle session management and proxying for you, see the [AT Protocol SDKs](https://atproto.com/sdks).\n\nTo consume the whole network as a live, filterable JSON firehose (or replay a slice of it), see the [Jetstream API](#jetstream/description/introduction).",
         "operationCount": 152,
-        "unavailableCount": 3
+        "unavailableCount": 0
       }
     },
     {
@@ -1680,16 +1680,16 @@
     },
     {
       "id": "gcp-artifactregistry",
-      "sourceRevision": "f0b2069f264e1ec82dd0dd8d9b367c02f38496efd1c0fc91d1ecec8c936a0d0d",
-      "bytes": 15410,
-      "compressedBytes": 1262,
-      "sha256": "c69972be3cde04816a09f32444d351ad26a256a14fa34a3224e73996664c8e8d",
+      "sourceRevision": "591442aa817531e0888dc3410a14e1ed2d0df7ffcb1e917c68ec655ccf36c73c",
+      "bytes": 14505,
+      "compressedBytes": 1146,
+      "sha256": "6d36ed4fdcaec7200f3a3ebeefc5ab26fdfacf1735f2914f92ef82a4d7158b9d",
       "summary": {
         "name": "Artifact Registry API",
         "serverUrl": "https://artifactregistry.googleapis.com",
         "description": "Store and manage build artifacts in a scalable and integrated service built on Google infrastructure.",
         "operationCount": 27,
-        "unavailableCount": 5
+        "unavailableCount": 0
       }
     },
     {
@@ -2476,16 +2476,16 @@
     },
     {
       "id": "google-chat",
-      "sourceRevision": "376ea9392e52f5c11e643539539645636b450103da8f97bc5b8cace6fe1a9d39",
-      "bytes": 8267,
-      "compressedBytes": 1047,
-      "sha256": "36533ffca339c82a09cb539bced7034b16f26d2647e523f87361a1cd84a19374",
+      "sourceRevision": "c7425f01366354709d0e9725eb83557a141b14e5415dcb58a9bf572f481a1aca",
+      "bytes": 8086,
+      "compressedBytes": 948,
+      "sha256": "4b49111ec145109a6b9c943b9c8a08f114c22250c45bcfd3d3809a7bcaad4323",
       "summary": {
         "name": "Google Chat API",
         "serverUrl": "https://chat.googleapis.com",
         "description": "The Google Chat API lets you build Chat apps to integrate your services with Google Chat and manage Chat resources such as spaces, members, and messages.",
         "operationCount": 17,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
@@ -2532,16 +2532,16 @@
     },
     {
       "id": "google-drive",
-      "sourceRevision": "3eb1cb005a27f06c51a7f3880dcb3fa7ffdec18f30f3343202f503b6110f03c7",
-      "bytes": 23205,
-      "compressedBytes": 1802,
-      "sha256": "2d2f39369fbd88dc278b6ecf919616d6b9a5a8c68c1b119beb9e3975a78b48da",
+      "sourceRevision": "3bb263ed25bb0170c4ef06b5b21523621b9e39ebd3f7d091a4e47fa65f6c57c9",
+      "bytes": 22843,
+      "compressedBytes": 1688,
+      "sha256": "77f81ffb196b7e1f5f579ed8d9767b85e6fcebb4b73fdff2452fe6d99c4e027b",
       "summary": {
         "name": "Google Drive API",
         "serverUrl": "https://www.googleapis.com/drive/v3",
         "description": "The Google Drive API allows clients to access resources from Google Drive.",
         "operationCount": 50,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
@@ -2686,16 +2686,16 @@
     },
     {
       "id": "google-youtube",
-      "sourceRevision": "1fea92aedfb6713b9b61a7aeb6ea523dea30689c054725e02c0e2a5edb0174bc",
-      "bytes": 40042,
-      "compressedBytes": 3214,
-      "sha256": "97c5dce583dc8e60b82c12cdafa6495dab63d6db0c93cb9fc5aaf874bb2224dd",
+      "sourceRevision": "466a59d4eb07671d19823a4b2efa83acab732fb97fbeacea555b42c42bdf65e2",
+      "bytes": 36970,
+      "compressedBytes": 2486,
+      "sha256": "712267e6821a56a76be52c950df6dca4b73da31b31f83441274f95f34e860c84",
       "summary": {
         "name": "YouTube Data API v3",
         "serverUrl": "https://youtube.googleapis.com",
         "description": "The YouTube Data API v3 is an API that provides access to YouTube data, such as videos, playlists, and channels.",
         "operationCount": 80,
-        "unavailableCount": 6
+        "unavailableCount": 0
       }
     },
     {
