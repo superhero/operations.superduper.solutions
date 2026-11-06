@@ -16,7 +16,7 @@ import { executeCredentialed } from './lib/secrets/execution.ts';
 const contracts = readCatalogPathBindings();
 async function baseline(catalog) {
   const native = await readServiceSchemaUpstream(catalog), descriptor = serviceSchemaDescriptors.find(source => source.id === catalog);
-  return { native, source: applySchemaPatches(native, descriptor.patches.filter(patch => patch.id !== catalogPathBindings.id)) };
+  return { native, source: applySchemaPatches(native, descriptor.patches.slice(0, descriptor.patches.findIndex(patch => patch.id === catalogPathBindings.id))) };
 }
 async function model(id) {
   const catalog = id.slice(0, id.indexOf(':')), source = await readServiceSchema(catalog);
@@ -29,7 +29,8 @@ Then('all 51 corrected catalog bindings retain their source identities and avail
   for (const [catalog, pin] of Object.entries(contracts.sources)) {
     const { native, source } = await baseline(catalog), original = JSON.stringify(source), corrected = await readServiceSchema(catalog);
     assert.equal(createHash('sha256').update(JSON.stringify(native)).digest('hex'), pin.sha256);
-    assert.deepEqual(corrected, applySchemaPatches(source, [catalogPathBindings])); assert.equal(JSON.stringify(source), original);
+    const descriptor = serviceSchemaDescriptors.find(source => source.id === catalog);
+    assert.deepEqual(corrected, applySchemaPatches(source, descriptor.patches.slice(descriptor.patches.findIndex(patch => patch.id === catalogPathBindings.id)))); assert.equal(JSON.stringify(source), original);
     const expected = contracts.operations.filter(operation => operation.catalog === catalog), ids = new Set(expected.map(operation => operation.id));
     const operations = inspectServiceSchema(corrected, catalog, ids).operations; assert.equal(operations.length, ids.size);
     for (const operation of operations) {
@@ -38,7 +39,7 @@ Then('all 51 corrected catalog bindings retain their source identities and avail
       assert.equal(operation.id, `${catalog}:${raw.operationId}`); assert.equal(repaired.operationId, raw.operationId);
       assert.deepEqual(repaired['x-upstream-parameters'], raw.parameters ?? null); assert.deepEqual(repaired.security, raw.security);
     }
-    const rebuilt = structuredClone(corrected);
+    const rebuilt = applySchemaPatches(source, [catalogPathBindings]);
     for (const contract of expected) {
       const operation = rebuilt.paths[contract.path][contract.method.toLowerCase()];
       if (contract.parameters === null) delete operation.parameters; else operation.parameters = structuredClone(contract.parameters);

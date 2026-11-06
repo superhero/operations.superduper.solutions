@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "88a6374682a5356065871c7b4012ea36e58aa9cdc2f4a4c901ef41c89d9d38b8",
+  "adapterRevision": "dd644a8d780d8a125b248c124e5767d4a9d62a1d82d6d63f6e1c649344685d8f",
   "indexes": [
     {
       "id": "anthropic",
@@ -592,15 +592,15 @@
     },
     {
       "id": "trello",
-      "sourceRevision": "3216bf23cd25cdc35ac85e15bed4f793c3813a8cf93b7fb69c99260fbc179516",
-      "bytes": 90913,
-      "compressedBytes": 6883,
-      "sha256": "25f947bc154207b8e0c87d06eba0b05a79e52972fc8e3121ed220720275a1ed0",
+      "sourceRevision": "3b62ba002352be3754dddc0e059ceba79eed948b3768785fee68fc51d2aa528d",
+      "bytes": 90101,
+      "compressedBytes": 6628,
+      "sha256": "a65926d98442157dc3ae51e3f2c0f2a45406dba8ecf436aa6a2820545abdd315",
       "summary": {
         "name": "Trello REST API",
         "serverUrl": "https://api.trello.com/1",
         "operationCount": 261,
-        "unavailableCount": 3
+        "unavailableCount": 0
       }
     },
     {

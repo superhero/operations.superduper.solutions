@@ -13,7 +13,8 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { trelloParameterSourceSha256 } from '../src/lib/trello-parameter-arrays.ts';
 import { catalogPathBindingSources } from '../src/lib/catalog-path-bindings.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
@@ -149,6 +150,8 @@ for (const source of sources) {
     throw new Error('Google Storage media requires requalification before updating the pinned native source.');
   if (source.id === 'ecb' && sha(json) !== ecbRegistrationSourceSha256)
     throw new Error('ECB registration parameters require requalification before updating the pinned native source.');
+  if (source.id === 'trello' && sha(json) !== trelloParameterSourceSha256)
+    throw new Error('Trello parameter arrays require requalification before updating the pinned native source.');
   const patches = source.id === 'ecb' ? [ecbRegistrationParameters]
     : source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
     : source.profile === 'atlassian-dc-authentication' ? [atlassianDcAuthentication]
@@ -168,6 +171,7 @@ for (const source of sources) {
     : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
 
   if (Object.hasOwn(catalogPathBindingSources, source.id)) patches.push(catalogPathBindings);
+  if (source.id === 'trello') patches.push(trelloParameterArrays);
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

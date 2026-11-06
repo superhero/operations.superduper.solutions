@@ -826,10 +826,14 @@
       {
         "id": "catalog-path-bindings",
         "version": 1
+      },
+      {
+        "id": "trello-parameter-arrays",
+        "version": 1
       }
     ],
-    "effectiveSha256": "3216bf23cd25cdc35ac85e15bed4f793c3813a8cf93b7fb69c99260fbc179516",
-    "effectiveBytes": 291494
+    "effectiveSha256": "3b62ba002352be3754dddc0e059ceba79eed948b3768785fee68fc51d2aa528d",
+    "effectiveBytes": 291796
   },
   {
     "id": "aws-apigatewayv2",
