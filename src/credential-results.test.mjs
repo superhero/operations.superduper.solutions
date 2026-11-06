@@ -47,7 +47,7 @@ Then('all 27 native credential result requests preserve their wire contract and 
 });
 
 Then('private result projections preserve upstream contracts and reject drift and forged profiles',async()=>{
-  const {models,documents,contracts}=await resultModels();assert.equal(Object.keys(contracts.profiles).length,43);
+  const {models,documents,contracts}=await resultModels();assert.equal(Object.keys(contracts.profiles).length,44);
   for(const [catalog,pin]of Object.entries(contracts.sources)){
     const native=await readServiceSchemaUpstream(catalog);assert.equal(createHash('sha256').update(JSON.stringify(native)).digest('hex'),pin.sha256);
     const descriptor=serviceSchemaDescriptors.find(item=>item.id===catalog),before=applySchemaPatches(native,descriptor.patches.filter(patch=>patch.id!==privateCredentialResults.id));

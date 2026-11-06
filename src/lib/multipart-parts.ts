@@ -8,7 +8,7 @@ export type MultipartPart = { kind: "text" | "json" | "file" | "files" | "file-o
 export type MultipartParts = Record<string, MultipartPart>;
 type Shape = Record<string, any>;
 const object = (value: unknown): value is Shape => value !== null && typeof value === "object" && !Array.isArray(value);
-const mime = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i;
+const mime = /^(?:[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+|text\/plain; *charset=utf-8)$/i;
 const annotations = new Set(["title", "description", "example", "examples", "default", "deprecated", "readOnly", "writeOnly"]);
 const jsonMedia = (type: string) => type === "application/json" || type.endsWith("+json");
 function fail(name: string, detail: string): never { throw new Error(`Form part ${JSON.stringify(name)}: ${detail}.`); }

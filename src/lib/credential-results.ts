@@ -8,6 +8,7 @@ import { awsQueryPrivateProfile } from './aws-query-private.ts';
 import { awsQueryEndpoint, awsQueryPrivateInputKeys } from './aws-query.ts';
 import data from './credential-results.json' with { type: 'json' };
 import type { Operation } from './catalog.ts';
+import { connectJwtOriginAllowed } from './atlassian-relative-servers.ts';
 
 type Value = Record<string, any>;
 export type PrivateResultResponse = { status: number; path: string[]; required: boolean[]; nullable: boolean[]; parentFields: (string[] | null)[]; leaf: Value };
@@ -43,6 +44,7 @@ export function privateResultOriginAllowed(operation: Operation, origin: string)
     if (profile.catalog.startsWith('aws-')) return operation.awsQuery ? !!awsQueryEndpoint(origin, operation) : operation.awsJson ? !!awsJsonEndpoint(origin, operation) : !!awsRestEndpoint(origin, operation);
     if (profile.catalog === 'atlassian-assets') return url.origin === 'https://api.atlassian.com'
       && /^\/ex\/jira\/[A-Za-z0-9-]+\/jsm\/assets\/workspace\/[A-Za-z0-9-]+\/v1\/?$/.test(url.pathname);
+    if (profile.catalog === 'atlassian-app-migration') return connectJwtOriginAllowed(operation, origin);
     return contracts.sources[profile.catalog]!.origins.some(value => new URL(value).href === url.href);
   } catch { return false; }
 }

@@ -18,6 +18,7 @@ import { workflowResponseLifetime, responseAccept, isJsonResponseStream, type Re
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
 import { digitalOceanUploadUrl } from "./digitalocean-upload.ts";
+import { requiresConnectJwt } from "../atlassian-relative-servers.ts";
 import { managedAtprotoSecrets } from "./atproto-state.ts";
 import { managedGitlabSecrets, validateGitlabTokenState } from "./gitlab-oauth.ts";
 import { validateGitlabMetadata } from "./gitlab-config.ts";
@@ -187,6 +188,11 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
           managed = { expiresAt: state.expiresAt, accountId: state.oauth.accountId };
           if (state.refreshPending || managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");
           value = state.accessToken;
+        }
+        if (requiresConnectJwt(approved.operation) && scheme.name === "ConnectJWT") {
+          const match = /^JWT ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(value);
+          if (scheme.kind !== "apiKey" || scheme.header !== "Authorization" || connection.format !== "schema" || !match) throw new VaultError("INVALID");
+          secrets.push(match[1]!);
         }
         if (scheme.path !== undefined) {
           pathToken = value;

@@ -12,6 +12,7 @@ import { awsJsonContract, awsJsonContracts, awsJsonSigningProfile } from "./aws-
 import { awsQueryContract, awsQueryContracts, awsQuerySigningProfile } from "./aws-query.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { validateAtlassianTenantServer } from "./atlassian-tenant-servers.ts";
+import { validateAtlassianRelativeServer } from "./atlassian-relative-servers.ts";
 import { validateAtlassianServerBinding } from "./atlassian-server-bindings.ts";
 import { literalQueryRoute } from "./literal-query.ts";
 
@@ -150,6 +151,7 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   if (typeof selected.url !== "string" || !selected.url.trim()) invalid(`${context}: server url must be a nonempty string.`);
   validateAtlassianServerBinding(selected);
   validateAtlassianTenantServer(selected);
+  validateAtlassianRelativeServer(selected);
   const variables = selected.variables === undefined ? {} : object(selected.variables, `${context}: server variables`);
   let configurationMessage: string | undefined;
   const expanded = selected.url.replace(/\{([^{}]+)\}/g, (_match, name: string) => {

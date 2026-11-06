@@ -34,6 +34,8 @@ import { uploadBodySources } from '../src/lib/upload-body-contracts.ts';
 import { uploadBodyContractsPatch } from '../src/lib/schema-patches.ts';
 import { digitalOceanDestinations } from '../src/lib/schema-patches.ts';
 import { digitalOceanDestinationSourceSha256 } from '../src/lib/digitalocean-destinations.ts';
+import { atlassianRelativeServers } from '../src/lib/schema-patches.ts';
+import { atlassianRelativeSources } from '../src/lib/atlassian-relative-servers.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { awsRestSourcePins } from '../src/lib/aws-rest-bindings.ts';
 import { awsQuerySourcePins } from '../src/lib/aws-query-bindings.ts';
@@ -230,6 +232,10 @@ for (const source of sources) {
   if (source.id === 'digitalocean') {
     if (sha(json) !== digitalOceanDestinationSourceSha256) throw new Error('DigitalOcean destinations require requalification before updating their native source.');
     patches.push(digitalOceanDestinations);
+  }
+  if (Object.hasOwn(atlassianRelativeSources, source.id)) {
+    if (sha(json) !== atlassianRelativeSources[source.id]) throw new Error('Atlassian relative destinations require requalification before updating the native source.');
+    patches.push(atlassianRelativeServers);
   }
   if (source.id === 'cloudflare') patches.push(cloudflareLogoUpload);
   if (source.id === 'atlassian-commerce') patches.push(commerceAuthentication);

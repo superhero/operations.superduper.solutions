@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "0208e72c806cb6f7a5b5e1af04884141c03e41acb7b11020b3e816337e79c47b",
+  "adapterRevision": "4b80de8c9f9ee1f85d347c414ea43f221d4b2c4ddacd1be87044e3f4e120b8a8",
   "indexes": [
     {
       "id": "anthropic",
@@ -97,16 +97,16 @@
     },
     {
       "id": "atlassian-app-migration",
-      "sourceRevision": "b24a0654a2f53a586724c2c4d2e323784988dca369af768d0b65ba4c39f4f794",
-      "bytes": 7089,
-      "compressedBytes": 1022,
-      "sha256": "7b386729d6b8fd0ef3da0876e0cb5a69df8204fedee34bd7d5bb92500d340923",
+      "sourceRevision": "1702176141f73438952a7fac9fe1c0dfc2555d0a84db035fe5619afd486e41da",
+      "bytes": 6769,
+      "compressedBytes": 1008,
+      "sha256": "e36bdbd51b1181c9ceea2ac1a3258f8ef3e006337eb6ed270eaf769d04fc7265",
       "summary": {
         "name": "App migration",
         "serverUrl": "",
         "description": "Endpoints available in Jira and Confluence cloud instances to support app migrations",
         "operationCount": 11,
-        "unavailableCount": 11
+        "unavailableCount": 0
       }
     },
     {
@@ -261,16 +261,16 @@
     },
     {
       "id": "atlassian-confluence-v1",
-      "sourceRevision": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
-      "bytes": 90214,
-      "compressedBytes": 5320,
-      "sha256": "f4ce90365378a26c6cbfa713c3cd6a192c14ca084b1855549767860a4dc4b746",
+      "sourceRevision": "2f69d90215774cbe0a1bbaaaf16d26e9219c8cf923f2e53c3152a178e2b1cd21",
+      "bytes": 80301,
+      "compressedBytes": 5166,
+      "sha256": "7d606a424ecb2c3243131baa254e51546c4ed3ea2e2f827eb7b7f4f3b5042c1c",
       "summary": {
         "name": "The Confluence Cloud REST API",
         "serverUrl": "",
         "description": "This document describes the REST API and resources provided by Confluence. The REST APIs are for developers who want to integrate Confluence into their application and for administrators who want to script interactions with the Confluence server.Confluence's REST APIs provide access to resources (data entities) via URI paths. To use a REST API, your application will make an HTTP request and parse the response. The response format is JSON. Your methods will be the standard HTTP methods like GET, PUT, POST and DELETE. Because the REST API is based on open standards, you can use any web development language to access the API.",
         "operationCount": 130,
-        "unavailableCount": 130
+        "unavailableCount": 0
       }
     },
     {
@@ -316,16 +316,16 @@
     },
     {
       "id": "atlassian-focus",
-      "sourceRevision": "1c6c34f5e4269cbb6de5ee2460c6cc8b0c7070116742fc194cfddc038285d7a4",
-      "bytes": 17098,
-      "compressedBytes": 1371,
-      "sha256": "62efdc9747c94407cdb624ef714c0616d8e19da994746858f6e7100098fdaf94",
+      "sourceRevision": "e110f625a5c8e59bc39abd401f6ee35b59eb3f5795aeb4e6cce0598b5250d6bd",
+      "bytes": 14939,
+      "compressedBytes": 1299,
+      "sha256": "88aa58f1b1b69b02387ce5e099c47003b0d186fb70df240181a1567f07fa9f29",
       "summary": {
         "name": "Focus REST API",
         "serverUrl": "",
         "description": "External API for reading and writing Focus data.",
         "operationCount": 26,
-        "unavailableCount": 26
+        "unavailableCount": 0
       }
     },
     {

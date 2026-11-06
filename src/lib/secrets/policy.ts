@@ -20,6 +20,7 @@ import { cloudflareOrigin, configureCloudflareUpload, cloudflareUploadProfile, u
 import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
 import { serverUrlHasPlaceholder, telegramBotOrigin, telegramPathSecurity, digitalOceanPathSecurity } from "../server-url.ts";
 import { digitalOceanStorageOrigin, validDigitalOceanUpload } from "../digitalocean-destinations.ts";
+import { connectJwtOriginAllowed, requiresConnectJwt } from "../atlassian-relative-servers.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
 const encoder = new TextEncoder();
@@ -112,6 +113,8 @@ function validateOperation(operation: Operation): void
     try { validateMultipartParts(operation.multipartParts, operation.bodySchema); } catch { throw new VaultError("PERMISSION"); }
   }
   if (operation.security?.some(alternative => !Array.isArray(alternative))) throw new VaultError("PERMISSION");
+  if (requiresConnectJwt(operation) && canonicalPolicyValue(operation.security) !== canonicalPolicyValue([[{
+    name: "ConnectJWT", kind: "apiKey", header: "Authorization" }]])) throw new VaultError("PERMISSION");
   if (operation.privatePath !== undefined) {
     if (operation.privatePath === "digitalocean-upload") {
       if (!validDigitalOceanUpload(operation) || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(digitalOceanPathSecurity())) throw new VaultError("PERMISSION");
@@ -192,6 +195,7 @@ export async function approvedOperation(operation: Operation, origin: string): P
     if (sanitized.cloudflareUpload && normalized !== cloudflareOrigin) throw new VaultError("PERMISSION");
     if (sanitized.security?.some(option => option.some(scheme => scheme.kind === "oauth1"))
       && (normalized !== "https://api.x.com" || !sanitized.path.startsWith("/2/"))) throw new VaultError("PERMISSION");
+    if (requiresConnectJwt(sanitized) && !connectJwtOriginAllowed(sanitized, normalized)) throw new VaultError("PERMISSION");
     if (sanitized.privatePath === "digitalocean-upload") digitalOceanStorageOrigin(normalized);
     else if (sanitized.privatePath && normalized !== telegramBotOrigin) throw new VaultError("PERMISSION");
     if (normalized === telegramBotOrigin && !sanitized.privatePath) throw new VaultError("PERMISSION");

@@ -152,7 +152,19 @@
     "sha256": "b24a0654a2f53a586724c2c4d2e323784988dca369af768d0b65ba4c39f4f794",
     "sourceSha256": "dd0ac28f2fafb7535de11a6d1ed954b742d7ee186a618edd821e6ed9c798eaac",
     "bytes": 20434,
-    "compressedBytes": 4535
+    "compressedBytes": 4535,
+    "patches": [
+      {
+        "id": "atlassian-relative-servers",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1702176141f73438952a7fac9fe1c0dfc2555d0a84db035fe5619afd486e41da",
+    "effectiveBytes": 25517
   },
   {
     "id": "atlassian-assets",
@@ -404,7 +416,15 @@
     "sha256": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
     "sourceSha256": "6c66a606fa7535268512f07f599fe1e3f9de2ba0b1da7eb6ead405509875577e",
     "bytes": 425694,
-    "compressedBytes": 54772
+    "compressedBytes": 54772,
+    "patches": [
+      {
+        "id": "atlassian-relative-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2f69d90215774cbe0a1bbaaaf16d26e9219c8cf923f2e53c3152a178e2b1cd21",
+    "effectiveBytes": 530975
   },
   {
     "id": "confluence-dc",
@@ -488,7 +508,15 @@
     "sha256": "1c6c34f5e4269cbb6de5ee2460c6cc8b0c7070116742fc194cfddc038285d7a4",
     "sourceSha256": "3de8efb4cf5353bd4bbad9ad430afd669d6bca7da54399a8ac7beb2d9b3b82d5",
     "bytes": 53839,
-    "compressedBytes": 7138
+    "compressedBytes": 7138,
+    "patches": [
+      {
+        "id": "atlassian-relative-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e110f625a5c8e59bc39abd401f6ee35b59eb3f5795aeb4e6cce0598b5250d6bd",
+    "effectiveBytes": 63430
   },
   {
     "id": "atlassian-forge-containers",
