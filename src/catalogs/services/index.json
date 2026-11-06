@@ -2506,7 +2506,15 @@
     "sha256": "07512fa28e35b7e6df694f685b0a43fca8fe9e9bddf8da71d6c630171ed4683f",
     "sourceSha256": "79e3faff046cd35e432e4cbaacd457c5f4b0e01149c541c010366191e38bc18a",
     "bytes": 612366,
-    "compressedBytes": 56276
+    "compressedBytes": 56276,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "10201acddc4ad8a2e07bc097aa420a10ec2b210f5258f915dce685ed320ed1a5",
+    "effectiveBytes": 613178
   },
   {
     "id": "docker",
@@ -2584,12 +2592,16 @@
         "version": 1
       },
       {
+        "id": "form-field-contracts",
+        "version": 1
+      },
+      {
         "id": "private-credential-results",
         "version": 1
       }
     ],
-    "effectiveSha256": "d3fe2293361601ac7d21110df426128e20396e32f07c8bc66dbcb20128b2258f",
-    "effectiveBytes": 2795607
+    "effectiveSha256": "b6ef906c97e74a5a257f322fd141aa37fddcd1144223c4d69c34e7a7e7bba1a4",
+    "effectiveBytes": 2808710
   },
   {
     "id": "alfred",
@@ -5124,7 +5136,15 @@
     "sha256": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
     "sourceSha256": "60f5e92dcc4cae89a1c1eec614c409a1ce9da37f1e856d2868ff6734474f5859",
     "bytes": 516319,
-    "compressedBytes": 65731
+    "compressedBytes": 65731,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "ecf83d450ff4042602f296a216163e8d15128ccec4c35cd753c26aac5766df4d",
+    "effectiveBytes": 516797
   },
   {
     "id": "ollama",
@@ -5179,10 +5199,14 @@
       {
         "id": "multipart-part-contracts",
         "version": 1
+      },
+      {
+        "id": "form-field-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "4c592f3b72ebcc8c2071df0949bb23cdf66cf74d1ab8a81502a8ff8dc8165ce6",
-    "effectiveBytes": 3150633
+    "effectiveSha256": "da428f7fdc597116d1cae824578dc4cd48f022895f469fe00e33ffe875db8dee",
+    "effectiveBytes": 3160030
   },
   {
     "id": "codex",
@@ -5275,10 +5299,14 @@
       {
         "id": "telegram-private-path",
         "version": 1
+      },
+      {
+        "id": "form-field-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "87e24e72f3a76ccfef04c486bd8fd11eed40851917d2e4e7b851531c34e1038d",
-    "effectiveBytes": 1001475
+    "effectiveSha256": "196b24b4de00a0e352be826e863af09c98368cf8c2fa481c566e102c13aa3251",
+    "effectiveBytes": 1002004
   },
   {
     "id": "together",
@@ -5294,7 +5322,15 @@
     "sha256": "5e1162180a8e29e07f9d0754f0d82815f493c7cea34b3c9ca2d7bd5b2115c69f",
     "sourceSha256": "4a7b9e7cac217b475361af6c177c46016d44b454e0c2c0bc5c7d77f82cb4e2ac",
     "bytes": 806593,
-    "compressedBytes": 122943
+    "compressedBytes": 122943,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1098149319b725413e96d99b704a71000d3a3ab4a84dbd042b5469a39b7c2b9e",
+    "effectiveBytes": 811884
   },
   {
     "id": "twilio",
@@ -5310,7 +5346,15 @@
     "sha256": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
     "sourceSha256": "052b294839a56c89a921c77639305d99ad15be6e248bdeaef8975aea6cfcb339",
     "bytes": 1126109,
-    "compressedBytes": 85562
+    "compressedBytes": 85562,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "18cb3856d15926e7b09df1b14a02e51045f762624dc53b06c4068b8fb4635ec9",
+    "effectiveBytes": 1130709
   },
   {
     "id": "vercel",

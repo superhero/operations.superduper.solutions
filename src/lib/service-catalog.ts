@@ -100,6 +100,12 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
       return { ...inner, nullable: true };
     }
   }
+  if (binary && Array.isArray(variants) && variants.length >= 2 && variants.length <= 32
+    && Object.keys(shape).every(key => key === "anyOf" || key === "oneOf" || key === "discriminator" || annotation.has(key) || key.startsWith("x-"))) {
+    const branches = variants.map(branch => inputSchema(branch, document, depth + 1, new Set([...ancestors, input]), binary));
+    if (branches.every(branch => branch.type !== "json" || branch.anyOf !== undefined || branch.oneOf !== undefined))
+      return { type: "json", [shape.anyOf === undefined ? "oneOf" : "anyOf"]: branches };
+  }
   if (Object.keys(shape).some(key => !constraints.has(key) && !annotation.has(key) && !key.startsWith("x-"))) return json();
   const types = Array.isArray(shape.type) ? shape.type.filter(type => type !== "null") : [shape.type];
   const type = types.length === 1 ? types[0] : undefined;

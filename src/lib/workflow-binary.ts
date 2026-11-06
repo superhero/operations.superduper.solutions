@@ -70,6 +70,7 @@ export function isBinaryMediaType(value: string): boolean {
 
 export function containsBinaryInput(schema: InputSchema): boolean {
   return schema.format === "binary" || Object.values(schema.properties ?? {}).some(containsBinaryInput)
+    || (schema.anyOf ?? []).some(containsBinaryInput) || (schema.oneOf ?? []).some(containsBinaryInput)
     || !!schema.items && containsBinaryInput(schema.items)
     || typeof schema.additionalProperties === "object" && containsBinaryInput(schema.additionalProperties);
 }

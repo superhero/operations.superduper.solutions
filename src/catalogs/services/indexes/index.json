@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "6daf942dc7ff035eba9f43d55d72492e369201df6dd4f41fda8213f8f9ab0ebf",
+  "adapterRevision": "89ee6dc154628578790ac979eeba410fc665462056191a691cfa62eb31f47b12",
   "indexes": [
     {
       "id": "anthropic",
@@ -1485,16 +1485,16 @@
     },
     {
       "id": "discord",
-      "sourceRevision": "07512fa28e35b7e6df694f685b0a43fca8fe9e9bddf8da71d6c630171ed4683f",
-      "bytes": 83688,
-      "compressedBytes": 6143,
-      "sha256": "552033d91fd9e2d884e6fc604733aec5754d20cd98a8455e63e0fe3a8fe6561f",
+      "sourceRevision": "10201acddc4ad8a2e07bc097aa420a10ec2b210f5258f915dce685ed320ed1a5",
+      "bytes": 83165,
+      "compressedBytes": 5893,
+      "sha256": "bf023d72744b59b6fe383661ef7fa1b3ed360cb2b61bbd55e2cf9a43115f9fb6",
       "summary": {
         "name": "Discord HTTP API (Preview)",
         "serverUrl": "https://discord.com/api/v10",
         "description": "Preview of the Discord v10 HTTP API specification. See https://discord.com/developers/docs for more details.",
         "operationCount": 246,
-        "unavailableCount": 3
+        "unavailableCount": 0
       }
     },
     {
@@ -1541,16 +1541,16 @@
     },
     {
       "id": "elevenlabs",
-      "sourceRevision": "d3fe2293361601ac7d21110df426128e20396e32f07c8bc66dbcb20128b2258f",
-      "bytes": 152436,
-      "compressedBytes": 13250,
-      "sha256": "8cbf9c0a09c5f2c44dd59377b72ec5a8c231175c0cc6c13373fa9c544309065f",
+      "sourceRevision": "b6ef906c97e74a5a257f322fd141aa37fddcd1144223c4d69c34e7a7e7bba1a4",
+      "bytes": 151697,
+      "compressedBytes": 12920,
+      "sha256": "e7dc213c508def0bd54a3bd8d6db5a68768fb2ebdeb5458e8b5cf30a001abbd2",
       "summary": {
         "name": "ElevenLabs API Documentation",
         "serverUrl": "https://api.elevenlabs.io",
         "description": "This is the documentation for the ElevenLabs API. You can use this API to use our service programmatically, this is done by using your API key. You can find your API key in the dashboard at https://elevenlabs.io/app/settings/api-keys.",
         "operationCount": 418,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
@@ -2923,16 +2923,16 @@
     },
     {
       "id": "mistral",
-      "sourceRevision": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
-      "bytes": 74109,
-      "compressedBytes": 6722,
-      "sha256": "43751a3e022a6dbc4d27275edad569300442535e5391b7bd001cf0d9d454d12a",
+      "sourceRevision": "ecf83d450ff4042602f296a216163e8d15128ccec4c35cd753c26aac5766df4d",
+      "bytes": 73933,
+      "compressedBytes": 6631,
+      "sha256": "62200137b781da00f22ae661fa42110572e82663a2f033a6e352b1eff4a38354",
       "summary": {
         "name": "Mistral AI API",
         "serverUrl": "https://api.mistral.ai",
         "description": "Our Chat Completion and Embeddings APIs specification. Create your account on [La Plateforme](https://console.mistral.ai) to get access and read the [docs](https://docs.mistral.ai) to learn how to use it.",
         "operationCount": 173,
-        "unavailableCount": 8
+        "unavailableCount": 7
       }
     },
     {
@@ -2951,16 +2951,16 @@
     },
     {
       "id": "openai",
-      "sourceRevision": "4c592f3b72ebcc8c2071df0949bb23cdf66cf74d1ab8a81502a8ff8dc8165ce6",
-      "bytes": 120973,
-      "compressedBytes": 9561,
-      "sha256": "b975f33d33db4d0991d65b3680e29ced8a6cda9b99748eaa813354f5f4cfcbd6",
+      "sourceRevision": "da428f7fdc597116d1cae824578dc4cd48f022895f469fe00e33ffe875db8dee",
+      "bytes": 120333,
+      "compressedBytes": 9457,
+      "sha256": "d738fc85c9a9a61776799e8052fce35ee06709c9dd52a75ec226364cb4e88fc7",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",
         "description": "The OpenAI REST API. Please see https://platform.openai.com/docs/api-reference for more details.",
         "operationCount": 360,
-        "unavailableCount": 4
+        "unavailableCount": 1
       }
     },
     {
@@ -3036,44 +3036,44 @@
     },
     {
       "id": "telegram",
-      "sourceRevision": "87e24e72f3a76ccfef04c486bd8fd11eed40851917d2e4e7b851531c34e1038d",
-      "bytes": 65525,
-      "compressedBytes": 4134,
-      "sha256": "90a2dadc84388c5fc310c2f9f7729605fdf95fc81da0a96522e4f17b049a0f8d",
+      "sourceRevision": "196b24b4de00a0e352be826e863af09c98368cf8c2fa481c566e102c13aa3251",
+      "bytes": 65352,
+      "compressedBytes": 4016,
+      "sha256": "ccc9b7ca54549961284e49ee61ec2f93efcdd74fb7aaa3abcd30529a8b8c3684",
       "summary": {
         "name": "Telegram Bot API",
         "serverUrl": "https://api.telegram.org",
         "description": "Generated from the official Telegram Bot API documentation using @gramio/schema-parser.",
         "operationCount": 180,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
       "id": "together",
-      "sourceRevision": "5e1162180a8e29e07f9d0754f0d82815f493c7cea34b3c9ca2d7bd5b2115c69f",
-      "bytes": 76585,
-      "compressedBytes": 6620,
-      "sha256": "af17d855224954c9189b61dd34fe6ec05b9e54aab55af3a7af076793f66f1546",
+      "sourceRevision": "1098149319b725413e96d99b704a71000d3a3ab4a84dbd042b5469a39b7c2b9e",
+      "bytes": 75979,
+      "compressedBytes": 6488,
+      "sha256": "ae5df84d3520f0cdc134703ae8cc7e9d2583466d671de83df99b94450f0b2710",
       "summary": {
         "name": "Together APIs",
         "serverUrl": "https://api.together.ai/v2",
         "description": "The Together REST API. See https://docs.together.ai for more details.",
         "operationCount": 208,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
       "id": "twilio",
-      "sourceRevision": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
-      "bytes": 90312,
-      "compressedBytes": 7047,
-      "sha256": "686ef1d68140b7dd0a8380d30d0dcc5a2049a3c609f8e66a1bc199166ebcfb93",
+      "sourceRevision": "18cb3856d15926e7b09df1b14a02e51045f762624dc53b06c4068b8fb4635ec9",
+      "bytes": 90137,
+      "compressedBytes": 6943,
+      "sha256": "926fe5c94ad7b063570038b554040d2e887a6f324c892acecace11ff1f5c74df",
       "summary": {
         "name": "Twilio - Api",
         "serverUrl": "https://api.twilio.com",
         "description": "This is the public Twilio REST API.",
         "operationCount": 197,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {

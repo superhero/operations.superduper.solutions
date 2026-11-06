@@ -5,7 +5,7 @@ import { cloudflareMultipart } from "./cloudflare-upload.ts";
 import type { JsonValue } from "./catalog.ts";
 import type { PreparedRequest } from "./operation-input.ts";
 import { validateWorkflowBinary, workflowBinaryBlob } from "./workflow-binary.ts";
-import { appendMultipartPart } from "./multipart-parts.ts";
+import { appendMultipartPart, multipartBody } from "./multipart-parts.ts";
 
 function formText(value: JsonValue): string {
   if (value === null) throw new Error("Explicit null has no qualified form encoding.");
@@ -30,6 +30,7 @@ export function requestBody(request: PreparedRequest): BodyInit | null {
       if (form instanceof FormData && Object.hasOwn(request.multipartParts ?? {}, name)) {
         appendMultipartPart(form, name, value, request.multipartParts![name]!); continue;
       }
+      if (form instanceof FormData && form.has(name)) throw new Error(`Form field ${JSON.stringify(name)} collides with another encoded field.`);
       if (Array.isArray(value)) {
         for (const item of value) {
           if (form instanceof FormData && item && typeof item === "object") {
@@ -42,7 +43,7 @@ export function requestBody(request: PreparedRequest): BodyInit | null {
         form.append(name, workflowBinaryBlob(file), file.name);
       } else form.append(name, formText(value));
     }
-    return form;
+    return form instanceof FormData ? multipartBody(form, request.multipartParts) : form;
   }
   // JSON is also YAML 1.2 flow syntax. Keep typed values and quoted strings,
   // without evaluating YAML tags or aliases; the declared Content-Type is retained.

@@ -50,6 +50,8 @@ export type InputSchema = {
   required?: string[];
   /** Exactly one required-only object branch must match the supplied names. */
   requiredOneOf?: string[][];
+  anyOf?: InputSchema[];
+  oneOf?: InputSchema[];
   items?: InputSchema;
 };
 export type InputField = Omit<InputSchema, "properties" | "required" | "items"> & {

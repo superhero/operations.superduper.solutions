@@ -70,6 +70,16 @@ function equalityKey(value: JsonValue): string {
 function validate(input: InputField, schema: InputSchema, value: JsonValue, path: string): void
 {
   const type = schema.type;
+  if (schema.anyOf !== undefined || schema.oneOf !== undefined) {
+    if (value === null && schema.nullable && inputAllowsNull(schema)) return;
+    const branches = schema.anyOf ?? schema.oneOf;
+    if (schema.anyOf !== undefined && schema.oneOf !== undefined || !Array.isArray(branches) || branches.length < 2 || branches.length > 32)
+      fail(input, `${path} has an invalid schema union.`);
+    let matches = 0;
+    for (const branch of branches!) try { validate(input, branch, value, path); matches++; } catch (error) { if (!(error instanceof InputValidationError)) throw error; }
+    if (schema.oneOf ? matches !== 1 : matches === 0) fail(input, `${path} must match ${schema.oneOf ? "exactly one" : "an"} allowed schema alternative.`);
+    return;
+  }
   if (schema.format === "binary") {
     try { validateBinarySchema(schema); }
     catch (error) { fail(input, (error as Error).message); }
@@ -301,10 +311,10 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     {
       const part = Object.hasOwn(operation.multipartParts ?? {}, input.name) ? operation.multipartParts![input.name] : undefined;
       if (part) try { validateMultipartValue(input.name, part, value); } catch (cause) { fail(input, (cause as Error).message); }
-      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data") && value === null && part?.kind !== "json")
+      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data") && value === null && !["json", "json-text"].includes(part?.kind ?? ""))
         fail(input, "explicit null has no qualified form encoding; omit an optional field or provide a value.");
       if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
-        && !supportsFormField(input.schema ?? input, operation.bodyMediaType === "multipart/form-data") && !["json", "file-or-text"].includes(part?.kind ?? ""))
+        && !supportsFormField(input.schema ?? input, operation.bodyMediaType === "multipart/form-data") && !part)
         fail(input, "form body properties must be primitive values, primitive arrays or declared binary files.");
       set(body, input.name, value);
     }

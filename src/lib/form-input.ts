@@ -10,7 +10,7 @@ const unionAnnotations = new Set(["title", "description", "example", "examples",
 export function normalizeStringUnion(shape: Record<string, unknown>, resolveBranch: (branch: unknown) => unknown = branch => branch): Record<string, unknown> {
   const keyword = shape.anyOf === undefined ? "oneOf" : "anyOf", variants = shape[keyword], exclusive = keyword === "oneOf";
   if (!Array.isArray(variants) || !variants.length
-    || Object.keys(shape).some(key => key !== keyword && !unionAnnotations.has(key))) return shape;
+    || Object.keys(shape).some(key => key !== keyword && !unionAnnotations.has(key) && !key.startsWith("x-"))) return shape;
   let unrestricted = false, nullable = false;
   const patterns: string[] = [], values: string[] = [];
   for (const raw of variants) {
@@ -80,7 +80,7 @@ export function validateFormBody(schema: InputSchema, multipart: boolean, encodi
   else {
     const fields = Object.entries(schema.properties ?? {});
     if (schema.additionalProperties && typeof schema.additionalProperties === "object") fields.push(["<additional properties>", schema.additionalProperties]);
-    for (const [name, field] of fields) if (!supportsFormField(field, multipart) && !(Object.hasOwn(parts, name) && ["json", "file-or-text"].includes(parts[name]!.kind))) {
+    for (const [name, field] of fields) if (!supportsFormField(field, multipart) && !Object.hasOwn(parts, name)) {
       const reason = field.type === "array" ? "arrays require non-null primitive items or multipart binary files"
         : field.type === "json" ? "the schema union or constraints cannot be represented by a supported form field"
         : "use a primitive value, a primitive array or a multipart binary file";

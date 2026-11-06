@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/form-fields.test.mjs",
     "src/multipart-roots.test.mjs",
     "src/atlassian-files.test.mjs",
     "src/multipart-parts.test.mjs",
