@@ -12,6 +12,7 @@ import { bindMultipartFiles } from "./multipart-file-contracts.ts";
 import { bindAwsRest } from "./aws-rest-bindings.ts";
 import { bindAwsJson } from "./aws-json-bindings.ts";
 import { bindMultipartParts } from "./multipart-part-contracts.ts";
+import { bindStructuredForms } from "./structured-form-contracts.ts";
 import { bindFormFields } from "./form-field-contracts.ts";
 import { bindMultipartRoots } from "./multipart-root-contracts.ts";
 import { bindAtlassianFiles } from "./atlassian-file-parts.ts";
@@ -29,9 +30,10 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
 export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
 export const multipartFileContracts: SchemaPatch = { id: "multipart-file-contracts", version: 1 };
+export const structuredFormContracts: SchemaPatch = { id: "structured-form-contracts", version: 1 };
 export const formFieldContracts: SchemaPatch = { id: "form-field-contracts", version: 1 };
 export const multipartRootContracts: SchemaPatch = { id: "multipart-root-contracts", version: 1 };
 export const atlassianFileParts: SchemaPatch = { id: "atlassian-file-parts", version: 1 };
@@ -74,7 +76,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "form-field-contracts" ? "Reviewed form field wire contracts"
+  return patch.id === "structured-form-contracts" ? "Reviewed structured form encodings"
+    : patch.id === "form-field-contracts" ? "Reviewed form field wire contracts"
     : patch.id === "multipart-root-contracts" ? "Reviewed multipart body roots"
     : patch.id === "atlassian-file-parts" ? "Atlassian multipart file declarations"
     : patch.id === "multipart-part-contracts" ? "Multipart part media and file names"
@@ -647,10 +650,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "form-field-contracts") bindFormFields(document);
+    if (patch.id === "structured-form-contracts") bindStructuredForms(document);
+    else if (patch.id === "form-field-contracts") bindFormFields(document);
     else if (patch.id === "multipart-root-contracts") bindMultipartRoots(document);
     else if (patch.id === "atlassian-file-parts") bindAtlassianFiles(document);
     else if (patch.id === "multipart-part-contracts") bindMultipartParts(document);

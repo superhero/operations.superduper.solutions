@@ -5,6 +5,7 @@
 import { credentialResultProfile, privateResultVersion, supportsCredentialResults } from "./credential-results.ts";
 import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
+import { configureGitlabJsonForm } from "./gitlab-form.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -93,6 +94,7 @@ export type Operation = {
   binaryMediaTypes?: string[];
   bodyValue?: boolean;
   bodySchema?: InputSchema;
+  bodyEncoding?: "gitlab-json-or-multipart-v1";
   multipartParts?: MultipartParts;
   responseExample?: unknown;
   responseMediaType?: string;
@@ -476,6 +478,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (bodyValue) extracted.bodyValue = true;
       if (bodySchema) extracted.bodySchema = bodySchema;
       if (multipartParts) extracted.multipartParts = multipartParts;
+      configureGitlabJsonForm(extracted, operation["x-operations-gitlab-form"]);
       const stream = responseStreamProfile(operation["x-operations-response-stream"]);
       if (stream) extracted.responseStream = stream;
       const responseContent = inspectResponseContent(operation.responses, document, stream);

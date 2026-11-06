@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { literalQueryRoute, validateLiteralQueryFields } from "../literal-query.ts";
+import { validGitlabJsonForm } from "../gitlab-form.ts";
 import { supportsCredentialResults, privateResultOriginAllowed } from "../credential-results.ts";
 import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
@@ -96,6 +97,7 @@ function validateOperation(operation: Operation): void
     validateCredentialPath(literalQueryRoute(operation.path)?.path ?? operation.path, true);
   }
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
+  if (operation.bodyEncoding !== undefined && !validGitlabJsonForm(operation)) throw new VaultError("PERMISSION");
   if (operation.multipartParts !== undefined) {
     if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new VaultError("PERMISSION");
     try { validateMultipartParts(operation.multipartParts, operation.bodySchema); } catch { throw new VaultError("PERMISSION"); }

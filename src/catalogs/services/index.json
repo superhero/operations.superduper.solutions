@@ -2413,10 +2413,14 @@
       {
         "id": "multipart-root-contracts",
         "version": 1
+      },
+      {
+        "id": "structured-form-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "2b60671d10b5d290cbcf919588a9d2771542924649a848995a90d7d8779f2317",
-    "effectiveBytes": 13599951
+    "effectiveSha256": "768cd0a87c258e444b9ad1de7158a7a18a8f11a351f46e143d98be3314acc608",
+    "effectiveBytes": 13600391
   },
   {
     "id": "cloudflare-realtime-sfu",
@@ -2702,10 +2706,14 @@
       {
         "id": "provider-path-bindings",
         "version": 1
+      },
+      {
+        "id": "structured-form-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "6292ee3a934391007c0e45878929a2243fab0739685c7138a72f1c95636451cf",
-    "effectiveBytes": 3413129
+    "effectiveSha256": "5e93d0d15794858ace891e980c6b182685f1960cebf4afdfa6988ea633da027a",
+    "effectiveBytes": 3416585
   },
   {
     "id": "google-analytics-admin",
@@ -5203,10 +5211,14 @@
       {
         "id": "form-field-contracts",
         "version": 1
+      },
+      {
+        "id": "structured-form-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "da428f7fdc597116d1cae824578dc4cd48f022895f469fe00e33ffe875db8dee",
-    "effectiveBytes": 3160030
+    "effectiveSha256": "222af8c3f94134365b497775354c6a9b6ccdca25fb4435a7e449a33d0a664a6b",
+    "effectiveBytes": 3160240
   },
   {
     "id": "codex",
@@ -5267,7 +5279,15 @@
     "sha256": "790b5dfeb6e9fffc5c967de5dd30b17e305bad4686ad700ad91650de7a457468",
     "sourceSha256": "4500bf86453ef1ab65a9e133929ce97f468cff9aa62ab7512d00fd588abb8b39",
     "bytes": 92802,
-    "compressedBytes": 16354
+    "compressedBytes": 16354,
+    "patches": [
+      {
+        "id": "structured-form-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "52de0c58730e7a062b328e71aeb17dde1349ffb8fb5594a64af38d257ddcf0fa",
+    "effectiveBytes": 93405
   },
   {
     "id": "resend",

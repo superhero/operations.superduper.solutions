@@ -4,6 +4,7 @@
 import { credentialResultProfile, privateResultVersion, supportsCredentialResults } from "./credential-results.ts";
 import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
+import { configureGitlabJsonForm } from "./gitlab-form.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -400,6 +401,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                 operation.fields.push(field("$", "body", schema, true, document, body.description, binary));
               }
             }
+            configureGitlabJsonForm(operation, source["x-operations-gitlab-form"]);
           });
           if (parametersValid) inspect("endpoint", "invalid-contract", () => validatePathParameters(path, operation.fields));
         }

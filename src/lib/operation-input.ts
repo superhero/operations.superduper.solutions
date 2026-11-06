@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { supportsCredentialResults } from "./credential-results.ts";
+import { useGitlabJsonBody } from "./gitlab-form.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
 import { awsRestUsesS3Keys } from "./aws-rest.ts";
 import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
@@ -212,9 +213,11 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   try { validateLiteralQueryFields(operation.path, operation.fields); }
   catch (cause) { throw new InputValidationError("query:beta", (cause as Error).message); }
   const request: PreparedRequest = { method: operation.method, path: route?.path ?? operation.path, query: { ...route?.query } };
+  const jsonForm = useGitlabJsonBody(operation, values);
   if (operation.multipartParts !== undefined) {
     if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new InputValidationError("body:$", "Multipart part contracts require a named multipart body.");
-    validateMultipartParts(operation.multipartParts, operation.bodySchema); request.multipartParts = structuredClone(operation.multipartParts);
+    validateMultipartParts(operation.multipartParts, operation.bodySchema);
+    if (!jsonForm) request.multipartParts = structuredClone(operation.multipartParts);
   }
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
@@ -309,11 +312,11 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     else if (operation.bodyValue) request.body = value;
     else
     {
-      const part = Object.hasOwn(operation.multipartParts ?? {}, input.name) ? operation.multipartParts![input.name] : undefined;
+      const part = !jsonForm && Object.hasOwn(operation.multipartParts ?? {}, input.name) ? operation.multipartParts![input.name] : undefined;
       if (part) try { validateMultipartValue(input.name, part, value); } catch (cause) { fail(input, (cause as Error).message); }
-      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data") && value === null && !["json", "json-text"].includes(part?.kind ?? ""))
+      if (!jsonForm && (operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data") && value === null && !["json", "json-text"].includes(part?.kind ?? ""))
         fail(input, "explicit null has no qualified form encoding; omit an optional field or provide a value.");
-      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
+      if (!jsonForm && (operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
         && !supportsFormField(input.schema ?? input, operation.bodyMediaType === "multipart/form-data") && !part)
         fail(input, "form body properties must be primitive values, primitive arrays or declared binary files.");
       set(body, input.name, value);
@@ -324,7 +327,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     if (!operation.bodyValue) request.body = body;
     if (operation.bodySchema) validateInputValue({ key: "body:$", name: "$", label: "Request body", description: "", location: "body",
       type: operation.bodySchema.type, required: operation.bodyRequired, schema: operation.bodySchema }, request.body!);
-    if (operation.bodyMediaType && operation.bodyMediaType !== "application/json") request.contentType = operation.bodyMediaType;
+    if (!jsonForm && operation.bodyMediaType && operation.bodyMediaType !== "application/json") request.contentType = operation.bodyMediaType;
     if (operation.binaryMediaTypes) {
       request.contentType = binaryRequestMediaType(operation.binaryMediaTypes, request.body!) as BodyMediaType;
       request.bodyFormat = "binary";

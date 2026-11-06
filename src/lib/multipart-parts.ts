@@ -4,7 +4,7 @@
 import type { InputSchema, JsonValue } from "./catalog.ts";
 import { containsBinaryInput, validateWorkflowBinary, workflowBinaryBlob } from "./workflow-binary.ts";
 
-export type MultipartPart = { kind: "text" | "json" | "file" | "files" | "file-or-text" | "file-or-url" | "scalar" | "repeat" | "brackets" | "json-text"; contentTypes?: string[]; name?: "filename" };
+export type MultipartPart = { kind: "text" | "json" | "file" | "files" | "file-or-text" | "file-or-url" | "scalar" | "repeat" | "brackets" | "rack" | "json-text"; contentTypes?: string[]; name?: "filename"; binaryPaths?: (string | number)[][] };
 export type MultipartParts = Record<string, MultipartPart>;
 type Shape = Record<string, any>;
 const object = (value: unknown): value is Shape => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -68,11 +68,13 @@ export function multipartPartEncodings(schema: InputSchema, encoding: unknown, m
     if (unsupported.length) fail(name, `custom encoding (${unsupported.join(", ")}) is not supported`);
     if (declaration["x-operations-form-style"] !== undefined) {
       const kind = declaration["x-operations-form-style"];
-      if (!["scalar", "repeat", "brackets", "json-text", "file-or-url"].includes(kind)
+      if (!["scalar", "repeat", "brackets", "rack", "json-text", "file-or-url"].includes(kind)
         || declaration["x-operations-part-name"] !== undefined || declaration["x-operations-json-text"] !== undefined
         || declaration.contentType !== undefined && (kind !== "json-text" || declaration.contentType !== "application/json"))
         fail(name, "invalid qualified form style");
-      Object.defineProperty(parts, name, { value: { kind, ...(declaration.contentType ? { contentTypes: [declaration.contentType] } : {}) }, enumerable: true, writable: true, configurable: true });
+      const binaryPaths = kind === "rack" ? rackBinaryPaths(field) : [];
+      Object.defineProperty(parts, name, { value: { kind, ...(declaration.contentType ? { contentTypes: [declaration.contentType] } : {}),
+        ...(binaryPaths.length ? { binaryPaths } : {}) }, enumerable: true, writable: true, configurable: true });
       continue;
     }
     if (typeof declaration.contentType !== "string") fail(name, "contentType must be a media type or comma-separated media types");
@@ -97,8 +99,8 @@ export function multipartPartEncodings(schema: InputSchema, encoding: unknown, m
 export function validateMultipartParts(parts: MultipartParts, schema: InputSchema): void {
   if (!object(parts) || Object.keys(parts).length > 200) throw new Error("Invalid multipart part contract.");
   for (const [name, part] of Object.entries(parts)) {
-    if (!object(part) || !Object.hasOwn(schema.properties ?? {}, name) || Object.keys(part).some(key => !["kind", "contentTypes", "name"].includes(key))
-      || !["text", "json", "file", "files", "file-or-text", "file-or-url", "scalar", "repeat", "brackets", "json-text"].includes(part.kind)
+    if (!object(part) || !Object.hasOwn(schema.properties ?? {}, name) || Object.keys(part).some(key => !["kind", "contentTypes", "name", "binaryPaths"].includes(key))
+      || !["text", "json", "file", "files", "file-or-text", "file-or-url", "scalar", "repeat", "brackets", "rack", "json-text"].includes(part.kind)
       || part.name !== undefined && (part.name !== "filename" || part.kind !== "files")
       || part.contentTypes !== undefined && (!Array.isArray(part.contentTypes) || !part.contentTypes.length || part.contentTypes.length > 16
         || part.contentTypes.some(type => typeof type !== "string" || type.length > 255 || !mime.test(type)))) fail(name, "invalid multipart part contract");
@@ -108,6 +110,9 @@ export function validateMultipartParts(parts: MultipartParts, schema: InputSchem
       || ["file-or-text", "file-or-url"].includes(part.kind) && (field.type !== "json" || part.contentTypes !== undefined)
       || ["scalar", "repeat"].includes(part.kind) && (!scalarSchema(field, part.kind === "repeat") || part.contentTypes !== undefined)
       || part.kind === "brackets" && (containsBinaryInput(field) || !representable(field) || part.contentTypes !== undefined)
+      || part.kind === "rack" && (!representable(field) || part.contentTypes !== undefined
+        || JSON.stringify(part.binaryPaths ?? []) !== JSON.stringify(rackBinaryPaths(field)))
+      || part.kind !== "rack" && part.binaryPaths !== undefined
       || part.kind === "json-text" && (containsBinaryInput(field) || !representable(field)
         || part.contentTypes !== undefined && (part.contentTypes.length !== 1 || part.contentTypes[0] !== "application/json"))
       || part.kind === "json" && (part.contentTypes?.length !== 1 || !jsonMedia(part.contentTypes[0]!) || containsBinaryInput(field))
@@ -115,6 +120,16 @@ export function validateMultipartParts(parts: MultipartParts, schema: InputSchem
       fail(name, "part representation does not match its input schema and media types");
   }
 }
+
+function rackBinaryPaths(schema: InputSchema, path: (string | number)[] = [], depth = 0): (string | number)[][] {
+  if (depth > 8) throw new Error("Rack form schema exceeds its depth budget.");
+  if (schema.format === "binary") return [path];
+  if ((schema.anyOf || schema.oneOf) && containsBinaryInput(schema)) throw new Error("Rack binary unions require a separately qualified representation.");
+  return [...Object.keys(schema.properties ?? {}).sort().flatMap(key => rackBinaryPaths(schema.properties![key]!, [...path, key], depth + 1)),
+    ...(schema.items ? rackBinaryPaths(schema.items, [...path, -1], depth + 1) : [])];
+}
+const binaryAt = (paths: (string | number)[][], path: (string | number)[]) => paths.some(candidate => candidate.length === path.length
+  && candidate.every((key, index) => key === -1 ? typeof path[index] === "number" : key === path[index]));
 
 function scalarSchema(schema: InputSchema, arrays: boolean): boolean {
   return !schema.format && (["string", "number", "integer", "boolean"].includes(schema.type)
@@ -128,6 +143,7 @@ function representable(schema: InputSchema): boolean {
 }
 
 export function validateMultipartValue(name: string, part: MultipartPart, value: JsonValue): void {
+  if (part.kind === "rack") validateRackValue(name, value, part.binaryPaths ?? []);
   if ((part.kind === "file-or-text" || part.kind === "file-or-url") && typeof value !== "string") {
     try { validateWorkflowBinary(value); } catch { fail(name, "provide text or a validated binary file"); }
   }
@@ -137,14 +153,26 @@ export function validateMultipartValue(name: string, part: MultipartPart, value:
   }
 }
 
-function appendBracketValues(form: FormData, name: string, value: JsonValue, depth = 0, budget = { count: 0 }): void {
+function validateRackValue(name: string, value: JsonValue, files: (string | number)[][], path: (string | number)[] = [], depth = 0): void {
+  if (binaryAt(files, path)) { try { validateWorkflowBinary(value); } catch { fail(name, "provide a valid nested binary file"); } return; }
+  if (depth > 8) fail(name, "structured form exceeds its depth budget");
+  if (value === null || typeof value === "object" && Object.keys(value).length === 0)
+    fail(name, "null and empty structures require a JSON request without file fields");
+  if (Array.isArray(value)) for (const [index, item] of value.entries()) validateRackValue(name, item, files, [...path, index], depth + 1);
+  else if (typeof value === "object") for (const [key, item] of Object.entries(value)) validateRackValue(name, item, files, [...path, key], depth + 1);
+}
+
+function appendBracketValues(form: FormData, name: string, value: JsonValue, depth = 0, budget = { count: 0 }, indexedObjects = false,
+  files: (string | number)[][] = [], path: (string | number)[] = []): void {
   if (depth > 8 || ++budget.count > 200) fail(name, "bracket fields exceed their depth or field budget");
+  if (binaryAt(files, path)) { const file = validateWorkflowBinary(value); form.append(name, workflowBinaryBlob(file), file.name); return; }
   if (value === null) return; // Official serializer omits null leaves.
-  if (Array.isArray(value)) { for (const item of value) appendBracketValues(form, name + "[]", item, depth + 1, budget); return; }
+  if (Array.isArray(value)) { for (const [index, item] of value.entries()) appendBracketValues(form,
+    name + (indexedObjects && item !== null && typeof item === "object" ? `[${index}]` : "[]"), item, depth + 1, budget, indexedObjects, files, [...path, index]); return; }
   if (typeof value === "object") {
     for (const [key, item] of Object.entries(value)) {
       if (!key || /[\[\]\u0000-\u001f\u007f]/.test(key)) fail(name, "object keys cannot contain brackets or control characters");
-      appendBracketValues(form, `${name}[${key}]`, item, depth + 1, budget);
+      appendBracketValues(form, `${name}[${key}]`, item, depth + 1, budget, indexedObjects, files, [...path, key]);
     }return;
   }
   form.append(name, String(value));
@@ -162,7 +190,7 @@ function nestedMultipartType(file: ReturnType<typeof validateWorkflowBinary>): s
 function appendQualifiedPart(form: FormData, name: string, value: JsonValue, part: MultipartPart): void {
   validateMultipartValue(name, part, value);
   if (part.kind === "json-text") { form.append(name, JSON.stringify(value)); return; }
-  if (part.kind === "brackets") { appendBracketValues(form, name, value); return; }
+  if (part.kind === "brackets" || part.kind === "rack") { appendBracketValues(form, name, value, 0, { count: 0 }, part.kind === "rack", part.binaryPaths ?? []); return; }
   if (part.kind === "scalar" || part.kind === "repeat") {
     for (const item of Array.isArray(value) ? value : [value]) {
       if (item === null || typeof item === "object") fail(name, "scalar parts require non-null primitive values");
