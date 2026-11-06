@@ -17,6 +17,12 @@ const label = (value: string | undefined): string => {
 export function prepareAwsRestOutpost(operation: Operation, request: PreparedRequest): PreparedRequest {
   const contract = awsRestContract(operation);
   if (contract?.catalog !== "aws-s3control") return request;
+  if (operation.id === "aws-s3control:CreateBucket") {
+    const id = header(request.headers, "x-amz-outpost-id");
+    if (!id || id.length > 64 || !/^op-[a-z0-9]+$/.test(id)
+      || header(request.headers, "x-amz-account-id") || request.awsRestOutpost) invalid();
+    return request;
+  }
   const source = awsRestContracts().sources[contract.catalog]!, root = awsRestRoot(source, contract.input, contract.inputTraits);
   let routing: PreparedRequest["awsRestOutpost"], path = request.path, body = request.body;
   const account = header(request.headers, "x-amz-account-id");
@@ -56,8 +62,11 @@ export function awsRestTarget(operation: Operation, origin: string, request: Pre
   const contract = awsRestContract(operation)!, url = new URL(origin);
   if (contract.catalog === "aws-s3control") {
     const account = header(request.headers, "x-amz-account-id");
-    if (!account || !/^\d{12}$/.test(account)) invalid();
-    if (request.awsRestOutpost) {
+    if (operation.id === "aws-s3control:CreateBucket") {
+      prepareAwsRestOutpost(operation, request);
+      url.hostname = `s3-outposts.${signing.region}.amazonaws.com`; signing.service = "s3-outposts";
+    } else if (!account || !/^\d{12}$/.test(account)) invalid();
+    else if (request.awsRestOutpost) {
       const route = request.awsRestOutpost;
       if (route.account !== account || route.region && route.region !== signing.region || !/^op-[a-z0-9]+$/.test(route.id)) invalid();
       url.hostname = `s3-outposts.${signing.region}.amazonaws.com`; signing.service = "s3-outposts";

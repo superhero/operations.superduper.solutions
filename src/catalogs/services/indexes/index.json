@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "b1ece39ac83cc9831594e118302123efff5dabc76bff66cbf07d58c24b063c3e",
+  "adapterRevision": "ffb615973e40afc0a0aeb0fcedb1e7ddfeecb7d150a8c77e0b6cec3a78fcb932",
   "indexes": [
     {
       "id": "anthropic",
@@ -717,16 +717,16 @@
     },
     {
       "id": "aws-cloudfront",
-      "sourceRevision": "4b572db68cba5cbf9187c1591d550a44b099366b184eb86dbb95ef51e0c43d7a",
-      "bytes": 52723,
-      "compressedBytes": 3190,
-      "sha256": "0ceec6e177a66f00f43f195d33074a0cb2a11ace28b6822352ac0082f954e652",
+      "sourceRevision": "7a379f563daa8c189b1faa3d41aa07821115bdac7d65135856cd3f9efe85009f",
+      "bytes": 41337,
+      "compressedBytes": 2811,
+      "sha256": "885b25f0c490568ce38b53dc4694ab79676738bd995bb906c5cd2eb78ed5b45d",
       "summary": {
         "name": "Amazon CloudFront",
         "serverUrl": "https://cloudfront.amazonaws.com",
         "description": "<fullname>Amazon CloudFront</fullname> <p>This is the <i>Amazon CloudFront API Reference</i>. This guide is for developers who need detailed information about CloudFront API actions, data types, and errors. For detailed information about CloudFront features, see the <i>Amazon CloudFront Developer Guide</i>.</p>",
         "operationCount": 106,
-        "unavailableCount": 33
+        "unavailableCount": 0
       }
     },
     {
@@ -1151,44 +1151,44 @@
     },
     {
       "id": "aws-route53",
-      "sourceRevision": "2d4c575257592d91dc0b45027d042000d612925c02529cfed99b1de292dfb6cc",
-      "bytes": 32802,
-      "compressedBytes": 2658,
-      "sha256": "a712875acfc92747616d646225d1736be5b6bd038c1b6d0f3bbed8fb213169b7",
+      "sourceRevision": "38505d61b726aeaaa413b29dcaeb10799cda63c4548fa0244e27a409b1ef125a",
+      "bytes": 25556,
+      "compressedBytes": 2365,
+      "sha256": "dd821cfa4e77d1a0f4b3079bda85879b3683357b9216fb7ca186c80ea62973a4",
       "summary": {
         "name": "Amazon Route 53",
         "serverUrl": "https://route53.amazonaws.com",
         "description": "<p>Amazon Route 53 is a highly available and scalable Domain Name System (DNS) web service.</p> <p>You can use Route 53 to:</p> <ul> <li> <p>Register domain names.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/welcome-domain-registration.html\">How domain registration works</a>.</p> </li> <li> <p>Route internet traffic to the resources for your domain</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/welcome-dns-service.html\">How internet traffic is routed to your website or web application</a>.</p> </li> <li> <p>Check the health of your resources.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/welcome-health-checks.html\">How Route 53 checks the health of your resources</a>.</p> </li> </ul>",
         "operationCount": 70,
-        "unavailableCount": 21
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-s3",
-      "sourceRevision": "f042ef113332bbdede630f468a36fbacc91796bf16a3c2659a352469d020fe0c",
-      "bytes": 30600,
-      "compressedBytes": 2491,
-      "sha256": "ff4f89883dccb63cd5a214eb00f70f2f591ef220e2bbb6e1ea5e11a615aab761",
+      "sourceRevision": "4be8a4510ca84100dfcb1891d2c1fd24d02adc3a084d1c9427be16da51fe9773",
+      "bytes": 30255,
+      "compressedBytes": 2295,
+      "sha256": "74a119488d8dfa344a5b45f06f811d7596ae20cbc858a1d7100b85eec6b996fa",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "https://s3.us-east-1.amazonaws.com",
         "description": "<p/>",
         "operationCount": 97,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-s3control",
-      "sourceRevision": "510d345f5d21469416fa86391c2602e909e2bd532815c7056cfc9bb08f756ed5",
-      "bytes": 24217,
-      "compressedBytes": 1992,
-      "sha256": "48be8b3196f8f386a868f1205cfdc0539daa69251c1c52b96b792e9e0c8cbb12",
+      "sourceRevision": "597f36a1c6be61ea75264b0eee21a914ed4652f36fcf59181f48c47d5737a088",
+      "bytes": 23872,
+      "compressedBytes": 1802,
+      "sha256": "bd2b69537c908b20467e69f50d445175de8e56f468313f8d820d95d5f3513b8f",
       "summary": {
         "name": "AWS S3 Control",
         "serverUrl": "https://s3-control.us-east-1.amazonaws.com",
         "description": "Amazon Web Services S3 Control provides access to Amazon S3 control plane actions.",
         "operationCount": 64,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {

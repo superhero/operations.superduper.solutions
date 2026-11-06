@@ -8,14 +8,21 @@ import { Then } from '@cucumber/cucumber';
 import ids from '../tests/aws-rest-operations.json' with {type:'json'};
 import headerArrayIds from '../tests/header-array-operations.json' with {type:'json'};
 import selectorIds from '../tests/aws-rest-selectors.json' with {type:'json'};
+import xmlRequestIds from '../tests/aws-xml-request-operations.json' with {type:'json'};
 import { awsRestContracts, awsRestEndpoint, awsRestSigningProfile, awsRestPrivateResultPaths, validAwsRestModel } from './lib/aws-rest.ts';
 import { awsRestDataSha256 } from './lib/aws-rest-data.ts';
-import { decodeAwsRestResponse, prepareAwsRestRequest, awsEventCrc32 } from './lib/aws-rest-codec.ts';
+import { decodeAwsRestResponse, prepareAwsRestRequest, awsRestRequestTarget, awsEventCrc32 } from './lib/aws-rest-codec.ts';
+import { signAwsRequest } from './lib/secrets/aws-sigv4.ts';
+import { awsSyntheticValues, verifyAwsSignature } from '../tests/aws-sigv4.fixture.mjs';
+import { awsRestChecksums } from './lib/aws-rest-checksum.ts';
 import { encodeWorkflowBinary } from './lib/workflow-binary.ts';
 import { requestBody } from './lib/request-body.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { extractOperations } from './lib/catalog.ts';
+import { createOperationGraph } from './lib/workflow-graph.ts';
+import { validateWorkflowDocument, parseWorkflowDocument } from './lib/workflow-document.ts';
+import display from './lib/operation-display.json' with {type:'json'};
 
 const bytes = value => new TextEncoder().encode(value), headers = type => new Headers({'Content-Type':type});
 function model(id) {
@@ -31,7 +38,7 @@ function decode(id,body,type='application/json',status=200,extra={}) {
 }
 const bad = error => error?.code==='CODEC';
 
-Then('all 658 native AWS REST operations have qualified canonical and strict models',async()=>{
+async function qualifiedModels(ids) {
   const selected=new Set(ids),found=new Set(),failures=[];
   for(const catalog of Object.keys(awsRestContracts().sources)) {
     if (!ids.some(id=>id.startsWith(catalog+':'))) continue;
@@ -46,12 +53,81 @@ Then('all 658 native AWS REST operations have qualified canonical and strict mod
     for(const operation of strict)assert.ok(validAwsRestModel(operation),operation.id);
   }
   assert.deepEqual(found,selected);assert.deepEqual(failures,[],JSON.stringify(failures,null,2));
+}
+Then('all 658 native AWS REST operations have qualified canonical and strict models',()=>qualifiedModels(ids));
+Then('all 56 AWS XML request operations have qualified canonical and strict models',async()=>{
+  assert.equal(xmlRequestIds.length,56);assert.equal(new Set(xmlRequestIds).size,56);
+  await qualifiedModels(xmlRequestIds);
+});
+async function xmlRequest(id, body, headers = {}) {
+  const catalog=id.split(':')[0],document=await readServiceSchema(catalog);
+  const operation=inspectServiceSchema(document,catalog,new Set([id])).operations.find(value=>value.id===id);
+  assert.ok(operation && !operation.unavailableReason,id);assert.ok(validAwsRestModel(operation),id);
+  const path=operation.path.replace(/\{([^{}]+)\}/g,(_,name)=>['Bucket','name'].includes(name)?'example-bucket':'example');
+  const request=prepareAwsRestRequest(operation,{method:operation.method,path,query:{},headers,body});
+  const source=awsRestContracts().sources[catalog],origin=source.endpoint.url.replace(/\{([^{}]+)\}/g,(_,key)=>source.endpoint.variables[key].default);
+  return {operation,request,target:awsRestRequestTarget(operation,origin,request)};
+}
+Then('CloudFront Route53 S3 and S3 Control XML bodies preserve their exact wire envelopes',async()=>{
+  const fixtures=[
+    ['aws-cloudfront:CreateInvalidation2020_05_31',{InvalidationBatch:{Paths:{Quantity:2,Items:['/a&b','/λ']},CallerReference:'request-1'}},{},
+      '<InvalidationBatch xmlns="http://cloudfront.amazonaws.com/doc/2020-05-31/"><Paths><Quantity>2</Quantity><Items><Path>/a&amp;b</Path><Path>/λ</Path></Items></Paths><CallerReference>request-1</CallerReference></InvalidationBatch>'],
+    ['aws-route53:ChangeResourceRecordSets',{ChangeBatch:{Comment:'a < b',Changes:[{Action:'UPSERT',ResourceRecordSet:{Name:'example.test.',Type:'A',TTL:0,ResourceRecords:[{Value:'192.0.2.1'}]}}]}},{},
+      '<ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2013-04-01/"><ChangeBatch><Comment>a &lt; b</Comment><Changes><Change><Action>UPSERT</Action><ResourceRecordSet><Name>example.test.</Name><Type>A</Type><TTL>0</TTL><ResourceRecords><ResourceRecord><Value>192.0.2.1</Value></ResourceRecord></ResourceRecords></ResourceRecordSet></Change></Changes></ChangeBatch></ChangeResourceRecordSetsRequest>'],
+    ['aws-s3:CreateBucket',{CreateBucketConfiguration:{LocationConstraint:'eu-west-1'}},{},
+      '<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LocationConstraint>eu-west-1</LocationConstraint></CreateBucketConfiguration>'],
+    ['aws-s3control:CreateBucket',{CreateBucketConfiguration:{}},{'x-amz-outpost-id':'op-1234'},
+      '<CreateBucketConfiguration xmlns="http://awss3control.amazonaws.com/doc/2018-08-20/"></CreateBucketConfiguration>'],
+  ];
+  for (const [id,body,headers,expected] of fixtures) {
+    const {operation,request,target}=await xmlRequest(id,body,headers),wire=requestBody(request);
+    assert.equal(wire,expected,id);assert.equal(request.contentType,'application/xml');
+    const wireHeaders=new Headers({...request.headers,'content-type':request.contentType});
+    await awsRestChecksums(operation,wireHeaders,wire);
+    if (id==='aws-s3control:CreateBucket') {
+      assert.equal(wireHeaders.get('content-md5'),createHash('md5').update(wire).digest('base64'));
+      await assert.rejects(()=>awsRestChecksums(operation,new Headers({'content-md5':'invalid'}),wire),bad);
+    }
+    const signed=await signAwsRequest(request.method,target.url.href,wireHeaders,wire,awsSyntheticValues,target.signing);
+    const init={method:request.method,headers:signed.headers,body:signed.body};
+    verifyAwsSignature(target.url.href,init,awsSyntheticValues,target.signing.service,target.signing.region);
+    assert.throws(()=>verifyAwsSignature(target.url.href,{...init,body:wire+'x'},awsSyntheticValues,target.signing.service,target.signing.region));
+  }
+  const health=await xmlRequest('aws-route53:CreateHealthCheck',{CallerReference:'request-2',HealthCheckConfig:{IPAddress:'192.0.2.1',Port:80,Type:'TCP',MeasureLatency:false,Inverted:false,Disabled:false}});
+  for (const name of ['MeasureLatency','Inverted','Disabled']) assert.ok(requestBody(health.request).includes(`<${name}>false</${name}>`));
+  const code='cmV0dXJuIDE7';
+  const fn=await xmlRequest('aws-cloudfront:CreateFunction2020_05_31',{Name:'example-function',FunctionConfig:{Comment:'fixture',Runtime:'cloudfront-js-1.0'},FunctionCode:code});
+  assert.ok(requestBody(fn.request).includes(`<FunctionCode>${code}</FunctionCode>`));
+  await assert.rejects(()=>xmlRequest('aws-cloudfront:CreateFunction2020_05_31',{Name:'example-function',FunctionConfig:{Comment:'fixture',Runtime:'cloudfront-js-1.0'},FunctionCode:'invalid base64!'}),bad);
+  for (const body of [{InvalidationBatch:{Unknown:true}},{InvalidationBatch:{Paths:{Quantity:0,Items:[]},CallerReference:'bad\u0000'}}])
+    await assert.rejects(()=>xmlRequest('aws-cloudfront:CreateInvalidation2020_05_31',body),bad);
+});
+Then('S3 Control bucket creation requires its Outpost ID and rejects account or endpoint substitution',async()=>{
+  const {operation,request,target}=await xmlRequest('aws-s3control:CreateBucket',{CreateBucketConfiguration:{}},{'x-amz-outpost-id':'op-1234'});
+  assert.equal(target.url.href,'https://s3-outposts.us-east-1.amazonaws.com/v20180820/bucket/example-bucket');
+  assert.deepEqual(target.signing,{service:'s3-outposts',region:'us-east-1'});
+  assert.equal(operation.fields.find(field=>field.name.toLowerCase()==='x-amz-outpost-id').required,true);
+  for (const headers of [{},{'x-amz-outpost-id':'op-evil.test'},{'x-amz-outpost-id':'op-1234','x-amz-account-id':'123456789012'}])
+    await assert.rejects(()=>xmlRequest(operation.id,{CreateBucketConfiguration:{}},headers),bad);
+  assert.throws(()=>awsRestRequestTarget(operation,'https://s3-control.us-east-1.amazonaws.com.evil.test',request),bad);
+  assert.throws(()=>awsRestRequestTarget(operation,'https://s3-control.us-east-1.amazonaws.com',{...request,awsRestOutpost:{region:'us-east-1',account:'123456789012',id:'op-1234'}}),bad);
+});
+Then('the three XML workflow synopses preserve their complete canonical documentation',async()=>{
+  for (const id of ['aws-route53:ChangeResourceRecordSets','aws-route53:CreateQueryLoggingConfig','aws-s3:CreateBucket']) {
+    const catalog=id.split(':')[0],document=await readServiceSchema(catalog),before=JSON.stringify(document);
+    const operation=inspectServiceSchema(document,catalog,new Set([id])).operations.find(value=>value.id===id);
+    assert.ok(operation && !operation.unavailableReason);assert.ok(operation.description.length>4000);
+    const graph=createOperationGraph(operation,{x:0,y:0},'xml-fixture',document);
+    assert.equal(graph.nodes[0].data.description,display[id].description);
+    const saved=validateWorkflowDocument({version:2,id:crypto.randomUUID(),name:'AWS XML',...graph,viewport:{x:0,y:0,zoom:1},snap:true,curved:true,dashed:false});
+    assert.deepEqual(parseWorkflowDocument(JSON.stringify(saved)),saved);assert.equal(JSON.stringify(document),before);
+  }
 });
 
 Then('the reviewed AWS REST contracts retain pinned sources and reject other authorities',()=>{
   const contracts=awsRestContracts();assert.equal(Object.keys(contracts.sources).length,15);
-  const reviewed=[...ids,...headerArrayIds,...selectorIds];assert.equal(ids.length,658);
-  assert.deepEqual(new Set(Object.keys(contracts.operations)),new Set(reviewed));assert.equal(reviewed.length,849);
+  const reviewed=[...ids,...headerArrayIds,...selectorIds,...xmlRequestIds];assert.equal(ids.length,658);
+  assert.deepEqual(new Set(Object.keys(contracts.operations)),new Set(reviewed));assert.equal(reviewed.length,905);
   assert.equal(createHash('sha256').update(JSON.stringify(contracts)).digest('hex'),awsRestDataSha256);
   for (const id of reviewed) {
     const operation=model(id),contract=contracts.operations[id],source=contracts.sources[contract.catalog];assert.ok(validAwsRestModel(operation),id);

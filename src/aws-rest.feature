@@ -49,3 +49,15 @@ Feature: Reviewed AWS REST wire contracts
 
   Scenario: SDK file envelopes preserve the private binary response boundary
     Then REST file envelopes and event chunks with known secrets are withheld without corrupting clean bytes
+
+  Scenario: Native XML request operations retain their qualified models
+    Then all 56 AWS XML request operations have qualified canonical and strict models
+
+  Scenario: Structured XML request bodies retain provider namespaces and signatures
+    Then CloudFront Route53 S3 and S3 Control XML bodies preserve their exact wire envelopes
+
+  Scenario: Outposts bucket creation signs only its documented service authority
+    Then S3 Control bucket creation requires its Outpost ID and rejects account or endpoint substitution
+
+  Scenario: XML workflow descriptions fit saved metadata limits
+    Then the three XML workflow synopses preserve their complete canonical documentation

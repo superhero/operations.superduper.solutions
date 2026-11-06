@@ -10,7 +10,7 @@ function invalid(): never { throw new WorkflowBodyError("CODEC"); }
 const base64 = (hex: string) => Uint8Array.from(hex.match(/../g)!, part => parseInt(part, 16)).toBase64();
 /** Compute/check the SDK-declared checksums over the final bytes, before SigV4. */
 export async function awsRestChecksums(operation: Operation, headers: Headers, body: BodyInit | null): Promise<void> {
-  const contract = awsRestContract(operation); if (!contract?.wirePath) return;
+  const contract = awsRestContract(operation); if (!contract || !contract.wirePath && !contract.xmlRequest) return;
   let bytes: Uint8Array<ArrayBuffer>;
   if (body === null) bytes = new Uint8Array();
   else if (typeof body === "string") bytes = new TextEncoder().encode(body);

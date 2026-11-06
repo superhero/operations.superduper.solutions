@@ -44,7 +44,7 @@ export type AwsRestContract = {
   nativePath: string; path: string; greedy: string[]; status: number;
   input: string | null; output: string | null;
   inputTraits?: AwsRestShape; outputTraits?: AwsRestShape;
-  wirePath?: string; fixedQuery?: [string, string][]; endpoint?: { hostPrefix: string };
+  wirePath?: string; fixedQuery?: [string, string][]; endpoint?: { hostPrefix: string }; xmlRequest?: true;
   checksum?: { required?: boolean; algorithmMember?: string };
   wireSources?: string[];
 };
@@ -60,7 +60,7 @@ function freeze(value: unknown): void {
 export function awsRestContracts(): AwsRestContracts {
   if (!cached) {
     const data = decodeAwsRestData() as AwsRestContracts;
-    if (data.version !== 1 || Object.keys(data.sources).length !== 15 || Object.keys(data.operations).length !== 849)
+    if (data.version !== 1 || Object.keys(data.sources).length !== 15 || Object.keys(data.operations).length !== 905)
       throw new Error("The AWS REST contracts have an unknown revision.");
     freeze(data); cached = data;
   }

@@ -12,7 +12,8 @@ import { encodeSchemaPack, compactSchemaPackPrefix } from '../src/lib/schema-pac
 import baselineIds from '../tests/aws-rest-operations.json' with {type:'json'};
 import headerArrayIds from '../tests/header-array-operations.json' with {type:'json'};
 import selectorIds from '../tests/aws-rest-selectors.json' with {type:'json'};
-const ids = [...baselineIds, ...headerArrayIds, ...selectorIds];
+import xmlRequestIds from '../tests/aws-xml-request-operations.json' with {type:'json'};
+const ids = [...baselineIds, ...headerArrayIds, ...selectorIds, ...xmlRequestIds];
 
 const root = resolve(import.meta.dirname, '..'), models = process.argv[process.argv.indexOf('--models') + 1];
 assert.ok(process.argv.includes('--models') && models, 'Provide --models DIR containing the pinned <catalog>.json models.');
@@ -49,17 +50,19 @@ for (const [catalog, pinned] of Object.entries(pins)) {
     let old = previous.operations[id] ?? (id === 'aws-s3:ListObjects'
       ? {catalog:'aws-s3',operation:'ListObjects',nativeMethod:'GET',method:'GET',nativePath:'/{Bucket}',path:'/{Bucket}',greedy:[],status:200}
       : undefined);
-    if (selectorIds.includes(id)) {
+    if (selectorIds.includes(id) || xmlRequestIds.includes(id)) {
       const candidates = Object.entries(native.paths).flatMap(([path, item]) => Object.entries(item)
         .filter(([, value]) => value?.operationId === id.slice(catalog.length+1)).map(([method]) => ({ path, method })));
       assert.equal(candidates.length, 1, id);
       const {path, method} = candidates[0], name = id.slice(catalog.length+1).replace(/20\d\d_\d\d_\d\d$/, '');
       const operation = sdk.operations[name]; assert.ok(operation, id);
       const [wirePath, query = ''] = operation.http.requestUri.split('?');
-      assert.ok(path.includes('#'), id); assert.equal(path.split('#')[0], wirePath.replaceAll('+}', '}'), id);
+      assert.equal(path.includes('#'), selectorIds.includes(id), id);
+      assert.equal(path.split('#')[0], wirePath.replaceAll('+}', '}'), id);
       assert.equal(method.toUpperCase(), operation.http.method, id);
       old = {catalog, operation:name, nativeMethod:method.toUpperCase(), method:operation.http.method,
-        nativePath:path, path, wirePath:wirePath.replaceAll('+}', '}'), fixedQuery:[...new URLSearchParams(query)],
+        nativePath:path, path, ...(selectorIds.includes(id)
+          ? {wirePath:wirePath.replaceAll('+}', '}'), fixedQuery:[...new URLSearchParams(query)]} : {xmlRequest:true}),
         greedy:[...wirePath.matchAll(/\{([^{}]+)\+\}/g)].map(match=>match[1]), status:operation.http.responseCode ?? 200,
         ...(operation.endpoint ? {endpoint:operation.endpoint} : {}),
         ...(operation.httpChecksumRequired ? {checksum:{required:true}} : {}),
@@ -78,6 +81,13 @@ for (const [catalog, pinned] of Object.entries(pins)) {
     // syntax explicitly names maxResults/nextToken and has no request body.
     const wireSources = id === 'aws-opensearch:DescribeDomainAutoTunes'
       ? ['https://docs.aws.amazon.com/opensearch-service/latest/APIReference/API_DescribeDomainAutoTunes.html'] : [];
+    if (id === 'aws-s3control:CreateBucket') {
+      assert.equal(operation.http.method, 'PUT');
+      assert.ok(sdk.shapes[input].members.OutpostId);
+      inputTraits.required = [...sdk.shapes[input].required, 'OutpostId'];
+      wireSources.push('https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_CreateBucket.html',
+        'https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/lib/services/s3control.js');
+    }
     if (id === 'aws-opensearch:DescribeDomainAutoTunes') {
       assert.equal(operation.http.method, 'GET');
       inputTraits.members = structuredClone(trim(sdk.shapes[input]).members);

@@ -1171,8 +1171,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "4b572db68cba5cbf9187c1591d550a44b099366b184eb86dbb95ef51e0c43d7a",
-    "effectiveBytes": 773192
+    "effectiveSha256": "7a379f563daa8c189b1faa3d41aa07821115bdac7d65135856cd3f9efe85009f",
+    "effectiveBytes": 1109672
   },
   {
     "id": "aws-cloudtrail",
@@ -2017,8 +2017,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "2d4c575257592d91dc0b45027d042000d612925c02529cfed99b1de292dfb6cc",
-    "effectiveBytes": 494748
+    "effectiveSha256": "38505d61b726aeaaa413b29dcaeb10799cda63c4548fa0244e27a409b1ef125a",
+    "effectiveBytes": 610972
   },
   {
     "id": "aws-s3",
@@ -2049,8 +2049,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "f042ef113332bbdede630f468a36fbacc91796bf16a3c2659a352469d020fe0c",
-    "effectiveBytes": 1099147
+    "effectiveSha256": "4be8a4510ca84100dfcb1891d2c1fd24d02adc3a084d1c9427be16da51fe9773",
+    "effectiveBytes": 1102566
   },
   {
     "id": "aws-s3control",
@@ -2076,8 +2076,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "510d345f5d21469416fa86391c2602e909e2bd532815c7056cfc9bb08f756ed5",
-    "effectiveBytes": 464779
+    "effectiveSha256": "597f36a1c6be61ea75264b0eee21a914ed4652f36fcf59181f48c47d5737a088",
+    "effectiveBytes": 467894
   },
   {
     "id": "aws-sagemaker",

@@ -187,7 +187,7 @@
   "twilio:ListUsageRecordLastMonth": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/LastMonth.json",
-    "name": "List last month\u2019s usage records"
+    "name": "List last month’s usage records"
   },
   "twilio:ListUsageRecordMonthly": {
     "method": "GET",
@@ -197,12 +197,12 @@
   "twilio:ListUsageRecordThisMonth": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/ThisMonth.json",
-    "name": "List this month\u2019s usage records"
+    "name": "List this month’s usage records"
   },
   "twilio:ListUsageRecordToday": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Today.json",
-    "name": "List today\u2019s usage records"
+    "name": "List today’s usage records"
   },
   "twilio:ListUsageRecordYearly": {
     "method": "GET",
@@ -212,7 +212,7 @@
   "twilio:ListUsageRecordYesterday": {
     "method": "GET",
     "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Yesterday.json",
-    "name": "List yesterday\u2019s usage records"
+    "name": "List yesterday’s usage records"
   },
   "twilio:UpdateAddress": {
     "method": "POST",
@@ -612,12 +612,12 @@
   "aws-iam:GET_GenerateOrganizationsAccessReport": {
     "method": "GET",
     "path": "/#Action=GenerateOrganizationsAccessReport",
-    "description": "Generate a report about an organization\u2019s access to AWS services."
+    "description": "Generate a report about an organization’s access to AWS services."
   },
   "aws-iam:POST_GenerateOrganizationsAccessReport": {
     "method": "POST",
     "path": "/#Action=GenerateOrganizationsAccessReport",
-    "description": "Generate a report about an organization\u2019s access to AWS services."
+    "description": "Generate a report about an organization’s access to AWS services."
   },
   "aws-sts:GET_AssumeRole": {
     "method": "GET",
@@ -658,5 +658,20 @@
     "method": "POST",
     "path": "/#Action=GetFederationToken",
     "description": "Request temporary AWS credentials for a federated user with the specified session permissions."
+  },
+  "aws-route53:ChangeResourceRecordSets": {
+    "method": "POST",
+    "path": "/2013-04-01/hostedzone/{Id}/rrset/",
+    "description": "Create, update or delete DNS records in a hosted zone using a change batch."
+  },
+  "aws-route53:CreateQueryLoggingConfig": {
+    "method": "POST",
+    "path": "/2013-04-01/queryloggingconfig",
+    "description": "Configure Route 53 DNS query logging for a hosted zone."
+  },
+  "aws-s3:CreateBucket": {
+    "method": "PUT",
+    "path": "/{Bucket}",
+    "description": "Create an S3 bucket using the selected regional endpoint and bucket configuration."
   }
 }

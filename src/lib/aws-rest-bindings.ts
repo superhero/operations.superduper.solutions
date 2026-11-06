@@ -96,6 +96,16 @@ export function bindAwsRest(document: Record<string, any>): void {
     if (kept.length !== parameters.length) {
       operation["x-upstream-aws-rest-parameters"] = structuredClone(parameters); operation.parameters = kept;
     }
+    if (id === "aws-s3control:CreateBucket") {
+      requireContract(parameters.some((raw: unknown) => { const parameter = resolve(raw, document);
+        return parameter.in === "header" && parameter.name.toLowerCase() === "x-amz-outpost-id"; }), id);
+      operation["x-upstream-aws-rest-parameters"] ??= structuredClone(parameters);
+      operation.parameters = (operation.parameters ?? parameters).map((raw: unknown) => {
+        const parameter = resolve(raw, document);
+        return parameter.in === "header" && parameter.name.toLowerCase() === "x-amz-outpost-id"
+          ? { ...structuredClone(parameter), required: true } : raw;
+      });
+    }
     if (contract.path !== contract.nativePath || contract.method !== contract.nativeMethod || id === "aws-sesv2:ListRecommendations") {
       const body = resolve(operation.requestBody, document), media = body.content?.["application/json"]; requireContract(object(media));
       const shape = structuredClone(resolve(media.schema, document)); requireContract(object(shape.properties));
@@ -118,7 +128,7 @@ export function bindAwsRest(document: Record<string, any>): void {
         if (!Object.keys(item).some(key => methods.has(key))) delete document.paths[contract.nativePath];
       }
     }
-    if (contract.wirePath && source.protocol === "rest-xml" && operation.requestBody
+    if ((contract.wirePath || contract.xmlRequest) && source.protocol === "rest-xml" && operation.requestBody
       && !(input.payload && input.members?.[input.payload] && awsRestShape(source, input.members[input.payload]!).type === "blob")) {
       const body = resolve(operation.requestBody, document), entries = Object.entries(body.content ?? {});
       requireContract(entries.length === 1 && ["text/xml", "application/xml", "application/json"].includes(entries[0]![0]), id);
