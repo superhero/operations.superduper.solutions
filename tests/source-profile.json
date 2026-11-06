@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/multipart-parts.test.mjs",
     "src/inline-worker-codec.test.mjs",
     "src/literal-query.test.mjs",
     "src/multipart-files.test.mjs",

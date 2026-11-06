@@ -2361,10 +2361,14 @@
       {
         "id": "cloudflare-private-upload",
         "version": 1
+      },
+      {
+        "id": "multipart-part-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "ca3f09b346bba9872f2aee6b4f243dbaf19da995f896b9d1de846994250e226a",
-    "effectiveBytes": 13590340
+    "effectiveSha256": "a686c7d20b24dc11139a34b6731aa31fee295ba3a30c066ffd2bc6840601b713",
+    "effectiveBytes": 13598849
   },
   {
     "id": "cloudflare-realtime-sfu",
@@ -5123,10 +5127,14 @@
       {
         "id": "beta-route-contracts",
         "version": 1
+      },
+      {
+        "id": "multipart-part-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "d21f4cf22817a2f14b97c44f92091632134922a9110e237a732ba223da7b0672",
-    "effectiveBytes": 3150378
+    "effectiveSha256": "4c592f3b72ebcc8c2071df0949bb23cdf66cf74d1ab8a81502a8ff8dc8165ce6",
+    "effectiveBytes": 3150633
   },
   {
     "id": "codex",

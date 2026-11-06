@@ -9,6 +9,7 @@ import { validAwsWireModel, awsWireEndpoint } from "../aws-wire.ts";
 import { validAwsSigningModel, lambdaSigningRegion } from "../aws-signing.ts";
 import { awsRestEndpoint } from "../aws-rest.ts";
 import { awsJsonEndpoint, validAwsJsonModel } from "../aws-json.ts";
+import { validateMultipartParts } from "../multipart-parts.ts";
 import { validS3FilesModel, s3SigningEndpoint } from "../s3-files.ts";
 import { cloudflareOrigin, configureCloudflareUpload, cloudflareUploadProfile, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
@@ -95,6 +96,10 @@ function validateOperation(operation: Operation): void
     validateCredentialPath(literalQueryRoute(operation.path)?.path ?? operation.path, true);
   }
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
+  if (operation.multipartParts !== undefined) {
+    if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new VaultError("PERMISSION");
+    try { validateMultipartParts(operation.multipartParts, operation.bodySchema); } catch { throw new VaultError("PERMISSION"); }
+  }
   if (operation.security?.some(alternative => !Array.isArray(alternative))) throw new VaultError("PERMISSION");
   if (operation.privatePath !== undefined) {
     if (operation.privatePath !== "telegram-bot" || !/^(?:GET|POST)$/.test(operation.method)

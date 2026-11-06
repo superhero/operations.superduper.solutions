@@ -16,6 +16,8 @@ import { inspectOperationSecurity, type CredentialPermissions, type OperationSec
 import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent, type ResponseContent } from "./workflow-response-body.ts";
 import { normalizeStringUnion, validateFormBody } from "./form-input.ts";
+import { multipartBodySchema, type MultipartParts } from "./multipart-parts.ts";
+import { serviceInputSchema } from "./service-catalog.ts";
 import { responseStreamProfile, type ResponseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile, type PrivatePathProfile } from "./server-url.ts";
 import { codexExecutionLimitation, type NativeRpcContract } from "./native-rpc.ts";
@@ -87,6 +89,7 @@ export type Operation = {
   binaryMediaTypes?: string[];
   bodyValue?: boolean;
   bodySchema?: InputSchema;
+  multipartParts?: MultipartParts;
   responseExample?: unknown;
   responseMediaType?: string;
   /** Per-status media contracts for operations with binary or reviewed streaming responses. */
@@ -111,7 +114,7 @@ export type Operation = {
 
 type RecordValue = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
-const annotations = ["title", "description", "example", "examples", "default", "deprecated"];
+const annotations = ["title", "description", "example", "examples", "default", "deprecated", "x-auditable"];
 const primitiveTypes = ["string", "number", "integer", "boolean", "null"];
 
 function object(value: unknown, context: string): RecordValue
@@ -167,6 +170,12 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   if (shape.nullable !== undefined && typeof shape.nullable !== "boolean") throw new Error(`${context}: nullable must be Boolean.`);
   const nullable = !!union || shape.nullable === true;
   const keys = ["type", "nullable", ...annotations];
+  // Reused identifier schemas can mark the identifier read-only on a resource.
+  // Supplying that identifier in a route does not write the resource property.
+  if (context.startsWith("path:")) for (const annotation of ["readOnly", "writeOnly"]) {
+    if (shape[annotation] !== undefined && typeof shape[annotation] !== "boolean") throw new Error(`${context}: ${annotation} must be Boolean.`);
+    keys.push(annotation);
+  }
   if (type === "string" && shape.format === "binary") keys.push("format");
   if (primitiveTypes.includes(type)) keys.push("enum");
   if (type === "number" || type === "integer") keys.push("minimum", "maximum");
@@ -250,11 +259,11 @@ function objectSchemas(schema: InputSchema): InputSchema[]
 }
 
 function field(value: unknown, document: RecordValue, location: InputField["location"], name: string,
-  required: boolean): InputField
+  required: boolean, schemaOverride?: InputSchema): InputField
 {
   const context = `${location}:${name}`;
   const shape = resolve(value, document, context);
-  const schema = inputSchema(shape, document, context);
+  const schema = schemaOverride ?? inputSchema(shape, document, context);
   const result: InputField = { key: context, name, label: text(shape.title, name),
     description: text(shape.description, ""), location, type: schema.type, required };
   if (schema.type === "object" || schema.type === "array")
@@ -386,6 +395,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       let bodyMediaType: BodyMediaType | undefined;
       let bodyValue = false;
       let bodySchema: InputSchema | undefined;
+      let multipartParts: MultipartParts | undefined;
       let binaryMediaTypes: string[] | undefined;
       if (operation.requestBody !== undefined)
       {
@@ -408,7 +418,9 @@ export function extractOperations(value: unknown, source: string): Operation[]
           const form = bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data";
           supported(media, ["schema", "example", "examples", ...(form ? ["encoding"] : [])], id);
           const shape = resolve(media.schema, document, id);
-          const schema = inputSchema(shape, document, id);
+          const encodedForm = bodyMediaType === "multipart/form-data" && media.encoding !== undefined;
+          const compiled = encodedForm ? multipartBodySchema(shape, raw => resolve(raw, document, id), raw => serviceInputSchema(raw, document, true)) : undefined;
+          const schema = compiled?.schema ?? inputSchema(shape, document, id);
           bodySchema = schema;
           if (binary) {
             if (schema.nullable) throw new Error(`${id}: nullable raw-file bodies have no qualified wire encoding.`);
@@ -424,11 +436,17 @@ export function extractOperations(value: unknown, source: string): Operation[]
           if ((bodyMediaType === "text/plain" || isJsonLinesRequestMediaType(bodyMediaType)) && schema.type !== "string")
             throw new Error(`${id}: ${bodyMediaType} requires a string schema.`);
           if (form) {
-            try { validateFormBody(schema, bodyMediaType === "multipart/form-data", media.encoding); }
+            try {
+              const parts = validateFormBody(schema, bodyMediaType === "multipart/form-data", media.encoding, compiled?.mixed);
+              if (Object.keys(parts).length) multipartParts = parts;
+            }
             catch (error) { throw new Error(`${id}: ${(error as Error).message}`, { cause: error }); }
           }
           if (schema.type === "object" && !schema.nullable)
-            for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
+            for (const [name, property] of Object.entries(compiled?.properties ?? (shape.properties ?? {}) as RecordValue)) {
+              if (encodedForm && !Object.hasOwn(schema.properties ?? {}, name)) continue;
+              fields.push(field(property, document, "body", name, schema.required!.includes(name), encodedForm ? schema.properties?.[name] : undefined));
+            }
           else
           {
             bodyValue = true;
@@ -452,6 +470,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (binaryMediaTypes) extracted.binaryMediaTypes = binaryMediaTypes;
       if (bodyValue) extracted.bodyValue = true;
       if (bodySchema) extracted.bodySchema = bodySchema;
+      if (multipartParts) extracted.multipartParts = multipartParts;
       const stream = responseStreamProfile(operation["x-operations-response-stream"]);
       if (stream) extracted.responseStream = stream;
       const responseContent = inspectResponseContent(operation.responses, document, stream);

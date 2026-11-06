@@ -192,10 +192,10 @@ Then('both importers name unsupported structured form fields and custom encoding
     const document = suggestedForm(media), content = document.paths['/items'].post.requestBody.content[media];
     content.schema.properties.settings = { type: 'object', properties: { enabled: { type: 'boolean' } } };
     content.schema.properties.chunks = { type: 'array', items: { type: 'object', properties: {} } };
-    content.encoding = { model_id: { contentType: 'application/json' }, settings: { style: 'deepObject' } };
+    content.encoding = { model_id: { headers: { 'X-Part': { schema: { type: 'string' } } } }, settings: { style: 'deepObject' } };
     const message = inspect(document).unavailableReason;
     for (const expected of ['Form field "settings" (type=object)', 'Form field "chunks" (type=array)',
-      'Form part "model_id": custom encoding (contentType)', 'Form part "settings": custom encoding (style)'])
+      'Form part "model_id": custom encoding (headers)', 'Form part "settings": custom encoding (style)'])
       assert.ok(message.includes(expected), message);
     assert.throws(() => extractOperations(document, 'nullable-files'), error => error.message.endsWith(message));
     const defaultDocument = suggestedForm(media); defaultDocument.paths['/items'].post.requestBody.content[media].encoding = {};

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { InputSchema } from "./catalog.ts";
+import { multipartPartEncodings, validateMultipartParts, type MultipartParts } from "./multipart-parts.ts";
 
 const unionAnnotations = new Set(["title", "description", "example", "examples", "default", "deprecated"]);
 
@@ -60,21 +61,33 @@ export function supportsFormField(schema: Pick<InputSchema, "type" | "nullable" 
       && (textField(schema.items) || multipart && schema.items.type === "string" && schema.items.format === "binary" && !schema.items.nullable);
 }
 
-export function validateFormBody(schema: InputSchema, multipart: boolean, encoding?: unknown): void {
+export function validateFormBody(schema: InputSchema, multipart: boolean, encoding?: unknown, mixed?: MultipartParts): MultipartParts {
   const issues: string[] = [];
+  const parts: MultipartParts = structuredClone(mixed ?? {});
+  if (multipart) {
+    if (encoding !== undefined && (!encoding || typeof encoding !== "object" || Array.isArray(encoding)))
+      issues.push("Form part encoding must be an object keyed by field name.");
+    else for (const [name, declaration] of Object.entries(encoding ?? {})) {
+      try {
+        const qualified = multipartPartEncodings(schema, { [name]: declaration });
+        Object.defineProperty(parts, name, { value: qualified[name], enumerable: true, writable: true, configurable: true });
+      } catch (cause) { issues.push((cause as Error).message); }
+    }
+    try { validateMultipartParts(parts, schema); } catch (cause) { issues.push((cause as Error).message); }
+  }
   if (schema.type !== "object" || schema.nullable)
     issues.push(`Form body must be a non-null object with named fields (type=${schema.type}${schema.nullable ? ", nullable=true" : ""}).`);
   else {
     const fields = Object.entries(schema.properties ?? {});
     if (schema.additionalProperties && typeof schema.additionalProperties === "object") fields.push(["<additional properties>", schema.additionalProperties]);
-    for (const [name, field] of fields) if (!supportsFormField(field, multipart)) {
+    for (const [name, field] of fields) if (!supportsFormField(field, multipart) && !(Object.hasOwn(parts, name) && ["json", "file-or-text"].includes(parts[name]!.kind))) {
       const reason = field.type === "array" ? "arrays require non-null primitive items or multipart binary files"
         : field.type === "json" ? "the schema union or constraints cannot be represented by a supported form field"
         : "use a primitive value, a primitive array or a multipart binary file";
       issues.push(`Form field ${JSON.stringify(name)} (type=${field.type}): ${reason}.`);
     }
   }
-  if (encoding !== undefined) {
+  if (!multipart && encoding !== undefined) {
     if (!encoding || typeof encoding !== "object" || Array.isArray(encoding)) issues.push("Form part encoding must be an object keyed by field name.");
     else for (const [name, settings] of Object.entries(encoding)) {
       const keys = settings && typeof settings === "object" && !Array.isArray(settings) ? Object.keys(settings) : [];
@@ -82,4 +95,5 @@ export function validateFormBody(schema: InputSchema, multipart: boolean, encodi
     }
   }
   if (issues.length) throw new Error(issues.join(" "));
+  return parts;
 }

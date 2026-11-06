@@ -12,6 +12,7 @@ import { encodeS3Key, validateS3Bucket, s3MetadataHeaders } from "./s3-files.ts"
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
 import { validateWorkflowBinary, binaryRequestMediaType, validateBinarySchema } from "./workflow-binary.ts";
 import { supportsFormField } from "./form-input.ts";
+import { validateMultipartParts, validateMultipartValue, type MultipartParts } from "./multipart-parts.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import type { QuerySerialization } from "./query-serialization.ts";
 import { encodeSimplePathArray, encodeSimpleHeaderArray } from "./parameter-serialization.ts";
@@ -36,6 +37,7 @@ export type PreparedRequest = {
   headers?: Record<string, string>;
   contentType?: Exclude<BodyMediaType, "application/json">;
   bodyFormat?: "binary" | "text" | "cloudflare-assets" | "cloudflare-module";
+  multipartParts?: MultipartParts;
 };
 
 export class InputValidationError extends Error
@@ -192,6 +194,10 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   try { validateLiteralQueryFields(operation.path, operation.fields); }
   catch (cause) { throw new InputValidationError("query:beta", (cause as Error).message); }
   const request: PreparedRequest = { method: operation.method, path: route?.path ?? operation.path, query: { ...route?.query } };
+  if (operation.multipartParts !== undefined) {
+    if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new InputValidationError("body:$", "Multipart part contracts require a named multipart body.");
+    validateMultipartParts(operation.multipartParts, operation.bodySchema); request.multipartParts = structuredClone(operation.multipartParts);
+  }
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
   if (operation.s3Files || operation.awsWire || operation.awsRest || operation.awsJson) for (const [key, value] of Object.entries(values)) {
@@ -285,10 +291,12 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     else if (operation.bodyValue) request.body = value;
     else
     {
-      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data") && value === null)
+      const part = Object.hasOwn(operation.multipartParts ?? {}, input.name) ? operation.multipartParts![input.name] : undefined;
+      if (part) try { validateMultipartValue(input.name, part, value); } catch (cause) { fail(input, (cause as Error).message); }
+      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data") && value === null && part?.kind !== "json")
         fail(input, "explicit null has no qualified form encoding; omit an optional field or provide a value.");
       if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
-        && !supportsFormField(input.schema ?? input, operation.bodyMediaType === "multipart/form-data"))
+        && !supportsFormField(input.schema ?? input, operation.bodyMediaType === "multipart/form-data") && !["json", "file-or-text"].includes(part?.kind ?? ""))
         fail(input, "form body properties must be primitive values, primitive arrays or declared binary files.");
       set(body, input.name, value);
     }

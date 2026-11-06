@@ -5,6 +5,7 @@ import { cloudflareMultipart } from "./cloudflare-upload.ts";
 import type { JsonValue } from "./catalog.ts";
 import type { PreparedRequest } from "./operation-input.ts";
 import { validateWorkflowBinary, workflowBinaryBlob } from "./workflow-binary.ts";
+import { appendMultipartPart } from "./multipart-parts.ts";
 
 function formText(value: JsonValue): string {
   if (value === null) throw new Error("Explicit null has no qualified form encoding.");
@@ -26,6 +27,9 @@ export function requestBody(request: PreparedRequest): BodyInit | null {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) throw new Error("Form bodies require named fields, with no explicit null encoding.");
     const form = request.contentType === "multipart/form-data" ? new FormData() : new URLSearchParams();
     for (const [name, value] of Object.entries(request.body as Record<string, JsonValue>)) {
+      if (form instanceof FormData && Object.hasOwn(request.multipartParts ?? {}, name)) {
+        appendMultipartPart(form, name, value, request.multipartParts![name]!); continue;
+      }
       if (Array.isArray(value)) {
         for (const item of value) {
           if (form instanceof FormData && item && typeof item === "object") {

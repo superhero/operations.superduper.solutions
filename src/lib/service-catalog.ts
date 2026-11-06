@@ -19,6 +19,7 @@ import { ServerConfigurationRequiredError } from "./server-url.ts";
 import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
 import { normalizeStringUnion, validateFormBody } from "./form-input.ts";
+import { multipartBodySchema } from "./multipart-parts.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
@@ -151,9 +152,13 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   return result;
 }
 
-function field(name: string, location: InputField["location"], raw: unknown, required: boolean, document: Value, description: unknown, binary = false): InputField
+export function serviceInputSchema(input: unknown, document: Value, binary: boolean): InputSchema {
+  return inputSchema(input, document, 0, new Set(), binary);
+}
+
+function field(name: string, location: InputField["location"], raw: unknown, required: boolean, document: Value, description: unknown, binary = false, schemaOverride?: InputSchema): InputField
 {
-  const schema = inputSchema(raw, document, 0, new Set(), binary);
+  const schema = schemaOverride ?? inputSchema(raw, document, 0, new Set(), binary);
   const shape = resolve(raw, document);
   const defaultValue = required && location !== "body" && ["string", "number", "boolean"].includes(typeof shape.default)
     ? schema.type === "json" ? JSON.stringify(shape.default) : String(shape.default) : undefined;
@@ -350,7 +355,9 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               if (!mediaType) throw new Error(`This request requires an unsupported binary or streaming media type. Declared request media types: ${Object.keys(content).join(", ")}.`);
               const schema = resolve(value(content[mediaType]).schema, document);
               const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
-              const parsed = inputSchema(schema, document, 0, new Set(), binary || isYamlRequestMediaType(mediaType),
+              const encodedForm = mediaType === "multipart/form-data" && value(content[mediaType]).encoding !== undefined;
+              const compiled = encodedForm ? multipartBodySchema(schema, raw => resolve(raw, document), raw => serviceInputSchema(raw, document, true)) : undefined;
+              const parsed = compiled?.schema ?? inputSchema(schema, document, 0, new Set(), binary || isYamlRequestMediaType(mediaType),
                 mediaType === "application/x-www-form-urlencoded" ? formPropertyBudget(operation, schema, document) : 200);
               if (isYamlRequestMediaType(mediaType) && (value(content[mediaType]).encoding !== undefined
                 || !binaryMediaTypes.includes(mediaType) && containsBinaryInput(parsed)))
@@ -370,13 +377,15 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
               if ((mediaType === "text/plain" || isJsonLinesRequestMediaType(mediaType)) && parsed.type !== "string")
                 throw new Error(`${mediaType} requires a string schema.`);
-              if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
-                validateFormBody(parsed, mediaType === "multipart/form-data", value(content[mediaType]).encoding);
+              if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded")) {
+                const parts = validateFormBody(parsed, mediaType === "multipart/form-data", value(content[mediaType]).encoding, compiled?.mixed);
+                if (Object.keys(parts).length) operation.multipartParts = parts;
+              }
               if (parsed.type === "object" && !parsed.nullable)
-                for (const [name, property] of Object.entries(value(schema.properties)))
+                for (const [name, property] of Object.entries(compiled?.properties ?? value(schema.properties)))
                 {
                   if (resolve(property, document).readOnly === true) continue;
-                  operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined, binary));
+                  operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined, binary, encodedForm ? parsed.properties?.[name] : undefined));
                 }
               else
               {
