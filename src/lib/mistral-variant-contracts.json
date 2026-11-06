@@ -1,0 +1,1218 @@
+{
+  "source": {
+    "sha256": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
+    "info": {
+      "title": "Mistral AI API",
+      "description": "Our Chat Completion and Embeddings APIs specification. Create your account on [La Plateforme](https://console.mistral.ai) to get access and read the [docs](https://docs.mistral.ai) to learn how to use it.",
+      "version": "1.0.0"
+    },
+    "openapi": "3.1.0",
+    "servers": [
+      {
+        "url": "https://api.mistral.ai",
+        "description": "Production server"
+      }
+    ],
+    "security": [
+      {
+        "ApiKey": []
+      }
+    ],
+    "sdkRevision": "d3da3bd3c63d0502449e1e765bc2d3c16d0d2f1d",
+    "references": [
+      "https://docs.mistral.ai/api/endpoint/beta/conversations",
+      "https://docs.mistral.ai/api/endpoint/audio/transcriptions",
+      "https://docs.mistral.ai/api/endpoint/beta/connectors",
+      "https://github.com/mistralai/client-python/tree/d3da3bd3c63d0502449e1e765bc2d3c16d0d2f1d/src/mistralai/client"
+    ]
+  },
+  "schemas": {
+    "ConversationStreamRequest": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/ConversationRequestBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "stream": {
+              "type": "boolean",
+              "enum": [
+                true
+              ],
+              "default": true
+            }
+          }
+        }
+      ]
+    },
+    "ConversationAppendStreamRequest": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/ConversationAppendRequestBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "stream": {
+              "type": "boolean",
+              "enum": [
+                true
+              ],
+              "default": true
+            }
+          }
+        }
+      ]
+    },
+    "ConversationRestartStreamRequest": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/ConversationRestartRequestBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "stream": {
+              "type": "boolean",
+              "enum": [
+                true
+              ],
+              "default": true
+            }
+          }
+        }
+      ]
+    },
+    "ConversationRequestBase": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "$ref": "#/components/schemas/ConversationInputs"
+        },
+        "stream": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stream",
+          "default": null
+        },
+        "store": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Store",
+          "default": null
+        },
+        "handoff_execution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "client",
+                "server"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Handoff Execution",
+          "default": null
+        },
+        "instructions": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Instructions",
+          "default": null
+        },
+        "tools": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FunctionTool"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WebSearchTool"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WebSearchPremiumTool"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CodeInterpreterTool"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageGenerationTool"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DocumentLibraryTool"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CustomConnector"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "code_interpreter": "#/components/schemas/CodeInterpreterTool",
+                    "connector": "#/components/schemas/CustomConnector",
+                    "document_library": "#/components/schemas/DocumentLibraryTool",
+                    "function": "#/components/schemas/FunctionTool",
+                    "image_generation": "#/components/schemas/ImageGenerationTool",
+                    "web_search": "#/components/schemas/WebSearchTool",
+                    "web_search_premium": "#/components/schemas/WebSearchPremiumTool"
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tools",
+          "default": null
+        },
+        "completion_args": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/CompletionArgs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "guardrails": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/GuardrailConfig"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Guardrails",
+          "default": null
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Name",
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Description",
+          "default": null
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/MetadataDict"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Agent Id",
+          "default": null
+        },
+        "agent_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Agent Version",
+          "default": null
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Model",
+          "default": null
+        }
+      },
+      "title": "ConversationRequest",
+      "required": [
+        "inputs"
+      ]
+    },
+    "ConversationAppendRequestBase": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "$ref": "#/components/schemas/ConversationInputs"
+        },
+        "stream": {
+          "type": "boolean",
+          "title": "Stream",
+          "description": "Whether to stream back partial progress. Otherwise, the server will hold the request open until the timeout or until completion, with the response containing the full result as JSON.",
+          "default": false
+        },
+        "store": {
+          "type": "boolean",
+          "title": "Store",
+          "description": "Whether to store the results into our servers or not.",
+          "default": true
+        },
+        "handoff_execution": {
+          "type": "string",
+          "title": "Handoff Execution",
+          "enum": [
+            "client",
+            "server"
+          ],
+          "default": "server"
+        },
+        "completion_args": {
+          "$ref": "#/components/schemas/CompletionArgs",
+          "description": "Completion arguments that will be used to generate assistant responses. Can be overridden at each message request."
+        },
+        "tool_confirmations": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ToolCallConfirmation"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tool Confirmations"
+        }
+      },
+      "title": "ConversationAppendRequest",
+      "additionalProperties": false
+    },
+    "ConversationRestartRequestBase": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "$ref": "#/components/schemas/ConversationInputs"
+        },
+        "stream": {
+          "type": "boolean",
+          "title": "Stream",
+          "description": "Whether to stream back partial progress. Otherwise, the server will hold the request open until the timeout or until completion, with the response containing the full result as JSON.",
+          "default": false
+        },
+        "store": {
+          "type": "boolean",
+          "title": "Store",
+          "description": "Whether to store the results into our servers or not.",
+          "default": true
+        },
+        "handoff_execution": {
+          "type": "string",
+          "title": "Handoff Execution",
+          "enum": [
+            "client",
+            "server"
+          ],
+          "default": "server"
+        },
+        "completion_args": {
+          "$ref": "#/components/schemas/CompletionArgs",
+          "description": "Completion arguments that will be used to generate assistant responses. Can be overridden at each message request."
+        },
+        "guardrails": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/GuardrailConfig"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Guardrails"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/MetadataDict"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Custom metadata for the conversation."
+        },
+        "from_entry_id": {
+          "type": "string",
+          "title": "From Entry Id"
+        },
+        "agent_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Agent Version",
+          "description": "Specific version of the agent to use when restarting. If not provided, uses the current version."
+        }
+      },
+      "title": "ConversationRestartRequest",
+      "required": [
+        "from_entry_id"
+      ],
+      "additionalProperties": false,
+      "description": "Request to restart a new conversation from a given entry in the conversation."
+    },
+    "AudioTranscriptionRequestStream": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "title": "Model"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "File",
+          "default": null
+        },
+        "file_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2083,
+              "minLength": 1,
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "File Url",
+          "description": "Url of a file to be transcribed",
+          "default": null
+        },
+        "file_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "File Id",
+          "description": "ID of a file uploaded to /v1/files",
+          "default": null
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\w{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Language",
+          "description": "Language of the audio, e.g. 'en'. Providing the language can boost accuracy.",
+          "default": null
+        },
+        "temperature": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Temperature",
+          "default": null
+        },
+        "stream": {
+          "type": "boolean",
+          "title": "Stream",
+          "default": true,
+          "const": true
+        },
+        "diarize": {
+          "type": "boolean",
+          "title": "Diarize",
+          "default": false
+        },
+        "context_bias": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^,\\s]+$"
+          },
+          "title": "Context Bias",
+          "default": []
+        },
+        "timestamp_granularities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/TimestampGranularity"
+          },
+          "title": "Timestamp Granularities",
+          "description": "Granularities of timestamps to include in the response."
+        }
+      },
+      "$defs": {
+        "TimestampGranularity": {
+          "type": "string",
+          "title": "TimestampGranularity",
+          "enum": [
+            "segment",
+            "word"
+          ]
+        }
+      },
+      "title": "AudioTranscriptionRequestStream",
+      "required": [
+        "model"
+      ]
+    },
+    "TimestampGranularity": {
+      "type": "string",
+      "title": "TimestampGranularity",
+      "enum": [
+        "segment",
+        "word"
+      ]
+    },
+    "File": {
+      "type": "string",
+      "title": "File",
+      "format": "binary",
+      "description": "The File object (not file name) to be uploaded.\n To upload a file and specify a custom file name you should format your request as such:\n ```bash\n file=@path/to/your/file.jsonl;filename=custom_name.jsonl\n ```\n Otherwise, you can just keep the original file name:\n ```bash\n file=@path/to/your/file.jsonl\n ```"
+    },
+    "SSETypes": {
+      "type": "string",
+      "title": "SSETypes",
+      "enum": [
+        "conversation.response.started",
+        "conversation.response.done",
+        "conversation.response.error",
+        "message.output.delta",
+        "tool.execution.started",
+        "tool.execution.delta",
+        "tool.execution.done",
+        "agent.handoff.started",
+        "agent.handoff.done",
+        "function.call.delta"
+      ],
+      "description": "Server side events sent when streaming a conversation response."
+    },
+    "TranscriptionStreamEventTypes": {
+      "type": "string",
+      "title": "TranscriptionStreamEventTypes",
+      "enum": [
+        "transcription.language",
+        "transcription.segment",
+        "transcription.text.delta",
+        "transcription.done"
+      ]
+    },
+    "ResponseDoneEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type",
+          "default": "conversation.response.done",
+          "const": "conversation.response.done"
+        },
+        "created_at": {
+          "type": "string",
+          "title": "Created At",
+          "format": "date-time"
+        },
+        "usage": {
+          "$ref": "#/components/schemas/ConversationUsageInfo"
+        }
+      },
+      "title": "ResponseDoneEvent",
+      "required": [
+        "usage"
+      ],
+      "additionalProperties": false
+    },
+    "TranscriptionStreamDone": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "title": "Model"
+        },
+        "text": {
+          "type": "string",
+          "title": "Text"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\w{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Language"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/TranscriptionSegmentChunk"
+          },
+          "title": "Segments"
+        },
+        "usage": {
+          "$ref": "#/components/schemas/UsageInfo"
+        },
+        "type": {
+          "type": "string",
+          "title": "Type",
+          "default": "transcription.done",
+          "const": "transcription.done"
+        }
+      },
+      "title": "TranscriptionStreamDone",
+      "required": [
+        "model",
+        "text",
+        "language",
+        "usage"
+      ],
+      "additionalProperties": false
+    },
+    "ResponseErrorEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type",
+          "default": "conversation.response.error",
+          "const": "conversation.response.error"
+        },
+        "created_at": {
+          "type": "string",
+          "title": "Created At",
+          "format": "date-time"
+        },
+        "message": {
+          "type": "string",
+          "title": "Message"
+        },
+        "code": {
+          "type": "integer",
+          "title": "Code"
+        }
+      },
+      "title": "ResponseErrorEvent",
+      "required": [
+        "message",
+        "code"
+      ],
+      "additionalProperties": false
+    },
+    "ResponseStartedEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type",
+          "default": "conversation.response.started",
+          "const": "conversation.response.started"
+        },
+        "created_at": {
+          "type": "string",
+          "title": "Created At",
+          "format": "date-time"
+        },
+        "conversation_id": {
+          "type": "string",
+          "title": "Conversation Id"
+        }
+      },
+      "title": "ResponseStartedEvent",
+      "required": [
+        "conversation_id"
+      ],
+      "additionalProperties": false
+    },
+    "CompletionArgs": {
+      "type": "object",
+      "properties": {
+        "stop": {
+          "$ref": "#/components/schemas/CompletionArgsStop"
+        },
+        "presence_penalty": {
+          "anyOf": [
+            {
+              "type": "number",
+              "maximum": 2,
+              "minimum": -2
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Presence Penalty"
+        },
+        "frequency_penalty": {
+          "anyOf": [
+            {
+              "type": "number",
+              "maximum": 2,
+              "minimum": -2
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Frequency Penalty"
+        },
+        "temperature": {
+          "anyOf": [
+            {
+              "type": "number",
+              "maximum": 1,
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Temperature"
+        },
+        "top_p": {
+          "anyOf": [
+            {
+              "type": "number",
+              "maximum": 1,
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Top P"
+        },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max Tokens"
+        },
+        "random_seed": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Random Seed"
+        },
+        "prediction": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/Prediction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "response_format": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ResponseFormat"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tool_choice": {
+          "$ref": "#/components/schemas/ToolChoiceEnum",
+          "default": "auto"
+        },
+        "reasoning_effort": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "high",
+                "none"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Controls the reasoning effort level for reasoning models. \"high\" enables comprehensive reasoning traces, \"none\" disables reasoning effort."
+        }
+      },
+      "title": "CompletionArgs",
+      "additionalProperties": false,
+      "description": "White-listed arguments from the completion API"
+    }
+  },
+  "operations": {
+    "mistral:agents_api_v1_conversations_append_stream": {
+      "method": "POST",
+      "path": "/v1/conversations/{conversation_id}#stream",
+      "stream": "mistral-conversation",
+      "source": {
+        "operationId": "agents_api_v1_conversations_append_stream",
+        "summary": "Append new entries to an existing conversation.",
+        "description": "Run completion on the history of the conversation and the user entries. Return the new created entries.",
+        "tags": [
+          "beta.conversations"
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "description": "ID of the conversation to which we append entries.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id",
+              "description": "ID of the conversation to which we append entries."
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationAppendStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationEvents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mistral:agents_api_v1_conversations_restart_stream": {
+      "method": "POST",
+      "path": "/v1/conversations/{conversation_id}/restart#stream",
+      "stream": "mistral-conversation",
+      "source": {
+        "operationId": "agents_api_v1_conversations_restart_stream",
+        "summary": "Restart a conversation starting from a given entry.",
+        "description": "Given a conversation_id and an id, recreate a conversation from this point and run completion. A new conversation is returned with the new entries returned.",
+        "tags": [
+          "beta.conversations"
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "description": "ID of the original conversation which is being restarted.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id",
+              "description": "ID of the original conversation which is being restarted."
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationRestartStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationEvents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mistral:agents_api_v1_conversations_start_stream": {
+      "method": "POST",
+      "path": "/v1/conversations#stream",
+      "stream": "mistral-conversation",
+      "source": {
+        "operationId": "agents_api_v1_conversations_start_stream",
+        "summary": "Create a conversation and append entries to it.",
+        "description": "Create a new conversation, using a base model or an agent and append entries. Completion and tool executions are run and the response is appended to the conversation.Use the returned conversation_id to continue the conversation.",
+        "tags": [
+          "beta.conversations"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationEvents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mistral:audio_api_v1_transcriptions_post_stream": {
+      "method": "POST",
+      "path": "/v1/audio/transcriptions#stream",
+      "stream": "mistral-transcription",
+      "source": {
+        "operationId": "audio_api_v1_transcriptions_post_stream",
+        "summary": "Create Streaming Transcription (SSE)",
+        "tags": [
+          "audio.transcriptions"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioTranscriptionRequestStream"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Stream of transcription events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionStreamEvents"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mistral:connector_delete_v1": {
+      "method": "DELETE",
+      "path": "/v1/connectors/{connector_id}#id",
+      "stream": null,
+      "source": {
+        "operationId": "connector_delete_v1",
+        "summary": "Delete a connector.",
+        "description": "Delete a connector by its ID.",
+        "tags": [
+          "beta.connectors"
+        ],
+        "parameters": [
+          {
+            "name": "connector_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connector Id",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mistral:connector_get_v1": {
+      "method": "GET",
+      "path": "/v1/connectors/{connector_id_or_name}#idOrName",
+      "stream": null,
+      "source": {
+        "operationId": "connector_get_v1",
+        "summary": "Get a connector.",
+        "description": "Get a connector by its ID or name.",
+        "tags": [
+          "beta.connectors"
+        ],
+        "parameters": [
+          {
+            "name": "fetch_customer_data",
+            "in": "query",
+            "description": "Fetch the customer data associated with the connector (e.g. customer secrets / config).",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "title": "Fetch Customer Data",
+              "description": "Fetch the customer data associated with the connector (e.g. customer secrets / config).",
+              "default": false
+            }
+          },
+          {
+            "name": "fetch_connection_secrets",
+            "in": "query",
+            "description": "Fetch the general connection secrets associated with the connector.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "title": "Fetch Connection Secrets",
+              "description": "Fetch the general connection secrets associated with the connector.",
+              "default": false
+            }
+          },
+          {
+            "name": "connector_id_or_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connector Id Or Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connector"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mistral:connector_update_v1": {
+      "method": "PATCH",
+      "path": "/v1/connectors/{connector_id}#id",
+      "stream": null,
+      "source": {
+        "operationId": "connector_update_v1",
+        "summary": "Update a connector.",
+        "description": "Update a connector by its ID.",
+        "tags": [
+          "beta.connectors"
+        ],
+        "parameters": [
+          {
+            "name": "connector_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connector Id",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectorMCPUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connector"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

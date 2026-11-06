@@ -3,22 +3,23 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { WorkflowBodyError } from "./workflow-body-error.ts";
 
-export type ResponseStreamProfile = "openai-responses" | "ollama-chat" | "ollama-generate" | "sse-json" | "ndjson";
+export type ResponseStreamProfile = "openai-responses" | "ollama-chat" | "ollama-generate" | "sse-json" | "ndjson" | "mistral-conversation" | "mistral-transcription";
 export type ResponseProgress = { bytes: number; events: number };
 export type ResponseProgressCallback = (progress: ResponseProgress) => void;
 export type ResponseValue = { body: unknown; status: number };
 export type ResponseValueCallback = (value: ResponseValue) => void;
 export const isJsonResponseStream = (profile: ResponseStreamProfile | undefined) => profile === "sse-json" || profile === "ndjson";
+export const isMistralResponseStream = (profile: ResponseStreamProfile | undefined) => profile === "mistral-conversation" || profile === "mistral-transcription";
 export const streamLimits = { bytes: 8 * 1024 * 1024, frameCharacters: 1024 * 1024, events: 10_000,
   depth: 64, nodes: 100_000, chunks: 65_536, idleMs: 15_000, runMs: 120_000, progressMs: 500 } as const;
 export const isResponseStreamProfile = (value: unknown): value is ResponseStreamProfile =>
-  value === "openai-responses" || value === "ollama-chat" || value === "ollama-generate" || value === "sse-json" || value === "ndjson";
+  value === "openai-responses" || value === "ollama-chat" || value === "ollama-generate" || value === "sse-json" || value === "ndjson" || value === "mistral-conversation" || value === "mistral-transcription";
 export function responseStreamProfile(value: unknown): ResponseStreamProfile | undefined {
   if (value === undefined) return;
   if (isResponseStreamProfile(value)) return value;
   throw new Error("This response streaming profile is not supported.");
 }
-export const streamMediaType = (profile: ResponseStreamProfile): string => profile === "openai-responses" || profile === "sse-json" ? "text/event-stream" : "application/x-ndjson";
+export const streamMediaType = (profile: ResponseStreamProfile): string => profile === "openai-responses" || profile === "sse-json" || isMistralResponseStream(profile) ? "text/event-stream" : "application/x-ndjson";
 export function responseAccept(profile: ResponseStreamProfile | undefined, fallback: string | undefined, body: unknown): string {
   const stream = object(body) ? body.stream : undefined;
   return profile && stream !== false && (profile !== "openai-responses" || stream === true) ? streamMediaType(profile) : fallback ?? "application/json";
@@ -67,6 +68,11 @@ export async function readResponseStream(response: Response, profile: ResponseSt
   if (signal.aborted) { void response.body?.cancel().catch(() => {}); throw new WorkflowBodyError("CANCELLED"); }
   if (!response.body) throw new WorkflowBodyError("INCOMPLETE");
   const reader = response.body.getReader(), decoder = new TextDecoder("utf-8", { fatal: true });
+  const mistral = isMistralResponseStream(profile), sse = profile === "openai-responses" || mistral;
+  const mistralEvents: { event: string; data: Record<string, any> }[] = [];
+  const mistralTypes = new Set(profile === "mistral-conversation" ? ["conversation.response.started", "conversation.response.done", "conversation.response.error",
+    "message.output.delta", "tool.execution.started", "tool.execution.delta", "tool.execution.done", "agent.handoff.started", "agent.handoff.done", "function.call.delta"]
+    : ["transcription.language", "transcription.segment", "transcription.text.delta", "transcription.done"]);
   let buffer = "", scan = 0, event = "", frameCharacters = 0, chunks = 0, empty = 0;
   let data: string[] = [], bytes = 0, events = 0, lastByte = Date.now(), notified = -Infinity;
   let model = "", role = "", responseId = "", sequence = -1, result: Record<string, any> | undefined;
@@ -88,6 +94,25 @@ export async function readResponseStream(response: Response, profile: ResponseSt
     try { value = JSON.parse(source); } catch { throw new WorkflowBodyError("FRAME"); }
     validStreamJson(value);
     if (!object(value)) throw new WorkflowBodyError("FRAME");
+    if (mistral) {
+      const type = typeof value.type === "string" ? value.type : name;
+      if (!mistralTypes.has(type) || name && name !== "message" && name !== type) throw new WorkflowBodyError("FRAME");
+      if (type === "conversation.response.error" || value.error != null) throw new WorkflowBodyError("PROVIDER");
+      if (type === "conversation.response.started") {
+        if (typeof value.conversation_id !== "string" || !value.conversation_id || responseId && responseId !== value.conversation_id)
+          throw new WorkflowBodyError("FRAME");
+        responseId = value.conversation_id;
+      }
+      if (value.conversation_id !== undefined && (typeof value.conversation_id !== "string" || responseId && responseId !== value.conversation_id))
+        throw new WorkflowBodyError("FRAME");
+      mistralEvents.push({ event: type, data: value });
+      if (type === "conversation.response.done" || type === "transcription.done") {
+        if (!object(value.usage) || type === "transcription.done" && (typeof value.model !== "string" || !value.model
+          || typeof value.text !== "string" || value.language !== null && typeof value.language !== "string")) throw new WorkflowBodyError("FRAME");
+        result = { events: mistralEvents }; validStreamJson(result);
+      }
+      return;
+    }
     if (profile === "openai-responses") {
       if (typeof value.type !== "string" || name && name !== "message" && name !== value.type) throw new WorkflowBodyError("FRAME");
       if (["error", "response.failed", "response.incomplete", "response.cancelled"].includes(value.type)) throw new WorkflowBodyError("PROVIDER");
@@ -147,7 +172,7 @@ export async function readResponseStream(response: Response, profile: ResponseSt
     }
   }
   function line(value: string) {
-    if (profile !== "openai-responses") { if (value.trim()) frame(value); return; }
+    if (!sse) { if (value.trim()) frame(value); return; }
     if (!value) {
       if (data.length) frame(data.join("\n"), event);
       data = []; event = ""; frameCharacters = 0; return;
@@ -178,7 +203,7 @@ export async function readResponseStream(response: Response, profile: ResponseSt
       if (done) {
         try { decoder.decode(); } catch { throw new WorkflowBodyError("FRAME"); }
         // A final CR is a complete SSE line ending even without a following LF.
-        if (profile === "openai-responses" && buffer.endsWith("\r")) {
+        if (sse && buffer.endsWith("\r")) {
           const current = buffer.slice(0, -1);
           line(current);
           if (result) break;
@@ -194,7 +219,7 @@ export async function readResponseStream(response: Response, profile: ResponseSt
         let index = scan;
         while (index < buffer.length && buffer[index] !== "\r" && buffer[index] !== "\n") index++;
         if (index === buffer.length || buffer[index] === "\r" && index === buffer.length - 1) { scan = index; break; }
-        if (profile !== "openai-responses" && buffer[index] === "\r" && buffer[index + 1] !== "\n") throw new WorkflowBodyError("FRAME");
+        if (!sse && buffer[index] === "\r" && buffer[index + 1] !== "\n") throw new WorkflowBodyError("FRAME");
         const current = buffer.slice(0, index);
         buffer = buffer.slice(index + (buffer[index] === "\r" && buffer[index + 1] === "\n" ? 2 : 1));
         scan = 0;

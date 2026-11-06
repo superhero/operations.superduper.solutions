@@ -5149,10 +5149,14 @@
       {
         "id": "form-field-contracts",
         "version": 1
+      },
+      {
+        "id": "mistral-variant-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "ecf83d450ff4042602f296a216163e8d15128ccec4c35cd753c26aac5766df4d",
-    "effectiveBytes": 516797
+    "effectiveSha256": "15fbb44e452c60daa6482e89f133715e512527492652abcda152814d117f7211",
+    "effectiveBytes": 532571
   },
   {
     "id": "ollama",

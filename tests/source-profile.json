@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/mistral-variants.test.mjs",
     "src/structured-forms.test.mjs",
     "src/form-fields.test.mjs",
     "src/multipart-roots.test.mjs",

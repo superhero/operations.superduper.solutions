@@ -6,6 +6,7 @@ import { credentialResultProfile, privateResultVersion, supportsCredentialResult
 import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
 import { configureGitlabJsonForm } from "./gitlab-form.ts";
+import { configureMistralVariant } from "./mistral-variant.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -95,6 +96,7 @@ export type Operation = {
   bodyValue?: boolean;
   bodySchema?: InputSchema;
   bodyEncoding?: "gitlab-json-or-multipart-v1";
+  mistralVariant?: "mistral-fragments-v1";
   multipartParts?: MultipartParts;
   responseExample?: unknown;
   responseMediaType?: string;
@@ -422,12 +424,16 @@ export function extractOperations(value: unknown, source: string): Operation[]
           bodyMediaType = mediaTypes[0] as BodyMediaType;
           const media = object(content[bodyMediaType], id);
           const form = bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data";
+          const mistralJson = !form && operation["x-operations-mistral-variant"] !== undefined;
+          if (mistralJson) configureMistralVariant({ id, method: method.toUpperCase(), path }, operation["x-operations-mistral-variant"], operation["x-operations-response-stream"]);
           supported(media, ["schema", "example", "examples", ...(form ? ["encoding"] : [])], id);
           const shape = resolve(media.schema, document, id);
           const encodedForm = bodyMediaType === "multipart/form-data" && (media.encoding !== undefined
             || shape.oneOf !== undefined || shape.$defs !== undefined);
           const compiled = encodedForm ? multipartBodySchema(shape, raw => resolve(raw, document, id), raw => serviceInputSchema(raw, document, true)) : undefined;
-          const schema = compiled?.schema ?? inputSchema(shape, document, id);
+          // Reviewed native Mistral JSON uses the same explicit server-validation
+          // fallback as service hydration for its heterogeneous conversation unions.
+          const schema = compiled?.schema ?? (mistralJson ? serviceInputSchema(shape, document, false) : inputSchema(shape, document, id));
           bodySchema = schema;
           if (binary) {
             if (schema.nullable) throw new Error(`${id}: nullable raw-file bodies have no qualified wire encoding.`);
@@ -452,7 +458,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
           if (schema.type === "object" && !schema.nullable)
             for (const [name, property] of Object.entries(compiled?.properties ?? (shape.properties ?? {}) as RecordValue)) {
               if (encodedForm && !Object.hasOwn(schema.properties ?? {}, name)) continue;
-              fields.push(field(property, document, "body", name, schema.required!.includes(name), encodedForm ? schema.properties?.[name] : undefined));
+              fields.push(field(property, document, "body", name, schema.required!.includes(name), encodedForm || mistralJson ? schema.properties?.[name] : undefined));
             }
           else
           {
@@ -481,6 +487,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       configureGitlabJsonForm(extracted, operation["x-operations-gitlab-form"]);
       const stream = responseStreamProfile(operation["x-operations-response-stream"]);
       if (stream) extracted.responseStream = stream;
+      configureMistralVariant(extracted, operation["x-operations-mistral-variant"], stream);
       const responseContent = inspectResponseContent(operation.responses, document, stream);
       if (responseContent) extracted.responseContent = responseContent;
       const privatePath = privatePathProfile(operation["x-operations-private-path"]);

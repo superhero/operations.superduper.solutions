@@ -4,6 +4,7 @@
 
 import { supportsCredentialResults } from "./credential-results.ts";
 import { useGitlabJsonBody } from "./gitlab-form.ts";
+import { mistralVariantRoute, mistralVariantInputs } from "./mistral-variant.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
 import { awsRestUsesS3Keys } from "./aws-rest.ts";
 import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
@@ -210,9 +211,12 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   responseStreamProfile(operation.responseStream);
   if (operation.privatePath !== undefined && operation.privatePath !== "telegram-bot") throw new Error("This private token path is not supported.");
   const route = literalQueryRoute(operation.path);
+  let variant: ReturnType<typeof mistralVariantRoute>;
+  try { variant = mistralVariantRoute(operation); values = mistralVariantInputs(operation, values); }
+  catch (cause) { throw new InputValidationError("body:stream", (cause as Error).message); }
   try { validateLiteralQueryFields(operation.path, operation.fields); }
   catch (cause) { throw new InputValidationError("query:beta", (cause as Error).message); }
-  const request: PreparedRequest = { method: operation.method, path: route?.path ?? operation.path, query: { ...route?.query } };
+  const request: PreparedRequest = { method: operation.method, path: variant?.path ?? route?.path ?? operation.path, query: { ...route?.query } };
   const jsonForm = useGitlabJsonBody(operation, values);
   if (operation.multipartParts !== undefined) {
     if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new InputValidationError("body:$", "Multipart part contracts require a named multipart body.");

@@ -5,6 +5,7 @@ import { credentialResultProfile, privateResultVersion, supportsCredentialResult
 import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
 import { configureGitlabJsonForm } from "./gitlab-form.ts";
+import { configureMistralVariant, mistralVariantRoute } from "./mistral-variant.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -291,7 +292,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           else if (upload) configureCloudflareUpload(operation, upload);
         });
         inspect("endpoint", "unsupported-contract", () => {
-          const wirePath = literalQueryRoute(path)?.path ?? path;
+          configureMistralVariant(operation, source["x-operations-mistral-variant"], source["x-operations-response-stream"]);
+          const wirePath = mistralVariantRoute(operation)?.path ?? literalQueryRoute(path)?.path ?? path;
           if (!wire && !jsonTarget && (wirePath.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(wirePath))) throw new Error("This endpoint uses a path or transport that is not supported.");
         });
         if (!upload && !wire && !s3 && !jsonTarget) {

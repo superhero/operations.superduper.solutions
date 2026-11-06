@@ -9,7 +9,7 @@ import type { Operation } from "./catalog.ts";
 import { encodeWorkflowBinary, maxWorkflowUploadBytes } from "./workflow-binary.ts";
 import { WorkflowBodyError } from "./workflow-body-error.ts";
 import { readResponseStream, responseStreamProfile, streamMediaType, type ResponseStreamProfile, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
-import { isJsonResponseStream, type ResponseValueCallback } from "./workflow-response-stream.ts";
+import { isJsonResponseStream, isMistralResponseStream, type ResponseValueCallback } from "./workflow-response-stream.ts";
 import { readJsonStream } from "./workflow-json-stream.ts";
 export { WorkflowBodyError } from "./workflow-body-error.ts";
 
@@ -144,6 +144,9 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
   const selected = mediaType && (declared?.[mediaType] ?? declared?.["application/octet-stream"]);
   const kind = mediaType ? selected ?? responseKind(mediaType) : "unsupported";
   const profile = responseStreamProfile(operation.responseStream);
+  if (response.ok && isMistralResponseStream(profile) && mediaType !== "text/event-stream") {
+    void response.body?.cancel().catch(() => {}); throw new WorkflowBodyError("MEDIA");
+  }
   if (response.ok && profile && mediaType === streamMediaType(profile) && selected === "stream" && declared?.["application/json"] === "json") {
     streaming?.onStart();
     const final = isJsonResponseStream(profile)

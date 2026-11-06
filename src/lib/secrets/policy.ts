@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { literalQueryRoute, validateLiteralQueryFields } from "../literal-query.ts";
 import { validGitlabJsonForm } from "../gitlab-form.ts";
+import { mistralVariantRoute } from "../mistral-variant.ts";
 import { supportsCredentialResults, privateResultOriginAllowed } from "../credential-results.ts";
 import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
@@ -94,7 +95,8 @@ function validateOperation(operation: Operation): void
   else {
     try { validateLiteralQueryFields(operation.path, operation.fields); }
     catch { throw new VaultError("PERMISSION"); }
-    validateCredentialPath(literalQueryRoute(operation.path)?.path ?? operation.path, true);
+    try { validateCredentialPath(mistralVariantRoute(operation)?.path ?? literalQueryRoute(operation.path)?.path ?? operation.path, true); }
+    catch { throw new VaultError("PERMISSION"); }
   }
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
   if (operation.bodyEncoding !== undefined && !validGitlabJsonForm(operation)) throw new VaultError("PERMISSION");

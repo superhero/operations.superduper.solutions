@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "496c2f3777ab5ec171ff6226e338db113935b90b73eec6408d2bd034d3fb88ed",
+  "adapterRevision": "65f2fb0b5ebddb60662e20f0638d3eddb8485e0967617674e341dd39828b876a",
   "indexes": [
     {
       "id": "anthropic",
@@ -2923,16 +2923,16 @@
     },
     {
       "id": "mistral",
-      "sourceRevision": "ecf83d450ff4042602f296a216163e8d15128ccec4c35cd753c26aac5766df4d",
-      "bytes": 73933,
-      "compressedBytes": 6631,
-      "sha256": "62200137b781da00f22ae661fa42110572e82663a2f033a6e352b1eff4a38354",
+      "sourceRevision": "15fbb44e452c60daa6482e89f133715e512527492652abcda152814d117f7211",
+      "bytes": 73100,
+      "compressedBytes": 6463,
+      "sha256": "098388932b9e05e1b491cbfbf75f79ed0d4dbc0964cfc0acec973b56fc749a2b",
       "summary": {
         "name": "Mistral AI API",
         "serverUrl": "https://api.mistral.ai",
         "description": "Our Chat Completion and Embeddings APIs specification. Create your account on [La Plateforme](https://console.mistral.ai) to get access and read the [docs](https://docs.mistral.ai) to learn how to use it.",
         "operationCount": 173,
-        "unavailableCount": 7
+        "unavailableCount": 0
       }
     },
     {
