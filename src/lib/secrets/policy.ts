@@ -12,6 +12,7 @@ import { validAwsWireModel, awsWireEndpoint } from "../aws-wire.ts";
 import { validAwsSigningModel, lambdaSigningRegion } from "../aws-signing.ts";
 import { awsRestEndpoint, awsRestWirePath } from "../aws-rest.ts";
 import { awsJsonEndpoint, validAwsJsonModel } from "../aws-json.ts";
+import { awsQueryEndpoint, validAwsQueryModel } from "../aws-query.ts";
 import { validateMultipartParts } from "../multipart-parts.ts";
 import { validS3FilesModel, s3SigningEndpoint } from "../s3-files.ts";
 import { cloudflareOrigin, configureCloudflareUpload, cloudflareUploadProfile, uploadSessionConsumer } from "../cloudflare-upload.ts";
@@ -91,7 +92,8 @@ function validateOperation(operation: Operation): void
   if (operation && operationBlockReason(operation) || (operation?.credentialResult !== undefined || operation?.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new VaultError("PERMISSION");
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
-  if (operation.awsJson !== undefined) { if (!validAwsJsonModel(operation)) throw new VaultError("PERMISSION"); }
+  if (operation.awsQuery !== undefined) { if (!validAwsQueryModel(operation)) throw new VaultError("PERMISSION"); }
+  else if (operation.awsJson !== undefined) { if (!validAwsJsonModel(operation)) throw new VaultError("PERMISSION"); }
   else if (operation.awsWire !== undefined) { if (!validAwsWireModel(operation)) throw new VaultError("PERMISSION"); }
   else {
     try { validateLiteralQueryFields(operation.path, operation.fields); }
@@ -164,7 +166,7 @@ function validateOperation(operation: Operation): void
     }
   } else if (operation.security?.flat().some(scheme => scheme.kind === "cloudflare-upload")) throw new VaultError("PERMISSION");
   extractCredentialPermissions(operation.credentialPermissions, operation.security);
-  if (operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4") && !(operation.awsJson ? validAwsJsonModel(operation) : operation.awsWire ? validAwsWireModel(operation) : operation.s3Files ? validS3FilesModel(operation) : validAwsSigningModel(operation))) throw new VaultError("PERMISSION");
+  if (operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4") && !(operation.awsQuery ? validAwsQueryModel(operation) : operation.awsJson ? validAwsJsonModel(operation) : operation.awsWire ? validAwsWireModel(operation) : operation.s3Files ? validS3FilesModel(operation) : validAwsSigningModel(operation))) throw new VaultError("PERMISSION");
   if (operation.s3Files !== undefined && !validS3FilesModel(operation)) throw new VaultError("PERMISSION");
 }
 
@@ -177,10 +179,11 @@ export async function approvedOperation(operation: Operation, origin: string): P
     const sanitized = JSON.parse(canonicalPolicyValue(operation)) as Operation;
     validateOperation(sanitized);
     const normalized = normalizeCredentialOrigin(origin);
+    if (sanitized.awsQuery && !awsQueryEndpoint(normalized, sanitized)) throw new VaultError("PERMISSION");
     if (sanitized.awsJson && !awsJsonEndpoint(normalized, sanitized)) throw new VaultError("PERMISSION");
     if (sanitized.credentialResult && !privateResultOriginAllowed(sanitized, normalized)) throw new VaultError("PERMISSION");
     if (sanitized.security?.flat().some(scheme => scheme.kind === "aws-sigv4")
-      && !(sanitized.awsJson ? awsJsonEndpoint(normalized, sanitized) : sanitized.awsRest ? awsRestEndpoint(normalized, sanitized) : sanitized.awsWire ? awsWireEndpoint(normalized, sanitized.awsWire) : sanitized.s3Files ? s3SigningEndpoint(normalized) : lambdaSigningRegion(normalized))) throw new VaultError("PERMISSION");
+      && !(sanitized.awsQuery ? awsQueryEndpoint(normalized, sanitized) : sanitized.awsJson ? awsJsonEndpoint(normalized, sanitized) : sanitized.awsRest ? awsRestEndpoint(normalized, sanitized) : sanitized.awsWire ? awsWireEndpoint(normalized, sanitized.awsWire) : sanitized.s3Files ? s3SigningEndpoint(normalized) : lambdaSigningRegion(normalized))) throw new VaultError("PERMISSION");
     if (sanitized.cloudflareUpload && normalized !== cloudflareOrigin) throw new VaultError("PERMISSION");
     if (sanitized.security?.some(option => option.some(scheme => scheme.kind === "oauth1"))
       && (normalized !== "https://api.x.com" || !sanitized.path.startsWith("/2/"))) throw new VaultError("PERMISSION");

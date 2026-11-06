@@ -4,13 +4,15 @@
 import { awsRestEndpoint, awsRestPrivateInputKeys } from './aws-rest.ts';
 import { awsJsonEndpoint, awsJsonPrivateInputKeys } from './aws-json.ts';
 import { awsJsonPrivateProfile } from './aws-json-private.ts';
+import { awsQueryPrivateProfile } from './aws-query-private.ts';
+import { awsQueryEndpoint, awsQueryPrivateInputKeys } from './aws-query.ts';
 import data from './credential-results.json' with { type: 'json' };
 import type { Operation } from './catalog.ts';
 
 type Value = Record<string, any>;
 export type PrivateResultResponse = { status: number; path: string[]; required: boolean[]; nullable: boolean[]; parentFields: (string[] | null)[]; leaf: Value };
 export type PrivateResultContract = { catalog: string; method: string; path: string; responses: PrivateResultResponse[];
-  privateInputs: string[]; masked: boolean; exampleOnly: boolean; awsJson?: { id: string; revision: string } };
+  privateInputs: string[]; masked: boolean; exampleOnly: boolean; awsJson?: { id: string; revision: string }; awsQuery?: { id: string; revision: string } };
 const contracts = structuredClone(data) as { version: number; sources: Record<string, { title: string; version: string; openapi: string; origins: string[]; sha256: string }>;
   profiles: Record<string, PrivateResultContract> };
 export const privateResultVersion = 'private-result-v1';
@@ -20,7 +22,7 @@ export const readCredentialResultContracts = () => structuredClone(contracts);
 /** A marker cannot authorize an unreviewed method or a streaming response. */
 export function credentialResultProfile(operation: Operation): PrivateResultContract | undefined {
   if (operation.credentialResultProfile === undefined) return;
-  const contract = contracts.profiles[operation.id] ?? awsJsonPrivateProfile(operation);
+  const contract = contracts.profiles[operation.id] ?? awsJsonPrivateProfile(operation) ?? awsQueryPrivateProfile(operation);
   if (operation.credentialResultProfile !== privateResultVersion || operation.credentialResult !== true || !contract
     || operation.method !== contract.method || operation.path !== contract.path || operation.responseStream !== undefined)
     throw new Error('This operation does not match a reviewed private credential-result contract.');
@@ -31,14 +33,14 @@ export function supportsCredentialResults(operation: Operation): boolean {
 }
 export function privateResultInputKeys(operation: Operation): string[] {
   return [...new Set([...(credentialResultProfile(operation)?.privateInputs ?? []), ...awsRestPrivateInputKeys(operation),
-    ...(operation.awsJson ? awsJsonPrivateInputKeys(operation) : [])])];
+    ...(operation.awsJson ? awsJsonPrivateInputKeys(operation) : []), ...(operation.awsQuery ? awsQueryPrivateInputKeys(operation) : [])])];
 }
 export function privateResultOriginAllowed(operation: Operation, origin: string): boolean {
   const profile = credentialResultProfile(operation); if (!profile) return false;
   try {
     const url = new URL(origin);
     if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash) return false;
-    if (profile.catalog.startsWith('aws-')) return operation.awsJson ? !!awsJsonEndpoint(origin, operation) : !!awsRestEndpoint(origin, operation);
+    if (profile.catalog.startsWith('aws-')) return operation.awsQuery ? !!awsQueryEndpoint(origin, operation) : operation.awsJson ? !!awsJsonEndpoint(origin, operation) : !!awsRestEndpoint(origin, operation);
     if (profile.catalog === 'atlassian-assets') return url.origin === 'https://api.atlassian.com'
       && /^\/ex\/jira\/[A-Za-z0-9-]+\/jsm\/assets\/workspace\/[A-Za-z0-9-]+\/v1\/?$/.test(url.pathname);
     return contracts.sources[profile.catalog]!.origins.some(value => new URL(value).href === url.href);

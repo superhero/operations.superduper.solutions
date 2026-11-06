@@ -33,6 +33,7 @@ import { awsRestChecksums } from "../aws-rest-checksum.ts";
 import { fetchAwsGetBody } from "./aws-get-body.ts";
 import { awsWireEndpoint } from "../aws-wire.ts";
 import { awsJsonEndpoint } from "../aws-json.ts";
+import { awsQueryEndpoint, awsQueryTarget } from "../aws-query.ts";
 import { s3SigningEndpoint, s3ObjectUrl } from "../s3-files.ts";
 import { s3PayloadChecksum, verifyS3Object } from "./s3-files.ts";
 
@@ -162,7 +163,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         delete inputSnapshot[cloudflareSessionField];
       } else if (scheme.kind === "aws-sigv4") {
         if (!isAwsCredentialReference(reference) || alternative.length !== 1
-          || !(approved.operation.awsJson ? awsJsonEndpoint(approved.origin, approved.operation) : approved.operation.awsRest ? awsRestEndpoint(approved.origin, approved.operation) : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire) : approved.operation.s3Files ? s3SigningEndpoint(approved.origin) : lambdaSigningRegion(approved.origin))) throw new VaultError("PERMISSION");
+          || !(approved.operation.awsQuery ? awsQueryEndpoint(approved.origin, approved.operation) : approved.operation.awsJson ? awsJsonEndpoint(approved.origin, approved.operation) : approved.operation.awsRest ? awsRestEndpoint(approved.origin, approved.operation) : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire) : approved.operation.s3Files ? s3SigningEndpoint(approved.origin) : lambdaSigningRegion(approved.origin))) throw new VaultError("PERMISSION");
         aws = Object.fromEntries(awsCredentialParts.flatMap(part => reference[part] ? [[part, credentialValue(reference[part]!, "aws-sigv4")]] : [])) as AwsSigningValues;
       } else if (scheme.kind === "oauth1") {
         if (!isOAuth1CredentialReference(reference) || scheme.profile !== "x-hmac-sha1" || alternative.length !== 1
@@ -251,7 +252,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     if (!approved.operation.s3Files && !awsRestUsesS3Keys(approved.operation)) validateCredentialPath(request.path);
     const restTarget = approved.operation.awsRest ? awsRestRequestTarget(approved.operation, approved.origin, request) : undefined;
-    const url = restTarget ? restTarget.url
+    const url = approved.operation.awsQuery ? awsQueryTarget(approved.operation, approved.origin, request) : restTarget ? restTarget.url
       : approved.operation.s3Files ? s3ObjectUrl(approved.origin, request.path)
       : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken!) : new URL(`${approved.origin}${request.path}`);
     if (approved.operation.s3Files) publicRequest = { ...publicRequest, path: url.pathname };
@@ -259,7 +260,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));
     if (Object.keys(request.query).some(key => authQueries.has(key))) throw new VaultError("PERMISSION");
     appendRequestQuery(url, request, injectedQueries);
-    const headers = new Headers({ Accept: awsRestTransportAccept(approved.operation) ?? responseAccept(approved.operation.responseStream, approved.operation.responseMediaType, request.body) });
+    const headers = new Headers({ Accept: (approved.operation.awsQuery ? "application/xml, text/xml" : undefined) ?? awsRestTransportAccept(approved.operation) ?? responseAccept(approved.operation.responseStream, approved.operation.responseMediaType, request.body) });
     const publicHeaders = new Set<string>();
     const authHeaders = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.header === undefined ? [] : [scheme.header.toLowerCase()]));
     for (const [name, value] of Object.entries(request.headers ?? {}))
@@ -278,7 +279,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       if (s3Upload) headers.set("x-amz-checksum-sha256", await s3PayloadChecksum(body));
       else if (approved.operation.s3Files) headers.set("x-amz-checksum-mode", "ENABLED");
       if (restTarget) await awsRestChecksums(approved.operation, headers, body);
-      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.awsJson ? awsJsonEndpoint(approved.origin, approved.operation)! : restTarget ? restTarget.signing : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire)! : approved.operation.s3Files
+      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.awsQuery ? awsQueryEndpoint(approved.origin, approved.operation)! : approved.operation.awsJson ? awsJsonEndpoint(approved.origin, approved.operation)! : restTarget ? restTarget.signing : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire)! : approved.operation.s3Files
         ? { service: "s3", region: s3SigningEndpoint(approved.origin)!.region } : { service: "lambda", region: lambdaSigningRegion(approved.origin)! });
       for (const [name, value] of signed.headers) headers.set(name, value);
       body = signed.body ?? null; awsSignedAt = signed.signedAt;

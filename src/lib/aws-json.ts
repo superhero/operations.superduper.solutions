@@ -73,7 +73,7 @@ export function awsJsonEndpoint(origin: string, operation: Pick<Operation, "id" 
     }
   } catch { /* Unknown authorities cannot receive AWS signatures or private inputs. */ }
 }
-export function awsJsonShape(source: AwsJsonSource, reference: AwsJsonShape): AwsJsonShape {
+export function awsJsonShape(source: Pick<AwsJsonSource, "shapes">, reference: AwsJsonShape): AwsJsonShape {
   if (!reference.shape) return reference;
   const target = Object.hasOwn(source.shapes, reference.shape) ? source.shapes[reference.shape] : undefined;
   if (!target) invalid();
@@ -209,7 +209,7 @@ function value(source: AwsJsonSource, reference: AwsJsonShape, input: unknown, r
 }
 /** Keep editor schemas finite for recursive SDK structures. The wire codec still
  * validates the complete recursive value and all SDK constraints within its budget. */
-export function awsJsonInputSchema(source: AwsJsonSource, reference: AwsJsonShape, seen = new Set<string>(), depth = 0): InputSchema {
+export function awsJsonInputSchema(source: Pick<AwsJsonSource, "shapes">, reference: AwsJsonShape, seen = new Set<string>(), depth = 0): InputSchema {
   if (depth > 48 || reference.shape && seen.has(reference.shape)) return { type: "json" };
   const next = new Set(seen); if (reference.shape) next.add(reference.shape);
   const shape = awsJsonShape(source, reference), child = (item: AwsJsonShape) => awsJsonInputSchema(source, item, next, depth + 1);
@@ -236,7 +236,7 @@ export function awsJsonInputSchema(source: AwsJsonSource, reference: AwsJsonShap
  * members. Complete upstream declarations remain with the schema patch. */
 export function configureAwsJson(operation: Operation): void {
   const contract = awsJsonContract(operation);
-  if (!contract || operation.awsJson !== awsJsonSigningProfile || operation.awsWire || operation.awsRest || operation.s3Files
+  if (!contract || operation.awsJson !== awsJsonSigningProfile || operation.awsWire || operation.awsRest || operation.awsQuery || operation.s3Files
     || operation.privatePath || operation.cloudflareUpload || operation.responseStream || operation.protocol || operation.rpc)
     throw new Error("This operation does not match its reviewed AWS JSON target contract.");
   const source = awsJsonContracts().sources[contract.catalog]!;

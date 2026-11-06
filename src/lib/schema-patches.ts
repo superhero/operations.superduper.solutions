@@ -11,6 +11,7 @@ import { bindBetaRoutes } from "./literal-query.ts";
 import { bindMultipartFiles } from "./multipart-file-contracts.ts";
 import { bindAwsRest } from "./aws-rest-bindings.ts";
 import { bindAwsJson } from "./aws-json-bindings.ts";
+import { bindAwsQuery } from "./aws-query-bindings.ts";
 import { bindMultipartParts } from "./multipart-part-contracts.ts";
 import { bindGmailMessages } from "./gmail-message-contracts.ts";
 import { bindMistralVariants } from "./mistral-variant-contracts.ts";
@@ -32,7 +33,7 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
 export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
 export const multipartFileContracts: SchemaPatch = { id: "multipart-file-contracts", version: 1 };
 export const gmailMessageContracts: SchemaPatch = { id: "gmail-message-contracts", version: 1 };
@@ -42,6 +43,7 @@ export const formFieldContracts: SchemaPatch = { id: "form-field-contracts", ver
 export const multipartRootContracts: SchemaPatch = { id: "multipart-root-contracts", version: 1 };
 export const atlassianFileParts: SchemaPatch = { id: "atlassian-file-parts", version: 1 };
 export const multipartPartContracts: SchemaPatch = { id: "multipart-part-contracts", version: 1 };
+export const awsQueryActions: SchemaPatch = { id: "aws-query-contracts", version: 1 };
 export const awsJsonTargets: SchemaPatch = { id: "aws-json-target-contracts", version: 1 };
 export const awsRestContractsPatch: SchemaPatch = { id: "aws-rest-contracts", version: 1 };
 export const atlassianTenantServers: SchemaPatch = { id: "atlassian-tenant-servers", version: 1 };
@@ -87,6 +89,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "multipart-root-contracts" ? "Reviewed multipart body roots"
     : patch.id === "atlassian-file-parts" ? "Atlassian multipart file declarations"
     : patch.id === "multipart-part-contracts" ? "Multipart part media and file names"
+    : patch.id === "aws-query-contracts" ? "AWS Query actions and XML wire contracts"
     : patch.id === "aws-json-target-contracts" ? "AWS JSON targets and private results"
     : patch.id === "beta-route-contracts" ? "Beta routes and private work results"
     : patch.id === "multipart-file-contracts" ? "Reviewed multipart file wire contracts"
@@ -656,7 +659,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "gmail-message-contracts") bindGmailMessages(document);
@@ -666,6 +669,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "multipart-root-contracts") bindMultipartRoots(document);
     else if (patch.id === "atlassian-file-parts") bindAtlassianFiles(document);
     else if (patch.id === "multipart-part-contracts") bindMultipartParts(document);
+    else if (patch.id === "aws-query-contracts") bindAwsQuery(document);
     else if (patch.id === "aws-json-target-contracts") bindAwsJson(document);
     else if (patch.id === "aws-rest-contracts") bindAwsRest(document);
     else if (patch.id === "beta-route-contracts") bindBetaRoutes(document);

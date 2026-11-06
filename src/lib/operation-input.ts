@@ -10,6 +10,7 @@ import { operationBlockReason } from "./operation-capabilities.ts";
 import { awsRestUsesS3Keys } from "./aws-rest.ts";
 import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
 import { awsJsonWireRequest, validAwsJsonModel } from "./aws-json.ts";
+import { prepareAwsQueryRequest } from "./aws-query.ts";
 import { prepareAwsWireRequest } from "./aws-wire.ts";
 import { encodeS3Key, validateS3Bucket, s3MetadataHeaders } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
@@ -43,6 +44,8 @@ export type PreparedRequest = {
   multipartParts?: MultipartParts;
   /** Derived from a reviewed S3 Control ARN, never from an arbitrary destination. */
   awsRestOutpost?: { region: string; account: string; id: string };
+  /** The SQS queue URL must match the separately approved service authority. */
+  awsQueryOrigin?: string;
 };
 
 export class InputValidationError extends Error
@@ -231,7 +234,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   }
   const body: Record<string, JsonValue> = {};
   const fields = operation.fields.filter(field => !gmail || field.key !== gmailMimeInputKey);
-  if (operation.s3Files || operation.awsWire || operation.awsRest || operation.awsJson) for (const [key, value] of Object.entries(values)) {
+  if (operation.s3Files || operation.awsWire || operation.awsRest || operation.awsJson || operation.awsQuery) for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && !fields.some(field => field.key === key))
       throw new InputValidationError(key, "This input is outside the supported AWS operation profile.");
   }
@@ -353,6 +356,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if (["workers-version", "workers-module", "platform-module"].includes(operation.cloudflareUpload ?? "")) {
     request.bodyFormat = "cloudflare-module"; request.contentType = "multipart/form-data";
   }
+  if (operation.awsQuery) return prepareAwsQueryRequest(operation, request);
   if (operation.awsJson) {
     if (!validAwsJsonModel(operation)) throw new InputValidationError("body", "This AWS JSON target no longer matches its reviewed contract.");
     const wire = awsJsonWireRequest(operation, request.body);

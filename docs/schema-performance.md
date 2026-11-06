@@ -1,5 +1,43 @@
 # Schema performance
 
+## AWS Query contracts and asynchronous schema worker inflation (2026-11-06)
+
+The pinned Query/EC2 codecs for 2,726 operations pushed the HTML to 26,684,537
+bytes, 470,137 bytes above the 25 MiB deployment limit. The compiled schema
+worker alone contains 20,540,341 bytes. Its exact program now uses gzip/compact85
+transport with native asynchronous decompression inside the worker, bounded at
+24 MiB. Other workers retain the existing 2 MiB synchronous limit. The original
+Vite factory, options, Blob fallback and URL/error handling remain unchanged.
+No schema, operation, source documentation or offline capability is removed.
+
+The resulting production HTML is **25,582,999 bytes**, saving 1,101,538 bytes
+and leaving 631,401 bytes of headroom. Its SHA-256 is
+`e04372547443343b901cd08fdbc45348739f862ddeca4076f5c75446d9bab39b`.
+The production build and deployment bundle contract pass.
+
+This trades worker startup time for bundle size. Three alternating Chromium
+pairs after one warm-up pair measured median schema-worker readiness of
+655.26 ms (645.20–661.45), versus 223.04 ms (206.71–223.36): 432.22 ms additional
+startup time. Median page-side Blob preparation fell from 40.99 ms
+(40.96–42.68) to 21.26 ms (21.08–21.46). These samples use the exact compiled
+program, a fresh isolated context and worker, a reused browser, and an immediate
+`prepareStorage` RPC through empty storage migration. They measure this startup
+boundary, not full application readiness, UI interaction latency or field data.
+
+Conditions: sds-01, Node 26.7.0, headless Chromium 153.0.8010.12, 4 CPUs,
+4 GiB RAM, zero additional swap, 512 PIDs and no physical GPU. Programs are
+prepared outside timing, there is no external network, and source SHA-256 and
+decoded bytes are checked outside the measured interval. Decompression adds
+temporary compressed and decoded buffers inside the worker. Early messages
+remain buffered in arrival order, including transferred MessagePorts; malformed
+programs surface a worker error. Three focused source scenarios verify exact
+programs, unchanged factories, bounds and compiler-format rejection.
+
+[Raw paired samples and artifact identities](schema-async-worker.json) retain
+the measurements. Recheck this bootstrap after Vite output changes or changes
+to supported worker/browser compression APIs; reconsider the tradeoff if worker
+startup becomes an interaction bottleneck.
+
 ## AWS JSON contracts and bounded inline worker programs (2026-11-06)
 
 Adding the pinned AWS JSON codecs for 1,784 operations produced a 26,769,605-byte

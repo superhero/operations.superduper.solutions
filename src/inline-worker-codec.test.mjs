@@ -3,12 +3,13 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { gzipSync } from 'node:zlib';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { parseAst } from 'rolldown/parseAst';
 import { Then } from '@cucumber/cucumber';
 import { compactInlineWorkerModule } from '../build/inline-worker-plugin.mjs';
+import { createAsyncInlineWorkerProgram, maximumAsyncWorkerBytes } from '../build/async-inline-worker.mjs';
 import { decodeInlineWorkerSource, maxCompactInlineWorkerBytes } from './lib/inline-worker-codec.ts';
-import { encodeSchemaPack, compactSchemaPackPrefix } from './lib/schema-pack-codec.ts';
+import { encodeSchemaPack, decodeCompactSchemaPack, compactSchemaPackPrefix } from './lib/schema-pack-codec.ts';
 
 const id = '/fixture/worker.ts?worker&inline';
 const source = 'self.onmessage=event=>self.postMessage(event.data);\n/*' + 'Repeated program 日本語 α / controls\n'.repeat(6000) + '*/';
@@ -54,4 +55,25 @@ Then('inline worker packing bounds source sizes validates payloads and rejects c
   assert.throws(() => decodeInlineWorkerSource(pack(bytes), bytes.length + 1), /length/);
   assert.throws(() => decodeInlineWorkerSource('!', 1));
   assert.throws(() => decodeInlineWorkerSource(pack(Uint8Array.of(255)), 1));
+});
+Then('only bounded schema library workers use the asynchronous bootstrap without changing their factory', () => {
+  const largeSource = source + '/*' + 'large worker payload\n'.repeat(120000) + '*/';
+  const before = wrapper(largeSource), result = compactInlineWorkerModule(before, '/fixture/schema-library.worker.ts?worker&inline');
+  assert.ok(Buffer.byteLength(largeSource) > maxCompactInlineWorkerBytes);
+  assert.equal(compactInlineWorkerModule(before, id), undefined);
+  assert.equal(result.meta.mode, 'async');
+  const original = parseAst(before).body[0], ast = parseAst(result.code), declaration = ast.body[0];
+  assert.equal(result.code.slice(declaration.end), before.slice(original.end), 'The original Blob, worker options, fallback and URL lifecycle remain exact.');
+  const bootstrap = declaration.declarations[0].init.value;
+  assert.equal(Buffer.byteLength(bootstrap), result.meta.bootstrapBytes);
+  assert.ok(result.meta.originalBytes - result.meta.bootstrapBytes > 65536);
+  const program = parseAst(bootstrap).body[0].expression.callee.body.body.at(-1).expression;
+  const packed = program.arguments[0].value;
+  assert.equal(gunzipSync(decodeCompactSchemaPack(packed)).toString('utf8'), largeSource);
+  assert.equal(program.arguments[1].value, Buffer.byteLength(largeSource));
+  assert.match(bootstrap, /DecompressionStream\('gzip'\)/);
+  assert.doesNotMatch(bootstrap, /\beval\s*\(|new Function\s*\(/);
+  for (const size of [0, -1, NaN, Infinity, 1.5, maximumAsyncWorkerBytes + 1])
+    assert.throws(() => createAsyncInlineWorkerProgram(packed, size), /size/);
+  assert.equal(compactInlineWorkerModule(wrapper('x'.repeat(maximumAsyncWorkerBytes + 1)), '/fixture/schema-library.worker.ts?worker&inline'), undefined);
 });

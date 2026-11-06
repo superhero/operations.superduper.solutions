@@ -13,7 +13,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { gmailMessageContracts, mistralVariantContracts, structuredFormContracts, formFieldContracts, multipartRootContracts, atlassianFileParts, multipartPartContracts, awsJsonTargets, betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { awsQueryActions, gmailMessageContracts, mistralVariantContracts, structuredFormContracts, formFieldContracts, multipartRootContracts, atlassianFileParts, multipartPartContracts, awsJsonTargets, betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
 import { betaRouteSources } from '../src/lib/literal-query.ts';
 import { multipartFileSources } from '../src/lib/multipart-file-contracts.ts';
 import { multipartPartSources } from '../src/lib/multipart-part-contracts.ts';
@@ -29,6 +29,7 @@ import { trelloParameterSourceSha256 } from '../src/lib/trello-parameter-arrays.
 import { catalogPathBindingSources } from '../src/lib/catalog-path-bindings.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { awsRestSourcePins } from '../src/lib/aws-rest-bindings.ts';
+import { awsQuerySourcePins } from '../src/lib/aws-query-bindings.ts';
 import { awsJsonSourcePins } from '../src/lib/aws-json-bindings.ts';
 import { atlassianTenantServerSources } from '../src/lib/atlassian-tenant-servers.ts';
 import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
@@ -223,12 +224,15 @@ for (const source of sources) {
   if (source.id === 'google-gmail') patches.push(gmailMessageContracts);
   if (Object.hasOwn(awsRestSourcePins(), source.id)) patches.push(awsRestContractsPatch);
   if (Object.hasOwn(awsJsonSourcePins, source.id)) patches.push(awsJsonTargets);
+  if (Object.hasOwn(awsQuerySourcePins, source.id)) patches.push(awsQueryActions);
   if (Object.hasOwn(atlassianTenantServerSources, source.id)) patches.push(atlassianTenantServers);
   if (Object.hasOwn(catalogPathBindingSources, source.id)) patches.push(catalogPathBindings);
   if (source.id === 'bitbucket-dc') patches.push(bitbucketContentParameters);
   if (source.id === 'trello') patches.push(trelloParameterArrays);
   if (source.id === 'atlassian-assets') patches.push(assetsImportSourceParameter);
   if (Object.hasOwn(credentialResultSources, source.id)) patches.push(privateCredentialResults);
+  if (Object.hasOwn(awsQuerySourcePins, source.id) && sha(json) !== awsQuerySourcePins[source.id])
+    throw new Error(`${source.id}: AWS Query native source changed; review its pin before enabling the adapter.`);
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

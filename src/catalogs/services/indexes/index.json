@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "817b33c318d857050bc96d5835071c5ac73e862272e35cc6ef94b059c4f5d98e",
+  "adapterRevision": "b1ece39ac83cc9831594e118302123efff5dabc76bff66cbf07d58c24b063c3e",
   "indexes": [
     {
       "id": "anthropic",
@@ -647,16 +647,16 @@
     },
     {
       "id": "aws-autoscaling",
-      "sourceRevision": "3dfd2af80a4764189fc0d3ea5a28bc9479e45447b1aae5efddf26d60a919ae3f",
-      "bytes": 94390,
-      "compressedBytes": 3639,
-      "sha256": "b02159f64bb7a25be70dae87f978099a43773504e2b173e2ae423ba21b6d3f5b",
+      "sourceRevision": "8b5203059932e60042bf38e4a078a7790eb4e6ad45ec51b2724762e963602637",
+      "bytes": 47052,
+      "compressedBytes": 2929,
+      "sha256": "90f4cf7588e48fdb1119d998d1619c9c51f99359ea035dea1b4093fcc3831f18",
       "summary": {
         "name": "Auto Scaling",
-        "serverUrl": "http://autoscaling.us-east-1.amazonaws.com",
+        "serverUrl": "https://autoscaling.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon EC2 Auto Scaling</fullname> <p>Amazon EC2 Auto Scaling is designed to automatically launch and terminate EC2 instances based on user-defined scaling policies, scheduled actions, and health checks.</p> <p>For more information, see the <a href=\"https://docs.aws.amazon.com/autoscaling/ec2/userguide/\">Amazon EC2 Auto Scaling User Guide</a> and the <a href=\"https://docs.aws.amazon.com/autoscaling/ec2/APIReference/Welcome.html\">Amazon EC2 Auto Scaling API Reference</a>.</p>",
         "operationCount": 130,
-        "unavailableCount": 130
+        "unavailableCount": 0
       }
     },
     {
@@ -703,16 +703,16 @@
     },
     {
       "id": "aws-cloudformation",
-      "sourceRevision": "4a68c9cffa40499b55c50b970591ff86129e779b0ef9e8bdfcaef552ebc14e3f",
-      "bytes": 102760,
-      "compressedBytes": 4049,
-      "sha256": "de67117d0c88ca37df1823100516b6b49050bb0021ec8d541aa6f8a92a881471",
+      "sourceRevision": "4614255cb7417ee1dbed5a10c29499882af8373a4c87aac068db56bc7c4865c4",
+      "bytes": 50680,
+      "compressedBytes": 3354,
+      "sha256": "4e0251c4bdf8dc9049794fb499180ae57b2e713b2e0c052f5fa2730fc4ebdd4f",
       "summary": {
         "name": "AWS CloudFormation",
-        "serverUrl": "http://cloudformation.us-east-1.amazonaws.com",
+        "serverUrl": "https://cloudformation.us-east-1.amazonaws.com",
         "description": "<fullname>CloudFormation</fullname> <p>CloudFormation allows you to create and manage Amazon Web Services infrastructure deployments predictably and repeatedly. You can use CloudFormation to leverage Amazon Web Services products, such as Amazon Elastic Compute Cloud, Amazon Elastic Block Store, Amazon Simple Notification Service, Elastic Load Balancing, and Auto Scaling to build highly reliable, highly scalable, cost-effective applications without creating or configuring the underlying Amazon Web Services infrastructure.</p> <p>With CloudFormation, you declare all your resources and dependencies in a template file. The template defines a collection of resources as a single unit called a stack. CloudFormation creates and deletes all member resources of the stack together and manages all dependencies between the resources for you.</p> <p>For more information about CloudFormation, see the <a href=\"http://aws.amazon.com/cloudformation/\">CloudFormation product page</a>.</p> <p>CloudFormation makes use of other Amazon Web Services products. If you need additional technical information about a specific Amazon Web Services product, you can find the product's technical documentation at <a href=\"https://docs.aws.amazon.com/\">docs.aws.amazon.com</a>.</p>",
         "operationCount": 140,
-        "unavailableCount": 140
+        "unavailableCount": 0
       }
     },
     {
@@ -759,16 +759,16 @@
     },
     {
       "id": "aws-monitoring",
-      "sourceRevision": "85ff979bad127aab83a73b775f9905aac586238122296feb00b685d8deff936a",
-      "bytes": 55603,
-      "compressedBytes": 2644,
-      "sha256": "36ef670c8580b03bbac1ae5029519c4a3a32b969911fcccbef3f2956ca4d1c98",
+      "sourceRevision": "f9e5bf81a3b64390c7cd78410875d0f8dcfd9378844d53adca1a442f414b2859",
+      "bytes": 27332,
+      "compressedBytes": 2171,
+      "sha256": "d3a741ce0c116ea92c41cf2b4feec9c7759fb8d438a800da4a35cee3cbe95285",
       "summary": {
         "name": "Amazon CloudWatch",
-        "serverUrl": "http://monitoring.us-east-1.amazonaws.com",
+        "serverUrl": "https://monitoring.us-east-1.amazonaws.com",
         "description": "<p>Amazon CloudWatch monitors your Amazon Web Services (Amazon Web Services) resources and the applications you run on Amazon Web Services in real time. You can use CloudWatch to collect and track metrics, which are the variables you want to measure for your resources and applications.</p> <p>CloudWatch alarms send notifications or automatically change the resources you are monitoring based on rules that you define. For example, you can monitor the CPU usage and disk reads and writes of your Amazon EC2 instances. Then, use this data to determine whether you should launch additional instances to handle increased load. You can also use this data to stop under-used instances to save money.</p> <p>In addition to monitoring the built-in metrics that come with Amazon Web Services, you can monitor your own custom metrics. With CloudWatch, you gain system-wide visibility into resource utilization, application performance, and operational health.</p>",
         "operationCount": 76,
-        "unavailableCount": 76
+        "unavailableCount": 0
       }
     },
     {
@@ -871,16 +871,16 @@
     },
     {
       "id": "aws-ec2",
-      "sourceRevision": "ea5b1da045efed071bd26efab3b896f71282f662cc1e1683194d66023d3cfd04",
-      "bytes": 859206,
-      "compressedBytes": 26223,
-      "sha256": "7b3c0fab35731e0ed328754f9e7f4a47995d0b41fa9194b2a7ff968303a7666d",
+      "sourceRevision": "627a2d0fb6ca74c40c78473605e40eb770d3a01eea8b66d829ec711ea350c0f6",
+      "bytes": 417269,
+      "compressedBytes": 22090,
+      "sha256": "240ed3bfac80533b7fd81826e0660601231283ff1ecf5736f3bdec6594381f3a",
       "summary": {
         "name": "Amazon Elastic Compute Cloud",
-        "serverUrl": "http://ec2.us-east-1.amazonaws.com",
+        "serverUrl": "https://ec2.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Elastic Compute Cloud</fullname> <p>Amazon Elastic Compute Cloud (Amazon EC2) provides secure and resizable computing capacity in the Amazon Web Services Cloud. Using Amazon EC2 eliminates the need to invest in hardware up front, so you can develop and deploy applications faster. Amazon Virtual Private Cloud (Amazon VPC) enables you to provision a logically isolated section of the Amazon Web Services Cloud where you can launch Amazon Web Services resources in a virtual network that you've defined. Amazon Elastic Block Store (Amazon EBS) provides block level storage volumes for use with EC2 instances. EBS volumes are highly available and reliable storage volumes that can be attached to any running instance and used like a hard drive.</p> <p>To learn more, see the following resources:</p> <ul> <li> <p>Amazon EC2: <a href=\"http://aws.amazon.com/ec2\">Amazon EC2 product page</a>, <a href=\"https://docs.aws.amazon.com/ec2/index.html\">Amazon EC2 documentation</a> </p> </li> <li> <p>Amazon EBS: <a href=\"http://aws.amazon.com/ebs\">Amazon EBS product page</a>, <a href=\"https://docs.aws.amazon.com/ebs/index.html\">Amazon EBS documentation</a> </p> </li> <li> <p>Amazon VPC: <a href=\"http://aws.amazon.com/vpc\">Amazon VPC product page</a>, <a href=\"https://docs.aws.amazon.com/vpc/index.html\">Amazon VPC documentation</a> </p> </li> <li> <p>VPN: <a href=\"http://aws.amazon.com/vpn\">VPN product page</a>, <a href=\"https://docs.aws.amazon.com/vpn/index.html\">VPN documentation</a> </p> </li> </ul>",
         "operationCount": 1188,
-        "unavailableCount": 1188
+        "unavailableCount": 0
       }
     },
     {
@@ -941,30 +941,30 @@
     },
     {
       "id": "aws-elasticloadbalancingv2",
-      "sourceRevision": "9bb94556618707f774795169f97fedcdc28f89a69a39627c6c14500ed5d6ada5",
-      "bytes": 53264,
-      "compressedBytes": 2686,
-      "sha256": "ca822d5474e2fe8e409ba59aca28daf45886049d538f41ad93c762f8f24345e3",
+      "sourceRevision": "d623329c0cba53ff9b3175c522b1227576712aa457b279dc776fed24c3fe914f",
+      "bytes": 27969,
+      "compressedBytes": 2260,
+      "sha256": "3084dd36549ed466eb5cae45d2f68ef3862a0adc48b5713d014e132f329bea53",
       "summary": {
         "name": "Elastic Load Balancing",
-        "serverUrl": "http://elasticloadbalancing.us-east-1.amazonaws.com",
+        "serverUrl": "https://elasticloadbalancing.us-east-1.amazonaws.com",
         "description": "<fullname>Elastic Load Balancing</fullname> <p>A load balancer distributes incoming traffic across targets, such as your EC2 instances. This enables you to increase the availability of your application. The load balancer also monitors the health of its registered targets and ensures that it routes traffic only to healthy targets. You configure your load balancer to accept incoming traffic by specifying one or more listeners, which are configured with a protocol and port number for connections from clients to the load balancer. You configure a target group with a protocol and port number for connections from the load balancer to the targets, and with health check settings to be used when checking the health status of the targets.</p> <p>Elastic Load Balancing supports the following types of load balancers: Application Load Balancers, Network Load Balancers, Gateway Load Balancers, and Classic Load Balancers. This reference covers the following load balancer types:</p> <ul> <li> <p>Application Load Balancer - Operates at the application layer (layer 7) and supports HTTP and HTTPS.</p> </li> <li> <p>Network Load Balancer - Operates at the transport layer (layer 4) and supports TCP, TLS, and UDP.</p> </li> <li> <p>Gateway Load Balancer - Operates at the network layer (layer 3).</p> </li> </ul> <p>For more information, see the <a href=\"https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/\">Elastic Load Balancing User Guide</a>.</p> <p>All Elastic Load Balancing operations are idempotent, which means that they complete at most one time. If you repeat an operation, it succeeds.</p>",
         "operationCount": 68,
-        "unavailableCount": 68
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-elasticache",
-      "sourceRevision": "f73df542876aded5810cd60675f944fa512810eb4875ab4b05e9cca1a42d3f7e",
-      "bytes": 96270,
-      "compressedBytes": 3735,
-      "sha256": "56f96a64f96128202e8f03c5ffd9c8a00e650e17959a215ef1294888ec5560ca",
+      "sourceRevision": "f7c06106ea377f04cdc111f74811e79aa3a0e5c725c69fcd72951ad726e445a0",
+      "bytes": 47910,
+      "compressedBytes": 3031,
+      "sha256": "62c178262b0277501efa2fe6c4b084ac857c34eaa4ef64b56e4c18b9e69018c7",
       "summary": {
         "name": "Amazon ElastiCache",
-        "serverUrl": "http://elasticache.us-east-1.amazonaws.com",
+        "serverUrl": "https://elasticache.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon ElastiCache</fullname> <p>Amazon ElastiCache is a web service that makes it easier to set up, operate, and scale a distributed cache in the cloud.</p> <p>With ElastiCache, customers get all of the benefits of a high-performance, in-memory cache with less of the administrative burden involved in launching and managing a distributed cache. The service makes setup, scaling, and cluster failure handling much simpler than in a self-managed cache deployment.</p> <p>In addition, through integration with Amazon CloudWatch, customers get enhanced visibility into the key performance statistics associated with their cache and can receive alarms if a part of their cache runs hot.</p>",
         "operationCount": 130,
-        "unavailableCount": 130
+        "unavailableCount": 0
       }
     },
     {
@@ -1011,16 +1011,16 @@
     },
     {
       "id": "aws-iam",
-      "sourceRevision": "75b86d2d22322f224d07485f0a74f0927ec4b6bb90d6f4108c6cf98f89132b3d",
-      "bytes": 222032,
-      "compressedBytes": 7200,
-      "sha256": "b99fedfd3af29717c2d9a6174ebfbe290d3e3d1b6c6cf2a59f5e2d6796fb345f",
+      "sourceRevision": "7fa00d64bee53dad08537dc100b481ecdb75629a1fb7aba60703c99a792040f0",
+      "bytes": 104464,
+      "compressedBytes": 5864,
+      "sha256": "2788b4e2b8c09722926cbc3f7e6ee2ab51861292a0cdf06ed4005e8681ad0031",
       "summary": {
         "name": "AWS Identity and Access Management",
         "serverUrl": "https://iam.amazonaws.com",
         "description": "<fullname>Identity and Access Management</fullname> <p>Identity and Access Management (IAM) is a web service for securely controlling access to Amazon Web Services services. With IAM, you can centrally manage users, security credentials such as access keys, and permissions that control which Amazon Web Services resources users and applications can access. For more information about IAM, see <a href=\"http://aws.amazon.com/iam/\">Identity and Access Management (IAM)</a> and the <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/\">Identity and Access Management User Guide</a>.</p>",
         "operationCount": 318,
-        "unavailableCount": 318
+        "unavailableCount": 0
       }
     },
     {
@@ -1109,30 +1109,30 @@
     },
     {
       "id": "aws-rds",
-      "sourceRevision": "c21871f272a1f369d3802e13d76f0625eac5dfc240c320f38c3a547da1901be5",
-      "bytes": 209288,
-      "compressedBytes": 7552,
-      "sha256": "f33c1b521764a9f654a51bff694b57030ea4c3d200dfcea469b2f0ffb026d0de",
+      "sourceRevision": "222a704bb07ab8e214fc2a2d366f3f145e928138a0f3447d0328b73d8e2625f0",
+      "bytes": 102896,
+      "compressedBytes": 6394,
+      "sha256": "7cf9ef0935553001b7a8cf8aeb1615553cea9af000cf92a6ecce461d8c2b602e",
       "summary": {
         "name": "Amazon Relational Database Service",
-        "serverUrl": "http://rds.us-east-1.amazonaws.com",
+        "serverUrl": "https://rds.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Relational Database Service</fullname> <p/> <p>Amazon Relational Database Service (Amazon RDS) is a web service that makes it easier to set up, operate, and scale a relational database in the cloud. It provides cost-efficient, resizeable capacity for an industry-standard relational database and manages common database administration tasks, freeing up developers to focus on what makes their applications and businesses unique.</p> <p>Amazon RDS gives you access to the capabilities of a MySQL, MariaDB, PostgreSQL, Microsoft SQL Server, Oracle, or Amazon Aurora database server. These capabilities mean that the code, applications, and tools you already use today with your existing databases work with Amazon RDS without modification. Amazon RDS automatically backs up your database and maintains the database software that powers your DB instance. Amazon RDS is flexible: you can scale your DB instance's compute resources and storage capacity to meet your application's demand. As with all Amazon Web Services, there are no up-front investments, and you pay only for the resources you use.</p> <p>This interface reference for Amazon RDS contains documentation for a programming or command line interface you can use to manage Amazon RDS. Amazon RDS is asynchronous, which means that some interfaces might require techniques such as polling or callback functions to determine when a command has been applied. In this reference, the parameter descriptions indicate whether a command is applied immediately, on the next instance reboot, or during the maintenance window. The reference structure is as follows, and we list following some related topics from the user guide.</p> <p> <b>Amazon RDS API Reference</b> </p> <ul> <li> <p>For the alphabetical list of API actions, see <a href=\"https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_Operations.html\">API Actions</a>.</p> </li> <li> <p>For the alphabetical list of data types, see <a href=\"https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_Types.html\">Data Types</a>.</p> </li> <li> <p>For a list of common query parameters, see <a href=\"https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/CommonParameters.html\">Common Parameters</a>.</p> </li> <li> <p>For descriptions of the error codes, see <a href=\"https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/CommonErrors.html\">Common Errors</a>.</p> </li> </ul> <p> <b>Amazon RDS User Guide</b> </p> <ul> <li> <p>For a summary of the Amazon RDS interfaces, see <a href=\"https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html#Welcome.Interfaces\">Available RDS Interfaces</a>.</p> </li> <li> <p>For more information about how to use the Query API, see <a href=\"https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Using_the_Query_API.html\">Using the Query API</a>.</p> </li> </ul>",
         "operationCount": 286,
-        "unavailableCount": 286
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-redshift",
-      "sourceRevision": "d6271729a44df045024d5dff64e01968f4d1def0470f8aec3eac648fc8ec8b28",
-      "bytes": 180415,
-      "compressedBytes": 6494,
-      "sha256": "92102c28666e9a63c6e9e431041f09b04a1a94ba44e9f4856eb7170643e4e8c5",
+      "sourceRevision": "121e614b6b7b57f9677b88840549df8d4fb96c18eb51ee8cf4035ddde7919959",
+      "bytes": 89049,
+      "compressedBytes": 5454,
+      "sha256": "3b833e228ba1e2a29ac62e06859466b6f2749fdc7756f06c22a485b0a1bdb2d5",
       "summary": {
         "name": "Amazon Redshift",
-        "serverUrl": "http://redshift.us-east-1.amazonaws.com",
+        "serverUrl": "https://redshift.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Redshift</fullname> <p> <b>Overview</b> </p> <p>This is an interface reference for Amazon Redshift. It contains documentation for one of the programming or command line interfaces you can use to manage Amazon Redshift clusters. Note that Amazon Redshift is asynchronous, which means that some interfaces may require techniques, such as polling or asynchronous callback handlers, to determine when a command has been applied. In this reference, the parameter descriptions indicate whether a change is applied immediately, on the next instance reboot, or during the next maintenance window. For a summary of the Amazon Redshift cluster management interfaces, go to <a href=\"https://docs.aws.amazon.com/redshift/latest/mgmt/using-aws-sdk.html\">Using the Amazon Redshift Management Interfaces</a>.</p> <p>Amazon Redshift manages all the work of setting up, operating, and scaling a data warehouse: provisioning capacity, monitoring and backing up the cluster, and applying patches and upgrades to the Amazon Redshift engine. You can focus on using your data to acquire new insights for your business and customers.</p> <p>If you are a first-time user of Amazon Redshift, we recommend that you begin by reading the <a href=\"https://docs.aws.amazon.com/redshift/latest/gsg/getting-started.html\">Amazon Redshift Getting Started Guide</a>.</p> <p>If you are a database developer, the <a href=\"https://docs.aws.amazon.com/redshift/latest/dg/welcome.html\">Amazon Redshift Database Developer Guide</a> explains how to design, build, query, and maintain the databases that make up your data warehouse. </p>",
         "operationCount": 246,
-        "unavailableCount": 246
+        "unavailableCount": 0
       }
     },
     {
@@ -1249,30 +1249,30 @@
     },
     {
       "id": "aws-sns",
-      "sourceRevision": "14a210cbd1167e49aeb461e4ba8bff533c7bb6473f7cb8ff91f83beaf932f195",
-      "bytes": 61754,
-      "compressedBytes": 2995,
-      "sha256": "b60ff89c450e78842533a5ae2f615ebcb5127f09bfef620bbb5bd254e64aa822",
+      "sourceRevision": "abb1e27846965c4b0c1d66def84581cfca52add101692b7be9d910e9a7c38a27",
+      "bytes": 30507,
+      "compressedBytes": 2496,
+      "sha256": "9e89a54860d991f927b732e5b2295b9d32057790fe59d6ba55ba88b8e8924f75",
       "summary": {
         "name": "Amazon Simple Notification Service",
-        "serverUrl": "http://sns.us-east-1.amazonaws.com",
+        "serverUrl": "https://sns.us-east-1.amazonaws.com",
         "description": "<fullname>Amazon Simple Notification Service</fullname> <p>Amazon Simple Notification Service (Amazon SNS) is a web service that enables you to build distributed web-enabled applications. Applications can use Amazon SNS to easily push real-time notification messages to interested subscribers over multiple delivery protocols. For more information about this product see the <a href=\"http://aws.amazon.com/sns/\">Amazon SNS product page</a>. For detailed information about Amazon SNS features and their associated API calls, see the <a href=\"https://docs.aws.amazon.com/sns/latest/dg/\">Amazon SNS Developer Guide</a>. </p> <p>For information on the permissions you need to use this API, see <a href=\"https://docs.aws.amazon.com/sns/latest/dg/sns-authentication-and-access-control.html\">Identity and access management in Amazon SNS</a> in the <i>Amazon SNS Developer Guide.</i> </p> <p>We also provide SDKs that enable you to access Amazon SNS from your preferred programming language. The SDKs contain functionality that automatically takes care of tasks such as: cryptographically signing your service requests, retrying requests, and handling error responses. For a list of available SDKs, go to <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>. </p>",
         "operationCount": 84,
-        "unavailableCount": 84
+        "unavailableCount": 0
       }
     },
     {
       "id": "aws-sqs",
-      "sourceRevision": "5ba8e13697b8c58dd867c87318478c346afe694fdf47ccecae7404474d6b890b",
-      "bytes": 36373,
-      "compressedBytes": 2363,
-      "sha256": "ca361c9172ceaa7d06f7dbfbfa854e048a46c7e976698956994bc3aa7eb22189",
+      "sourceRevision": "f55ae42635b46406bea210d4c5db43c742a0e8f691ebb3b64769327b120d6b4a",
+      "bytes": 19262,
+      "compressedBytes": 2012,
+      "sha256": "ec30716eea610ccb040ea31f834f1fe6347383bd3cfdd4c629ce0ba7037e480b",
       "summary": {
         "name": "Amazon Simple Queue Service",
-        "serverUrl": "http://sqs.us-east-1.amazonaws.com",
+        "serverUrl": "https://sqs.us-east-1.amazonaws.com",
         "description": "<p>Welcome to the <i>Amazon SQS API Reference</i>.</p> <p>Amazon SQS is a reliable, highly-scalable hosted queue for storing messages as they travel between applications or microservices. Amazon SQS moves data between distributed application components and helps you decouple these components.</p> <p>For information on the permissions you need to use this API, see <a href=\"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-authentication-and-access-control.html\">Identity and access management</a> in the <i>Amazon SQS Developer Guide.</i> </p> <p>You can use <a href=\"http://aws.amazon.com/tools/#sdk\">Amazon Web Services SDKs</a> to access Amazon SQS using your favorite programming language. The SDKs perform tasks such as the following automatically:</p> <ul> <li> <p>Cryptographically sign your service requests</p> </li> <li> <p>Retry requests</p> </li> <li> <p>Handle error responses</p> </li> </ul> <p> <b>Additional information</b> </p> <ul> <li> <p> <a href=\"http://aws.amazon.com/sqs/\">Amazon SQS Product Page</a> </p> </li> <li> <p> <i>Amazon SQS Developer Guide</i> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html\">Making API Requests</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-metadata.html#sqs-message-attributes\">Amazon SQS Message Attributes</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html\">Amazon SQS Dead-Letter Queues</a> </p> </li> </ul> </li> <li> <p> <a href=\"http://docs.aws.amazon.com/cli/latest/reference/sqs/index.html\">Amazon SQS in the <i>Command Line Interface</i> </a> </p> </li> <li> <p> <i>Amazon Web Services General Reference</i> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/general/latest/gr/rande.html#sqs_region\">Regions and Endpoints</a> </p> </li> </ul> </li> </ul>",
         "operationCount": 46,
-        "unavailableCount": 46
+        "unavailableCount": 0
       }
     },
     {
@@ -1291,16 +1291,16 @@
     },
     {
       "id": "aws-sts",
-      "sourceRevision": "886ede5b183bd23c14cd512169cab958f68d53a849c6e62fd4e7e30e977cda65",
-      "bytes": 11638,
-      "compressedBytes": 1233,
-      "sha256": "b21d69a50f38831cbfb6ce0d374387cdabfce3424030b8e93286b2b7d4491c14",
+      "sourceRevision": "7b573570deafff78a5d393754d2fc20453ffb743359cb5cd633dcf620603a580",
+      "bytes": 6145,
+      "compressedBytes": 966,
+      "sha256": "0ff72f11f104a2159f8f1e4d0945c419e59815f0839c2cd25bd1e04d302bf54b",
       "summary": {
         "name": "AWS Security Token Service",
         "serverUrl": "https://sts.amazonaws.com",
         "description": "<fullname>Security Token Service</fullname> <p>Security Token Service (STS) enables you to request temporary, limited-privilege credentials for users. This guide provides descriptions of the STS API. For more information about using this service, see <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html\">Temporary Security Credentials</a>.</p>",
         "operationCount": 16,
-        "unavailableCount": 14
+        "unavailableCount": 0
       }
     },
     {

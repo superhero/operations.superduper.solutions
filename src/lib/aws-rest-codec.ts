@@ -28,7 +28,7 @@ function timestamp(value: unknown, format: string, reading: boolean): string | n
   return reading ? date.toISOString() : format === "unixTimestamp" ? date.getTime() / 1000 : format === "rfc822" ? date.toUTCString() : date.toISOString();
 }
 /** Retain logical SDK names in graphs; apply each model's wire aliases recursively. */
-function jsonValue(source: AwsRestSource, reference: AwsRestShape, value: unknown, reading: boolean,
+function jsonValue(source: Pick<AwsRestSource, "shapes">, reference: AwsRestShape, value: unknown, reading: boolean,
   visit: (depth: number) => void, depth = 0): JsonValue {
   visit(depth); const shape = awsRestShape(source, reference);
   if (value === null) return null;
@@ -65,7 +65,7 @@ function jsonValue(source: AwsRestSource, reference: AwsRestShape, value: unknow
 }
 const escape = (value: string): string => value.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[character]!);
 function xmlName(name: string): string { if (!/^[A-Za-z_][A-Za-z0-9_.:-]*$/.test(name)) invalid(); return name; }
-function scalar(source: AwsRestSource, reference: AwsRestShape, value: unknown, reading: boolean): JsonValue {
+function scalar(source: Pick<AwsRestSource, "shapes">, reference: AwsRestShape, value: unknown, reading: boolean): JsonValue {
   const shape = awsRestShape(source, reference);
   if (shape.type === "timestamp") return timestamp(value, shape.timestampFormat ?? "iso8601", reading);
   if (reading && shape.type === "boolean") { if (value !== "true" && value !== "false") invalid(); return value === "true"; }
@@ -75,7 +75,7 @@ function scalar(source: AwsRestSource, reference: AwsRestShape, value: unknown, 
   }
   return jsonValue(source, reference, value, reading, bounded());
 }
-function xmlWrite(source: AwsRestSource, reference: AwsRestShape, value: unknown, name: string,
+function xmlWrite(source: Pick<AwsRestSource, "shapes">, reference: AwsRestShape, value: unknown, name: string,
   visit: (depth: number) => void, depth = 0, namespace?: string): string {
   visit(depth); xmlName(name); const shape = awsRestShape(source, reference);
   if (shape.type === "list") {
@@ -107,7 +107,7 @@ function xmlWrite(source: AwsRestSource, reference: AwsRestShape, value: unknown
   }
   return `<${name}${attributes}>${body}</${name}>`;
 }
-function xmlRead(source: AwsRestSource, reference: AwsRestShape, value: unknown, visit: (depth: number) => void, depth = 0): JsonValue {
+function xmlRead(source: Pick<AwsRestSource, "shapes">, reference: AwsRestShape, value: unknown, visit: (depth: number) => void, depth = 0): JsonValue {
   visit(depth); const shape = awsRestShape(source, reference);
   if (shape.type === "structure") {
     if (value === "") return {};
@@ -166,12 +166,12 @@ function xmlDocument(bytes: Uint8Array, namespace: string, ok: boolean): [string
   }
   return [name.split(":").at(-1)!, normalize(root, 0)];
 }
-function headerValue(source: AwsRestSource, member: AwsRestShape, value: string): JsonValue {
+function headerValue(source: Pick<AwsRestSource, "shapes">, member: AwsRestShape, value: string): JsonValue {
   const shape = awsRestShape(source, member);
   if (shape.type === "timestamp") return timestamp(value, shape.timestampFormat ?? "rfc822", true);
   return scalar(source, member, value, true);
 }
-function responseHeaders(source: AwsRestSource, root: AwsRestShape, headers: Headers, status: number): Record<string, JsonValue> {
+function responseHeaders(source: Pick<AwsRestSource, "shapes">, root: AwsRestShape, headers: Headers, status: number): Record<string, JsonValue> {
   const result: Record<string, JsonValue> = {};
   for (const [name, member] of Object.entries(root.members ?? {})) {
     const wire = member.locationName ?? name;
@@ -385,3 +385,9 @@ function decodeAwsRestEvents(source: AwsRestSource, shape: AwsRestShape, bytes: 
   }
   if (!complete) invalid(); return events;
 }
+
+/** Share the bounded SDK XML decoder across reviewed AWS protocol families. */
+export function decodeAwsXmlShape(source: Pick<AwsRestSource, "shapes">, reference: AwsRestShape, value: unknown): JsonValue {
+  return xmlRead(source, reference, value, bounded());
+}
+export { xmlDocument as parseAwsXmlDocument };

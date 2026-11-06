@@ -13,6 +13,7 @@ import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
 import { awsRestSigningProfile } from "./aws-rest.ts";
 import { awsJsonSigningProfile, configureAwsJson, validAwsJsonModel } from "./aws-json.ts";
+import { awsQuerySigningProfile, configureAwsQuery, validAwsQueryModel } from "./aws-query.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel, type S3FilesProfile } from "./s3-files.ts";
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
@@ -81,6 +82,8 @@ export type Operation = {
   awsRestRevision?: string;
   awsJson?: import("./aws-json.ts").AwsJsonSigningProfile;
   awsJsonRevision?: string;
+  awsQuery?: import("./aws-query.ts").AwsQuerySigningProfile;
+  awsQueryRevision?: string;
   s3Files?: S3FilesProfile;
   /** Navigation-only descriptor. Execution requires a separately hydrated model. */
   deferred?: true;
@@ -323,6 +326,16 @@ export function extractOperations(value: unknown, source: string): Operation[]
       const id = `${source}:${text(operation.operationId, `${method.toUpperCase()} ${path}`)}`;
       if (identities.has(id)) throw new Error(`${source}: duplicate operation identifier ${id}.`);
       identities.add(id);
+      if (operation["x-operations-aws-query"] !== undefined) {
+        if (operation["x-operations-aws-query"] !== awsQuerySigningProfile) throw new Error("Unknown AWS Query profile.");
+        const model: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),
+          description: text(operation.description, ""), group: Array.isArray(operation.tags) ? String(operation.tags[0]) : "Operations",
+          method: method.toUpperCase(), path, fields: [], bodyRequired: false, awsQuery: awsQuerySigningProfile };
+        model.name = operationDisplayName(model); configureAwsQuery(model);
+        const security = inspectOperationSecurity(document, operation); if (security !== undefined) model.security = security;
+        if (!validAwsQueryModel(model) || model.credentialResult && !supportsCredentialResults(model)) throw new Error("AWS Query actions require their reviewed signing, input and private result contracts.");
+        result.push(withOperationCapabilities(model, [])); continue;
+      }
       if (operation["x-operations-aws-json"] !== undefined) {
         if (operation["x-operations-aws-json"] !== awsJsonSigningProfile) throw new Error("Unknown AWS JSON target profile.");
         const model: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),

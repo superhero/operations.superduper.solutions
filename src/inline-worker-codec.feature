@@ -7,3 +7,6 @@ Feature: Bounded inline worker program packing
 
   Scenario: Invalid worker programs and unqualified wrappers are rejected
     Then inline worker packing bounds source sizes validates payloads and rejects compiler drift
+
+  Scenario: Large schema workers retain exact programs with asynchronous inflation
+    Then only bounded schema library workers use the asynchronous bootstrap without changing their factory

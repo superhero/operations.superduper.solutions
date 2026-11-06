@@ -608,5 +608,55 @@
     "method": "PUT",
     "path": "/v20180820/bucket/{name}/tagging#x-amz-account-id",
     "description": "Replace the tag set for an S3 on Outposts bucket."
+  },
+  "aws-iam:GET_GenerateOrganizationsAccessReport": {
+    "method": "GET",
+    "path": "/#Action=GenerateOrganizationsAccessReport",
+    "description": "Generate a report about an organization\u2019s access to AWS services."
+  },
+  "aws-iam:POST_GenerateOrganizationsAccessReport": {
+    "method": "POST",
+    "path": "/#Action=GenerateOrganizationsAccessReport",
+    "description": "Generate a report about an organization\u2019s access to AWS services."
+  },
+  "aws-sts:GET_AssumeRole": {
+    "method": "GET",
+    "path": "/#Action=AssumeRole",
+    "description": "Request temporary AWS credentials by assuming an IAM role. Role trust, session policies and MFA requirements apply."
+  },
+  "aws-sts:GET_AssumeRoleWithSAML": {
+    "method": "GET",
+    "path": "/#Action=AssumeRoleWithSAML",
+    "description": "Exchange a SAML assertion for temporary AWS credentials under the specified role and identity provider."
+  },
+  "aws-sts:GET_AssumeRoleWithWebIdentity": {
+    "method": "GET",
+    "path": "/#Action=AssumeRoleWithWebIdentity",
+    "description": "Exchange an external identity token for temporary AWS credentials under the specified IAM role."
+  },
+  "aws-sts:GET_GetFederationToken": {
+    "method": "GET",
+    "path": "/#Action=GetFederationToken",
+    "description": "Request temporary AWS credentials for a federated user with the specified session permissions."
+  },
+  "aws-sts:POST_AssumeRole": {
+    "method": "POST",
+    "path": "/#Action=AssumeRole",
+    "description": "Request temporary AWS credentials by assuming an IAM role. Role trust, session policies and MFA requirements apply."
+  },
+  "aws-sts:POST_AssumeRoleWithSAML": {
+    "method": "POST",
+    "path": "/#Action=AssumeRoleWithSAML",
+    "description": "Exchange a SAML assertion for temporary AWS credentials under the specified role and identity provider."
+  },
+  "aws-sts:POST_AssumeRoleWithWebIdentity": {
+    "method": "POST",
+    "path": "/#Action=AssumeRoleWithWebIdentity",
+    "description": "Exchange an external identity token for temporary AWS credentials under the specified IAM role."
+  },
+  "aws-sts:POST_GetFederationToken": {
+    "method": "POST",
+    "path": "/#Action=GetFederationToken",
+    "description": "Request temporary AWS credentials for a federated user with the specified session permissions."
   }
 }

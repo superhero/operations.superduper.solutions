@@ -17,7 +17,7 @@ const isolationHeaders = {
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Embedder-Policy": "credentialless"
 };
-const distributionNotices = ["./src/lib/aws-rest-data.NOTICE", "./src/lib/aws-json-data.NOTICE", "./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md", "./src/lib/workflow-chart-NOTICES.txt"]
+const distributionNotices = ["./src/lib/aws-rest-data.NOTICE", "./src/lib/aws-json-data.NOTICE", "./src/lib/aws-query-data.NOTICE", "./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md", "./src/lib/workflow-chart-NOTICES.txt"]
   .map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n\n");
 let building = false;
 

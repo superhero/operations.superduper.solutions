@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { build } from 'vite';
 import { compactSchemaPacks } from '../../build/schema-pack-plugin.mjs';
+import { compactInlineWorkers } from '../../build/inline-worker-plugin.mjs';
 import { auditOperations, selectOperations } from './audit.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -98,7 +99,7 @@ async function openContext(baseURL) {
 
 try {
   console.log('Building test-only browser integration fixture.');
-  const built = await build({ configFile: false, root, logLevel: 'error', plugins: [compactSchemaPacks()], worker: { format: 'es', plugins: () => [compactSchemaPacks()] },
+  const built = await build({ configFile: false, root, logLevel: 'error', plugins: [compactSchemaPacks(), compactInlineWorkers()], worker: { format: 'es', plugins: () => [compactSchemaPacks()] },
     build: { write: false, target: 'es2024', minify: false,
       lib: { entry: resolve(root, 'tests/catalog-additions/browser.fixture.ts'), formats: ['es'] } } });
   const output = Array.isArray(built) ? built[0] : built;

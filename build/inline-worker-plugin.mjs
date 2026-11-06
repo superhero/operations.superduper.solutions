@@ -5,6 +5,7 @@ import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { parseAst } from 'rolldown/parseAst';
 import { encodeSchemaPack, compactSchemaPackPrefix } from '../src/lib/schema-pack-codec.ts';
+import { createAsyncInlineWorkerProgram, maximumAsyncWorkerBytes } from './async-inline-worker.mjs';
 
 const codec = fileURLToPath(new URL('../src/lib/inline-worker-codec.ts', import.meta.url));
 const maximum = 2 * 1024 * 1024, minimumSaving = 64 * 1024;
@@ -12,14 +13,16 @@ const maximum = 2 * 1024 * 1024, minimumSaving = 64 * 1024;
  * wins keeps the large schema-library program out of synchronous inflation. */
 export function compactInlineWorkerModule(code, id, options = {}) {
   const maxBytes = options.maximumBytes ?? maximum, minSaving = options.minimumSaving ?? minimumSaving;
-  if (!id.includes('worker&inline') || code.length > maxBytes * 2 + 4096) return;
+  const asyncLibrary = /(?:^|[/\\])schema-library\.worker\.ts\?worker&inline(?:$|&)/.test(id);
+  const limit = asyncLibrary ? maximumAsyncWorkerBytes : maxBytes;
+  if (!id.includes('worker&inline') || code.length > limit * 2 + 4096) return;
   const ast = parseAst(code), declarations = ast.body.filter(node => node.type === 'VariableDeclaration');
   const program = declarations.find(node => node.declarations.some(entry => entry.id?.name === 'jsContent'));
   const literal = program?.declarations.find(entry => entry.id?.name === 'jsContent')?.init;
   const source = literal?.value;
   if (typeof source !== 'string') throw new Error('The Vite inline worker program format changed; requalify its packing.');
   const bytes = Buffer.from(source);
-  if (bytes.length > maxBytes) return;
+  if (bytes.length > limit) return;
   const packed = encodeSchemaPack(gzipSync(bytes, { level: 9 })).slice(compactSchemaPackPrefix.length);
   if (bytes.length - packed.length < minSaving) return;
   const blob = declarations.find(node => node.declarations.some(entry => entry.id?.name === 'blob'));
@@ -27,6 +30,12 @@ export function compactInlineWorkerModule(code, id, options = {}) {
   if (!blob || factory?.type !== 'FunctionDeclaration' || factory.id?.name !== 'WorkerWrapper' || !factory.body
     || program.declarations.length !== 1 || blob.declarations.length !== 1)
     throw new Error('The Vite inline worker constructor format changed; requalify its packing.');
+  if (bytes.length > maxBytes) {
+    const bootstrap = createAsyncInlineWorkerProgram(packed,bytes.length);
+    if (bytes.length - Buffer.byteLength(bootstrap) < minSaving) return;
+    return {code:code.slice(0,program.start)+`const jsContent = ${JSON.stringify(bootstrap)};`+code.slice(program.end),map:null,
+      meta:{mode:'async',originalBytes:bytes.length,packedCharacters:packed.length,bootstrapBytes:Buffer.byteLength(bootstrap)}};
+  }
   const blobCode = code.slice(blob.start, blob.end);
   const edits = [
     { start: program.start, end: program.end, value: `const __operationsPackedWorker = ${JSON.stringify(packed)};` },

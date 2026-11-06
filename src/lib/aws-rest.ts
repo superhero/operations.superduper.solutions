@@ -74,13 +74,13 @@ export function awsRestContract(operation: Pick<Operation, "id" | "method" | "pa
 export function awsRestWirePath(operation: Pick<Operation, "id" | "method" | "path">): string | undefined {
   return awsRestContract(operation)?.wirePath;
 }
-export function awsRestShape(source: AwsRestSource, reference: AwsRestShape): AwsRestShape {
+export function awsRestShape(source: Pick<AwsRestSource, "shapes">, reference: AwsRestShape): AwsRestShape {
   if (!reference.shape) return reference;
   const shape = Object.hasOwn(source.shapes, reference.shape) ? source.shapes[reference.shape] : undefined;
   if (!shape) throw new Error("The AWS REST serialization shape is missing.");
   return { ...shape, ...reference };
 }
-export function awsRestRoot(source: AwsRestSource, shape: string | null, traits?: AwsRestShape): AwsRestShape {
+export function awsRestRoot(source: Pick<AwsRestSource, "shapes">, shape: string | null, traits?: AwsRestShape): AwsRestShape {
   return shape ? awsRestShape(source, { shape, ...traits }) : { type: "structure", members: {} };
 }
 export function awsRestPayload(source: AwsRestSource, shape: string | null): AwsRestShape | undefined {
@@ -107,7 +107,7 @@ export function awsRestEndpoint(origin: string, operation: Pick<Operation, "id" 
 }
 export function configureAwsRest(operation: Operation): void {
   const contract = awsRestContract(operation);
-  if (!contract || operation.awsRest !== awsRestSigningProfile || operation.awsWire || operation.s3Files
+  if (!contract || operation.awsRest !== awsRestSigningProfile || operation.awsWire || operation.awsQuery || operation.s3Files
     || operation.privatePath || operation.cloudflareUpload || operation.responseStream
     || Object.hasOwn(awsRestPrivateResultPaths, operation.id) && (operation.credentialResult !== true || operation.credentialResultProfile !== "private-result-v1"))
     throw new Error("This operation does not match its reviewed AWS REST signing contract.");
