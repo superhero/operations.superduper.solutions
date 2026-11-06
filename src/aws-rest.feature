@@ -6,7 +6,7 @@ Feature: Reviewed AWS REST wire contracts
     Then all 658 native AWS REST operations have qualified canonical and strict models
 
   Scenario: Every reviewed AWS REST identity has a pinned signing authority
-    Then the 658 AWS REST contracts retain pinned sources and reject other authorities
+    Then the reviewed AWS REST contracts retain pinned sources and reject other authorities
 
   Scenario: REST JSON uses SDK wire aliases and timestamp representations
     Then AWS REST JSON serialization preserves logical names and exact wire aliases

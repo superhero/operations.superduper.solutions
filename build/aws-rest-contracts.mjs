@@ -7,14 +7,16 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { awsRestContracts } from '../src/lib/aws-rest.ts';
+import { decodeAwsRestData } from '../src/lib/aws-rest-data.ts';
 import { encodeSchemaPack, compactSchemaPackPrefix } from '../src/lib/schema-pack-codec.ts';
-import ids from '../tests/aws-rest-operations.json' with {type:'json'};
+import baselineIds from '../tests/aws-rest-operations.json' with {type:'json'};
+import headerArrayIds from '../tests/header-array-operations.json' with {type:'json'};
+const ids = [...baselineIds, ...headerArrayIds];
 
 const root = resolve(import.meta.dirname, '..'), models = process.argv[process.argv.indexOf('--models') + 1];
 assert.ok(process.argv.includes('--models') && models, 'Provide --models DIR containing the pinned <catalog>.json models.');
 const sha = value => createHash('sha256').update(value).digest('hex');
-const previous = awsRestContracts(), sources = {}, operations = {};
+const previous = decodeAwsRestData(), sources = {}, operations = {};
 const traits = new Set(['type','members','member','key','value','shape','location','locationName','flattened','xmlAttribute',
   'xmlNamespace','timestampFormat','payload','resultWrapper','required','eventstream','event','eventpayload','eventheader','exception','jsonvalue']);
 function trim(value) {
@@ -37,7 +39,9 @@ for (const [catalog, pinned] of Object.entries(previous.sources)) {
     for (const member of [...Object.values(shape.members ?? {}), ...['member','key','value'].filter(key=>shape[key]).map(key=>shape[key])]) include(member.shape);
   }
   for (const id of ids.filter(id=>id.startsWith(catalog+':'))) {
-    const old = previous.operations[id]; assert.ok(old);
+    const old = previous.operations[id] ?? (id === 'aws-s3:ListObjects'
+      ? {catalog:'aws-s3',operation:'ListObjects',nativeMethod:'GET',method:'GET',nativePath:'/{Bucket}',path:'/{Bucket}',greedy:[],status:200}
+      : undefined); assert.ok(old);
     const operation = sdk.operations[old.operation]; assert.ok(operation);
     assert.equal(native.paths[old.nativePath]?.[old.nativeMethod.toLowerCase()]?.operationId, id.slice(catalog.length+1));
     assert.equal(operation.http.method, old.method);
@@ -49,7 +53,7 @@ for (const [catalog, pinned] of Object.entries(previous.sources)) {
     // syntax explicitly names maxResults/nextToken and has no request body.
     const wireSources = id === 'aws-opensearch:DescribeDomainAutoTunes'
       ? ['https://docs.aws.amazon.com/opensearch-service/latest/APIReference/API_DescribeDomainAutoTunes.html'] : [];
-    if (wireSources.length) {
+    if (id === 'aws-opensearch:DescribeDomainAutoTunes') {
       assert.equal(operation.http.method, 'GET');
       inputTraits.members = structuredClone(trim(sdk.shapes[input]).members);
       for (const name of ['MaxResults','NextToken']) {
@@ -58,14 +62,19 @@ for (const [catalog, pinned] of Object.entries(previous.sources)) {
         inputTraits.members[name].locationName = name[0].toLowerCase()+name.slice(1);
       }
     }
+    const outputTraits = operation.output ? trim(operation.output) : undefined;
+    if (id === 'aws-s3:ListObjects') {
+      outputTraits.locationName = 'ListBucketResult';
+      wireSources.push('https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html');
+    }
     operations[id] = { ...old, input, output,
       ...(inputTraits ? { inputTraits } : {}),
-      ...(operation.output ? { outputTraits: trim(operation.output) } : {}),
+      ...(outputTraits ? { outputTraits } : {}),
       ...(wireSources.length ? {wireSources} : {}) };
   }
   sources[catalog] = { ...pinned, shapes: Object.fromEntries([...used].sort().map(name=>[name, trim(sdk.shapes[name])])) };
 }
-assert.equal(Object.keys(operations).length, 658); assert.equal(new Set(ids).size, 658);
+assert.equal(Object.keys(operations).length, ids.length); assert.equal(new Set(ids).size, ids.length);
 const raw = Buffer.from(JSON.stringify({version:1,sources,operations}));
 const packed = encodeSchemaPack(gzipSync(raw,{level:9})).slice(compactSchemaPackPrefix.length);
 const result = `// Copyright (C) 2026 Erik Landvall
@@ -88,4 +97,4 @@ const outputIndex = process.argv.indexOf('--output');
 const target = resolve(root, outputIndex < 0 ? 'src/lib/aws-rest-data.ts' : process.argv[outputIndex+1]);
 if (process.argv.includes('--check')) assert.equal(await readFile(target,'utf8'),result,'AWS REST serialization data is outdated.');
 else await writeFile(target,result);
-console.log(JSON.stringify({operations:658,sources:Object.keys(sources).length,bytes:raw.length,packedCharacters:packed.length,sha256:sha(raw)}));
+console.log(JSON.stringify({operations:ids.length,sources:Object.keys(sources).length,bytes:raw.length,packedCharacters:packed.length,sha256:sha(raw)}));

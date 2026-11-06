@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { crc32 } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import ids from '../tests/aws-rest-operations.json' with {type:'json'};
+import headerArrayIds from '../tests/header-array-operations.json' with {type:'json'};
 import { awsRestContracts, awsRestEndpoint, awsRestSigningProfile, awsRestPrivateResultPaths, validAwsRestModel } from './lib/aws-rest.ts';
 import { awsRestDataSha256 } from './lib/aws-rest-data.ts';
 import { decodeAwsRestResponse, prepareAwsRestRequest, awsEventCrc32 } from './lib/aws-rest-codec.ts';
@@ -45,11 +46,12 @@ Then('all 658 native AWS REST operations have qualified canonical and strict mod
   assert.deepEqual(found,selected);assert.deepEqual(failures,[],JSON.stringify(failures,null,2));
 });
 
-Then('the 658 AWS REST contracts retain pinned sources and reject other authorities',()=>{
+Then('the reviewed AWS REST contracts retain pinned sources and reject other authorities',()=>{
   const contracts=awsRestContracts();assert.equal(Object.keys(contracts.sources).length,14);
-  assert.deepEqual(new Set(Object.keys(contracts.operations)),new Set(ids));assert.equal(ids.length,658);
+  const reviewed=[...ids,...headerArrayIds];assert.equal(ids.length,658);
+  assert.deepEqual(new Set(Object.keys(contracts.operations)),new Set(reviewed));assert.equal(reviewed.length,659);
   assert.equal(createHash('sha256').update(JSON.stringify(contracts)).digest('hex'),awsRestDataSha256);
-  for (const id of ids) {
+  for (const id of reviewed) {
     const operation=model(id),contract=contracts.operations[id],source=contracts.sources[contract.catalog];assert.ok(validAwsRestModel(operation),id);
     const endpoint=source.endpoint.url.replace(/\{([^{}]+)\}/g,(_,name)=>source.endpoint.variables[name].default);
     const expected={service:source.service,region:source.endpoint.variables.region?.default??'us-east-1'};

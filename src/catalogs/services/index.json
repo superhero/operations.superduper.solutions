@@ -1765,8 +1765,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "c9614be11779bb74de920c7b344aafad15ebed00c1bb8b3a8b56778535cf048b",
-    "effectiveBytes": 793886
+    "effectiveSha256": "e373be8c0daee53379596fd28e704061489bd12813db4bdcace5d1a06fd30976",
+    "effectiveBytes": 797934
   },
   {
     "id": "aws-s3control",

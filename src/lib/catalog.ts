@@ -22,7 +22,7 @@ import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
 import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 import { withOperationCapabilities, type OperationCapabilities, type CapabilitySummary } from "./operation-capabilities.ts";
 import { acceptsScalarQueryExplode, configureQueryArray, type QuerySerialization } from "./query-serialization.ts";
-import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
+import { configureSimplePathArray, configureSimpleHeaderArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { isJsonRequestMediaType } from "./request-media.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -345,15 +345,16 @@ export function extractOperations(value: unknown, source: string): Operation[]
               const csv = configureQueryArray(input, parameter);
               const scalarQuery = acceptsScalarQueryExplode(input, parameter);
               const pathArray = configureSimplePathArray(input, parameter);
+              const headerArray = configureSimpleHeaderArray(input, parameter);
               if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
                 || parameter.style !== undefined && parameter.style !== style
-                || parameter.explode !== undefined && parameter.explode !== query && !csv && !pathArray && !scalarQuery
+                || parameter.explode !== undefined && parameter.explode !== query && !csv && !pathArray && !headerArray && !scalarQuery
                 || parameter.allowReserved !== undefined && parameter.allowReserved !== false
                 || parameter.allowEmptyValue !== undefined && parameter.allowEmptyValue !== false
-                || !query && !primitiveTypes.includes(input.type) && !pathArray
+                || !query && !primitiveTypes.includes(input.type) && !pathArray && !headerArray
                 || input.type === "array" && !primitiveTypes.includes(input.schema!.items!.type)
                 || input.type === "object" && objectSchemas(input.schema!).some(property => !primitiveTypes.includes(property.type)))
-                throw new Error("unsupported parameter serialization; use primitive values, simple path arrays, form query arrays or flat deepObject query objects.");
+                throw new Error("unsupported parameter serialization; use primitive values, simple path/header arrays, form query arrays or flat deepObject query objects.");
             }
           } catch (error) {
             throw new Error(`${id}: ${parameterContext(parameter, input.type)}: ${(error as Error).message}`, { cause: error });

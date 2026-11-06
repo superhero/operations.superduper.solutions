@@ -23,7 +23,7 @@ import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
 import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } from "./operation-capabilities.ts";
 import { acceptsScalarQueryExplode, configureQueryArray } from "./query-serialization.ts";
-import { configureSimplePathArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
+import { configureSimplePathArray, configureSimpleHeaderArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { providerPathSecurity } from "./provider-path-bindings.ts";
 import { isJsonRequestMediaType } from "./request-media.ts";
 
@@ -296,7 +296,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                       throw new Error("Only named path, query and header parameters are supported.");
                     const content = parameterContentSchema(parameter);
                     input = field(parameter.name, location as InputField["location"], content ?? parameter.schema, parameter.required === true, document, parameter.description,
-                      !!content || location === "query" && parameter.explode === false);
+                      !!content || location === "query" && parameter.explode === false
+                        || location === "header" && resolve(parameter.schema, document).type === "array");
                     if (content) {
                       if (containsBinaryInput(input.schema!)) throw new Error("JSON content parameters cannot contain binary files.");
                       input.parameterContentType = "application/json";
@@ -306,10 +307,11 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                       const csv = configureQueryArray(input, parameter);
                       const scalarQuery = acceptsScalarQueryExplode(input, parameter);
                       const pathArray = configureSimplePathArray(input, parameter);
+                      const headerArray = configureSimpleHeaderArray(input, parameter);
                       if (parameter.style !== undefined && parameter.style !== style
-                        || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray && !scalarQuery
-                        || location !== "query" && ["object", "array"].includes(input.type) && !pathArray)
-                        throw new Error("Unsupported parameter serialization; use primitive values, simple path arrays or supported form/deepObject query parameters.");
+                        || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray && !headerArray && !scalarQuery
+                        || location !== "query" && ["object", "array"].includes(input.type) && !pathArray && !headerArray)
+                        throw new Error("Unsupported parameter serialization; use primitive values, simple path/header arrays or supported form/deepObject query parameters.");
                     }
                     fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
                   } catch (error) {

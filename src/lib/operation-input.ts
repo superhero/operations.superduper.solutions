@@ -13,7 +13,7 @@ import { validateWorkflowBinary, binaryRequestMediaType, validateBinarySchema } 
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import type { QuerySerialization } from "./query-serialization.ts";
-import { encodeSimplePathArray } from "./parameter-serialization.ts";
+import { encodeSimplePathArray, encodeSimpleHeaderArray } from "./parameter-serialization.ts";
 
 export type InputValue = string | null | undefined;
 export type InputValues = Record<string, InputValue>;
@@ -264,10 +264,17 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
         catch (cause) { fail(input, (cause as Error).message); }
         continue;
       }
-      if (value !== null && typeof value === "object") fail(input, "header values must be primitive values.");
-      if (/[\r\n]/.test(String(value))) fail(input, "header values cannot contain line breaks.");
+      let header: string;
+      try {
+        if (input.type === "array") header = encodeSimpleHeaderArray(input, value);
+        else {
+          if (value !== null && typeof value === "object") throw new Error("header values must be primitive values or simple arrays.");
+          header = String(value);
+        }
+      } catch (cause) { fail(input, (cause as Error).message); }
+      if (/[\r\n]/.test(header)) fail(input, "header values cannot contain line breaks.");
       request.headers ??= {};
-      set(request.headers, input.name, String(value));
+      set(request.headers, input.name, header);
     }
     else if (operation.bodyValue) request.body = value;
     else

@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "cc09db265cf29dad0bb414da764ff0b39c1a12ff1bfab28643977e71bffe2642",
+  "adapterRevision": "439c8ed7fbeee6ec170a1c214b4de89d382ee7fc768b7b49dbfe62d1db6894d6",
   "indexes": [
     {
       "id": "anthropic",
@@ -1165,16 +1165,16 @@
     },
     {
       "id": "aws-s3",
-      "sourceRevision": "c9614be11779bb74de920c7b344aafad15ebed00c1bb8b3a8b56778535cf048b",
-      "bytes": 63119,
-      "compressedBytes": 3204,
-      "sha256": "797590cd378b98bf9fd21bd1908389c69f0910d6ca77428ff2fe1e98bd18d748",
+      "sourceRevision": "e373be8c0daee53379596fd28e704061489bd12813db4bdcace5d1a06fd30976",
+      "bytes": 61877,
+      "compressedBytes": 2936,
+      "sha256": "6ad94cd50b95e64e5087d8d2b4802d11d29593a38d5b24c57708dfe12d92716c",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "https://s3.us-east-1.amazonaws.com",
         "description": "<p/>",
         "operationCount": 97,
-        "unavailableCount": 90
+        "unavailableCount": 89
       }
     },
     {
@@ -2952,9 +2952,9 @@
     {
       "id": "openai",
       "sourceRevision": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
-      "bytes": 123812,
-      "compressedBytes": 9975,
-      "sha256": "4da86e2955fbe575bec0f04d60bf8ba549283b6cff75da07d9a3071631e0974c",
+      "bytes": 122118,
+      "compressedBytes": 9832,
+      "sha256": "9cec17427b81cf240533098b193facb612dbce0b8d079037bc16adfe95b388de",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",

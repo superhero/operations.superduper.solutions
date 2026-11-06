@@ -54,7 +54,7 @@ function freeze(value: unknown): void {
 export function awsRestContracts(): AwsRestContracts {
   if (!cached) {
     const data = decodeAwsRestData() as AwsRestContracts;
-    if (data.version !== 1 || Object.keys(data.sources).length !== 14 || Object.keys(data.operations).length !== 658)
+    if (data.version !== 1 || Object.keys(data.sources).length !== 14 || Object.keys(data.operations).length !== 659)
       throw new Error("The AWS REST contracts have an unknown revision.");
     freeze(data); cached = data;
   }
