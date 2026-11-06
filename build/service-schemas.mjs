@@ -13,12 +13,13 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
 import { credentialResultSources } from '../src/lib/credential-results.ts';
 import { bitbucketContentSourceSha256 } from '../src/lib/parameter-content.ts';
 import { trelloParameterSourceSha256 } from '../src/lib/trello-parameter-arrays.ts';
 import { catalogPathBindingSources } from '../src/lib/catalog-path-bindings.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
+import { atlassianTenantServerSources } from '../src/lib/atlassian-tenant-servers.ts';
 import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
 import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
@@ -124,6 +125,8 @@ for (const source of sources) {
     }
   }
   const json = JSON.stringify(document);
+  if (Object.hasOwn(atlassianTenantServerSources, source.id) && sha(json) !== atlassianTenantServerSources[source.id])
+    throw new Error('Atlassian tenant server variables require requalification before updating the pinned native source.');
   if (Object.hasOwn(catalogPathBindingSources, source.id) && sha(json) !== catalogPathBindingSources[source.id])
     throw new Error(`${source.id}: catalog path bindings require requalification before updating the pinned native source.`);
   if (source.profile === 'atlassian-dc-authentication' && sha(json) !== atlassianDcAuthenticationSources[source.id])
@@ -176,6 +179,7 @@ for (const source of sources) {
     : source.profile === 'aws-s3-files' ? [awsS3Files]
     : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
 
+  if (Object.hasOwn(atlassianTenantServerSources, source.id)) patches.push(atlassianTenantServers);
   if (Object.hasOwn(catalogPathBindingSources, source.id)) patches.push(catalogPathBindings);
   if (source.id === 'bitbucket-dc') patches.push(bitbucketContentParameters);
   if (source.id === 'trello') patches.push(trelloParameterArrays);

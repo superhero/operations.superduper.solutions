@@ -8,6 +8,7 @@ import type { CatalogGroup } from "./catalog-registry.ts";
 import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin, ServerConfigurationRequiredError } from "./server-url.ts";
 import { awsWirePath, awsWireProfile } from "./aws-wire.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
+import { validateAtlassianTenantServer } from "./atlassian-tenant-servers.ts";
 import { validateAtlassianServerBinding } from "./atlassian-server-bindings.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
@@ -143,6 +144,7 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   const selected = object(servers[0], `${context}: first server`);
   if (typeof selected.url !== "string" || !selected.url.trim()) invalid(`${context}: server url must be a nonempty string.`);
   validateAtlassianServerBinding(selected);
+  validateAtlassianTenantServer(selected);
   const variables = selected.variables === undefined ? {} : object(selected.variables, `${context}: server variables`);
   let configurationMessage: string | undefined;
   const expanded = selected.url.replace(/\{([^{}]+)\}/g, (_match, name: string) => {

@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/atlassian-tenant-servers.test.mjs",
     "src/tenant-readiness.test.mjs",
     "src/credential-results.test.mjs",
     "src/parameter-content.test.mjs",
@@ -121,6 +122,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/atlassian-tenant-servers.feature",
     "src/tenant-readiness.feature",
     "src/credential-results.feature",
     "src/parameter-content.feature",

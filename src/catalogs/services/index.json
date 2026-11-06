@@ -428,7 +428,15 @@
     "sha256": "e4f38a292bbdd3ac6344be7b1bd8a8fbd92007c21480cd2afa671bd8fa6d0e02",
     "sourceSha256": "50ba64f4531535799215f019eff3bc8b0bf65f0ea8a8a7a97ced24333ce4b199",
     "bytes": 160470,
-    "compressedBytes": 22214
+    "compressedBytes": 22214,
+    "patches": [
+      {
+        "id": "atlassian-tenant-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1383821c74d1d36676820b7600c5863a7943983032ce9e214587fe98ccde77e3",
+    "effectiveBytes": 160751
   },
   {
     "id": "atlassian-focus",
@@ -492,7 +500,15 @@
     "sha256": "59bc96a8e30792e5be7af817ac37100d9ffbebdde4d2c3614b288333b0220688",
     "sourceSha256": "62ee88220ca72fcaf261ed1a3c167619438ed7558e8047512c1963d87e26c7d0",
     "bytes": 124718,
-    "compressedBytes": 14375
+    "compressedBytes": 14375,
+    "patches": [
+      {
+        "id": "atlassian-tenant-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c7710c0d10ff88d44d17247d85843c4b85410379cfd6b9c8c1088db5a76b1ada",
+    "effectiveBytes": 125256
   },
   {
     "id": "atlassian-incidents",
@@ -732,7 +748,15 @@
     "sha256": "8bdd7cc1b4f8f01115d78bb5a2db3be0f7b2dc2be9582198ae28efbd0862ae4d",
     "sourceSha256": "0db2968dccf39d4882264753ecbc6102f85ce466c3b41a55f25834ef88652da2",
     "bytes": 12743,
-    "compressedBytes": 3441
+    "compressedBytes": 3441,
+    "patches": [
+      {
+        "id": "atlassian-tenant-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "5d5f9273ac423448fe700490f327a3c85862f6000a94068625fe8aff2dc9f8bf",
+    "effectiveBytes": 13013
   },
   {
     "id": "opsgenie",

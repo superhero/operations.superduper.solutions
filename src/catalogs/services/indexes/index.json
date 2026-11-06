@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "b58fdaed9fd0028be3ff6434d598d32997a0d876d3bcaa21e8f143e502593fa1",
+  "adapterRevision": "f6011e387d0c64dc6aa2d5136b4a7b78962e122018318363522546b8718b2fd5",
   "indexes": [
     {
       "id": "anthropic",
@@ -303,15 +303,15 @@
     },
     {
       "id": "atlassian-customer-service-management",
-      "sourceRevision": "e4f38a292bbdd3ac6344be7b1bd8a8fbd92007c21480cd2afa671bd8fa6d0e02",
-      "bytes": 35313,
-      "compressedBytes": 2142,
-      "sha256": "89c762e4b060a3dd884f949789f4a25af145f608f5c8d123cb2ab1f3aaa931e1",
+      "sourceRevision": "1383821c74d1d36676820b7600c5863a7943983032ce9e214587fe98ccde77e3",
+      "bytes": 36272,
+      "compressedBytes": 2160,
+      "sha256": "32d2034f9e4c556c6b878a8842cb24e41d9266d47733e5ea315fbec1c75d8842",
       "summary": {
         "name": "Atlassian CSM API",
         "serverUrl": "",
         "operationCount": 60,
-        "unavailableCount": 60
+        "unavailableCount": 0
       }
     },
     {
@@ -358,15 +358,15 @@
     },
     {
       "id": "atlassian-forms",
-      "sourceRevision": "59bc96a8e30792e5be7af817ac37100d9ffbebdde4d2c3614b288333b0220688",
-      "bytes": 20125,
-      "compressedBytes": 1486,
-      "sha256": "a83c20bdada5878b281f05554af58f501a28b379960cbe94a8dabb983eb17e6c",
+      "sourceRevision": "c7710c0d10ff88d44d17247d85843c4b85410379cfd6b9c8c1088db5a76b1ada",
+      "bytes": 20668,
+      "compressedBytes": 1497,
+      "sha256": "1e3d76f4b95a79fb94a6f07ea54ef007a50ed45f331292a3ed28e656d452fde5",
       "summary": {
         "name": "ProForma Forms RESTful API",
         "serverUrl": "",
         "operationCount": 34,
-        "unavailableCount": 34
+        "unavailableCount": 0
       }
     },
     {
@@ -508,16 +508,16 @@
     },
     {
       "id": "atlassian-migration-utilities",
-      "sourceRevision": "8bdd7cc1b4f8f01115d78bb5a2db3be0f7b2dc2be9582198ae28efbd0862ae4d",
-      "bytes": 3552,
-      "compressedBytes": 717,
-      "sha256": "fc908dba3109009ebdab34e7ad8e2fbb1a0d8b0c5fc94d5399a57e441521d930",
+      "sourceRevision": "5d5f9273ac423448fe700490f327a3c85862f6000a94068625fe8aff2dc9f8bf",
+      "bytes": 3648,
+      "compressedBytes": 725,
+      "sha256": "afb024203a788e110e4e98f19ac7f28eaecd41d61859db078db3a744e090572d",
       "summary": {
         "name": "Migration REST API",
         "serverUrl": "",
         "description": "REST API related to migrations from Server or Data Center to Cloud.",
         "operationCount": 6,
-        "unavailableCount": 6
+        "unavailableCount": 0
       }
     },
     {
