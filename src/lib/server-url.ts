@@ -13,18 +13,21 @@ export function serverUrlHasPlaceholder(value: string): boolean
 
 export const telegramBotOrigin = "https://api.telegram.org";
 export const telegramBotTemplate = `${telegramBotOrigin}/bot{botToken}`;
-export type PrivatePathProfile = "telegram-bot";
+export type PrivatePathProfile = "telegram-bot" | "digitalocean-upload";
 export function privatePathProfile(value: unknown): PrivatePathProfile | undefined {
   if (value === undefined) return;
-  if (value === "telegram-bot") return value;
+  if (value === "telegram-bot" || value === "digitalocean-upload") return value;
   throw new Error("This private token path profile is not supported.");
 }
 export function telegramPathSecurity(): { name: string; kind: "apiKey"; path: "telegram-bot" }[][] {
   return [[{ name: "Bot token", kind: "apiKey", path: "telegram-bot" }]];
 }
+export function digitalOceanPathSecurity(): { name: string; kind: "apiKey"; path: "digitalocean-upload" }[][] {
+  return [[{ name: "Presigned upload URL", kind: "apiKey", path: "digitalocean-upload" }]];
+}
 /** Only this explicit, non-secret template can acquire a private token slot. */
 export function telegramPrivateEndpoint(document: Record<string, any>, source: Record<string, any>, item: Record<string, any> = {}): string | undefined {
-  if (!privatePathProfile(source["x-operations-private-path"])) return;
+  if (privatePathProfile(source["x-operations-private-path"]) !== "telegram-bot") return;
   const servers = document.servers, server = servers?.[0];
   if (!Array.isArray(servers) || servers.length !== 1 || server?.url !== telegramBotTemplate
     || server.variables?.botToken?.default !== "<bot_token>" || Object.keys(server.variables).length !== 1

@@ -32,6 +32,8 @@ import { commerceAuthenticationSourceSha256 } from '../src/lib/atlassian-commerc
 import { cloudflareLogoSourceSha256 } from '../src/lib/multipart-file-contracts.ts';
 import { uploadBodySources } from '../src/lib/upload-body-contracts.ts';
 import { uploadBodyContractsPatch } from '../src/lib/schema-patches.ts';
+import { digitalOceanDestinations } from '../src/lib/schema-patches.ts';
+import { digitalOceanDestinationSourceSha256 } from '../src/lib/digitalocean-destinations.ts';
 import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
 import { awsRestSourcePins } from '../src/lib/aws-rest-bindings.ts';
 import { awsQuerySourcePins } from '../src/lib/aws-query-bindings.ts';
@@ -225,6 +227,10 @@ for (const source of sources) {
     : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
 
   if (Object.hasOwn(uploadBodySources, source.id)) patches.unshift(uploadBodyContractsPatch);
+  if (source.id === 'digitalocean') {
+    if (sha(json) !== digitalOceanDestinationSourceSha256) throw new Error('DigitalOcean destinations require requalification before updating their native source.');
+    patches.push(digitalOceanDestinations);
+  }
   if (source.id === 'cloudflare') patches.push(cloudflareLogoUpload);
   if (source.id === 'atlassian-commerce') patches.push(commerceAuthentication);
   if (Object.hasOwn(betaRouteSources, source.id)) patches.push(betaRouteContracts);

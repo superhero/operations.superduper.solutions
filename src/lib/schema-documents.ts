@@ -6,6 +6,7 @@ import { parseDocument } from "yaml";
 import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin, ServerConfigurationRequiredError } from "./server-url.ts";
+import { validateDigitalOceanUploadSource, digitalOceanStorageOrigin } from "./digitalocean-destinations.ts";
 import { awsWirePath, awsWireProfile } from "./aws-wire.ts";
 import { awsJsonContract, awsJsonContracts, awsJsonSigningProfile } from "./aws-json.ts";
 import { awsQueryContract, awsQueryContracts, awsQuerySigningProfile } from "./aws-query.ts";
@@ -187,6 +188,7 @@ export function operationServerUrl(document: ObjectValue, operation: Pick<Operat
   const paths = object(document.paths, "paths");
   const item = resolve(paths[operation.path], document, operation.path);
   const value = object(item[operation.method.toLowerCase()], `${operation.method} ${operation.path}`);
+  if (value["x-operations-private-path"] === "digitalocean-upload") validateDigitalOceanUploadSource(document, value, item);
   const privateEndpoint = telegramPrivateEndpoint(document, value, item);
   if (privateEndpoint) {
     if (!/^(?:GET|POST)$/.test(operation.method) || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path))
@@ -198,7 +200,7 @@ export function operationServerUrl(document: ObjectValue, operation: Pick<Operat
   const path = () => serverUrl(item.servers, top, operation.path);
   const server = serverUrl(value.servers, path, `${operation.method} ${operation.path}`);
   if (!server) unsupported(`${operation.method} ${operation.path}: a usable absolute HTTP or HTTPS server URL is required.`);
-  return server;
+  return value["x-operations-private-path"] === "digitalocean-upload" ? digitalOceanStorageOrigin(server) : server;
 }
 
 function generatedGroups(document: ObjectValue, operations: Operation[], id: string): CatalogGroup[]

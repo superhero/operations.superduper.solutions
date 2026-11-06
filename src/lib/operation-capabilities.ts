@@ -40,7 +40,8 @@ export function withOperationCapabilities<T extends Operation>(operation: T, iss
   });
   const requirements: CapabilityRequirement[] = [];
   if (securityRequiresCredentials(operation.security) && operation.security?.some(supportedSecurityAlternative)) requirements.push({ code: "credentials", message: operation.privatePath
-    ? "Select a private connection for this operation." : "Select and authorize credentials or a matching connection for a supported alternative." });
+    ? operation.privatePath === "digitalocean-upload" ? "Select the private signed-URL credential or a matching connection."
+      : "Select a private connection for this operation." : "Select and authorize credentials or a matching connection for a supported alternative." });
   if (unique.some(issue => issue.code === "configuration-required")) requirements.push({ code: "server", message: "Configure an absolute server URL for this schema." });
   if (operation.method === "RPC") requirements.push(
     { code: "native-host", message: "Pair a compatible runtime using the trusted companion and exact allowed application origin." },

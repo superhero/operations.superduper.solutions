@@ -2627,10 +2627,18 @@
       {
         "id": "digitalocean-bearer-permissions",
         "version": 1
+      },
+      {
+        "id": "digitalocean-destinations",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "5626dec576f33c3e55f04713ea83242bb246bec91c4bb623587a6a900b378738",
-    "effectiveBytes": 3317876
+    "effectiveSha256": "2d0f73366ef14b602b21b4921be67da03b702dfeb0ab39dcc23c810baadc6f0b",
+    "effectiveBytes": 3321281
   },
   {
     "id": "discord",

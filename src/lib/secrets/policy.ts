@@ -18,7 +18,8 @@ import { validateMultipartParts } from "../multipart-parts.ts";
 import { validS3FilesModel, s3SigningEndpoint } from "../s3-files.ts";
 import { cloudflareOrigin, configureCloudflareUpload, cloudflareUploadProfile, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
-import { serverUrlHasPlaceholder, telegramBotOrigin, telegramPathSecurity } from "../server-url.ts";
+import { serverUrlHasPlaceholder, telegramBotOrigin, telegramPathSecurity, digitalOceanPathSecurity } from "../server-url.ts";
+import { digitalOceanStorageOrigin, validDigitalOceanUpload } from "../digitalocean-destinations.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
 const encoder = new TextEncoder();
@@ -112,9 +113,11 @@ function validateOperation(operation: Operation): void
   }
   if (operation.security?.some(alternative => !Array.isArray(alternative))) throw new VaultError("PERMISSION");
   if (operation.privatePath !== undefined) {
-    if (operation.privatePath !== "telegram-bot" || !/^(?:GET|POST)$/.test(operation.method)
-      || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path)
-      || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(telegramPathSecurity())) throw new VaultError("PERMISSION");
+    if (operation.privatePath === "digitalocean-upload") {
+      if (!validDigitalOceanUpload(operation) || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(digitalOceanPathSecurity())) throw new VaultError("PERMISSION");
+    } else if (operation.privatePath !== "telegram-bot" || !/^(?:GET|POST)$/.test(operation.method)
+        || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path)
+        || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(telegramPathSecurity())) throw new VaultError("PERMISSION");
   } else if (operation.security?.some(option => option.some(scheme => scheme.path !== undefined))) throw new VaultError("PERMISSION");
   if (operation.security !== undefined && !operation.privatePath)
   {
@@ -189,7 +192,8 @@ export async function approvedOperation(operation: Operation, origin: string): P
     if (sanitized.cloudflareUpload && normalized !== cloudflareOrigin) throw new VaultError("PERMISSION");
     if (sanitized.security?.some(option => option.some(scheme => scheme.kind === "oauth1"))
       && (normalized !== "https://api.x.com" || !sanitized.path.startsWith("/2/"))) throw new VaultError("PERMISSION");
-    if (sanitized.privatePath && normalized !== telegramBotOrigin) throw new VaultError("PERMISSION");
+    if (sanitized.privatePath === "digitalocean-upload") digitalOceanStorageOrigin(normalized);
+    else if (sanitized.privatePath && normalized !== telegramBotOrigin) throw new VaultError("PERMISSION");
     if (normalized === telegramBotOrigin && !sanitized.privatePath) throw new VaultError("PERMISSION");
     const bytes = encoder.encode(canonicalPolicyValue({ origin: normalized, operation: sanitized }));
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));

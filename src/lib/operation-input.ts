@@ -7,6 +7,7 @@ import { useGitlabJsonBody } from "./gitlab-form.ts";
 import { mistralVariantRoute, mistralVariantInputs } from "./mistral-variant.ts";
 import { gmailMessageMode, prepareGmailMessage, gmailMimeInputKey } from "./gmail-message.ts";
 import { mediaUploadMode, prepareMediaUpload, mediaUploadInputKey } from "./media-upload.ts";
+import { validDigitalOceanUpload, prepareDigitalOceanAgent } from "./digitalocean-destinations.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
 import { awsRestUsesS3Keys } from "./aws-rest.ts";
 import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
@@ -216,7 +217,8 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if (operationBlockReason(operation)) throw new Error(operationBlockReason(operation));
   if ((operation.credentialResult !== undefined || operation.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new Error("This operation returns credentials. Its private result adoption contract has not been qualified.");
   responseStreamProfile(operation.responseStream);
-  if (operation.privatePath !== undefined && operation.privatePath !== "telegram-bot") throw new Error("This private token path is not supported.");
+  if (operation.privatePath !== undefined && operation.privatePath !== "telegram-bot"
+    && (operation.privatePath !== "digitalocean-upload" || !validDigitalOceanUpload(operation))) throw new Error("This private token path is not supported.");
   const route = literalQueryRoute(operation.path);
   let variant: ReturnType<typeof mistralVariantRoute>;
   try { variant = mistralVariantRoute(operation); values = mistralVariantInputs(operation, values); }
@@ -357,6 +359,11 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     }
   }
   if (operation.cloudflareUpload === "workers-upload") { request.bodyFormat = "cloudflare-assets"; request.contentType = "multipart/form-data"; }
+  if (operation.privatePath === "digitalocean-upload") {
+    const type = request.headers?.["Content-Type"] ?? "application/octet-stream";
+    if (!/^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+$/.test(type)) throw new InputValidationError("header:Content-Type", "Use the exact valid media type expected by the signed upload URL.");
+    request.contentType = type as BodyMediaType;
+  }
   if (["workers-version", "workers-module", "platform-module"].includes(operation.cloudflareUpload ?? "")) {
     request.bodyFormat = "cloudflare-module"; request.contentType = "multipart/form-data";
   }
@@ -367,6 +374,6 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     return { ...request, path: wire.path, query: {}, headers: { "X-Amz-Target": wire.headers["X-Amz-Target"] },
       body: new TextDecoder().decode(wire.bytes), bodyFormat: "text", contentType: wire.headers["Content-Type"] as `${string}/${string}` };
   }
-  return prepareMediaUpload(operation, operation.awsRest ? prepareAwsRestRequest(operation, request)
-    : operation.awsWire ? prepareAwsWireRequest(operation, request) : prepareGmailMessage(request, gmail), media);
+  return prepareDigitalOceanAgent(operation, prepareMediaUpload(operation, operation.awsRest ? prepareAwsRestRequest(operation, request)
+    : operation.awsWire ? prepareAwsWireRequest(operation, request) : prepareGmailMessage(request, gmail), media));
 }

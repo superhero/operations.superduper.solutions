@@ -185,7 +185,7 @@ export function serviceOperationSecurity(document: Value, source: Value, operati
   const declaration = source.security === undefined ? document.security : source.security;
   const permissionSource = Object.hasOwn(source, "x-credential-permissions") ? source
     : source.security === undefined ? document : {};
-  if (!Array.isArray(declaration)) {
+  if (operation.privatePath || !Array.isArray(declaration)) {
     const result = extractOperationSecurity(document, source);
     // With no security declaration, supplied permission metadata is rejected.
     // A valid permissions result requires an array declaration handled below.

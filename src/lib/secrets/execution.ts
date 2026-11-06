@@ -17,6 +17,7 @@ import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding
 import { workflowResponseLifetime, responseAccept, isJsonResponseStream, type ResponseProgressCallback, type ResponseValueCallback } from "../workflow-response-stream.ts";
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
+import { digitalOceanUploadUrl } from "./digitalocean-upload.ts";
 import { managedAtprotoSecrets } from "./atproto-state.ts";
 import { managedGitlabSecrets, validateGitlabTokenState } from "./gitlab-oauth.ts";
 import { validateGitlabMetadata } from "./gitlab-config.ts";
@@ -121,7 +122,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     privateUpload = !!approved.operation.cloudflareUpload;
     if (privateUpload && !options.uploadSessions) throw new VaultError("PERMISSION");
     const savedConnection = !!bindingSnapshot.connection;
-    if (approved.operation.privatePath && !savedConnection) throw new VaultError("PERMISSION");
+    if (approved.operation.privatePath === "telegram-bot" && !savedConnection) throw new VaultError("PERMISSION");
     const connection = await resolveHttpConnection(approved, bindingSnapshot, credentialSnapshot);
     bindingSnapshot = connection.binding;
     const variables = options.variables === undefined ? [] : validateVaultVariableInputs(options.variables);
@@ -252,9 +253,11 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     if (!approved.operation.s3Files && !awsRestUsesS3Keys(approved.operation)) validateCredentialPath(request.path);
     const restTarget = approved.operation.awsRest ? awsRestRequestTarget(approved.operation, approved.origin, request) : undefined;
+    const signedUpload = approved.operation.privatePath === "digitalocean-upload" ? digitalOceanUploadUrl(approved, request.path, pathToken!) : undefined;
+    if (signedUpload) secrets = [...new Set([...secrets, ...signedUpload.secrets.flatMap(value => privateUrlRedactions(value))])].sort((a, b) => b.length - a.length);
     const url = approved.operation.awsQuery ? awsQueryTarget(approved.operation, approved.origin, request) : restTarget ? restTarget.url
       : approved.operation.s3Files ? s3ObjectUrl(approved.origin, request.path)
-      : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken!) : new URL(`${approved.origin}${request.path}`);
+      : signedUpload ? signedUpload.url : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken!) : new URL(`${approved.origin}${request.path}`);
     if (approved.operation.s3Files) publicRequest = { ...publicRequest, path: url.pathname };
     if (approved.operation.privatePath) secrets.push(...privateUrlRedactions(url.href));
     const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));
@@ -301,6 +304,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (privateUpload) options.uploadSessions!.assertCurrent(uploadLease);
     if (managed && managed.expiresAt <= Date.now()) throw new VaultError("AUTHORIZATION");
     if (awsSignedAt !== undefined && Math.abs(Date.now() - awsSignedAt) > 60000) throw new VaultError("PERMISSION");
+    if (signedUpload && signedUpload.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     phase = "request";
     const init: RequestInit = {
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,

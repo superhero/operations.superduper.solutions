@@ -12,7 +12,7 @@ import type { Operation } from './catalog.ts';
 type Value = Record<string, any>;
 export type PrivateResultResponse = { status: number; path: string[]; required: boolean[]; nullable: boolean[]; parentFields: (string[] | null)[]; leaf: Value };
 export type PrivateResultContract = { catalog: string; method: string; path: string; responses: PrivateResultResponse[];
-  privateInputs: string[]; masked: boolean; exampleOnly: boolean; awsJson?: { id: string; revision: string }; awsQuery?: { id: string; revision: string } };
+  privateInputs: string[]; masked: boolean; exampleOnly: boolean; awsJson?: { id: string; revision: string }; awsQuery?: { id: string; revision: string }; digitalOceanUpload?: true };
 const contracts = structuredClone(data) as { version: number; sources: Record<string, { title: string; version: string; openapi: string; origins: string[]; sha256: string }>;
   profiles: Record<string, PrivateResultContract> };
 export const privateResultVersion = 'private-result-v1';
@@ -115,6 +115,8 @@ export function bindCredentialResults(document: Value): void {
         schema = { type: 'object', required: ['token'], properties: { token: { type: 'string' } } };
       }
       media.schema = project(schema, response, document); delete media.example; delete media.examples;
+      if (contract.digitalOceanUpload) media.schema.properties.upload_origin = { type: "string", format: "uri", readOnly: true,
+        description: "Public storage origin for the upload connection. The signed path and query remain private in Secrets." };
     }
     operation['x-upstream-private-result-responses'] = operation.responses;
     operation.responses = responses; operation['x-operations-credential-result'] = true;

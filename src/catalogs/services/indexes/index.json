@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "1888a23a2cb9fdb305f00ad1329569b1ed3f7605d512a9700086038746c3351a",
+  "adapterRevision": "0208e72c806cb6f7a5b5e1af04884141c03e41acb7b11020b3e816337e79c47b",
   "indexes": [
     {
       "id": "anthropic",
@@ -1472,15 +1472,15 @@
     },
     {
       "id": "digitalocean",
-      "sourceRevision": "5626dec576f33c3e55f04713ea83242bb246bec91c4bb623587a6a900b378738",
-      "bytes": 318103,
-      "compressedBytes": 24357,
-      "sha256": "2c01f3e13d80a1f5b75762ef474e3ae7193a373514993ad7b0d8686af02bbbf9",
+      "sourceRevision": "2d0f73366ef14b602b21b4921be67da03b702dfeb0ab39dcc23c810baadc6f0b",
+      "bytes": 318209,
+      "compressedBytes": 24320,
+      "sha256": "ff92e194d7d311919e868c07f81e48efb7bcc173627d5274e15b1ee99be33e26",
       "summary": {
         "name": "DigitalOcean API",
         "serverUrl": "https://api.digitalocean.com",
         "operationCount": 855,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {

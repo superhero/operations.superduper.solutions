@@ -5,6 +5,7 @@ import type { PrivateResultContract } from '../credential-results.ts';
 import { VaultError, vaultLimits } from './types.ts';
 import { prepareAwsJsonCredentialResults } from './aws-json-results.ts';
 import { prepareAwsQueryCredentialResults } from './aws-query-results.ts';
+import { prepareDigitalOceanUploadResult } from './digitalocean-upload.ts';
 export type AcquiredValue = { value: string; field: string };
 export type AcquiredReference = { credentialId: string; label: string };
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -13,6 +14,7 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 export function prepareCredentialResults(contract: PrivateResultContract, status: number, input: unknown) {
   if (contract.awsJson) return prepareAwsJsonCredentialResults(contract, status, input);
   if (contract.awsQuery) return prepareAwsQueryCredentialResults(contract, status, input);
+  if (contract.digitalOceanUpload) return prepareDigitalOceanUploadResult(status, input);
   const responses = contract.responses.filter(item => item.status === status);
   if (!responses.length || !input || typeof input !== 'object') throw new VaultError('INVALID');
   const body = structuredClone(input), values: AcquiredValue[] = [], placements: { parent: Record<string, unknown> | unknown[]; key: string; index: number }[] = [];

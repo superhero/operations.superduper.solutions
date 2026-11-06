@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { WorkflowBodyError } from "./workflow-body-error.ts";
+import { openaiChatAccumulator } from "./openai-chat-stream.ts";
 
-export type ResponseStreamProfile = "openai-responses" | "ollama-chat" | "ollama-generate" | "sse-json" | "ndjson" | "mistral-conversation" | "mistral-transcription";
+export type ResponseStreamProfile = "openai-responses" | "openai-chat" | "ollama-chat" | "ollama-generate" | "sse-json" | "ndjson" | "mistral-conversation" | "mistral-transcription";
 export type ResponseProgress = { bytes: number; events: number };
 export type ResponseProgressCallback = (progress: ResponseProgress) => void;
 export type ResponseValue = { body: unknown; status: number };
@@ -13,16 +14,16 @@ export const isMistralResponseStream = (profile: ResponseStreamProfile | undefin
 export const streamLimits = { bytes: 8 * 1024 * 1024, frameCharacters: 1024 * 1024, events: 10_000,
   depth: 64, nodes: 100_000, chunks: 65_536, idleMs: 15_000, runMs: 120_000, progressMs: 500 } as const;
 export const isResponseStreamProfile = (value: unknown): value is ResponseStreamProfile =>
-  value === "openai-responses" || value === "ollama-chat" || value === "ollama-generate" || value === "sse-json" || value === "ndjson" || value === "mistral-conversation" || value === "mistral-transcription";
+  value === "openai-responses" || value === "openai-chat" || value === "ollama-chat" || value === "ollama-generate" || value === "sse-json" || value === "ndjson" || value === "mistral-conversation" || value === "mistral-transcription";
 export function responseStreamProfile(value: unknown): ResponseStreamProfile | undefined {
   if (value === undefined) return;
   if (isResponseStreamProfile(value)) return value;
   throw new Error("This response streaming profile is not supported.");
 }
-export const streamMediaType = (profile: ResponseStreamProfile): string => profile === "openai-responses" || profile === "sse-json" || isMistralResponseStream(profile) ? "text/event-stream" : "application/x-ndjson";
+export const streamMediaType = (profile: ResponseStreamProfile): string => profile === "openai-responses" || profile === "openai-chat" || profile === "sse-json" || isMistralResponseStream(profile) ? "text/event-stream" : "application/x-ndjson";
 export function responseAccept(profile: ResponseStreamProfile | undefined, fallback: string | undefined, body: unknown): string {
   const stream = object(body) ? body.stream : undefined;
-  return profile && stream !== false && (profile !== "openai-responses" || stream === true) ? streamMediaType(profile) : fallback ?? "application/json";
+  return profile && stream !== false && (!["openai-responses", "openai-chat"].includes(profile) || stream === true) ? streamMediaType(profile) : fallback ?? "application/json";
 }
 export function isResponseProgress(value: unknown): value is ResponseProgress {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -68,7 +69,8 @@ export async function readResponseStream(response: Response, profile: ResponseSt
   if (signal.aborted) { void response.body?.cancel().catch(() => {}); throw new WorkflowBodyError("CANCELLED"); }
   if (!response.body) throw new WorkflowBodyError("INCOMPLETE");
   const reader = response.body.getReader(), decoder = new TextDecoder("utf-8", { fatal: true });
-  const mistral = isMistralResponseStream(profile), sse = profile === "openai-responses" || mistral;
+  const mistral = isMistralResponseStream(profile), sse = profile === "openai-responses" || profile === "openai-chat" || mistral;
+  const chat = profile === "openai-chat" ? openaiChatAccumulator() : undefined;
   const mistralEvents: { event: string; data: Record<string, any> }[] = [];
   const mistralTypes = new Set(profile === "mistral-conversation" ? ["conversation.response.started", "conversation.response.done", "conversation.response.error",
     "message.output.delta", "tool.execution.started", "tool.execution.delta", "tool.execution.done", "agent.handoff.started", "agent.handoff.done", "function.call.delta"]
@@ -89,11 +91,13 @@ export async function readResponseStream(response: Response, profile: ResponseSt
   }
   function frame(source: string, name = "") {
     if (++events > streamLimits.events) throw new WorkflowBodyError("LIMIT");
+    if (chat && source.trim() === "[DONE]") { result = chat.finish(); validStreamJson(result); return; }
     // NDJSON lines and accumulated SSE data are bounded before reaching this decoder.
     let value: unknown;
     try { value = JSON.parse(source); } catch { throw new WorkflowBodyError("FRAME"); }
     validStreamJson(value);
     if (!object(value)) throw new WorkflowBodyError("FRAME");
+    if (chat) { chat.frame(value); return; }
     if (mistral) {
       const type = typeof value.type === "string" ? value.type : name;
       if (!mistralTypes.has(type) || name && name !== "message" && name !== type) throw new WorkflowBodyError("FRAME");

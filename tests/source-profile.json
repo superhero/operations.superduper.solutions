@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/digitalocean-destinations.test.mjs",
     "src/upload-bodies.test.mjs",
     "src/cloudflare-logo.test.mjs",
     "src/commerce-authentication.test.mjs",
@@ -144,6 +145,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/digitalocean-destinations.feature",
     "src/upload-bodies.feature",
     "src/cloudflare-logo.feature",
     "src/commerce-authentication.feature",

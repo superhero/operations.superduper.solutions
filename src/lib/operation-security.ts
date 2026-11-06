@@ -1,7 +1,8 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { telegramPrivateEndpoint, telegramPathSecurity } from "./server-url.ts";
+import { telegramPrivateEndpoint, telegramPathSecurity, digitalOceanPathSecurity, type PrivatePathProfile } from "./server-url.ts";
+import { validateDigitalOceanUploadSource } from "./digitalocean-destinations.ts";
 import { awsRestProfile, awsSigningMarker } from "./aws-signing.ts";
 import { awsRestSigningProfile, type AwsRestSigningProfile } from "./aws-rest.ts";
 import { awsWireSigningProfiles, type AwsWireSigningProfile } from "./aws-wire.ts";
@@ -15,7 +16,7 @@ export type OperationSecurityScheme =
   | { name: string; kind: "oauth1"; header: "Authorization"; profile: "x-hmac-sha1"; query?: never; path?: never }
   | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never; path?: never }
   | { name: string; kind: "apiKey"; query: string; header?: never; path?: never }
-  | { name: string; kind: "apiKey"; path: "telegram-bot"; header?: never; query?: never };
+  | { name: string; kind: "apiKey"; path: PrivatePathProfile; header?: never; query?: never };
 export type UnavailableSecurityScheme = { name: string; kind: "unsupported"; reason: string } &
   ({ header: string; query?: never; path?: never } | { query: string; header?: never; path?: never });
 export type OperationSecurityRequirement = OperationSecurityScheme | UnavailableSecurityScheme;
@@ -152,6 +153,10 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean, 
 function operationSecurity(document: ObjectValue, operation: ObjectValue, allowUnsupported: boolean): OperationSecurity | undefined
 {
   if (telegramPrivateEndpoint(document, operation)) return telegramPathSecurity();
+  if (operation["x-operations-private-path"] === "digitalocean-upload") {
+    validateDigitalOceanUploadSource(document, operation);
+    return digitalOceanPathSecurity();
+  }
   const declaration = operation.security === undefined ? document.security : operation.security;
   if (declaration === undefined) return undefined;
   if (!Array.isArray(declaration)) throw new Error("Security requirements must be an array.");
