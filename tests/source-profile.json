@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/commerce-authentication.test.mjs",
     "src/gmail-messages.test.mjs",
     "src/mistral-variants.test.mjs",
     "src/structured-forms.test.mjs",
@@ -141,6 +142,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/commerce-authentication.feature",
     "src/inline-worker-codec.feature",
     "src/literal-query.feature",
     "src/multipart-files.feature",

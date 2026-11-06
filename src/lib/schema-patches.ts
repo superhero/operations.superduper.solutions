@@ -26,6 +26,7 @@ import { bindBitbucketContentParameters } from "./parameter-content.ts";
 import { bindTrelloParameterArrays } from "./trello-parameter-arrays.ts";
 import { bindCatalogPaths } from "./catalog-path-bindings.ts";
 import { bindAtlassianDcAuthentication } from "./atlassian-dc-authentication.ts";
+import { bindCommerceAuthentication } from "./atlassian-commerce-authentication.ts";
 import { bindProviderPaths } from "./provider-path-bindings.ts";
 import { bindAtlassianServers } from "./atlassian-server-bindings.ts";
 import { configureS3Files, s3SigningProfile } from "./s3-files.ts";
@@ -33,7 +34,7 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
 export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
 export const multipartFileContracts: SchemaPatch = { id: "multipart-file-contracts", version: 1 };
 export const gmailMessageContracts: SchemaPatch = { id: "gmail-message-contracts", version: 1 };
@@ -53,6 +54,7 @@ export const bitbucketContentParameters: SchemaPatch = { id: "bitbucket-content-
 export const trelloParameterArrays: SchemaPatch = { id: "trello-parameter-arrays", version: 1 };
 export const catalogPathBindings: SchemaPatch = { id: "catalog-path-bindings", version: 1 };
 export const atlassianDcAuthentication: SchemaPatch = { id: "atlassian-dc-authentication", version: 1 };
+export const commerceAuthentication: SchemaPatch = { id: "atlassian-commerce-authentication", version: 1 };
 export const ecbRegistrationParameters: SchemaPatch = { id: "ecb-registration-parameters", version: 1 };
 export const ecbRegistrationSourceSha256 = "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020";
 export const bigqueryJobMetadata: SchemaPatch = { id: "bigquery-job-metadata", version: 1 };
@@ -101,6 +103,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "trello-parameter-arrays" ? "Trello primitive parameter arrays"
     : patch.id === "catalog-path-bindings" ? "Reviewed catalog path parameter bindings"
     : patch.id === "atlassian-dc-authentication" ? "Atlassian Data Center bearer permissions"
+    : patch.id === "atlassian-commerce-authentication" ? "Commerce access token authentication"
     : patch.id === "ecb-registration-parameters" ? "ECB registration path parameters"
     : patch.id === "bigquery-job-metadata" ? "BigQuery JSON job metadata"
     : patch.id === "google-storage-media" ? "Google Storage media upload"
@@ -659,7 +662,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "gmail-message-contracts") bindGmailMessages(document);
@@ -681,6 +684,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "trello-parameter-arrays") bindTrelloParameterArrays(document);
     else if (patch.id === "catalog-path-bindings") bindCatalogPaths(document);
     else if (patch.id === "atlassian-dc-authentication") bindAtlassianDcAuthentication(document);
+    else if (patch.id === "atlassian-commerce-authentication") bindCommerceAuthentication(document);
     else if (patch.id === "ecb-registration-parameters") registrationParameters(document);
     else if (patch.id === "bigquery-job-metadata") bigqueryMetadata(document);
     else if (patch.id === "google-storage-media") storageMedia(document);

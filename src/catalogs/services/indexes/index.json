@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "ffb615973e40afc0a0aeb0fcedb1e7ddfeecb7d150a8c77e0b6cec3a78fcb932",
+  "adapterRevision": "0e67ba7124b94dc2754cbcb40c462578832c7d8d60eabf04a85341ab3d29c6ba",
   "indexes": [
     {
       "id": "anthropic",
@@ -207,15 +207,15 @@
     },
     {
       "id": "atlassian-commerce",
-      "sourceRevision": "97fab47825e876a97dc4160999bfd30f0e14bbe298c63f5ee31a5806501a7a9b",
-      "bytes": 13924,
-      "compressedBytes": 1695,
-      "sha256": "d25815e9123dadd8e38510e3e00e6dcf195d02476e5e0d1a2825ef2e18ad476a",
+      "sourceRevision": "530288b8d7166cc62bc95fbd2dbb127924673cab7ae8f88ca55c32accb05b0f4",
+      "bytes": 15720,
+      "compressedBytes": 1628,
+      "sha256": "4c95771815bd3f86fa64d9df5c6b4fe630a9c9143d0f62170147ec32d2e1d895",
       "summary": {
         "name": "Commerce Cloud REST API",
         "serverUrl": "https://api.atlassian.com/commerce/api",
         "operationCount": 40,
-        "unavailableCount": 6
+        "unavailableCount": 0
       }
     },
     {

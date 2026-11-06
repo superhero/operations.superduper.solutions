@@ -328,12 +328,16 @@
     "compressedBytes": 53641,
     "patches": [
       {
+        "id": "atlassian-commerce-authentication",
+        "version": 1
+      },
+      {
         "id": "catalog-path-bindings",
         "version": 1
       }
     ],
-    "effectiveSha256": "97fab47825e876a97dc4160999bfd30f0e14bbe298c63f5ee31a5806501a7a9b",
-    "effectiveBytes": 455926
+    "effectiveSha256": "530288b8d7166cc62bc95fbd2dbb127924673cab7ae8f88ca55c32accb05b0f4",
+    "effectiveBytes": 456312
   },
   {
     "id": "atlassian-commerce-it",
