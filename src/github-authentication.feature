@@ -13,7 +13,7 @@ Feature: GitHub operation authentication
     Then GitHub public choices dispatch without credentials and cannot unlock private routes
 
   Scenario: GitHub OAuth app Basic credentials and token inputs stay private
-    Then GitHub OAuth app references dispatch Basic privately while credential results remain blocked
+    Then GitHub OAuth app references dispatch Basic privately while credential results stay private
 
   @coverage-gaps
   Scenario: GitHub corrections retain provenance and reject changed contracts

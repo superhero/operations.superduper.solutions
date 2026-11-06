@@ -314,7 +314,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       {#if view.vaultVariables?.length && (!view.operation.security?.length || credentialBinding && view.operation.security[credentialBinding.alternative]?.length === 0)}<VaultVariableAccess disabled={busy || executed} />{/if}
       <form id={operationFormId} onsubmit={execute} novalidate>
-        {#if view.operation.security?.length}
+        {#if view.operation.security?.length || view.operation.credentialResultProfile}
           {#key view.id}
             <CredentialBindingSelector operation={view.operation} initial={view.credentialBinding} variables={view.vaultVariables} {values} disabled={busy || executed} portalZIndex={90}
               onChange={binding => {

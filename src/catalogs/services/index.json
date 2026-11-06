@@ -162,10 +162,14 @@
       {
         "id": "atlassian-server-bindings",
         "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "1770d858b48117ef5501810378ae01c41cfa182a405694934923ee4c6af8054e",
-    "effectiveBytes": 275034
+    "effectiveSha256": "be29f7655883940ac2d317a163cb4754a66406bfb4829e17d71182b1e5c49176",
+    "effectiveBytes": 275878
   },
   {
     "id": "atlassian-automation",
@@ -2146,10 +2150,14 @@
       {
         "id": "elevenlabs-authentication",
         "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "27493b88c935cdb3d67c4e95c6df3e7f93a9b8afe876e8f3fe2f8ad5180833fa",
-    "effectiveBytes": 2784202
+    "effectiveSha256": "120b511772210c021f0bdde32a469b6f2c125f99d716e7b81e484646d9f83565",
+    "effectiveBytes": 2792652
   },
   {
     "id": "alfred",
@@ -2220,10 +2228,14 @@
       {
         "id": "github-authentication",
         "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "472100e160a2a52bf0ab574584e40026cc4677f4304ecb16580142447b1ee9f0",
-    "effectiveBytes": 7455275
+    "effectiveSha256": "37d0c4e3db6d0fbfd166bc8beea07560cd039a95d445daf689d7dc9c7784946e",
+    "effectiveBytes": 7492305
   },
   {
     "id": "gitlab",

@@ -13,7 +13,8 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { credentialResultSources } from '../src/lib/credential-results.ts';
 import { bitbucketContentSourceSha256 } from '../src/lib/parameter-content.ts';
 import { trelloParameterSourceSha256 } from '../src/lib/trello-parameter-arrays.ts';
 import { catalogPathBindingSources } from '../src/lib/catalog-path-bindings.ts';
@@ -155,6 +156,8 @@ for (const source of sources) {
     throw new Error('Trello parameter arrays require requalification before updating the pinned native source.');
   if (source.id === 'bitbucket-dc' && sha(json) !== bitbucketContentSourceSha256)
     throw new Error('Bitbucket content parameters require requalification before updating the pinned native source.');
+  if (Object.hasOwn(credentialResultSources, source.id) && sha(json) !== credentialResultSources[source.id])
+    throw new Error('Private credential results require requalification before updating the pinned native source.');
   const patches = source.id === 'ecb' ? [ecbRegistrationParameters]
     : source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
     : source.profile === 'atlassian-dc-authentication' ? [atlassianDcAuthentication]
@@ -176,6 +179,7 @@ for (const source of sources) {
   if (Object.hasOwn(catalogPathBindingSources, source.id)) patches.push(catalogPathBindings);
   if (source.id === 'bitbucket-dc') patches.push(bitbucketContentParameters);
   if (source.id === 'trello') patches.push(trelloParameterArrays);
+  if (Object.hasOwn(credentialResultSources, source.id)) patches.push(privateCredentialResults);
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

@@ -51,7 +51,8 @@ function credential(value: VaultCredential): VaultCredential {
   ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections", "nativeConnections", "dockerConnections", "oauthState"]);
   if (!validId(value.id) || typeof value.label !== "string" || !value.label.trim() || value.label.length > 120
     || !["bearer", "apiKey", "secret"].includes(value.kind) || typeof value.value !== "string" || !value.value
-    || /[^\x21-\x7e]/.test(value.value) || value.value.length > vaultLimits.secretBytes
+    || !value.value.isWellFormed() || value.kind !== "secret" && /[^\x21-\x7e]/.test(value.value)
+    || new TextEncoder().encode(value.value).byteLength > vaultLimits.secretBytes
     || !Array.isArray(value.grants) || value.grants.length > 256) throw new VaultError("INVALID");
   canonicalJSON(value, vaultLimits.recordBytes);
   if (value.connections !== undefined) {
@@ -870,6 +871,24 @@ export class VaultSession {
     }
     return executeCredentialed(descriptor, values, binding, records, {
       uploadSessions: this.uploadSessions, privateSecrets: previousSecrets,
+      adoptPrivateResults: async (acquired, acquisitionSignal) => {
+        const guard = async () => { this.guard(generation); await this.assertSchema(descriptor); await this.assertCurrent(); this.guard(generation);
+          if (signal?.aborted || acquisitionSignal.aborted) throw new VaultError("CANCELLED"); };
+        await guard(); const latest = await this.records();
+        // A concurrent lock, mutation or lost authorization cannot commit a partial acquisition.
+        await resolveHttpConnection(descriptor, binding, latest);
+        const references = acquired.map(item => {
+          let record = latest.find(record => record.value === item.value);
+          if (!record) {
+            const id = crypto.randomUUID();
+            record = { id, label: `${descriptor.operation.name.slice(0, 48)} · ${item.field.slice(0, 16)} · ${id}`, kind: "secret", value: item.value, grants: [] };
+            latest.push(record);
+          }
+          return { credentialId: record.id, label: record.label };
+        });
+        await guard(); await this.save(latest, undefined, undefined, undefined, acquisitionSignal); await guard();
+        return references;
+      },
       ...(onProgress ? { onProgress: progress => { this.guard(generation); onProgress(progress); } } : {}),
       ...(onValue ? { onValue: value => { this.guard(generation); onValue(value); } } : {}),
       ...(signal ? { signal } : {}), ...(variables ? { variables } : {}), assertCurrent: async () => {

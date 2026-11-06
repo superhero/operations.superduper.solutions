@@ -88,7 +88,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
-      if (context?.variables !== undefined || context?.binding.connection) throw new VaultError("PERMISSION");
+      if (canonical.credentialResult || context?.variables !== undefined || context?.binding.connection) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
       if (canonical.cloudflareUpload || canonical.privatePath || new URL(origin).origin === telegramBotOrigin) throw new VaultError("PERMISSION");
@@ -173,7 +173,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       const hasVariables = invocation?.variables !== undefined;
       if (invocation?.binding.connection && !canonical.security?.length) throw new VaultError("PERMISSION");
       if (canonical.cloudflareUpload && !canonical.security?.length) throw new VaultError("PERMISSION");
-      if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal, undefined, onProgress, onValue);
+      if (!canonical.security?.length && !hasVariables && !canonical.credentialResult) return anonymous.execute(operation, values, signal, undefined, onProgress, onValue);
       if (!invocation) throw new VaultError("PERMISSION");
       const submitted = { ...values };
       const { origin } = workflowExecutionForOperation(canonical);
@@ -190,7 +190,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
         if (!alternative.length) throw new VaultError("PERMISSION");
         return credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue);
       }
-      if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue) : anonymous.execute(operation, submitted, signal, invocation, onProgress, onValue);
+      if (!alternative.length) return hasVariables || canonical.credentialResult ? credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue) : anonymous.execute(operation, submitted, signal, invocation, onProgress, onValue);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name)
           || (scheme.kind === "basic" ? !isBasicCredentialReference(invocation.binding.credentials[scheme.name])

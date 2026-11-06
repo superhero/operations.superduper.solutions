@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { supportsCredentialResults } from "./credential-results.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
 import { prepareAwsWireRequest } from "./aws-wire.ts";
 import { encodeS3Key, validateS3Bucket, s3MetadataHeaders } from "./s3-files.ts";
@@ -179,7 +180,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if (operation.protocol === "json-rpc" || operation.rpc !== undefined || operation.method === "RPC")
     throw new Error(operation.unavailableReason ?? "Native RPC execution requires a paired runtime.");
   if (operationBlockReason(operation)) throw new Error(operationBlockReason(operation));
-  if (operation.credentialResult !== undefined) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
+  if ((operation.credentialResult !== undefined || operation.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new Error("This operation returns credentials. Its private result adoption contract has not been qualified.");
   responseStreamProfile(operation.responseStream);
   if (operation.privatePath !== undefined && operation.privatePath !== "telegram-bot") throw new Error("This private token path is not supported.");
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };

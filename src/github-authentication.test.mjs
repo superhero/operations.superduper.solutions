@@ -36,7 +36,7 @@ function binding(descriptor, name, id) {
 
 Then('GitHub authentication covers the native inventory and separates public access from permission-free access', async () => {
   const { source, published, corrected, inspection, models, contracts } = await fixture();
-  assert.deepEqual(source.patches, [githubAuthentication]);
+  assert.deepEqual(source.patches, [githubAuthentication, { id:"private-credential-results", version:1 }]);
   assert.equal(source.sha256, 'f9293195f0097a6ae134f8652fca11d15dc26638ee312dd3ce35d5723d56925a');
   assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
   assert.equal(createHash('sha256').update(JSON.stringify(corrected)).digest('hex'), source.effectiveSha256);
@@ -44,7 +44,7 @@ Then('GitHub authentication covers the native inventory and separates public acc
   assert.equal(corrected.security, undefined, 'No blanket global bearer requirement.');
   assert.equal(inspection.operations.length, 1242);
   assert.equal(Object.keys(contracts.operations).length, 1242);
-  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 1144);
+  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 1162);
   let publicCount = 0, unreviewed = 0, results = 0;
   for (const [id, contract] of Object.entries(contracts.operations)) {
     const native = published.paths[contract.path][contract.method];
@@ -57,7 +57,8 @@ Then('GitHub authentication covers the native inventory and separates public acc
     else assert.ok(models.get(id).unavailableReason, 'An unqualified profile cannot dispatch anonymously.');
     if (contract.anonymous) publicCount++;
     if (contract.profiles.includes('unreviewed')) { unreviewed++; assert.match(models.get(id).unavailableReason, /GitHubAuthenticationNotReviewed/); }
-    if (contract.credentialFields?.length) { results++; assert.equal(models.get(id).credentialResult, true); assert.ok(models.get(id).unavailableReason); }
+    if (contract.credentialFields?.length) { results++; assert.equal(models.get(id).credentialResult, true); assert.equal(models.get(id).credentialResultProfile, "private-result-v1");
+      if (!contract.profiles.includes("unreviewed")) assert.equal(models.get(id).unavailableReason, undefined); }
   }
   assert.equal(publicCount, 214); assert.equal(unreviewed, 80); assert.equal(results, 19);
   for (const id of ['users/get-authenticated', 'apps/get-authenticated', 'apps/list-repos-accessible-to-installation',
@@ -128,7 +129,7 @@ Then('GitHub public choices dispatch without credentials and cannot unlock priva
   } finally { publishPreparedCatalogs(previous); }
 });
 
-Then('GitHub OAuth app references dispatch Basic privately while credential results remain blocked', async () => {
+Then('GitHub OAuth app references dispatch Basic privately while credential results stay private', async () => {
   const { models } = await fixture();
   const op = models.get('apps/delete-authorization'); assert.equal(op.unavailableReason, undefined);
   const descriptor = await approvedOperation(op, 'https://api.github.com');
@@ -151,9 +152,13 @@ Then('GitHub OAuth app references dispatch Basic privately while credential resu
   for (const id of ['apps/create-from-manifest', 'apps/create-installation-access-token', 'apps/check-token', 'apps/reset-token',
     'actions/create-registration-token-for-repo']) {
     const blocked = models.get(id); assert.ok(blocked, id);
-    assert.equal(blocked.credentialResult, true); assert.ok(blocked.unavailableReason);
-    assert.throws(() => prepareRequest(blocked, {}));
-    await assert.rejects(() => approvedOperation(blocked, 'https://api.github.com'));
+    assert.equal(blocked.credentialResult, true);
+    if (blocked.unavailableReason) await assert.rejects(() => approvedOperation(blocked, 'https://api.github.com'));
+    else {
+      const approved = await approvedOperation(blocked, 'https://api.github.com');
+      await assert.rejects(executeCredentialed(approved, {}, { alternative:0, fingerprint:approved.fingerprint, credentials:{} }, [],
+        { assertCurrent() {}, fetchRequest:async()=>assert.fail('Credential result bypassed private storage') }), { code:'PERMISSION' });
+    }
   }
 });
 

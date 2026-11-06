@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { supportsCredentialResults, privateResultOriginAllowed } from "../credential-results.ts";
 import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
 import { validAwsWireModel, awsWireEndpoint } from "../aws-wire.ts";
@@ -80,7 +81,7 @@ export function normalizeCredentialOrigin(origin: string): string
 
 function validateOperation(operation: Operation): void
 {
-  if (operation && operationBlockReason(operation) || operation?.credentialResult !== undefined) throw new VaultError("PERMISSION");
+  if (operation && operationBlockReason(operation) || (operation?.credentialResult !== undefined || operation?.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new VaultError("PERMISSION");
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
   if (operation.awsWire !== undefined) { if (!validAwsWireModel(operation)) throw new VaultError("PERMISSION"); }
@@ -157,6 +158,7 @@ export async function approvedOperation(operation: Operation, origin: string): P
     const sanitized = JSON.parse(canonicalPolicyValue(operation)) as Operation;
     validateOperation(sanitized);
     const normalized = normalizeCredentialOrigin(origin);
+    if (sanitized.credentialResult && !privateResultOriginAllowed(sanitized, normalized)) throw new VaultError("PERMISSION");
     if (sanitized.security?.flat().some(scheme => scheme.kind === "aws-sigv4")
       && !(sanitized.awsWire ? awsWireEndpoint(normalized, sanitized.awsWire) : sanitized.s3Files ? s3SigningEndpoint(normalized) : lambdaSigningRegion(normalized))) throw new VaultError("PERMISSION");
     if (sanitized.cloudflareUpload && normalized !== cloudflareOrigin) throw new VaultError("PERMISSION");

@@ -32,7 +32,7 @@ export function normalizeStringUnion(shape: Record<string, unknown>, resolveBran
   }
   const annotations = Object.fromEntries(Object.entries(shape).filter(([key]) => key !== keyword));
   if (exclusive && (variants.length !== 2 || unrestricted || nullable || patterns.length !== 1 || !values.length
-    || values.some(value => new RegExp(patterns[0], "u").test(value)))) return shape;
+    || values.some(value => new RegExp(patterns[0]!, "u").test(value)))) return shape;
   if (!unrestricted) {
     if (nullable || patterns.length !== 1 || !values.length) return shape;
     const literals = values.map(value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");

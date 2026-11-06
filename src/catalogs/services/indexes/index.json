@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "9d9afabf4a91560d6a7615def4beeca4c78feeac1c4195ed772de1612b6ceae0",
+  "adapterRevision": "6003d44cd1883f0282415346266fd07a7e41116a82fcdfe1c03f4599e61b3508",
   "indexes": [
     {
       "id": "anthropic",
@@ -111,10 +111,10 @@
     },
     {
       "id": "atlassian-assets",
-      "sourceRevision": "1770d858b48117ef5501810378ae01c41cfa182a405694934923ee4c6af8054e",
+      "sourceRevision": "be29f7655883940ac2d317a163cb4754a66406bfb4829e17d71182b1e5c49176",
       "bytes": 37541,
       "compressedBytes": 2120,
-      "sha256": "f716b9e03feb08960764a96d43f725fa5cde6fbf5bd5b11c063050bd0c8d32d6",
+      "sha256": "b513f55aaa97aa2d8c4334af8231ef319093f10ee3a7f07835295bbecbefd4fb",
       "summary": {
         "name": "REST",
         "serverUrl": "",
@@ -1541,16 +1541,16 @@
     },
     {
       "id": "elevenlabs",
-      "sourceRevision": "27493b88c935cdb3d67c4e95c6df3e7f93a9b8afe876e8f3fe2f8ad5180833fa",
-      "bytes": 154750,
-      "compressedBytes": 13541,
-      "sha256": "8ba526b2aaedd47cfa00f31d611a7a5fdeb59df50c352791493971e23da36ac7",
+      "sourceRevision": "120b511772210c021f0bdde32a469b6f2c125f99d716e7b81e484646d9f83565",
+      "bytes": 153435,
+      "compressedBytes": 13457,
+      "sha256": "256c16db76c561946cb3e1e6078f2f588fc5dcb76f82eea7c13ff00d8bb85687",
       "summary": {
         "name": "ElevenLabs API Documentation",
         "serverUrl": "https://api.elevenlabs.io",
         "description": "This is the documentation for the ElevenLabs API. You can use this API to use our service programmatically, this is done by using your API key. You can find your API key in the dashboard at https://elevenlabs.io/app/settings/api-keys.",
         "operationCount": 418,
-        "unavailableCount": 17
+        "unavailableCount": 8
       }
     },
     {
@@ -1597,16 +1597,16 @@
     },
     {
       "id": "github",
-      "sourceRevision": "472100e160a2a52bf0ab574584e40026cc4677f4304ecb16580142447b1ee9f0",
-      "bytes": 568515,
-      "compressedBytes": 37386,
-      "sha256": "84880c7459f1c405a9f821858237b6ffbb497181c0a8c27dcf816bf03b1aaaf9",
+      "sourceRevision": "37d0c4e3db6d0fbfd166bc8beea07560cd039a95d445daf689d7dc9c7784946e",
+      "bytes": 565760,
+      "compressedBytes": 36823,
+      "sha256": "807923b4c6bf3bb5e412d0c67a927b0534c5013d621cf88965c696e93f5daccf",
       "summary": {
         "name": "GitHub v3 REST API",
         "serverUrl": "https://api.github.com",
         "description": "GitHub's v3 REST API.",
         "operationCount": 1242,
-        "unavailableCount": 98
+        "unavailableCount": 80
       }
     },
     {

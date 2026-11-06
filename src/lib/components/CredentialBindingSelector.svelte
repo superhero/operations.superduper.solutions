@@ -4,6 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
+  import { supportsCredentialResults } from "../credential-results.ts";
   import { onMount, untrack } from "svelte";
   import FieldSelect from "./FieldSelect.svelte";
   import VaultAuthentication from "./VaultAuthentication.svelte";
@@ -36,10 +37,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let mounted = false;
   const fieldId = $props.id();
   let revision = 0;
-  const options = $derived(operation.security?.map((option, index) => ({ value: String(index),
+  const privateResults = $derived(supportsCredentialResults(operation));
+  const alternatives = $derived(operation.security?.length ? operation.security : privateResults ? [[]] : []);
+  const options = $derived(alternatives.map((option, index) => ({ value: String(index),
     label: option.length ? option.map(item => item.name).join(" + ") : "Without credentials", disabled: !supportedSecurityAlternative(option) })) ?? []);
   const selected = $derived.by(() => {
-    const option = alternative === "" ? undefined : operation.security?.[Number(alternative)];
+    const option = alternative === "" ? undefined : alternatives[Number(alternative)];
     return supportedSecurityAlternative(option) ? option : undefined;
   });
   const unavailable = $derived([...new Set(operation.security?.flatMap(option => option.flatMap(scheme => scheme.kind === "unsupported" ? [scheme.reason] : [])) ?? [])]);
@@ -77,7 +80,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function changed() {
     error = "";
     const selection = selected;
-    if (!descriptor || !selection || selection.length && !status.unlocked) { manualBinding = undefined; publish(); return; }
+    if (!descriptor || !selection || (selection.length || privateResults) && !status.unlocked) { manualBinding = undefined; publish(); return; }
     const upload = uploadSessionSelection(operation.security, values[cloudflareSessionField]);
     if (upload && selection.some(scheme => scheme.kind === "cloudflare-upload")) {
       manualBinding = validateCredentialBinding({ ...upload, fingerprint: descriptor.fingerprint }); publish(); return;
@@ -114,6 +117,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       } else if (first && !initial) {
         const connected = credentialSelectionForVariables(operation.security, variables);
         if (connected) { alternative = String(connected.alternative); choices = connected.credentials; }
+        else if (privateResults && alternatives.length === 1 && !alternatives[0]!.length) alternative = "0";
       }
       changed();
     } catch (cause) { if (mounted && request === revision) error = cause instanceof VaultError ? cause.message : "Credential choices are unavailable."; }
@@ -157,9 +161,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <fieldset class="credential-selection" disabled={disabled || busy}>
   <legend>Credentials</legend>
+  {#if privateResults}<p>Returned credentials are saved in Secrets. Workflow results contain references and non-secret metadata.</p>{/if}
   {#if operation.s3Files}<p>S3 objects are limited to 500 kB and require visible checksum headers in the bucket's CORS settings. An interrupted upload may already have stored the object; check it before retrying.</p>{/if}
   {#if operation.privatePath}<p>Save or select a connection to supply the bot token in Telegram's private URL path.</p>{/if}
-  {#if descriptor && !uploadSessionConsumer(operation.cloudflareUpload)}
+  {#if descriptor && operation.security?.some(option => option.length) && !uploadSessionConsumer(operation.cloudflareUpload)}
     <HttpConnectionSelector {descriptor} {status} {credentials} manual={manualBinding}
       initial={initial?.fingerprint === descriptor.fingerprint ? initial.connection : undefined} disabled={disabled || busy} {portalZIndex}
       onSelect={(binding, selected) => { connectionSelected = selected; connectionBinding = binding;
@@ -174,7 +179,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onValueChange={value => { alternative = value; choices = {}; changed(); }} />
   {/if}
   {#each unavailable as reason}<p class="hint">{reason}</p>{/each}
-  {#if selected?.length}
+  {#if selected?.length || privateResults && selected !== undefined}
     {#if descriptor}<p class="destination"><strong>{operation.method}</strong> {descriptor.origin}{operation.path}</p>{/if}
     {#if !status.exists}<p>Create a vault and add credentials in Settings → Secrets.</p>
     {:else}

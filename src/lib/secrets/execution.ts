@@ -1,6 +1,8 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { credentialResultProfile } from "../credential-results.ts";
+import { prepareCredentialResults, type AcquiredValue, type AcquiredReference } from "./credential-results.ts";
 import { readWorkflowResponseBody, binaryContainsSecret, WorkflowBodyError } from "../workflow-response-body.ts";
 import { validateWorkflowBinary } from "../workflow-binary.ts";
 import { requestBody } from "../request-body.ts";
@@ -41,6 +43,7 @@ export type CredentialExecutionOptions = {
   oauth1Clock?: OAuth1Clock;
   uploadSessions?: CloudflareUploadSessions;
   privateSecrets?: readonly string[];
+  adoptPrivateResults?: (values: readonly AcquiredValue[], signal: AbortSignal) => Promise<readonly AcquiredReference[]>;
 };
 
 /** This safe envelope has no raw request, native cause or credential-bearing message. */
@@ -89,7 +92,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
   let phase: "policy" | "request" = "policy";
   let s3Upload = false, responseStatus: number | undefined;
   const lifetime = workflowResponseLifetime(options.signal), timeout = lifetime.timeout, signal = lifetime.signal;
-  let streaming = false, streamStatus = 0;
+  let streaming = false, streamStatus = 0, privateResult = false;
   let uploadLease: CloudflareUploadLease | undefined, privateUpload = false, uploadSucceeded = false;
   try
   {
@@ -106,6 +109,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       .flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
+    const acquisition = credentialResultProfile(approved.operation); privateResult = !!acquisition;
+    if (acquisition && !options.adoptPrivateResults) throw new VaultError("PERMISSION");
     s3Upload = approved.operation.s3Files === "put-object";
     privateUpload = !!approved.operation.cloudflareUpload;
     if (privateUpload && !options.uploadSessions) throw new VaultError("PERMISSION");
@@ -115,10 +120,15 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     bindingSnapshot = connection.binding;
     const variables = options.variables === undefined ? [] : validateVaultVariableInputs(options.variables);
     const alternative = approved.operation.security?.length ? approved.operation.security[bindingSnapshot.alternative]
-      : variables.length && bindingSnapshot.alternative === 0 ? [] : undefined;
+      : (variables.length || acquisition) && bindingSnapshot.alternative === 0 ? [] : undefined;
     if (bindingSnapshot.fingerprint !== approved.fingerprint || !Number.isInteger(bindingSnapshot.alternative)
-      || !supportedSecurityAlternative(alternative) || !alternative.length && !variables.length || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
+      || !supportedSecurityAlternative(alternative) || !alternative.length && !variables.length && !acquisition || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
       throw new VaultError("PERMISSION");
+    for (const key of acquisition?.privateInputs ?? []) {
+      const value = inputSnapshot[key];
+      if (value !== undefined && value !== null && value !== "" && (value !== vaultVariablePlaceholder
+        || !variables.some(variable => variable.key === key && !variable.path.length))) throw new VaultError("PERMISSION");
+    }
     const injected = new Headers();
     const injectedQueries = new Map<string, string>();
     let pathToken: string | undefined;
@@ -289,7 +299,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     responseStatus = response.status;
     if (response.redirected) throw new VaultError("NETWORK");
     const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes,
-      { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(isJsonResponseStream(approved.operation.responseStream)); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}),
+      acquisition ? undefined : { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(isJsonResponseStream(approved.operation.responseStream)); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}),
         ...(options.onValue ? { onValue: sample => {
           if (signal.aborted) throw new VaultError("CANCELLED");
           if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
@@ -298,6 +308,20 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
           options.onValue!({ ...sample, body });
         } } : {}) });
     const { malformedJson, ...result } = parsed;
+    if (acquisition) {
+      // Failure bodies/headers can themselves contain newly issued credentials.
+      // No unadopted response material crosses the worker boundary.
+      if (malformedJson || !response.ok) throw new CredentialResponseError(
+        `The endpoint returned ${malformedJson ? "invalid JSON" : `HTTP ${response.status}`}. Private response details were withheld; check the remote request before retrying.`,
+        { status: response.status, statusText: "", headers: {}, body: null });
+      await options.assertCurrent(); if (signal.aborted) throw new VaultError("CANCELLED");
+      const prepared = prepareCredentialResults(acquisition, response.status, result.body);
+      const references = prepared.values.length ? await options.adoptPrivateResults!(prepared.values, signal) : [];
+      result.body = prepared.complete(references);
+      secrets = [...new Set([...secrets, ...prepared.values.map(item => item.value)]
+        .flatMap(value => [value, JSON.stringify(value).slice(1, -1)])
+        .flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
+    }
     if (managed && (managed.expiresAt <= Date.now() || response.ok && (!result.body || typeof result.body !== "object"
       || Array.isArray(result.body) || String((result.body as Record<string, unknown>).id) !== managed.accountId))) throw new VaultError("AUTHORIZATION");
     if (approved.operation.s3Files && response.ok) {
@@ -318,7 +342,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const safeHeaders: [string, string][] = [];
     for (const [name, value] of response.headers)
     {
-      if (privateUpload && name.toLowerCase() !== "content-type") continue;
+      if ((privateUpload || acquisition) && name.toLowerCase() !== "content-type") continue;
       if (authHeaders.has(name.toLowerCase()) || /^(?:authorization|proxy-authorization|www-authenticate|proxy-authenticate|set-cookie2?|cookie)$/i.test(name))
         scrub.mark();
       else safeHeaders.push([scrub.text(name), scrub.text(value)]);
@@ -334,7 +358,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       }
       // Never redact inside a base64 file: either retain exact bytes or withhold it entirely.
     } else safeBody = scrub.value(safeBody);
-    const safe: CredentialResponse = { ...result, status: response.status, statusText: privateUpload ? "" : scrub.text(response.statusText),
+    const safe: CredentialResponse = { ...result, status: response.status, statusText: privateUpload || acquisition ? "" : scrub.text(response.statusText),
       headers: Object.fromEntries(safeHeaders), body: safeBody };
     if (safeBody === null) delete safe.bodyType;
     if (safe.mediaType) safe.mediaType = scrub.text(safe.mediaType);
@@ -347,10 +371,13 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (malformedJson) throw new CredentialResponseError("The endpoint did not return valid JSON. Check its response before retrying.", safe);
     if (!response.ok) throw new CredentialResponseError(`The endpoint returned HTTP ${response.status}. Check the request before retrying.`, safe);
     uploadSucceeded = true;
-    return { request: preview, response: safe };
+    return { request: scrub.value(preview) as PreparedRequest, response: safe };
   }
   catch (error)
   {
+    if (privateResult && phase === "request" && !(error instanceof CredentialResponseError))
+      throw new CredentialResponseError("The remote request may have completed, but its private results were not delivered. Check Secrets and the remote operation before retrying.",
+        { status: responseStatus ?? 0, statusText: "", headers: {}, body: null });
     if (s3Upload && phase === "request" && (responseStatus === undefined || responseStatus >= 200 && responseStatus < 300)
       && !(error instanceof CredentialResponseError)) throw new VaultError("WRITE_UNCONFIRMED");
     if (options.signal?.aborted) throw new VaultError("CANCELLED");

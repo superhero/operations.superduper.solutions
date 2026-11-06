@@ -812,7 +812,7 @@ Then('pinned Anthropic API key and bearer choices dispatch nonstreaming requests
   } finally { publishPreparedCatalogs(previous); }
 });
 
-Then('pinned ElevenLabs history and public settings dispatch without enabling credential acquisition', async () => {
+Then('pinned ElevenLabs history and public settings dispatch while credential acquisition stays private', async () => {
   const { operations, publishPreparedCatalogs, operationSourceIdentity, installOperationModel } = await import('./lib/catalog.ts');
   const { catalogs } = await import('./lib/catalog-registry.ts');
   const { scopeOperationSchema } = await import('./lib/operation-report.ts');
@@ -823,7 +823,7 @@ Then('pinned ElevenLabs history and public settings dispatch without enabling cr
   const { createWorkflowExecution, createWorkflowRequestExecution } = await import('./lib/workflow-execution.ts');
   const { vaultVariablePlaceholder } = await import('./lib/secrets/variables.ts');
   const source = serviceSchemaDescriptors.find(item => item.id === 'elevenlabs');
-  assert.deepEqual(source.patches, [{ id: 'elevenlabs-authentication', version: 1 }]);
+  assert.deepEqual(source.patches, [{ id: 'elevenlabs-authentication', version: 1 }, { id:'private-credential-results', version:1 }]);
   const published = await readServiceSchemaUpstream('elevenlabs'), document = await readServiceSchema('elevenlabs');
   assert.equal(published.security, undefined); assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
   assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
@@ -831,7 +831,7 @@ Then('pinned ElevenLabs history and public settings dispatch without enabling cr
   assert.equal(after.operations.length, 418);
   const credentialResults = after.operations.filter(operation => operation.credentialResult);
   assert.equal(credentialResults.length, 9);
-  assert.ok(credentialResults.every(operation => operation.unavailableReason));
+  assert.ok(credentialResults.every(operation => !operation.unavailableReason && operation.credentialResultProfile === "private-result-v1"));
   for (const old of before.operations.filter(operation => operation.unavailableReason))
     assert.equal(after.operations.find(operation => operation.id === old.id).unavailableReason, old.unavailableReason, 'Independent media/schema/transport limits remain.');
   const previous = catalogs.map(catalog => ({ catalog, sourceIdentity: operationSourceIdentity(`${catalog.id}:`), operations: operations.filter(operation => operation.id.startsWith(`${catalog.id}:`)) }));
@@ -879,8 +879,9 @@ Then('pinned ElevenLabs history and public settings dispatch without enabling cr
     assert.deepEqual(defaults.security, []); assert.equal((await createWorkflowRequestExecution(publicRequest).execute(defaults, {})).response.body.stability, 0.5);
     for (const blocked of credentialResults) {
       const model = install(blocked); assert.equal(model.credentialResult, true);
-      await assert.rejects(approvedOperation({ ...model, unavailableReason: undefined }, catalog.execution.origin), { code: 'PERMISSION' });
-      assert.throws(() => prepareRequest({ ...model, unavailableReason: undefined }, {}), /returns credentials/);
+      const privateDescriptor = await approvedOperation(model, catalog.execution.origin);
+      await assert.rejects(executeCredentialed(privateDescriptor, {}, {alternative:0,fingerprint:privateDescriptor.fingerprint,credentials:{}}, [],
+        {assertCurrent(){},fetchRequest:async()=>assert.fail('Credential result bypassed private storage')}), {code:'PERMISSION'});
       await assert.rejects(createWorkflowRequestExecution(() => assert.fail('Credential acquisition dispatched')).execute({ ...model, credentialResult: undefined, unavailableReason: undefined }, {}));
     }
     assert.equal(privateCalls, 4); assert.equal(publicCalls, 1);

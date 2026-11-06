@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { credentialResultProfile, privateResultVersion, supportsCredentialResults } from "./credential-results.ts";
 import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
@@ -99,6 +100,7 @@ export type Operation = {
   credentialPermissions?: CredentialPermissions;
   /** Credential acquisition needs a private result handler, not a JSON output. */
   credentialResult?: true;
+  credentialResultProfile?: "private-result-v1";
 };
 
 type RecordValue = Record<string, unknown>;
@@ -445,8 +447,13 @@ export function extractOperations(value: unknown, source: string): Operation[]
       }
       if (operation["x-operations-credential-result"] === true) {
         extracted.credentialResult = true;
-        extracted.unavailableReason = "This operation returns credentials. Private credential acquisition is not supported yet.";
+        if (operation["x-operations-private-result"] !== undefined) {
+          if (operation["x-operations-private-result"] !== privateResultVersion) throw new Error("Unknown private credential-result profile.");
+          extracted.credentialResultProfile = privateResultVersion; credentialResultProfile(extracted);
+        }
+        if (!supportsCredentialResults(extracted)) extracted.unavailableReason = "This operation returns credentials. Its private result adoption contract has not been qualified.";
       }
+      if (operation["x-operations-private-result"] !== undefined && !extracted.credentialResult) throw new Error("A private result profile requires credential-result metadata.");
       result.push(withOperationCapabilities(extracted, extracted.unavailableReason ? [{ area: "response", code: "unsupported-contract", message: extracted.unavailableReason }] : []));
     }
   }

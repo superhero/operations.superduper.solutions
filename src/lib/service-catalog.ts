@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { credentialResultProfile, privateResultVersion, supportsCredentialResults } from "./credential-results.ts";
 import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
@@ -247,6 +248,10 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
             if (source["x-operations-credential-result"] !== true) throw new Error("Credential result metadata must be true when present.");
             operation.credentialResult = true;
           }
+          if (source["x-operations-private-result"] !== undefined) {
+            if (source["x-operations-private-result"] !== privateResultVersion) throw new Error("Unknown private credential-result profile.");
+            operation.credentialResultProfile = privateResultVersion; credentialResultProfile(operation);
+          }
         });
         inspect("endpoint", "configuration-required", () => {
           const url = operationServerUrl(document, operation);
@@ -389,7 +394,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
             && !(wire ? validAwsWireModel(operation) : s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
             throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
         });
-        if (operation.credentialResult) issues.push({ area: "response", code: "unsupported-contract", message: "This operation returns credentials. Private credential acquisition is not supported yet." });
+        if (operation.credentialResultProfile) inspect("response", "invalid-contract", () => { credentialResultProfile(operation); });
+        if (operation.credentialResult && !supportsCredentialResults(operation)) issues.push({ area: "response", code: "unsupported-contract", message: "This operation returns credentials. Its private result adoption contract has not been qualified." });
       }
       withOperationCapabilities(operation, issues);
       operations.push(operation);
