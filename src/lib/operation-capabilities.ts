@@ -59,6 +59,13 @@ export function withOperationCapabilities<T extends Operation>(operation: T, iss
 export function operationBlockReason(operation: Operation): string | undefined {
   return operation.capabilities?.issues[0]?.message ?? operation.capabilitySummary?.i[0]?.[2] ?? operation.unavailableReason;
 }
+/** Adding an operation does not require an account destination. Execution still
+ * uses operationBlockReason and cannot approve an unconfigured route. */
+export function operationInsertionBlockReason(operation: Operation): string | undefined {
+  const issues = readOperationCapabilities(operation)?.issues;
+  if (!issues?.length) return operation.unavailableReason;
+  return issues.find(issue => issue.area !== "endpoint" || issue.code !== "configuration-required")?.message;
+}
 export function operationCapabilityHint(operation: Operation): string | undefined {
   const issues = readOperationCapabilities(operation)?.issues;
   return issues?.length && issues.length > 1 ? issues.map(issue => `${capabilityAreaLabels[issue.area]}: ${issue.message}`).join("\n") : operationBlockReason(operation);

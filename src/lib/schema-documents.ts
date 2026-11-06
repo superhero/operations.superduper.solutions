@@ -5,7 +5,7 @@
 import { parseDocument } from "yaml";
 import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
-import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin } from "./server-url.ts";
+import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin, ServerConfigurationRequiredError } from "./server-url.ts";
 import { awsWirePath, awsWireProfile } from "./aws-wire.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { validateAtlassianServerBinding } from "./atlassian-server-bindings.ts";
@@ -144,13 +144,18 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   if (typeof selected.url !== "string" || !selected.url.trim()) invalid(`${context}: server url must be a nonempty string.`);
   validateAtlassianServerBinding(selected);
   const variables = selected.variables === undefined ? {} : object(selected.variables, `${context}: server variables`);
+  let configurationMessage: string | undefined;
   const expanded = selected.url.replace(/\{([^{}]+)\}/g, (_match, name: string) => {
     const variable = object(variables[name], `${context}: server variable ${name}`);
     if (typeof variable.default !== "string") invalid(`${context}: server variable ${name} requires a string default.`);
     if (variable.enum !== undefined && (!Array.isArray(variable.enum) || !variable.enum.includes(variable.default)))
       invalid(`${context}: server variable ${name} default must belong to its enum.`);
-    if (serverUrlHasPlaceholder(variable.default))
-      unsupported(`${context}: server variable ${name} still contains a placeholder. Configure it before running this operation.`);
+    if (serverUrlHasPlaceholder(variable.default)) {
+      if (!/^(?:<[A-Za-z0-9_-]+>|\{[A-Za-z0-9_-]+\})$/.test(variable.default))
+        unsupported(`${context}: server variable ${name} contains an invalid placeholder value.`);
+      configurationMessage = `${context}: server variable ${name} still contains a placeholder. Configure it before running this operation.`;
+      return "unconfigured";
+    }
     return variable.default;
   });
   if (serverUrlHasPlaceholder(expanded))
@@ -166,6 +171,7 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password || url.search || url.hash)
     unsupported(`${context}: use an HTTP or HTTPS server URL without credentials, query strings or fragments.`);
   if (url.origin === telegramBotOrigin) unsupported("Telegram requires a saved private bot token connection and its reviewed endpoint template.");
+  if (configurationMessage) throw new ServerConfigurationRequiredError(configurationMessage);
   return url.href.replace(/\/$/, "");
 }
 

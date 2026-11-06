@@ -13,6 +13,7 @@ import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { extractCredentialPermissions, extractOperationSecurity, inspectSecurityAlternatives, supportedSecurityAlternative } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
+import { ServerConfigurationRequiredError } from "./server-url.ts";
 import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
 import { normalizeStringUnion, validateFormBody } from "./form-input.ts";
@@ -253,11 +254,14 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
             operation.credentialResultProfile = privateResultVersion; credentialResultProfile(operation);
           }
         });
-        inspect("endpoint", "configuration-required", () => {
+        try {
           const url = operationServerUrl(document, operation);
           serverUrl ||= url;
-          if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
-        });
+          if (new URL(url).hostname === "no-default") throw new ServerConfigurationRequiredError("Configure this schema’s server URL for your account before running it.");
+        } catch (error) {
+          issues.push({ area: "endpoint", code: error instanceof ServerConfigurationRequiredError ? "configuration-required" : "invalid-contract",
+            message: error instanceof Error ? error.message : String(error) });
+        }
         let upload: ReturnType<typeof cloudflareUploadProfile>;
         let wire: ReturnType<typeof awsWireProfile>, s3: ReturnType<typeof s3FilesProfile>;
         inspect("request", "invalid-contract", () => {

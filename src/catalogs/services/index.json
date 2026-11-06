@@ -164,12 +164,16 @@
         "version": 1
       },
       {
+        "id": "assets-import-source-parameter",
+        "version": 1
+      },
+      {
         "id": "private-credential-results",
         "version": 1
       }
     ],
-    "effectiveSha256": "be29f7655883940ac2d317a163cb4754a66406bfb4829e17d71182b1e5c49176",
-    "effectiveBytes": 275878
+    "effectiveSha256": "5811b484d75ac6a268168017d911646ccbc5bf53b73def6855bc8882d30cbe24",
+    "effectiveBytes": 276086
   },
   {
     "id": "atlassian-automation",

@@ -6,7 +6,7 @@ import { operations, pinOperationModels } from '../../src/lib/catalog.ts';
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 import { loadSchemaLibrary, getSchemaLibrary, setSchemaEnabled, hydrateOperation, createWorkflowSchemaLease, releaseSchemaSource } from '../../src/lib/schema-library.ts';
 import { serviceSchemaDescriptors } from '../../src/lib/service-schema-packs.ts';
-import { operationBlockReason } from '../../src/lib/operation-capabilities.ts';
+import { operationInsertionBlockReason } from '../../src/lib/operation-capabilities.ts';
 import { getOperationReport } from '../../src/lib/operation-report.ts';
 import { createOperationGraph } from '../../src/lib/workflow-graph.ts';
 import { layoutAddedGraph } from '../../src/lib/workflow-layout.ts';
@@ -52,7 +52,7 @@ export async function add(operationId: string, workflowId: string) {
     stage = 'hydrate';
     const operation = await hydrateOperation(operationId);
     stage = 'capability';
-    const blocked = operationBlockReason(operation);
+    const blocked = operationInsertionBlockReason(operation);
     check(!blocked, blocked ?? 'Operation unavailable.');
     stage = 'graph';
     const nodeId = crypto.randomUUID();

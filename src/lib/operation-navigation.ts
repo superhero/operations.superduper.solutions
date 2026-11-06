@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { operationInsertionBlockReason } from "./operation-capabilities.ts";
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { categoryLabel } from "./category-label.ts";
@@ -114,7 +115,7 @@ export function navigationOperations(ids: readonly string[], navigation: Navigat
     if (!family || seen.has(family)) continue;
     const candidates = family.filter(operation => available.has(operation.id) && (!matching || matching.has(operation.id)));
     if (matching) candidates.sort((left, right) => matching.get(left.id)! - matching.get(right.id)!);
-    const selected = candidates.find(operation => !operation.unavailableReason) ?? candidates[0];
+    const selected = candidates.find(operation => !operationInsertionBlockReason(operation)) ?? candidates[0];
     if (selected) { result.push(selected); seen.add(family); }
   }
   return result;

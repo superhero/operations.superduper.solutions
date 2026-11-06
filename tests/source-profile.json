@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/tenant-readiness.test.mjs",
     "src/credential-results.test.mjs",
     "src/parameter-content.test.mjs",
     "src/trello-parameter-arrays.test.mjs",
@@ -120,6 +121,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/tenant-readiness.feature",
     "src/credential-results.feature",
     "src/parameter-content.feature",
     "src/trello-parameter-arrays.feature",

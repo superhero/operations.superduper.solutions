@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "6003d44cd1883f0282415346266fd07a7e41116a82fcdfe1c03f4599e61b3508",
+  "adapterRevision": "b58fdaed9fd0028be3ff6434d598d32997a0d876d3bcaa21e8f143e502593fa1",
   "indexes": [
     {
       "id": "anthropic",
@@ -98,9 +98,9 @@
     {
       "id": "atlassian-app-migration",
       "sourceRevision": "b24a0654a2f53a586724c2c4d2e323784988dca369af768d0b65ba4c39f4f794",
-      "bytes": 7320,
-      "compressedBytes": 1030,
-      "sha256": "1414d074a5df5f5cc430f511d29626447af3307a322ca5986eabbb0d417e4b13",
+      "bytes": 7089,
+      "compressedBytes": 1022,
+      "sha256": "7b386729d6b8fd0ef3da0876e0cb5a69df8204fedee34bd7d5bb92500d340923",
       "summary": {
         "name": "App migration",
         "serverUrl": "",
@@ -111,15 +111,15 @@
     },
     {
       "id": "atlassian-assets",
-      "sourceRevision": "be29f7655883940ac2d317a163cb4754a66406bfb4829e17d71182b1e5c49176",
-      "bytes": 37541,
-      "compressedBytes": 2120,
-      "sha256": "b513f55aaa97aa2d8c4334af8231ef319093f10ee3a7f07835295bbecbefd4fb",
+      "sourceRevision": "5811b484d75ac6a268168017d911646ccbc5bf53b73def6855bc8882d30cbe24",
+      "bytes": 37374,
+      "compressedBytes": 2056,
+      "sha256": "3a47eaaaa2bef5d06dd1319b797b5933a0ad406a995cd6da5e2cf6d8a71b86c1",
       "summary": {
         "name": "REST",
         "serverUrl": "",
         "operationCount": 64,
-        "unavailableCount": 64
+        "unavailableCount": 0
       }
     },
     {
@@ -248,23 +248,23 @@
     {
       "id": "confluence",
       "sourceRevision": "246e0eec8f432eae39c32250a0ca1a32b233c166f86a80ff1de4dac7f92b9380",
-      "bytes": 131287,
-      "compressedBytes": 6859,
-      "sha256": "555c4ac7e0cc97ca0909a98a65db407aeccd3536cb3d878e11968d510a9cd3d3",
+      "bytes": 131285,
+      "compressedBytes": 6860,
+      "sha256": "908dd69e8196de64d3dc0ba74535a2f54fdb207f0cd989f730fa92611c0281a0",
       "summary": {
         "name": "The Confluence Cloud REST API v2",
         "serverUrl": "https://no-default/wiki/api/v2",
         "description": "This document describes Confluence's v2 APIs. This is intended to be an iteration on the existing Confluence Cloud REST API with improvements in both endpoint definitions and performance.",
         "operationCount": 252,
-        "unavailableCount": 252
+        "unavailableCount": 0
       }
     },
     {
       "id": "atlassian-confluence-v1",
       "sourceRevision": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
-      "bytes": 92194,
-      "compressedBytes": 5331,
-      "sha256": "265be88d61754f9900fb4db5f6665e9a95de7a65b20299253320ef82eb536e7a",
+      "bytes": 90214,
+      "compressedBytes": 5320,
+      "sha256": "f4ce90365378a26c6cbfa713c3cd6a192c14ca084b1855549767860a4dc4b746",
       "summary": {
         "name": "The Confluence Cloud REST API",
         "serverUrl": "",
@@ -304,9 +304,9 @@
     {
       "id": "atlassian-customer-service-management",
       "sourceRevision": "e4f38a292bbdd3ac6344be7b1bd8a8fbd92007c21480cd2afa671bd8fa6d0e02",
-      "bytes": 36213,
-      "compressedBytes": 2158,
-      "sha256": "1f2d1f1d9e1f8b3ea4703b71655463bcb361a240c6a2c2926e77d3360d231b55",
+      "bytes": 35313,
+      "compressedBytes": 2142,
+      "sha256": "89c762e4b060a3dd884f949789f4a25af145f608f5c8d123cb2ab1f3aaa931e1",
       "summary": {
         "name": "Atlassian CSM API",
         "serverUrl": "",
@@ -317,9 +317,9 @@
     {
       "id": "atlassian-focus",
       "sourceRevision": "1c6c34f5e4269cbb6de5ee2460c6cc8b0c7070116742fc194cfddc038285d7a4",
-      "bytes": 17488,
-      "compressedBytes": 1374,
-      "sha256": "f5527592f26350f9e1a5f38ce8ff2e22b15266c3136e7e122a56ef91adc60f7e",
+      "bytes": 17098,
+      "compressedBytes": 1371,
+      "sha256": "62efdc9747c94407cdb624ef714c0616d8e19da994746858f6e7100098fdaf94",
       "summary": {
         "name": "Focus REST API",
         "serverUrl": "",
@@ -359,9 +359,9 @@
     {
       "id": "atlassian-forms",
       "sourceRevision": "59bc96a8e30792e5be7af817ac37100d9ffbebdde4d2c3614b288333b0220688",
-      "bytes": 20635,
-      "compressedBytes": 1495,
-      "sha256": "eac32c2fe2b359ec2ff19945c5706d87d69a04d749aff86c2269bfd636b8ae27",
+      "bytes": 20125,
+      "compressedBytes": 1486,
+      "sha256": "a83c20bdada5878b281f05554af58f501a28b379960cbe94a8dabb983eb17e6c",
       "summary": {
         "name": "ProForma Forms RESTful API",
         "serverUrl": "",
@@ -509,9 +509,9 @@
     {
       "id": "atlassian-migration-utilities",
       "sourceRevision": "8bdd7cc1b4f8f01115d78bb5a2db3be0f7b2dc2be9582198ae28efbd0862ae4d",
-      "bytes": 3642,
-      "compressedBytes": 721,
-      "sha256": "a7c29466090dbabb95170fa9ba77f987ee599612c676de1ee4b8f286d77da0f0",
+      "bytes": 3552,
+      "compressedBytes": 717,
+      "sha256": "fc908dba3109009ebdab34e7ad8e2fbb1a0d8b0c5fc94d5399a57e441521d930",
       "summary": {
         "name": "Migration REST API",
         "serverUrl": "",
@@ -1473,14 +1473,14 @@
     {
       "id": "digitalocean",
       "sourceRevision": "5626dec576f33c3e55f04713ea83242bb246bec91c4bb623587a6a900b378738",
-      "bytes": 318332,
-      "compressedBytes": 24444,
-      "sha256": "caef2f30cc1f7958b037df012767b88d5c9439e47350e932cd9d358c39a9218f",
+      "bytes": 318278,
+      "compressedBytes": 24454,
+      "sha256": "36f5ae280ed06ccfd87341c496869307259ca8cc43e7f95961dfbaa4a018edf3",
       "summary": {
         "name": "DigitalOcean API",
         "serverUrl": "https://api.digitalocean.com",
         "operationCount": 855,
-        "unavailableCount": 3
+        "unavailableCount": 2
       }
     },
     {
@@ -1500,9 +1500,9 @@
     {
       "id": "docker",
       "sourceRevision": "84e994fb0d80850cb01d1a098c89ead30ca0c9cd8aff6cdbcd46f258304d88ba",
-      "bytes": 56385,
+      "bytes": 54138,
       "compressedBytes": 4585,
-      "sha256": "f1a3f5daca2a76a5f60b05d94e0dbe6e0ef6285d01cd6b1299375e200e4a368e",
+      "sha256": "ab076c10ecea038570a34330653e38adefafe77d3dcc759f2c23960b39b511a2",
       "summary": {
         "name": "Docker Engine API",
         "serverUrl": "",

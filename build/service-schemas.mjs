@@ -13,7 +13,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
 import { credentialResultSources } from '../src/lib/credential-results.ts';
 import { bitbucketContentSourceSha256 } from '../src/lib/parameter-content.ts';
 import { trelloParameterSourceSha256 } from '../src/lib/trello-parameter-arrays.ts';
@@ -179,6 +179,7 @@ for (const source of sources) {
   if (Object.hasOwn(catalogPathBindingSources, source.id)) patches.push(catalogPathBindings);
   if (source.id === 'bitbucket-dc') patches.push(bitbucketContentParameters);
   if (source.id === 'trello') patches.push(trelloParameterArrays);
+  if (source.id === 'atlassian-assets') patches.push(assetsImportSourceParameter);
   if (Object.hasOwn(credentialResultSources, source.id)) patches.push(privateCredentialResults);
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });

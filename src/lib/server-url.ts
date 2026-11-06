@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+/** A valid route whose account-specific destination has not been configured. */
+export class ServerConfigurationRequiredError extends Error {}
+
 /** Check server templates before URL parsing can conceal markers by encoding them. */
 export function serverUrlHasPlaceholder(value: string): boolean
 {
