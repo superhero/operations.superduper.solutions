@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "d70756e65855c3ba843bc595b539eb15c7d6aaf005654e2a718d990074363da4",
+  "adapterRevision": "b492890c49be3660f96ff2f0e6f6d382ec638dfcd39809297c3e9801641d8096",
   "indexes": [
     {
       "id": "anthropic",
@@ -151,16 +151,16 @@
     },
     {
       "id": "bamboo",
-      "sourceRevision": "0e9b555fcf5f4c5147332f5ac5bce232fbe0e6d8ab5cd5b127c17edd4cd364ff",
-      "bytes": 156999,
-      "compressedBytes": 9714,
-      "sha256": "c164ed4fa30dd63713996d8eac0a3ba2eb075586254b4beb22a737b9afdc0ee5",
+      "sourceRevision": "e03ac69137d7a801496ff737b113de364e670870fe3cda2b0976c3263d6d11cd",
+      "bytes": 156875,
+      "compressedBytes": 9602,
+      "sha256": "9094b53a0cb35a676bd939dc9c431916d214ee53eb7df17be0ce1d6a43f7829a",
       "summary": {
         "name": "Bamboo",
         "serverUrl": "http://example.com:8085/rest",
         "description": "This is the reference document for the Atlassian Bamboo REST API. The REST API is for developers who want to: \n\n - integrate Bamboo with other applications;\n\n - create scripts that interact with Bamboo; or\n\n - develop plugins that enhance the Bamboo UI, using REST to interact with the backend. \n\n You can read more about developing Bamboo plugins in the [Bamboo Developer Documentation](https://developer.atlassian.com/bamboo/server/docs/latest/).",
         "operationCount": 404,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
@@ -289,16 +289,16 @@
     },
     {
       "id": "crowd-dc",
-      "sourceRevision": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
-      "bytes": 48836,
-      "compressedBytes": 4459,
-      "sha256": "e1d89e820ac0b3196397b2d73dff8c40809e9c71bed8dcefd64cb4095fec896d",
+      "sourceRevision": "1b9ae7af271997a4be8990104cdbf096643ae88d4f00010e46ae765743cbe1fe",
+      "bytes": 48712,
+      "compressedBytes": 4429,
+      "sha256": "fc148cc56dcfa625673f9c7fc570ac61df341041e0079f282b2a66abbdb1630f",
       "summary": {
         "name": "Crowd Data Center",
         "serverUrl": "http://example.com:8095/rest",
         "description": "This is the reference document for the Atlassian Crowd DC REST API. The REST API is for developers who want to: \\n\\n - integrate Crowd with other applications;\\n\\n - create scripts that interact with Crowd; or\\n\\n - develop plugins that enhance the Crowd UI, using REST to interact with the backend. \\n\\n You can read more about developing Crowd plugins in the [Crowd Developer Documentation](https://developer.atlassian.com/server/crowd/).",
         "operationCount": 143,
-        "unavailableCount": 2
+        "unavailableCount": 1
       }
     },
     {
@@ -413,16 +413,16 @@
     },
     {
       "id": "jira-service-management-dc",
-      "sourceRevision": "3226c59d907a9eadbd19288d0be51096d15f746e5fe1714197b1e1777e899de1",
-      "bytes": 218131,
-      "compressedBytes": 16970,
-      "sha256": "ef5fbd9a844c3b423a6d6d9af24714316c006632b9ac5706fe3908423f288256",
+      "sourceRevision": "cf0304fb650d32c40ed9c92e61e373cb464d457940ff26a76436bc197f4664ca",
+      "bytes": 217629,
+      "compressedBytes": 16944,
+      "sha256": "20c99f2dc0f58c3888dd4699f46ef9e76fe9224d995164e24d700a2008669dc7",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Service Management Data Center. The REST APIs are for developers who want to integrate Jira Service Management Data Center with other applications, and for administrators who want to script configuration interactions with Jira Service Management Data Center.## Using the REST API\nNot familiar with the Jira Service Management REST APIs? Start with our [Guide to exploring the Jira Service Management domain model via the REST APIs](https://developer.atlassian.com/display/JIRADEV/Guide+-+Exploring+the+JIRA+Service+Desk+domain+model+via+the+REST+APIs), which will help you get a conceptual understanding of the Jira Service Management Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the information on the following topics:\n* [Structure of the REST URIs](/server/jira-servicedesk/info/url-structure)\n* [Authentication](/server/jira-servicedesk/info/authentication)\n* [Expansion](/server/jira-servicedesk/info/expansion)\n* [Special headers](/server/jira-servicedesk/info/special-headers)\n* [Field input formats](/server/jira-servicedesk/info/field-input-formats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 514,
-        "unavailableCount": 10
+        "unavailableCount": 7
       }
     },
     {
@@ -455,16 +455,16 @@
     },
     {
       "id": "jira-dc",
-      "sourceRevision": "c5dd26b63ac838fef431bf039e6ed6976748ed467f30bb4a072cc723b69b4c57",
-      "bytes": 169596,
-      "compressedBytes": 14210,
-      "sha256": "a90ad093d7bea863c93ba96ac99bfa27ff46d2f576d5d938d876be3e036c846b",
+      "sourceRevision": "501543918b9d643c743783f7df0bcb6f872c9ed97707faa53f47fd3ef99888f4",
+      "bytes": 169095,
+      "compressedBytes": 14178,
+      "sha256": "0461c58407ee2341e066df5dea61d4f5c02c6fcc594c5a90fd45e65db2eae04a",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
         "description": "This is the reference document for the REST API and resources provided by Jira Software Data Center. The REST APIs are for developers who want to integrate Jira Data Center with other applications, and for administrators who want to script configuration interactions with Jira Data Center.\n\nJira Data Center is built upon the Jira platform.  As such there is a natural overlap in functionality between what is provided by Jira Data Center and what is provided by the Jira platform.  If you are after an introductory, high-level view of the Jira REST APIs, then the best place to start is the [Jira REST API home](https://developer.atlassian.com/server/jira/platform/rest-apis/).\n## Using the REST API\nNot familiar with the Jira Data Center REST APIs? Start with our [Guide to exploring the Jira Data Center domain model via the REST APIs](https://developer.atlassian.com/server/jira/platform/tutorials_and_guides/), which will help you get a conceptual understanding of the Jira Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the [Appendix](#appendix) at the end of this page (after the resources), where you'll find information on the following topics:\n* [Structure of the REST URIs](#structure)\n* [Authentication](#authentication)\n* [Pagination](#pagination)\n* [Expansion](#expansion)\n* [Special headers](#special-headers)\n* [Field input formats](#fieldformats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
         "operationCount": 437,
-        "unavailableCount": 7
+        "unavailableCount": 4
       }
     },
     {

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
 import operations from '../tests/atlassian-dc-operations.json' with { type: 'json' };
+import catalogSources from './catalogs/services/index.json' with { type: 'json' };
 import { atlassianDcAuthenticationSources } from './lib/atlassian-dc-authentication.ts';
 import { applySchemaPatches, atlassianDcAuthentication, schemaPatchName } from './lib/schema-patches.ts';
 import { readServiceSchema, readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
@@ -25,7 +26,9 @@ Then('all 699 reviewed Data Center operations retain source scopes alternatives 
   for (const [catalog, ids] of Object.entries(operations)) {
     const upstream = await readServiceSchemaUpstream(catalog), original = JSON.stringify(upstream), source = await readServiceSchema(catalog);
     assert.equal(createHash('sha256').update(original).digest('hex'), atlassianDcAuthenticationSources[catalog]);
-    assert.deepEqual(source, patch(upstream)); assert.equal(JSON.stringify(upstream), original);
+    const descriptor = catalogSources.find(source => source.id === catalog);
+    assert.deepEqual(source, applySchemaPatches(upstream, descriptor.patches)); assert.equal(JSON.stringify(upstream), original);
+    assert.deepEqual(source.components.securitySchemes, patch(upstream).components.securitySchemes);
     assert.deepEqual(source['x-upstream-security-schemes'], upstream.components.securitySchemes);
     const selected = inspectServiceSchema(source, catalog, new Set(ids)).operations;
     assert.equal(selected.length, ids.length);

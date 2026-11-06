@@ -1,0 +1,10 @@
+[
+  "bamboo:PUT /api/latest/avatar/user/avatar.png",
+  "crowd-dc:POST /rest/admin/1.0/samlconfig/application/parse_metadata_multipart",
+  "jira-dc:POST /api/2/issuetype/{id}/avatar/temporary",
+  "jira-dc:POST /api/2/project/{projectIdOrKey}/avatar/temporary",
+  "jira-dc:POST /api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp",
+  "jira-service-management-dc:POST /api/2/issuetype/{id}/avatar/temporary",
+  "jira-service-management-dc:POST /api/2/project/{projectIdOrKey}/avatar/temporary",
+  "jira-service-management-dc:POST /api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp"
+]

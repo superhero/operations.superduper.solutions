@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/atlassian-files.test.mjs",
     "src/multipart-parts.test.mjs",
     "src/inline-worker-codec.test.mjs",
     "src/literal-query.test.mjs",

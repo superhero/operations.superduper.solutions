@@ -241,12 +241,16 @@
         "version": 1
       },
       {
+        "id": "atlassian-file-parts",
+        "version": 1
+      },
+      {
         "id": "catalog-path-bindings",
         "version": 1
       }
     ],
-    "effectiveSha256": "0e9b555fcf5f4c5147332f5ac5bce232fbe0e6d8ab5cd5b127c17edd4cd364ff",
-    "effectiveBytes": 614299
+    "effectiveSha256": "e03ac69137d7a801496ff737b113de364e670870fe3cda2b0976c3263d6d11cd",
+    "effectiveBytes": 615217
   },
   {
     "id": "bitbucket",
@@ -424,7 +428,15 @@
     "sha256": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
     "sourceSha256": "18aa47f13f41b239d515510e8ed95497adc591afebb52e6f7ad9097edba7cca4",
     "bytes": 264596,
-    "compressedBytes": 35462
+    "compressedBytes": 35462,
+    "patches": [
+      {
+        "id": "atlassian-file-parts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1b9ae7af271997a4be8990104cdbf096643ae88d4f00010e46ae765743cbe1fe",
+    "effectiveBytes": 265471
   },
   {
     "id": "atlassian-customer-service-management",
@@ -602,12 +614,16 @@
         "version": 1
       },
       {
+        "id": "atlassian-file-parts",
+        "version": 1
+      },
+      {
         "id": "catalog-path-bindings",
         "version": 1
       }
     ],
-    "effectiveSha256": "3226c59d907a9eadbd19288d0be51096d15f746e5fe1714197b1e1777e899de1",
-    "effectiveBytes": 786374
+    "effectiveSha256": "cf0304fb650d32c40ed9c92e61e373cb464d457940ff26a76436bc197f4664ca",
+    "effectiveBytes": 788907
   },
   {
     "id": "jira-service-management-ops",
@@ -683,12 +699,16 @@
         "version": 1
       },
       {
+        "id": "atlassian-file-parts",
+        "version": 1
+      },
+      {
         "id": "catalog-path-bindings",
         "version": 1
       }
     ],
-    "effectiveSha256": "c5dd26b63ac838fef431bf039e6ed6976748ed467f30bb4a072cc723b69b4c57",
-    "effectiveBytes": 634278
+    "effectiveSha256": "501543918b9d643c743783f7df0bcb6f872c9ed97707faa53f47fd3ef99888f4",
+    "effectiveBytes": 636790
   },
   {
     "id": "atlassian-marketplace",
