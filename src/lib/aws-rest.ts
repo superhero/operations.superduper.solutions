@@ -15,11 +15,15 @@ export const awsRestPrivateResultPaths: Record<string, string[]> = {
   "aws-apigateway:UpdateApiKey": ["value"],
   "aws-lambda:GetFunction": ["Code", "Location"],
   "aws-lambda:GetLayerVersion": ["Content", "Location"],
+  "aws-lambda:GetLayerVersionByArn": ["Content", "Location"],
 };
 export function awsRestPrivateInputKeys(operation: Operation): string[] {
   if (operation.awsRest !== awsRestSigningProfile) return [];
-  return operation.id === "aws-apigateway:CreateApiKey" ? ["body:value"]
-    : operation.id === "aws-s3:HeadObject" ? ["header:x-amz-server-side-encryption-customer-key"] : [];
+  const root = awsRestContract(operation), source = root && awsRestContracts().sources[root.catalog];
+  const keys = source ? Object.entries(awsRestRoot(source, root!.input, root!.inputTraits).members ?? {})
+    .filter(([name, member]) => member.location === "header" && ["SSECustomerKey", "CopySourceSSECustomerKey", "RequestToken"].includes(name))
+    .map(([name, member]) => "header:" + (member.locationName ?? name)) : [];
+  return operation.id === "aws-apigateway:CreateApiKey" ? ["body:value", ...keys] : keys;
 }
 export type AwsRestShape = {
   shape?: string; type?: string; members?: Record<string, AwsRestShape>; member?: AwsRestShape;
@@ -40,6 +44,8 @@ export type AwsRestContract = {
   nativePath: string; path: string; greedy: string[]; status: number;
   input: string | null; output: string | null;
   inputTraits?: AwsRestShape; outputTraits?: AwsRestShape;
+  wirePath?: string; fixedQuery?: [string, string][]; endpoint?: { hostPrefix: string };
+  checksum?: { required?: boolean; algorithmMember?: string };
   wireSources?: string[];
 };
 export type AwsRestContracts = { version: 1; sources: Record<string, AwsRestSource>; operations: Record<string, AwsRestContract> };
@@ -54,7 +60,7 @@ function freeze(value: unknown): void {
 export function awsRestContracts(): AwsRestContracts {
   if (!cached) {
     const data = decodeAwsRestData() as AwsRestContracts;
-    if (data.version !== 1 || Object.keys(data.sources).length !== 14 || Object.keys(data.operations).length !== 659)
+    if (data.version !== 1 || Object.keys(data.sources).length !== 15 || Object.keys(data.operations).length !== 849)
       throw new Error("The AWS REST contracts have an unknown revision.");
     freeze(data); cached = data;
   }
@@ -63,6 +69,10 @@ export function awsRestContracts(): AwsRestContracts {
 export function awsRestContract(operation: Pick<Operation, "id" | "method" | "path">): AwsRestContract | undefined {
   const contracts = awsRestContracts(), contract = Object.hasOwn(contracts.operations, operation.id) ? contracts.operations[operation.id] : undefined;
   return contract?.method === operation.method && contract.path === operation.path ? contract : undefined;
+}
+/** A canonical selector identifies an operation; the pinned SDK path is the wire route. */
+export function awsRestWirePath(operation: Pick<Operation, "id" | "method" | "path">): string | undefined {
+  return awsRestContract(operation)?.wirePath;
 }
 export function awsRestShape(source: AwsRestSource, reference: AwsRestShape): AwsRestShape {
   if (!reference.shape) return reference;
@@ -105,7 +115,8 @@ export function configureAwsRest(operation: Operation): void {
   operation.awsRestRevision = awsRestDataSha256;
 }
 export function awsRestUsesS3Keys(operation: Operation): boolean {
-  return operation.awsRest === awsRestSigningProfile && awsRestContract(operation)?.catalog === "aws-s3";
+  return operation.awsRest === awsRestSigningProfile && operation.id !== "aws-s3:WriteGetObjectResponse"
+    && awsRestContract(operation)?.catalog === "aws-s3";
 }
 export function awsRestTransportAccept(operation: Operation): string | undefined {
   if (operation.awsRest !== awsRestSigningProfile) return;
@@ -129,7 +140,8 @@ export function validAwsRestModel(operation: Operation): boolean {
     const location = { path: "uri", query: "querystring", header: "header" }[field.location as "path" | "query" | "header"];
     if (!location || !Object.entries(root.members ?? {}).some(([name, member]) => {
       const resolved = awsRestShape(source, member), wire = member.locationName ?? name;
-      return resolved.location === location && (location === "header" ? wire.toLowerCase() === field.name.toLowerCase() : wire === field.name);
+      return (resolved.location === location || location === "header" && resolved.location === "headers")
+        && (location === "header" ? wire.toLowerCase() === field.name.toLowerCase() : wire === field.name);
     })) return false;
   }
   const alternatives = operation.security;

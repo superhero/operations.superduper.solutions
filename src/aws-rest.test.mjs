@@ -7,6 +7,7 @@ import { crc32 } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import ids from '../tests/aws-rest-operations.json' with {type:'json'};
 import headerArrayIds from '../tests/header-array-operations.json' with {type:'json'};
+import selectorIds from '../tests/aws-rest-selectors.json' with {type:'json'};
 import { awsRestContracts, awsRestEndpoint, awsRestSigningProfile, awsRestPrivateResultPaths, validAwsRestModel } from './lib/aws-rest.ts';
 import { awsRestDataSha256 } from './lib/aws-rest-data.ts';
 import { decodeAwsRestResponse, prepareAwsRestRequest, awsEventCrc32 } from './lib/aws-rest-codec.ts';
@@ -33,6 +34,7 @@ const bad = error => error?.code==='CODEC';
 Then('all 658 native AWS REST operations have qualified canonical and strict models',async()=>{
   const selected=new Set(ids),found=new Set(),failures=[];
   for(const catalog of Object.keys(awsRestContracts().sources)) {
+    if (!ids.some(id=>id.startsWith(catalog+':'))) continue;
     const document=await readServiceSchema(catalog),canonical=inspectServiceSchema(document,catalog,selected).operations;
     const scoped=structuredClone(document);scoped.paths=Object.fromEntries(Object.entries(document.paths).flatMap(([path,item])=>{
       const included=Object.fromEntries(Object.entries(item).filter(([method,value])=>!['get','put','post','patch','delete','head','options','trace'].includes(method)||selected.has(catalog+':'+value.operationId)));
@@ -47,9 +49,9 @@ Then('all 658 native AWS REST operations have qualified canonical and strict mod
 });
 
 Then('the reviewed AWS REST contracts retain pinned sources and reject other authorities',()=>{
-  const contracts=awsRestContracts();assert.equal(Object.keys(contracts.sources).length,14);
-  const reviewed=[...ids,...headerArrayIds];assert.equal(ids.length,658);
-  assert.deepEqual(new Set(Object.keys(contracts.operations)),new Set(reviewed));assert.equal(reviewed.length,659);
+  const contracts=awsRestContracts();assert.equal(Object.keys(contracts.sources).length,15);
+  const reviewed=[...ids,...headerArrayIds,...selectorIds];assert.equal(ids.length,658);
+  assert.deepEqual(new Set(Object.keys(contracts.operations)),new Set(reviewed));assert.equal(reviewed.length,849);
   assert.equal(createHash('sha256').update(JSON.stringify(contracts)).digest('hex'),awsRestDataSha256);
   for (const id of reviewed) {
     const operation=model(id),contract=contracts.operations[id],source=contracts.sources[contract.catalog];assert.ok(validAwsRestModel(operation),id);

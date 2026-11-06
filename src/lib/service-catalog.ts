@@ -10,7 +10,7 @@ import { configureGmailMessage } from "./gmail-message.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
-import { awsRestSigningProfile } from "./aws-rest.ts";
+import { awsRestSigningProfile, awsRestWirePath } from "./aws-rest.ts";
 import { awsJsonSigningProfile, configureAwsJson, validAwsJsonModel } from "./aws-json.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
@@ -294,7 +294,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         });
         inspect("endpoint", "unsupported-contract", () => {
           configureMistralVariant(operation, source["x-operations-mistral-variant"], source["x-operations-response-stream"]);
-          const wirePath = mistralVariantRoute(operation)?.path ?? literalQueryRoute(path)?.path ?? path;
+          const wirePath = awsRestWirePath(operation) ?? mistralVariantRoute(operation)?.path ?? literalQueryRoute(path)?.path ?? path;
           if (!wire && !jsonTarget && (wirePath.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(wirePath))) throw new Error("This endpoint uses a path or transport that is not supported.");
         });
         if (!upload && !wire && !s3 && !jsonTarget) {

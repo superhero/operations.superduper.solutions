@@ -43,6 +43,7 @@ async function nativeFixture(id) {
   const binding = { alternative: 0, fingerprint: descriptor.fingerprint, credentials: { [operation.security[0][0].name]: reference } };
   const input = Object.fromEntries(operation.fields.filter(field => field.required && field.location !== "body")
     .map(field => [field.key, field.type === "integer" || field.type === "number" ? "1" : "fixture"]));
+  if (id === "aws-lambda:GetLayerVersionByArn") input["query:Arn"] = "arn:aws:lambda:us-east-1:123456789012:layer:example:1";
   for (const field of operation.fields.filter(field => field.location === "body" && field.format === "binary"))
     input[field.key] = JSON.stringify(encodeWorkflowBinary("request.bin", new TextEncoder().encode("request λ"), "application/octet-stream"));
   return { descriptor, records, binding, input, contract, source };
@@ -97,6 +98,7 @@ Then("native AWS REST credential producers adopt wire response leaves before exp
     ["aws-apigateway:UpdateApiKey", { id: "key", value: issued }],
     ["aws-lambda:GetFunction", { Code: { Location: location } }],
     ["aws-lambda:GetLayerVersion", { Content: { Location: location } }],
+    ["aws-lambda:GetLayerVersionByArn", { Content: { Location: location } }],
   ];
   for (const [id, wireBody] of selected) {
     const f = await nativeFixture(id), acquired = [], responseId = crypto.randomUUID(); let calls = 0;

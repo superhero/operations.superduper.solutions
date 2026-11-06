@@ -10,7 +10,7 @@ import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
 import { validAwsWireModel, awsWireEndpoint } from "../aws-wire.ts";
 import { validAwsSigningModel, lambdaSigningRegion } from "../aws-signing.ts";
-import { awsRestEndpoint } from "../aws-rest.ts";
+import { awsRestEndpoint, awsRestWirePath } from "../aws-rest.ts";
 import { awsJsonEndpoint, validAwsJsonModel } from "../aws-json.ts";
 import { validateMultipartParts } from "../multipart-parts.ts";
 import { validS3FilesModel, s3SigningEndpoint } from "../s3-files.ts";
@@ -96,7 +96,7 @@ function validateOperation(operation: Operation): void
   else {
     try { validateLiteralQueryFields(operation.path, operation.fields); }
     catch { throw new VaultError("PERMISSION"); }
-    try { validateCredentialPath(mistralVariantRoute(operation)?.path ?? literalQueryRoute(operation.path)?.path ?? operation.path, true); }
+    try { validateCredentialPath(awsRestWirePath(operation) ?? mistralVariantRoute(operation)?.path ?? literalQueryRoute(operation.path)?.path ?? operation.path, true); }
     catch { throw new VaultError("PERMISSION"); }
   }
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");

@@ -28,7 +28,8 @@ import { signAwsRequest, type AwsSigningValues } from "./aws-sigv4.ts";
 import { awsCredentialParts, isAwsCredentialReference } from "./bindings.ts";
 import { awsSigningHeaders, lambdaSigningRegion } from "../aws-signing.ts";
 import { awsRestEndpoint, awsRestUsesS3Keys, awsRestTransportAccept } from "../aws-rest.ts";
-import { awsRestRequestUrl } from "../aws-rest-codec.ts";
+import { awsRestRequestTarget } from "../aws-rest-codec.ts";
+import { awsRestChecksums } from "../aws-rest-checksum.ts";
 import { fetchAwsGetBody } from "./aws-get-body.ts";
 import { awsWireEndpoint } from "../aws-wire.ts";
 import { awsJsonEndpoint } from "../aws-json.ts";
@@ -249,7 +250,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     }
     if (!approved.operation.s3Files && !awsRestUsesS3Keys(approved.operation)) validateCredentialPath(request.path);
-    const url = approved.operation.awsRest ? awsRestRequestUrl(approved.operation, approved.origin, request.path)
+    const restTarget = approved.operation.awsRest ? awsRestRequestTarget(approved.operation, approved.origin, request) : undefined;
+    const url = restTarget ? restTarget.url
       : approved.operation.s3Files ? s3ObjectUrl(approved.origin, request.path)
       : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken!) : new URL(`${approved.origin}${request.path}`);
     if (approved.operation.s3Files) publicRequest = { ...publicRequest, path: url.pathname };
@@ -275,7 +277,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       await options.assertCurrent(); if (signal.aborted) throw new VaultError("CANCELLED");
       if (s3Upload) headers.set("x-amz-checksum-sha256", await s3PayloadChecksum(body));
       else if (approved.operation.s3Files) headers.set("x-amz-checksum-mode", "ENABLED");
-      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.awsJson ? awsJsonEndpoint(approved.origin, approved.operation)! : approved.operation.awsRest ? awsRestEndpoint(approved.origin, approved.operation)! : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire)! : approved.operation.s3Files
+      if (restTarget) await awsRestChecksums(approved.operation, headers, body);
+      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.awsJson ? awsJsonEndpoint(approved.origin, approved.operation)! : restTarget ? restTarget.signing : approved.operation.awsWire ? awsWireEndpoint(approved.origin, approved.operation.awsWire)! : approved.operation.s3Files
         ? { service: "s3", region: s3SigningEndpoint(approved.origin)!.region } : { service: "lambda", region: lambdaSigningRegion(approved.origin)! });
       for (const [name, value] of signed.headers) headers.set(name, value);
       body = signed.body ?? null; awsSignedAt = signed.signedAt;

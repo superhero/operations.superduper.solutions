@@ -41,6 +41,8 @@ export type PreparedRequest = {
   contentType?: Exclude<BodyMediaType, "application/json">;
   bodyFormat?: "binary" | "text" | "cloudflare-assets" | "cloudflare-module" | "gmail-related";
   multipartParts?: MultipartParts;
+  /** Derived from a reviewed S3 Control ARN, never from an arbitrary destination. */
+  awsRestOutpost?: { region: string; account: string; id: string };
 };
 
 export class InputValidationError extends Error

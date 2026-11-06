@@ -10,6 +10,7 @@ import { encodeWorkflowBinary, validateWorkflowBinary, maxWorkflowUploadBytes } 
 import { encodeS3Key, validateS3Bucket } from "./s3-files.ts";
 import { awsRestEndpoint, awsRestUsesS3Keys } from "./aws-rest.ts";
 import { WorkflowBodyError } from "./workflow-body-error.ts";
+import { awsRestTarget, prepareAwsRestOutpost } from "./aws-rest-target.ts";
 
 const encoder = new TextEncoder(), decoder = new TextDecoder("utf-8", { fatal: true });
 const object = (value: unknown): value is Record<string, any> => !!value && typeof value === "object" && !Array.isArray(value);
@@ -138,6 +139,7 @@ const namespaces: Record<string, string> = {
   "aws-cloudfront": "http://cloudfront.amazonaws.com/doc/2020-05-31/",
   "aws-route53": "https://route53.amazonaws.com/doc/2013-04-01/",
   "aws-s3": "http://s3.amazonaws.com/doc/2006-03-01/",
+  "aws-s3control": "http://awss3control.amazonaws.com/doc/2018-08-20/",
 };
 function xmlDocument(bytes: Uint8Array, namespace: string, ok: boolean): [string, unknown] {
   const input = text(bytes);
@@ -189,6 +191,16 @@ export function prepareAwsRestRequest(operation: Operation, request: PreparedReq
   const contract = awsRestContract(operation)!, source = awsRestContracts().sources[contract.catalog]!;
   const root = awsRestRoot(source, contract.input, contract.inputTraits), payload = root.payload ? root.members?.[root.payload] : undefined;
   const query = { ...request.query }, headers = { ...request.headers }, styles = { ...request.querySerialization };
+  let path = request.path;
+  if (contract.wirePath) {
+    const selector = contract.path.slice(contract.path.indexOf("#"));
+    if (!selector.startsWith("#") || !path.endsWith(selector)) invalid();
+    path = path.slice(0, -selector.length);
+    for (const [name, value] of contract.fixedQuery ?? []) {
+      if (Object.hasOwn(query, name)) invalid();
+      Object.defineProperty(query, name, { value, enumerable: true, writable: true, configurable: true });
+    }
+  }
   for (const [name, member] of Object.entries(root.members ?? {})) {
     const shape = awsRestShape(source, member), wire = member.locationName ?? name;
     if (member.location === "querystring" && Object.hasOwn(query, wire)) {
@@ -209,8 +221,22 @@ export function prepareAwsRestRequest(operation: Operation, request: PreparedReq
       const key = Object.keys(headers).find(key => key.toLowerCase() === wire.toLowerCase());
       if (key) headers[key] = String(timestamp(headers[key], shape.timestampFormat ?? "rfc822", false));
     }
+    if (member.location === "headers") {
+      const key = Object.keys(headers).find(key => key.toLowerCase() === wire.toLowerCase());
+      if (key) {
+        let map: unknown; try { map = JSON.parse(headers[key]!); } catch { invalid(); }
+        if (!object(map) || !wire || Object.keys(map).length > 1000) invalid();
+        delete headers[key];
+        for (const [name, value] of Object.entries(map)) {
+          const full = wire + name;
+          if (!name || !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(full) || typeof value !== "string" || /[^\x20-\x7e]/.test(value)
+            || Object.keys(headers).some(key => key.toLowerCase() === full.toLowerCase())) invalid();
+          headers[full] = value;
+        }
+      }
+    }
   }
-  request = { ...request, query, headers, querySerialization: styles };
+  request = prepareAwsRestOutpost(operation, { ...request, path, query, headers, querySerialization: styles });
   if (request.body === undefined) return source.protocol === "rest-json" && !payload && !["GET", "HEAD", "DELETE"].includes(request.method)
     ? { ...request, body: {}, contentType: "application/json" } : request;
   if (payload && awsRestShape(source, payload).type === "blob") {
@@ -222,6 +248,10 @@ export function prepareAwsRestRequest(operation: Operation, request: PreparedReq
   }
   const body = payload ? object(request.body) ? own(request.body, root.payload!) : invalid() : request.body;
   const shape = payload ?? root;
+  if (payload && awsRestShape(source, payload).type === "string") {
+    if (typeof body !== "string") invalid();
+    return { ...request, body, bodyFormat: "text", contentType: "application/json" };
+  }
   if (source.protocol === "rest-json") return { ...request, body: jsonValue(source, shape, body, false, bounded()), contentType: "application/json" };
   const name = payload?.locationName ?? root.payload ?? root.locationName ?? contract.input;
   if (!name) invalid();
@@ -230,6 +260,10 @@ export function prepareAwsRestRequest(operation: Operation, request: PreparedReq
 }
 /** Preserve S3 greedy object keys without relying on URL path normalization. */
 export function awsRestRequestUrl(operation: Operation, origin: string, path: string): URL {
+  return awsRestRequestTarget(operation, origin, { method: operation.method, path, query: {} }).url;
+}
+export function awsRestRequestTarget(operation: Operation, origin: string, request: PreparedRequest) {
+  const path = request.path;
   if (!awsRestEndpoint(origin, operation)) invalid();
   if (awsRestUsesS3Keys(operation)) {
     const contract = awsRestContract(operation)!;
@@ -242,7 +276,7 @@ export function awsRestRequestUrl(operation: Operation, origin: string, path: st
       try { if ("/" + validateS3Bucket(path.slice(1)) !== path) invalid(); } catch { invalid(); }
     }
   }
-  return new URL(new URL(origin).origin + path);
+  return awsRestTarget(operation, origin, request);
 }
 /** Decode modelled bodies and header members into the logical SDK output shape. */
 export function decodeAwsRestResponse(operation: Operation, bytes: Uint8Array, headers: Headers, status: number): unknown {
@@ -269,7 +303,7 @@ export function decodeAwsRestResponse(operation: Operation, bytes: Uint8Array, h
   }
   if (resolved?.eventstream) {
     if (media !== "application/vnd.amazon.eventstream") throw new WorkflowBodyError("MEDIA");
-    return { ...result, [root.payload!]: decodeAwsRestEvents(source, resolved, bytes) };
+    return { ...result, [root.payload!]: decodeAwsRestEvents(source, resolved, bytes, contract.catalog) };
   }
   if (resolved?.type === "blob") {
     if (bytes.byteLength > maxWorkflowUploadBytes) throw new WorkflowBodyError("LIMIT");
@@ -285,7 +319,12 @@ export function decodeAwsRestResponse(operation: Operation, bytes: Uint8Array, h
   if (!["application/xml", "text/xml"].includes(media)) throw new WorkflowBodyError("MEDIA");
   const [name, value] = xmlDocument(bytes, namespaces[contract.catalog]!, true);
   const expected = payload?.locationName ?? root.payload ?? (contract.operation === "ListBuckets" ? "ListAllMyBucketsResult" : root.locationName ?? contract.output);
-  if (name !== expected) invalid();
+  // SDK structure identifiers are not XML root names (DeleteObjectsOutput is
+  // returned as DeleteResult). For newly qualified selectors, follow the SDK's
+  // explicitRoot:false parser and only enforce an explicitly named wrapper.
+  // Keep namespace/structure checks and reject S3's HTTP-200 error envelopes.
+  const wrapper = contract.wirePath ? payload?.locationName ?? root.locationName : expected;
+  if (["Error", "ErrorResponse"].includes(name) || wrapper && name !== wrapper) invalid();
   const decoded = xmlRead(source, payload ?? root, value, bounded());
   return payload ? { ...result, [root.payload!]: decoded } : object(decoded) ? { ...decoded, ...result } : invalid();
 }
@@ -297,8 +336,9 @@ export function awsEventCrc32(bytes: Uint8Array): number {
   let crc = 0xffffffff; for (const byte of bytes) crc = crcTable[(crc ^ byte) & 255]! ^ crc >>> 8; return (crc ^ 0xffffffff) >>> 0;
 }
 /** AWS binary event framing is distinct from HTTP text/SSE streaming. */
-function decodeAwsRestEvents(source: AwsRestSource, shape: AwsRestShape, bytes: Uint8Array): JsonValue[] {
+function decodeAwsRestEvents(source: AwsRestSource, shape: AwsRestShape, bytes: Uint8Array, catalog: string): JsonValue[] {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), events: JsonValue[] = [];
+  const terminal = catalog === "aws-s3" ? "End" : "InvokeComplete";
   let offset = 0, complete = false;
   while (offset < bytes.length) {
     if (complete || events.length >= 4096 || offset + 16 > bytes.length) invalid();
@@ -322,15 +362,26 @@ function decodeAwsRestEvents(source: AwsRestSource, shape: AwsRestShape, bytes: 
     if (cursor !== headersEnd || headers.get(":message-type") !== "event") invalid();
     const name = headers.get(":event-type")!, reference = shape.members?.[name]; if (!reference) invalid();
     const event = awsRestShape(source, reference), payloadMember = Object.entries(event.members ?? {}).find(([, member]) => member.eventpayload);
+    if (event.exception) invalid();
     const payload = bytes.subarray(headersEnd, end - 4); let value: JsonValue;
-    if (payloadMember) {
+    if (payloadMember && awsRestShape(source, payloadMember[1]).type === "blob") {
       if (payload.length > maxWorkflowUploadBytes) throw new WorkflowBodyError("LIMIT");
       value = { [payloadMember[0]]: encodeWorkflowBinary(name + ".bin", payload, headers.get(":content-type") || "application/octet-stream") };
+    } else if (source.protocol === "rest-xml") {
+      if (!Object.keys(event.members ?? {}).length) { if (payload.length) invalid(); value = {}; }
+      else {
+        // S3 Stats/Progress event payloads are XML structures; their envelope
+        // need not repeat the enclosing S3 response namespace.
+        const media = headers.get(":content-type"); if (media && !["text/xml", "application/xml"].includes(media)) invalid();
+        const [, root] = xmlDocument(payload, namespaces[catalog]!, false);
+        const decoded = xmlRead(source, payloadMember?.[1] ?? reference, root, bounded());
+        value = payloadMember ? { [payloadMember[0]]: decoded } : decoded;
+      }
     } else {
       let parsed: unknown; try { parsed = JSON.parse(text(payload)); } catch { invalid(); }
       value = jsonValue(source, reference, parsed, true, bounded());
     }
-    events.push({ [name]: value }); complete = name === "InvokeComplete"; offset = end;
+    events.push({ [name]: value }); complete = name === terminal; offset = end;
   }
   if (!complete) invalid(); return events;
 }

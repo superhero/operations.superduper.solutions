@@ -118,6 +118,33 @@ export function bindAwsRest(document: Record<string, any>): void {
         if (!Object.keys(item).some(key => methods.has(key))) delete document.paths[contract.nativePath];
       }
     }
+    if (contract.wirePath && source.protocol === "rest-xml" && operation.requestBody
+      && !(input.payload && input.members?.[input.payload] && awsRestShape(source, input.members[input.payload]!).type === "blob")) {
+      const body = resolve(operation.requestBody, document), entries = Object.entries(body.content ?? {});
+      requireContract(entries.length === 1 && ["text/xml", "application/xml", "application/json"].includes(entries[0]![0]), id);
+      const media = entries[0]![1]; requireContract(object(media), id);
+      const schema = structuredClone(resolve(media.schema, document)); requireContract(object(schema.properties), id);
+      operation["x-upstream-aws-rest-body"] ??= structuredClone(operation.requestBody);
+      for (const [name, member] of Object.entries(input.members ?? {})) if (member.location === "headers") {
+        const wire = member.locationName ?? name, key = Object.hasOwn(schema.properties, wire) ? wire : name;
+        if (!Object.hasOwn(schema.properties, key)) continue;
+        operation["x-upstream-aws-rest-parameters"] ??= structuredClone(operation.parameters ?? []);
+        operation.parameters ??= [];
+        requireContract(!operation.parameters.some((parameter: unknown) => { const p = resolve(parameter, document); return p.in === "header" && p.name.toLowerCase() === wire.toLowerCase(); }), id);
+        operation.parameters.push({ name: wire, in: "header", required: input.required?.includes(name) === true, schema: schema.properties[key] });
+        delete schema.properties[key];
+        if (Array.isArray(schema.required)) schema.required = schema.required.filter((value: string) => value !== key);
+      }
+      const bodyMembers = Object.entries(input.members ?? {}).filter(([, member]) => !member.location);
+      if (!input.payload && bodyMembers.length === 0) {
+        requireContract(Object.keys(schema.properties).length === 0, id); delete operation.requestBody;
+      } else {
+        const required = new Set((input.required ?? []).filter(name => !input.members?.[name]?.location));
+        if (Array.isArray(schema.required)) schema.required = schema.required.filter((key: string) => required.has(key)
+          || bodyMembers.some(([name, member]) => member.locationName === key && required.has(name)));
+        operation.requestBody = { ...body, required: required.size > 0, content: { "application/json": { ...media, schema } } };
+      }
+    }
     const payload = input.payload ? input.members?.[input.payload] : undefined;
     if (payload && awsRestShape(source, payload).type === "blob") {
       requireContract(operation["x-upstream-aws-rest-body"] === undefined && object(operation.requestBody));
@@ -137,7 +164,7 @@ export function bindAwsRest(document: Record<string, any>): void {
           const event = structuredClone(resolve(schema.properties[output.payload!], document)); requireContract(object(event.properties), id);
           for (const [name, member] of Object.entries(resolved.members ?? {})) {
             const shape = awsRestShape(source, member), eventPayload = Object.entries(shape.members ?? {}).find(([, member]) => member.eventpayload);
-            if (eventPayload) {
+            if (eventPayload && awsRestShape(source, eventPayload[1]).type === "blob") {
               const child = structuredClone(resolve(event.properties[name], document)); requireContract(object(child.properties));
               child.properties[eventPayload[0]] = fileSchema(); event.properties[name] = child;
             }
@@ -155,7 +182,11 @@ export function bindAwsRest(document: Record<string, any>): void {
         const location = ({ path: "uri", query: "querystring", header: "header" } as Record<string, string>)[parameter.in];
         const named = Object.entries(input.members ?? {}).filter(([name, member]) => parameter.name === (member.locationName ?? name)
           || parameter.name === name || String(parameter.name).toLowerCase() === (member.locationName ?? name).toLowerCase());
-        const matches = named.filter(([, member]) => member.location === location);
+        // Generated catalogs sometimes expose a literal SDK subresource as an
+        // editable parameter. Its pinned value is supplied by the wire contract.
+        if (parameter.in === "query" && contract.fixedQuery?.some(([name]) => name === parameter.name)
+          && !named.some(([, member]) => member.location === "querystring")) return [];
+        const matches = named.filter(([, member]) => member.location === location || location === "header" && member.location === "headers");
         const bodyMatch = named.filter(([, member]) => !member.location);
         if (!matches.length && parameter.in === "query" && bodyMatch.length === 1) {
           const getBody = id === "aws-elasticfilesystem:DescribeAccountPreferences" && contract.method === "GET";
@@ -178,6 +209,11 @@ export function bindAwsRest(document: Record<string, any>): void {
             && candidate.description !== parameter.description;
         })) return [];
         const schema = parameter.schema ? inputSchema(parameter.schema, document) : undefined;
+        if (member.location === "headers") {
+          requireContract(schema?.type === "object" && parameter.in === "header" && parameter.content === undefined, id);
+          return [{ ...parameter, name: wire, schema: { type: "string", maxLength: 65536 },
+            description: (parameter.description ?? "") + " Enter a JSON object of string metadata values; names are appended to " + wire + "." }];
+        }
         if (id === "aws-runtime-sagemaker:InvokeEndpoint" && member.location === "header" && wire.toLowerCase() === "x-amzn-sagemaker-custom-attributes") {
           // The source explicitly requires visible US-ASCII. Its unanchored
           // \p{ASCII}* expression otherwise matches the empty substring of anything.

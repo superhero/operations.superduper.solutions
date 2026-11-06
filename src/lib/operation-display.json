@@ -543,5 +543,70 @@
     "method": "POST",
     "path": "/rest/api/3/issue/{issueIdOrKey}/attachments",
     "description": "Attach one or more files to an issue using multipart/form-data. Send attachments as file parts and include X-Atlassian-Token: no-check. Project permissions and issue-level access restrictions apply. See the full operation documentation for upload examples and authentication scopes."
+  },
+  "aws-s3:CompleteMultipartUpload": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#uploadId",
+    "description": "Complete a multipart upload by assembling the uploaded parts into an S3 object."
+  },
+  "aws-s3:CopyObject": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#x-amz-copy-source",
+    "description": "Copy an S3 object to the selected bucket and key. Source permissions, encryption settings and copy conditions apply."
+  },
+  "aws-s3:CreateMultipartUpload": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#uploads",
+    "description": "Start a multipart upload and return its upload ID. Upload the parts, then complete or abort the upload."
+  },
+  "aws-s3:GetObjectAttributes": {
+    "method": "GET",
+    "path": "/{Bucket}/{Key}#attributes&x-amz-object-attributes",
+    "description": "Read selected S3 object attributes, including supported checksums and multipart metadata."
+  },
+  "aws-s3:PutBucketAcl": {
+    "method": "PUT",
+    "path": "/{Bucket}#acl",
+    "description": "Set a bucket access control policy. S3 Object Ownership and public access settings may restrict ACL changes."
+  },
+  "aws-s3:PutBucketInventoryConfiguration": {
+    "method": "PUT",
+    "path": "/{Bucket}#inventory&id",
+    "description": "Set an S3 bucket inventory configuration for object metadata reports."
+  },
+  "aws-s3:PutObjectAcl": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#acl",
+    "description": "Set an S3 object access control policy. Object ownership and public access settings may restrict ACL changes."
+  },
+  "aws-s3:RestoreObject": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#restore",
+    "description": "Request retrieval or restoration of an archived S3 object using the specified restore parameters."
+  },
+  "aws-s3:SelectObjectContent": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#select&select-type=2",
+    "description": "Run an SQL expression against an S3 object and return record, progress and statistics events."
+  },
+  "aws-s3:UploadPart": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#partNumber&uploadId",
+    "description": "Upload one part of an S3 multipart upload using its upload ID and part number."
+  },
+  "aws-s3:UploadPartCopy": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#x-amz-copy-source&partNumber&uploadId",
+    "description": "Copy source object data into one part of an S3 multipart upload."
+  },
+  "aws-s3control:PutBucketReplication": {
+    "method": "PUT",
+    "path": "/v20180820/bucket/{name}/replication#x-amz-account-id",
+    "description": "Set the replication configuration for an S3 on Outposts bucket."
+  },
+  "aws-s3control:PutBucketTagging": {
+    "method": "PUT",
+    "path": "/v20180820/bucket/{name}/tagging#x-amz-account-id",
+    "description": "Replace the tag set for an S3 on Outposts bucket."
   }
 }
