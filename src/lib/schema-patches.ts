@@ -7,6 +7,7 @@ export { awsWireSources } from "./aws-wire.ts";
 import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
+import { bindBetaRoutes } from "./literal-query.ts";
 import { bindMultipartFiles } from "./multipart-file-contracts.ts";
 import { bindAwsRest } from "./aws-rest-bindings.ts";
 import { bindAtlassianTenantServers } from "./atlassian-tenant-servers.ts";
@@ -23,7 +24,8 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
 export const multipartFileContracts: SchemaPatch = { id: "multipart-file-contracts", version: 1 };
 export const awsRestContractsPatch: SchemaPatch = { id: "aws-rest-contracts", version: 1 };
 export const atlassianTenantServers: SchemaPatch = { id: "atlassian-tenant-servers", version: 1 };
@@ -62,7 +64,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "multipart-file-contracts" ? "Reviewed multipart file wire contracts"
+  return patch.id === "beta-route-contracts" ? "Beta routes and private work results"
+    : patch.id === "multipart-file-contracts" ? "Reviewed multipart file wire contracts"
     : patch.id === "aws-rest-contracts" ? "AWS REST signing and wire contracts"
     : patch.id === "atlassian-tenant-servers" ? "Atlassian tenant server variables"
     : patch.id === "assets-import-source-parameter" ? "Assets import-source path identity"
@@ -629,10 +632,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "aws-rest-contracts") bindAwsRest(document);
+    else if (patch.id === "beta-route-contracts") bindBetaRoutes(document);
     else if (patch.id === "multipart-file-contracts") bindMultipartFiles(document);
     else if (patch.id === "atlassian-tenant-servers") bindAtlassianTenantServers(document);
     else if (patch.id === "assets-import-source-parameter") bindAssetsImportSource(document);

@@ -17,7 +17,8 @@ export function bindMultipartFiles(document: Record<string, any>): void {
     : document.info?.title === "ElevenLabs API Documentation" && document.info.version === "1.0"));
   const origin = anthropic ? "https://api.anthropic.com" : "https://api.elevenlabs.io";
   requireContract(document.servers?.length === 1 && document.servers[0].url === origin);
-  const routes = anthropic ? [["/v1/skills", "create_skill_v1_skills_post"], ["/v1/skills/{skill_id}/versions", "create_skill_version_v1_skills__skill_id__versions_post"]]
+  const routes = anthropic ? [["/v1/skills", "create_skill_v1_skills_post"], ["/v1/skills/{skill_id}/versions", "create_skill_version_v1_skills__skill_id__versions_post"],
+    ["/v1/skills?beta=true", "beta_create_skill_v1_skills_post"], ["/v1/skills/{skill_id}/versions?beta=true", "beta_create_skill_version_v1_skills__skill_id__versions_post"]]
     : [["/v1/voices/add", "add_voice"], ["/v1/voices/{voice_id}/edit", "edit_voice"]];
   for (const [path, id] of routes) {
     const item = document.paths?.[path!], operation = item?.post;

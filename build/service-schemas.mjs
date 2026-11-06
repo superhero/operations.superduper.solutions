@@ -13,7 +13,8 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { betaRouteSources } from '../src/lib/literal-query.ts';
 import { multipartFileSources } from '../src/lib/multipart-file-contracts.ts';
 import { credentialResultSources } from '../src/lib/credential-results.ts';
 import { bitbucketContentSourceSha256 } from '../src/lib/parameter-content.ts';
@@ -127,6 +128,8 @@ for (const source of sources) {
     }
   }
   const json = JSON.stringify(document);
+  if (Object.hasOwn(betaRouteSources, source.id) && sha(json) !== betaRouteSources[source.id])
+    throw new Error("Beta routes require requalification before updating their pinned native source.");
   if (Object.hasOwn(multipartFileSources, source.id) && sha(json) !== multipartFileSources[source.id])
     throw new Error("Multipart file contracts require requalification before updating their pinned native source.");
   if (Object.hasOwn(awsRestSourcePins(), source.id) && sha(json) !== awsRestSourcePins()[source.id])
@@ -185,6 +188,7 @@ for (const source of sources) {
     : source.profile === 'aws-s3-files' ? [awsS3Files]
     : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
 
+  if (Object.hasOwn(betaRouteSources, source.id)) patches.push(betaRouteContracts);
   if (Object.hasOwn(multipartFileSources, source.id)) patches.push(multipartFileContracts);
   if (Object.hasOwn(awsRestSourcePins(), source.id)) patches.push(awsRestContractsPatch);
   if (Object.hasOwn(atlassianTenantServerSources, source.id)) patches.push(atlassianTenantServers);

@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/literal-query.test.mjs",
     "src/multipart-files.test.mjs",
     "src/jsonl-request-body.test.mjs",
     "src/yaml-request-body.test.mjs",
@@ -128,6 +129,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/literal-query.feature",
     "src/multipart-files.feature",
     "src/jsonl-request-body.feature",
     "src/yaml-request-body.feature",

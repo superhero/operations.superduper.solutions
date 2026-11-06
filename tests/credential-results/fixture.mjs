@@ -41,7 +41,8 @@ function valueFor(schema, name) {
   return 'synthetic'+ 'x'.repeat(Math.max(0, (schema.minLength ?? 0)-9));
 }
 export async function requestFixture(operation) {
-  const origin = operation.id.startsWith('github:') ? 'https://api.github.com' : 'https://api.elevenlabs.io';
+  const origin = operation.id.startsWith('github:') ? 'https://api.github.com'
+    : operation.id.startsWith('anthropic:') ? 'https://api.anthropic.com' : 'https://api.elevenlabs.io';
   const descriptor = await approvedOperation(operation, origin), credentials = [], choices = {}, variables = [], values = {};
   const credential = (name, value = `synthetic-private-auth-${credentials.length}-538046`) => {
     const item = { id:crypto.randomUUID(), label:name, kind:'secret', value, grants:[] }; credentials.push(item); return item.id;

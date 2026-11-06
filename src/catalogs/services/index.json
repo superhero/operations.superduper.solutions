@@ -19,12 +19,20 @@
         "version": 1
       },
       {
+        "id": "beta-route-contracts",
+        "version": 1
+      },
+      {
         "id": "multipart-file-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
         "version": 1
       }
     ],
-    "effectiveSha256": "4a6f8b775586161003f07d2da2fdb299d8e9852b8f5c65b812d2c6c317503b19",
-    "effectiveBytes": 1663675
+    "effectiveSha256": "bc5a60f16fbd17790700977767a8fd9aa66dbbfb8644c246075b311f5b217e29",
+    "effectiveBytes": 1682957
   },
   {
     "id": "atlassian-admin-api-access",
@@ -4891,10 +4899,14 @@
       {
         "id": "http-response-streaming",
         "version": 1
+      },
+      {
+        "id": "beta-route-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
-    "effectiveBytes": 3150328
+    "effectiveSha256": "d21f4cf22817a2f14b97c44f92091632134922a9110e237a732ba223da7b0672",
+    "effectiveBytes": 3150378
   },
   {
     "id": "codex",

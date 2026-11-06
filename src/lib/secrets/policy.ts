@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { literalQueryRoute, validateLiteralQueryFields } from "../literal-query.ts";
 import { supportsCredentialResults, privateResultOriginAllowed } from "../credential-results.ts";
 import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
@@ -86,7 +87,11 @@ function validateOperation(operation: Operation): void
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
   if (operation.awsWire !== undefined) { if (!validAwsWireModel(operation)) throw new VaultError("PERMISSION"); }
-  else validateCredentialPath(operation.path, true);
+  else {
+    try { validateLiteralQueryFields(operation.path, operation.fields); }
+    catch { throw new VaultError("PERMISSION"); }
+    validateCredentialPath(literalQueryRoute(operation.path)?.path ?? operation.path, true);
+  }
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
   if (operation.security?.some(alternative => !Array.isArray(alternative))) throw new VaultError("PERMISSION");
   if (operation.privatePath !== undefined) {

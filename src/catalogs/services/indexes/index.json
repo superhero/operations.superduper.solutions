@@ -1,17 +1,17 @@
 {
-  "adapterRevision": "8e6b93baaadbff3bac60c1de5bffabdda43fef9b360e75e7e3756286f96e92f6",
+  "adapterRevision": "963b2a821873a8cbe427f6d6c5926824932fa602de1532353b0877fcafc583b0",
   "indexes": [
     {
       "id": "anthropic",
-      "sourceRevision": "4a6f8b775586161003f07d2da2fdb299d8e9852b8f5c65b812d2c6c317503b19",
-      "bytes": 69263,
-      "compressedBytes": 3760,
-      "sha256": "6920398141c7e313b7641829eb891add7646e84ee3c8463aaed724600a309af1",
+      "sourceRevision": "bc5a60f16fbd17790700977767a8fd9aa66dbbfb8644c246075b311f5b217e29",
+      "bytes": 54981,
+      "compressedBytes": 3430,
+      "sha256": "6de0cfde42e46ea346756f5e2b341ae185b0bc9b219f6de2b7f0ec75ad562616",
       "summary": {
         "name": "Anthropic API",
         "serverUrl": "https://api.anthropic.com",
         "operationCount": 144,
-        "unavailableCount": 120
+        "unavailableCount": 0
       }
     },
     {
@@ -2951,16 +2951,16 @@
     },
     {
       "id": "openai",
-      "sourceRevision": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
-      "bytes": 122118,
-      "compressedBytes": 9832,
-      "sha256": "9cec17427b81cf240533098b193facb612dbce0b8d079037bc16adfe95b388de",
+      "sourceRevision": "d21f4cf22817a2f14b97c44f92091632134922a9110e237a732ba223da7b0672",
+      "bytes": 121284,
+      "compressedBytes": 9737,
+      "sha256": "c06dba70bdf22e029cef5f1f115861f9f6dbc4f6f1ac645cf369e53c9671679c",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",
         "description": "The OpenAI REST API. Please see https://platform.openai.com/docs/api-reference for more details.",
         "operationCount": 360,
-        "unavailableCount": 12
+        "unavailableCount": 5
       }
     },
     {

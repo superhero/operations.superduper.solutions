@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { InputField, JsonValue } from "./catalog.ts";
 import { encodeQueryComponent } from "./query-serialization.ts";
+import { validateLiteralQueryFields } from "./literal-query.ts";
 
 const primitives = new Set(["string", "number", "integer", "boolean"]);
 
@@ -30,6 +31,7 @@ export function encodeSimpleHeaderArray(input: InputField, value: JsonValue): st
 }
 
 export function validatePathParameters(path: string, fields: readonly Pick<InputField, "location" | "name">[]): void {
+  validateLiteralQueryFields(path, fields);
   const placeholders = new Set([...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]!));
   const names = new Set(fields.filter(field => field.location === "path").map(field => field.name));
   const missing = [...placeholders].filter(name => !names.has(name));

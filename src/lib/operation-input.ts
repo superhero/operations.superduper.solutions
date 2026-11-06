@@ -15,6 +15,7 @@ import { responseStreamProfile } from "./workflow-response-stream.ts";
 import type { QuerySerialization } from "./query-serialization.ts";
 import { encodeSimplePathArray, encodeSimpleHeaderArray } from "./parameter-serialization.ts";
 import { isJsonLinesRequestMediaType, validateJsonLinesBody } from "./request-media.ts";
+import { literalQueryRoute, validateLiteralQueryFields } from "./literal-query.ts";
 
 export type InputValue = string | null | undefined;
 export type InputValues = Record<string, InputValue>;
@@ -186,7 +187,10 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   if ((operation.credentialResult !== undefined || operation.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new Error("This operation returns credentials. Its private result adoption contract has not been qualified.");
   responseStreamProfile(operation.responseStream);
   if (operation.privatePath !== undefined && operation.privatePath !== "telegram-bot") throw new Error("This private token path is not supported.");
-  const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
+  const route = literalQueryRoute(operation.path);
+  try { validateLiteralQueryFields(operation.path, operation.fields); }
+  catch (cause) { throw new InputValidationError("query:beta", (cause as Error).message); }
+  const request: PreparedRequest = { method: operation.method, path: route?.path ?? operation.path, query: { ...route?.query } };
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
   if (operation.s3Files || operation.awsWire || operation.awsRest) for (const [key, value] of Object.entries(values)) {

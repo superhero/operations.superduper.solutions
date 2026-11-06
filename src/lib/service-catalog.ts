@@ -26,6 +26,7 @@ import { acceptsScalarQueryExplode, configureQueryArray } from "./query-serializ
 import { configureSimplePathArray, configureSimpleHeaderArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { providerPathSecurity } from "./provider-path-bindings.ts";
 import { isJsonRequestMediaType, isYamlRequestMediaType, isJsonLinesRequestMediaType } from "./request-media.ts";
+import { literalQueryRoute } from "./literal-query.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -275,7 +276,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           else if (upload) configureCloudflareUpload(operation, upload);
         });
         inspect("endpoint", "unsupported-contract", () => {
-          if (!wire && (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path))) throw new Error("This endpoint uses a path or transport that is not supported.");
+          const wirePath = literalQueryRoute(path)?.path ?? path;
+          if (!wire && (wirePath.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(wirePath))) throw new Error("This endpoint uses a path or transport that is not supported.");
         });
         if (!upload && !wire && !s3) {
           let parametersValid = true;

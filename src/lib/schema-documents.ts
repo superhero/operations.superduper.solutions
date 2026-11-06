@@ -10,6 +10,7 @@ import { awsWirePath, awsWireProfile } from "./aws-wire.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { validateAtlassianTenantServer } from "./atlassian-tenant-servers.ts";
 import { validateAtlassianServerBinding } from "./atlassian-server-bindings.ts";
+import { literalQueryRoute } from "./literal-query.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
 export type SchemaDocumentRecord = {
@@ -121,6 +122,7 @@ function resolve(value: unknown, document: ObjectValue, context: string): Object
 
 function safePath(path: string): void
 {
+  path = literalQueryRoute(path)?.path ?? path;
   if (!path.startsWith("/") || path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path))
     unsupported(`Operation path ${JSON.stringify(path)} must be an absolute path without double slashes, backslashes, query strings or fragments.`);
   for (const segment of path.split("/"))

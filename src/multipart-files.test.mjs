@@ -49,7 +49,7 @@ Then('multipart provider corrections preserve native provenance and reject drift
   const native=await readServiceSchemaUpstream(catalog),document=structuredClone(native),paths=structuredClone(native.paths);
   bindMultipartFiles(document);assert.deepEqual(document.paths,paths);assert.deepEqual(document.security,native.security);
   let count=0;for(const [name,schema]of Object.entries(document.components.schemas))if(schema['x-upstream-form-schema']) {count++;assert.deepEqual(schema['x-upstream-form-schema'],native.components.schemas[name]);}
-  assert.equal(count,2);assert.throws(()=>bindMultipartFiles(document),/reviewed/);
+  assert.equal(count,catalog==='anthropic'?4:2);assert.throws(()=>bindMultipartFiles(document),/reviewed/);
   const changed=structuredClone(native);changed.servers[0].url='https://other.example.test';assert.throws(()=>bindMultipartFiles(changed),/reviewed/);
   const drift=structuredClone(native);drift.info.version+='changed';assert.throws(()=>bindMultipartFiles(drift),/reviewed/);
  }
