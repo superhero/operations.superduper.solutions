@@ -4644,10 +4644,14 @@
       {
         "id": "google-oauth-alternatives",
         "version": 1
+      },
+      {
+        "id": "gmail-message-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "ce3d1b266163f6bcdd13342d06cae5e2daad26bd0d13e43522d08e6b3f2b3032",
-    "effectiveBytes": 198943
+    "effectiveSha256": "899f234c70768af0600d1e1ba59ab88bb1fddbf45a1c9cf1942ffbc576de8db0",
+    "effectiveBytes": 199969
   },
   {
     "id": "google-keep",

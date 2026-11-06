@@ -6,6 +6,7 @@ import { parameterContentSchema } from "./parameter-content.ts";
 import { operationDisplayName } from "./operation-display.ts";
 import { configureGitlabJsonForm } from "./gitlab-form.ts";
 import { configureMistralVariant, mistralVariantRoute } from "./mistral-variant.ts";
+import { configureGmailMessage } from "./gmail-message.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
@@ -177,7 +178,7 @@ function field(name: string, location: InputField["location"], raw: unknown, req
 
 /** OAuth access tokens use the existing bearer transport. Keep the original
  * scope requirements in the approved operation; no login flow is synthesized. */
-function security(document: Value, source: Value, operation: Operation): Operation["security"]
+export function serviceOperationSecurity(document: Value, source: Value, operation: Operation): Operation["security"]
 {
   const declaration = source.security === undefined ? document.security : source.security;
   const permissionSource = Object.hasOwn(source, "x-credential-permissions") ? source
@@ -404,11 +405,12 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               }
             }
             configureGitlabJsonForm(operation, source["x-operations-gitlab-form"]);
+            configureGmailMessage(operation, source["x-operations-gmail-message"]);
           });
           if (parametersValid) inspect("endpoint", "invalid-contract", () => validatePathParameters(path, operation.fields));
         }
         inspect("authentication", "invalid-contract", () => {
-          const authorization = security(document, source, operation);
+          const authorization = serviceOperationSecurity(document, source, operation);
           if (authorization !== undefined) operation.security = authorization;
           if (!wire && !s3 && !jsonTarget && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
           if (authorization?.length && !authorization.some(supportedSecurityAlternative)) issues.push({ area: "authentication", code: "unsupported-authentication",

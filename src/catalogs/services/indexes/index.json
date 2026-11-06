@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "65f2fb0b5ebddb60662e20f0638d3eddb8485e0967617674e341dd39828b876a",
+  "adapterRevision": "313d708e328c9a6ccf6c4e7ef6d5f0de9a391a4b04487613a8e0ee1bc9c8691f",
   "indexes": [
     {
       "id": "anthropic",
@@ -2574,16 +2574,16 @@
     },
     {
       "id": "google-gmail",
-      "sourceRevision": "ce3d1b266163f6bcdd13342d06cae5e2daad26bd0d13e43522d08e6b3f2b3032",
-      "bytes": 41033,
-      "compressedBytes": 2476,
-      "sha256": "f6f5c8aec3574a9501b8bfbbfa8991c32c158105f9db2e13df23a7f962828dbb",
+      "sourceRevision": "899f234c70768af0600d1e1ba59ab88bb1fddbf45a1c9cf1942ffbc576de8db0",
+      "bytes": 37547,
+      "compressedBytes": 2198,
+      "sha256": "2381659a522096d344527ba2f3c6390a7c8ba9b605737b5adbba2c07fd1f8c70",
       "summary": {
         "name": "Gmail API",
         "serverUrl": "https://gmail.googleapis.com",
         "description": "The Gmail API lets you view and manage Gmail mailbox data like threads, messages, and labels.",
         "operationCount": 79,
-        "unavailableCount": 6
+        "unavailableCount": 0
       }
     },
     {

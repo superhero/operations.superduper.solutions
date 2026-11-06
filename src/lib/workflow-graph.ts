@@ -6,6 +6,7 @@ import { operationDisplayDescription } from "./operation-display.ts";
 import type { Operation } from "./catalog.ts";
 import { nativeRpcOperation } from "./native-rpc.ts";
 import { fileValueType } from "./workflow-file.ts";
+import { maxWorkflowUploadBytes } from "./workflow-binary.ts";
 import { defaultProcessingData, type ProcessingKind } from "./workflow-processing.ts";
 import { defaultChartData } from "./workflow-chart.ts";
 import { placeUtilityNode, type WorkflowLayoutNode } from "./workflow-layout.ts";
@@ -158,7 +159,15 @@ function inputGroups(operation: Operation, source: Schema | undefined, pathItem:
   const titles: Record<string, string> = { path: "Path parameters", query: "Query parameters", header: "Headers", cookie: "Cookies" };
   const result = [...groups].map(([id, group]) => ({ id: `input:${id}`, label: titles[id]!,
     schema: { type: "object", properties: group.properties, required: group.required } as unknown }));
-  if (source?.requestBody !== undefined)
+  if (operation.gmailMessage) {
+    const content = source?.requestBody === undefined ? undefined : resolve(source.requestBody, document).schema.content;
+    const resource = object(content) && object(content["application/json"]) ? content["application/json"].schema : operation.bodySchema?.properties?.$;
+    result.push({ id: "input:body", label: "Request body", schema: { type: "object", additionalProperties: false, properties: {
+      $: { ...(object(resource) ? resource : {}), title: "Message resource" },
+      $mime: { type: "string", format: "binary", minLength: 1, maxLength: maxWorkflowUploadBytes, title: "MIME message" },
+    } } });
+  }
+  else if (source?.requestBody !== undefined)
   {
     const body = resolve(source.requestBody, document);
     const content = object(body.schema.content) ? body.schema.content : {};
@@ -271,7 +280,7 @@ export function createOperationGraph(operation: Operation, position: { x: number
     const groups = input ? inputs : outputs;
     const trees = groups.length ? groups.slice(0, 100).map(group => ({ id: group.id,
       tree: project(group.schema, schemaDocument, group.id, group.label, "", [], 0, budget, direction,
-        input && group.id === "input:body" && (!!operation.binaryMediaTypes || operation.bodyMediaType === "multipart/form-data")) })) : [{ id: direction,
+        input && group.id === "input:body" && (!!operation.binaryMediaTypes || operation.bodyMediaType === "multipart/form-data" || !!operation.gmailMessage)) })) : [{ id: direction,
       tree: { label: input ? "Inputs" : "Outputs", fields: [], children: [], height: 98, span: 98,
         notice: input ? "No input fields documented" : "Response schema not documented" } as Tree }];
     let y = position.y - (trees.reduce((sum, item) => sum + item.tree.span, 0) + (trees.length - 1) * 32) / 2 + 40;

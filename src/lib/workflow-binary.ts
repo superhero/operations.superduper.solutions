@@ -8,7 +8,7 @@ export type WorkflowBinary = { kind: "workflow-file"; version: 1; name: string; 
 const mediaPattern = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i;
 const mediaTypes: Record<string, string> = { json: "application/json", csv: "text/csv", txt: "text/plain", pdf: "application/pdf",
   png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml",
-  zip: "application/zip", gz: "application/gzip", wasm: "application/wasm", mp3: "audio/mpeg", mp4: "video/mp4", webm: "video/webm" };
+  zip: "application/zip", gz: "application/gzip", wasm: "application/wasm", mp3: "audio/mpeg", mp4: "video/mp4", webm: "video/webm", eml: "message/rfc822" };
 
 /** File content has no qualified enum/pattern representation; retain byte bounds. */
 export function validateBinarySchema(value: InputSchema | Record<string, unknown>): void {

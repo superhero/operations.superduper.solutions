@@ -268,7 +268,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       publicHeaders.add(normalized);
       headers.set(name, value);
     }
-    if (request.body !== undefined && request.contentType !== "multipart/form-data") headers.set("Content-Type", request.contentType ?? "application/json");
+    if (request.body !== undefined && request.contentType !== "multipart/form-data" && request.bodyFormat !== "gmail-related") headers.set("Content-Type", request.contentType ?? "application/json");
     for (const [name, value] of injected) headers.set(name, value);
     let body = requestBody(request);
     if (aws) {

@@ -1,0 +1,8 @@
+[
+  "google-gmail:gmail.users.drafts.create",
+  "google-gmail:gmail.users.drafts.update",
+  "google-gmail:gmail.users.drafts.send",
+  "google-gmail:gmail.users.messages.send",
+  "google-gmail:gmail.users.messages.import",
+  "google-gmail:gmail.users.messages.insert"
+]

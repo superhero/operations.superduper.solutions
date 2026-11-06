@@ -5,6 +5,7 @@
 import { supportsCredentialResults } from "./credential-results.ts";
 import { useGitlabJsonBody } from "./gitlab-form.ts";
 import { mistralVariantRoute, mistralVariantInputs } from "./mistral-variant.ts";
+import { gmailMessageMode, prepareGmailMessage, gmailMimeInputKey } from "./gmail-message.ts";
 import { operationBlockReason } from "./operation-capabilities.ts";
 import { awsRestUsesS3Keys } from "./aws-rest.ts";
 import { prepareAwsRestRequest } from "./aws-rest-codec.ts";
@@ -38,7 +39,7 @@ export type PreparedRequest = {
   body?: JsonValue;
   headers?: Record<string, string>;
   contentType?: Exclude<BodyMediaType, "application/json">;
-  bodyFormat?: "binary" | "text" | "cloudflare-assets" | "cloudflare-module";
+  bodyFormat?: "binary" | "text" | "cloudflare-assets" | "cloudflare-module" | "gmail-related";
   multipartParts?: MultipartParts;
 };
 
@@ -217,6 +218,9 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   try { validateLiteralQueryFields(operation.path, operation.fields); }
   catch (cause) { throw new InputValidationError("query:beta", (cause as Error).message); }
   const request: PreparedRequest = { method: operation.method, path: variant?.path ?? route?.path ?? operation.path, query: { ...route?.query } };
+  let gmail: ReturnType<typeof gmailMessageMode>;
+  try { gmail = gmailMessageMode(operation, values); }
+  catch (cause) { throw new InputValidationError(gmailMimeInputKey, (cause as Error).message); }
   const jsonForm = useGitlabJsonBody(operation, values);
   if (operation.multipartParts !== undefined) {
     if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new InputValidationError("body:$", "Multipart part contracts require a named multipart body.");
@@ -224,13 +228,14 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     if (!jsonForm) request.multipartParts = structuredClone(operation.multipartParts);
   }
   const body: Record<string, JsonValue> = {};
-  const fields = [...operation.fields];
+  const fields = operation.fields.filter(field => !gmail || field.key !== gmailMimeInputKey);
   if (operation.s3Files || operation.awsWire || operation.awsRest || operation.awsJson) for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && !fields.some(field => field.key === key))
       throw new InputValidationError(key, "This input is outside the supported AWS operation profile.");
   }
   for (const candidate of workflowFields)
   {
+    if (gmail && candidate.key === gmailMimeInputKey) continue;
     if (candidate.location !== "body" || fields.some(field => field.key === candidate.key)) continue;
     const input = candidate.key === `body:${candidate.name}` && additionalBodyField(operation, candidate.name, candidate.type);
     if (!input) fail(candidate, "this body property is not allowed by the operation schema.");
@@ -352,5 +357,5 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     return { ...request, path: wire.path, query: {}, headers: { "X-Amz-Target": wire.headers["X-Amz-Target"] },
       body: new TextDecoder().decode(wire.bytes), bodyFormat: "text", contentType: wire.headers["Content-Type"] as `${string}/${string}` };
   }
-  return operation.awsRest ? prepareAwsRestRequest(operation, request) : operation.awsWire ? prepareAwsWireRequest(operation, request) : request;
+  return operation.awsRest ? prepareAwsRestRequest(operation, request) : operation.awsWire ? prepareAwsWireRequest(operation, request) : prepareGmailMessage(request, gmail);
 }

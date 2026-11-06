@@ -13,10 +13,11 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { mistralVariantContracts, structuredFormContracts, formFieldContracts, multipartRootContracts, atlassianFileParts, multipartPartContracts, awsJsonTargets, betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { gmailMessageContracts, mistralVariantContracts, structuredFormContracts, formFieldContracts, multipartRootContracts, atlassianFileParts, multipartPartContracts, awsJsonTargets, betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
 import { betaRouteSources } from '../src/lib/literal-query.ts';
 import { multipartFileSources } from '../src/lib/multipart-file-contracts.ts';
 import { multipartPartSources } from '../src/lib/multipart-part-contracts.ts';
+import { gmailMessageSourceSha256 } from '../src/lib/gmail-message-contracts.ts';
 import { mistralVariantSourceSha256 } from '../src/lib/mistral-variant-contracts.ts';
 import { structuredFormSources } from '../src/lib/structured-form-contracts.ts';
 import { formFieldSources } from '../src/lib/form-field-contracts.ts';
@@ -141,6 +142,8 @@ for (const source of sources) {
     throw new Error("Atlassian file uploads require requalification before updating their pinned native source.");
   if (Object.hasOwn(multipartPartSources, source.id) && sha(json) !== multipartPartSources[source.id])
     throw new Error("Multipart part contracts require requalification before updating their pinned native source.");
+  if (source.id === 'google-gmail' && sha(json) !== gmailMessageSourceSha256)
+    throw new Error('Gmail message media requires requalification before updating the pinned source.');
   if (source.id === 'mistral' && sha(json) !== mistralVariantSourceSha256)
     throw new Error('Mistral variants require requalification before updating their pinned source.');
   if (Object.hasOwn(structuredFormSources, source.id) && sha(json) !== structuredFormSources[source.id])
@@ -217,6 +220,7 @@ for (const source of sources) {
   if (Object.hasOwn(formFieldSources, source.id)) patches.push(formFieldContracts);
   if (Object.hasOwn(structuredFormSources, source.id)) patches.push(structuredFormContracts);
   if (source.id === 'mistral') patches.push(mistralVariantContracts);
+  if (source.id === 'google-gmail') patches.push(gmailMessageContracts);
   if (Object.hasOwn(awsRestSourcePins(), source.id)) patches.push(awsRestContractsPatch);
   if (Object.hasOwn(awsJsonSourcePins, source.id)) patches.push(awsJsonTargets);
   if (Object.hasOwn(atlassianTenantServerSources, source.id)) patches.push(atlassianTenantServers);
