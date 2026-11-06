@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/jsonl-request-body.test.mjs",
     "src/yaml-request-body.test.mjs",
     "src/header-array.test.mjs",
     "src/aws-rest-private.test.mjs",
@@ -126,6 +127,7 @@
     "src/assistant-boundaries.test.mjs"
   ],
   "paths": [
+    "src/jsonl-request-body.feature",
     "src/yaml-request-body.feature",
     "src/header-array.feature",
     "src/aws-rest.feature",

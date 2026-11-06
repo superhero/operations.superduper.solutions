@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "e1426319342367688dcff1ce22ab21fe3ba48c41ca28b33c197eb29799dc8201",
+  "adapterRevision": "f75273dd471fdb92dd1842dce0779847ea68fe9930eb060a6441b1a8ff49f90c",
   "indexes": [
     {
       "id": "anthropic",
@@ -1418,15 +1418,15 @@
     {
       "id": "cloudflare",
       "sourceRevision": "ca3f09b346bba9872f2aee6b4f243dbaf19da995f896b9d1de846994250e226a",
-      "bytes": 1629464,
-      "compressedBytes": 120222,
-      "sha256": "fb39efcabe27ee7ba053584328fa080af7cb7e40e35b4f52a8af784d67ee6ab2",
+      "bytes": 1629290,
+      "compressedBytes": 120153,
+      "sha256": "0e077d6b51850de5d1fd1191950524b610f77ecc0c51b95c50cf81e167b06442",
       "summary": {
         "name": "Cloudflare API",
         "serverUrl": "https://api.cloudflare.com/client/v4",
         "description": "Welcome to Cloudflare's API documentation site. We are experimenting with an updated version of our API documentation - check out [developers.cloudflare.com/api-next/](https://developers.cloudflare.com/api-next/) to test out the new experience.\n\nTo get started using Cloudflare's products and services via the API, refer to [how to interact with Cloudflare](https://developers.cloudflare.com/fundamentals/basic-tasks/interact-with-cloudflare/), which covers using tools like [Terraform](https://developers.cloudflare.com/terraform/#cloudflare-terraform) and the [official SDKs](https://developers.cloudflare.com/fundamentals/api/reference/sdks/) to maintain your Cloudflare resources.\n\nUsing the Cloudflare API requires authentication so that Cloudflare knows who is making requests and what permissions you have. Create an API token to grant access to the API to perform actions. You can also authenticate with [API keys](https://developers.cloudflare.com/fundamentals/api/get-started/keys/), but these keys have [several limitations](https://developers.cloudflare.com/fundamentals/api/get-started/keys/#limitations) that make them less secure than API tokens. Whenever possible, use API tokens to interact with the Cloudflare API.\n\nTo create an API token, from the Cloudflare dashboard, go to My Profile > API Tokens and select Create Token. For more information on how to create and troubleshoot API tokens, refer to\nour [API fundamentals](https://developers.cloudflare.com/fundamentals/api/).\n\nFor information regarding rate limits, refer to our [API Rate Limits](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/platform/limits/#api-rate-limits).\n\nTotally new to Cloudflare? [Start here](https://developers.cloudflare.com/fundamentals/get-started/).",
         "operationCount": 3761,
-        "unavailableCount": 13
+        "unavailableCount": 12
       }
     },
     {

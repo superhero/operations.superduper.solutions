@@ -10,3 +10,18 @@ export function isJsonRequestMediaType(media: string): boolean {
 export function isYamlRequestMediaType(media: string): boolean {
   return media === media.trim() && /^(?:application\/(?:x-)?yaml|text\/(?:x-)?yaml)$/i.test(media);
 }
+
+export function isJsonLinesRequestMediaType(media: string): boolean {
+  return media.toLowerCase() === "application/jsonl";
+}
+
+/** Validate line framing without rewriting whitespace, Unicode or CRLF bytes. */
+export function validateJsonLinesBody(value: unknown): void {
+  if (typeof value !== "string" || !value.length) throw new Error("JSON Lines requires a nonempty text document.");
+  const lines = value.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  for (const [index, line] of lines.entries()) {
+    try { JSON.parse(line); }
+    catch { throw new Error(`JSON Lines line ${index + 1} must contain exactly one JSON value.`); }
+  }
+}

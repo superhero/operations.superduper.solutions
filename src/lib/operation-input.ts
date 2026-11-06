@@ -14,6 +14,7 @@ import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import type { QuerySerialization } from "./query-serialization.ts";
 import { encodeSimplePathArray, encodeSimpleHeaderArray } from "./parameter-serialization.ts";
+import { isJsonLinesRequestMediaType, validateJsonLinesBody } from "./request-media.ts";
 
 export type InputValue = string | null | undefined;
 export type InputValues = Record<string, InputValue>;
@@ -296,6 +297,11 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     if (operation.binaryMediaTypes) {
       request.contentType = binaryRequestMediaType(operation.binaryMediaTypes, request.body!) as BodyMediaType;
       request.bodyFormat = "binary";
+    }
+    else if (isJsonLinesRequestMediaType(operation.bodyMediaType ?? "")) {
+      try { validateJsonLinesBody(request.body); }
+      catch (cause) { throw new InputValidationError("body:$", `Request body: ${(cause as Error).message}`); }
+      request.bodyFormat = "text";
     }
   }
   if (operation.cloudflareUpload === "workers-upload") { request.bodyFormat = "cloudflare-assets"; request.contentType = "multipart/form-data"; }

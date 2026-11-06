@@ -25,7 +25,7 @@ import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } 
 import { acceptsScalarQueryExplode, configureQueryArray } from "./query-serialization.ts";
 import { configureSimplePathArray, configureSimpleHeaderArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { providerPathSecurity } from "./provider-path-bindings.ts";
-import { isJsonRequestMediaType, isYamlRequestMediaType } from "./request-media.ts";
+import { isJsonRequestMediaType, isYamlRequestMediaType, isJsonLinesRequestMediaType } from "./request-media.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -340,7 +340,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                 return isBinaryMediaType(type) && schema.type === "string" && schema.format === "binary";
               });
               const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type])
-                ?? Object.keys(content).find(isJsonRequestMediaType) ?? Object.keys(content).find(isYamlRequestMediaType) ?? binaryMediaTypes[0];
+                ?? Object.keys(content).find(isJsonRequestMediaType) ?? Object.keys(content).find(isYamlRequestMediaType)
+                ?? Object.keys(content).find(isJsonLinesRequestMediaType) ?? binaryMediaTypes[0];
               if (!mediaType) throw new Error(`This request requires an unsupported binary or streaming media type. Declared request media types: ${Object.keys(content).join(", ")}.`);
               const schema = resolve(value(content[mediaType]).schema, document);
               const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
@@ -349,6 +350,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               if (isYamlRequestMediaType(mediaType) && (value(content[mediaType]).encoding !== undefined
                 || !binaryMediaTypes.includes(mediaType) && containsBinaryInput(parsed)))
                 throw new Error("Structured YAML bodies cannot contain binary files or custom field encodings.");
+              if (isJsonLinesRequestMediaType(mediaType) && value(content[mediaType]).encoding !== undefined)
+                throw new Error("JSON Lines bodies cannot use custom field encodings.");
               operation.bodyRequired = body.required === true;
               operation.bodyMediaType = mediaType as BodyMediaType;
               operation.bodySchema = parsed;
@@ -360,7 +363,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                 operation.binaryMediaTypes = binaryMediaTypes;
               }
               else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
-              if (mediaType === "text/plain" && parsed.type !== "string") throw new Error("This text body requires an unsupported schema.");
+              if ((mediaType === "text/plain" || isJsonLinesRequestMediaType(mediaType)) && parsed.type !== "string")
+                throw new Error(`${mediaType} requires a string schema.`);
               if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
                 validateFormBody(parsed, mediaType === "multipart/form-data", value(content[mediaType]).encoding);
               if (parsed.type === "object" && !parsed.nullable)
