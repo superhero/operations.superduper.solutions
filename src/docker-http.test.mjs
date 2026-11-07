@@ -28,6 +28,26 @@ import { dockerVaultFixture } from '../tests/docker-vault.fixture.mjs';
 import { dockerReference } from './lib/secrets/docker-config.ts';
 import { privateVault, noSecrets } from '../tests/credential-results/fixture.mjs';
 import { encodeWorkflowBinary } from './lib/workflow-binary.ts';
+import { readFile } from 'node:fs/promises';
+import { redactDockerCredentialExamples } from '../build/docker-credential-examples.mjs';
+
+Then('Docker schema imports and bundled contracts contain only inert credential examples', async () => {
+  const join = ['SWMTKN', '1', 'a'.repeat(50), 'b'.repeat(25)].join('-');
+  const unlock = ['SWMKEY', '1', 'c'.repeat(43) + '='].join('-');
+  const source = { type: 'object', properties: { Worker: { type: 'string', example: join } },
+    example: { Worker: join, UnlockKey: unlock }, description: `Example: ${join}` };
+  const redacted = redactDockerCredentialExamples(source);
+  assert.equal(source.example.Worker, join, 'Import sanitization must not mutate the upstream object');
+  assert.deepEqual(redacted, { type: 'object', properties: { Worker: { type: 'string', example: '<docker-swarm-join-token>' } },
+    example: { Worker: '<docker-swarm-join-token>', UnlockKey: '<docker-swarm-unlock-key>' }, description: 'Example: <docker-swarm-join-token>' });
+  assert.deepEqual(redactDockerCredentialExamples(redacted), redacted);
+  for (const [name, value] of [
+    ['bundled Docker source', await readServiceSchemaUpstream('docker')],
+    ['effective Docker schema', await readServiceSchema('docker')],
+    ...await Promise.all(['docker-http-contracts.json', 'credential-results.json'].map(async name =>
+      [name, JSON.parse(await readFile(new URL(`./lib/${name}`, import.meta.url), 'utf8'))])),
+  ]) assert.equal(/SWM(?:TKN|KEY)-\d-[A-Za-z0-9+/=_-]+/.test(JSON.stringify(value)), false, `${name} must not contain credential-shaped samples`);
+});
 
 const origin = 'https://docker.synthetic.example.test/v1.57';
 const denied = error => error?.code === 'PERMISSION';

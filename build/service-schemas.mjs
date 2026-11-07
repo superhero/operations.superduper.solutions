@@ -48,6 +48,7 @@ import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
 import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
+import { redactDockerCredentialExamples } from './docker-credential-examples.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const cache = resolve(root, 'tmp/schema-sources');
@@ -147,6 +148,7 @@ for (const source of sources) {
       operation.servers = [server];
     }
   }
+  if (source.id === 'docker') document = redactDockerCredentialExamples(document);
   const json = JSON.stringify(document);
   if (Object.hasOwn(betaRouteSources, source.id) && sha(json) !== betaRouteSources[source.id])
     throw new Error("Beta routes require requalification before updating their pinned native source.");

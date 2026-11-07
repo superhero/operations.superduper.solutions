@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "e276c5ae5189aa67dea7eea4bafe8a451f8168eddcf0206a5ef0a9ea41a70676",
+  "adapterRevision": "f2636df053e51ed8374c40ccba030a6d73ef2a146154846010f287c8733512c1",
   "indexes": [
     {
       "id": "anthropic",
@@ -1499,10 +1499,10 @@
     },
     {
       "id": "docker",
-      "sourceRevision": "0e7e325542813c441fb33ad88a5c13b8eb77aae9d7b6933cb9cd6cbc11aae4b6",
+      "sourceRevision": "602e96d9ad6aa95dfef579775299c1d9f8b7a961f62394d6e74b0b44af808678",
       "bytes": 52690,
-      "compressedBytes": 4619,
-      "sha256": "00295f3f077aaece533d3d991ba632f7cb3fc93b8278bae072b795d5d0d928d7",
+      "compressedBytes": 4621,
+      "sha256": "904b926781a8a8e935f90a7662a494084353e6aaf828c36254a5822b28d7d857",
       "summary": {
         "name": "Docker Engine API",
         "serverUrl": "",

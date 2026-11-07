@@ -1,7 +1,7 @@
 {
   "version": 1,
   "source": {
-    "sha256": "84e994fb0d80850cb01d1a098c89ead30ca0c9cd8aff6cdbcd46f258304d88ba",
+    "sha256": "ece637cf4dc2c637d7b7bb2d41b504c5691a182a8fbb17363c7bebd19c047937",
     "openapi": "3.0.0",
     "title": "Docker Engine API",
     "version": "1.57",
@@ -477,7 +477,7 @@
         {
           "name": "remote",
           "in": "query",
-          "description": "A Git repository URI or HTTP/HTTPS context URI. If the URI points to a single text file, the file’s contents are placed into a file called `Dockerfile` and the image is built from that file. If the URI points to a tarball, the file is downloaded by the daemon and the contents therein used as the context for the build. If the URI points to a tarball and the `dockerfile` parameter is also specified, there must be a file with the corresponding path inside the tarball.",
+          "description": "A Git repository URI or HTTP/HTTPS context URI. If the URI points to a single text file, the file\u2019s contents are placed into a file called `Dockerfile` and the image is built from that file. If the URI points to a tarball, the file is downloaded by the daemon and the contents therein used as the context for the build. If the URI points to a tarball and the `dockerfile` parameter is also specified, there must be a file with the corresponding path inside the tarball.",
           "schema": {
             "type": "string"
           }
@@ -1468,7 +1468,7 @@
                   }
                 },
                 "example": {
-                  "UnlockKey": "SWMKEY-1-7c37Cc8654o6p38HnroywCi19pllOnGtbdZEgtKxZu8"
+                  "UnlockKey": "<docker-swarm-unlock-key>"
                 }
               }
             },
@@ -1483,7 +1483,7 @@
                   }
                 },
                 "example": {
-                  "UnlockKey": "SWMKEY-1-7c37Cc8654o6p38HnroywCi19pllOnGtbdZEgtKxZu8"
+                  "UnlockKey": "<docker-swarm-unlock-key>"
                 }
               }
             }
@@ -1909,12 +1909,12 @@
         "Worker": {
           "description": "The token workers can use to join the swarm.\n",
           "type": "string",
-          "example": "SWMTKN-1-3pu6hszjas19xyp7ghgosyx9k8atbfcr8p2is99znpy26u2lkl-1awxwuwd3z9j1z3puu7rcgdbx"
+          "example": "<docker-swarm-join-token>"
         },
         "Manager": {
           "description": "The token managers can use to join the swarm.\n",
           "type": "string",
-          "example": "SWMTKN-1-3pu6hszjas19xyp7ghgosyx9k8atbfcr8p2is99znpy26u2lkl-7p73s1dx5in4tatdymyhg9hu2"
+          "example": "<docker-swarm-join-token>"
         }
       }
     }

@@ -2701,10 +2701,10 @@
     "openapi": "3.0.0",
     "operations": 108,
     "license": null,
-    "sha256": "84e994fb0d80850cb01d1a098c89ead30ca0c9cd8aff6cdbcd46f258304d88ba",
+    "sha256": "ece637cf4dc2c637d7b7bb2d41b504c5691a182a8fbb17363c7bebd19c047937",
     "sourceSha256": "65be7f5d09afed6c4af003304c086edf92067bdd7a29c71a591dce806c34d56d",
-    "bytes": 388129,
-    "compressedBytes": 78649,
+    "bytes": 387808,
+    "compressedBytes": 78445,
     "patches": [
       {
         "id": "docker-http-contracts",
@@ -2715,8 +2715,8 @@
         "version": 1
       }
     ],
-    "effectiveSha256": "0e7e325542813c441fb33ad88a5c13b8eb77aae9d7b6933cb9cd6cbc11aae4b6",
-    "effectiveBytes": 427167
+    "effectiveSha256": "602e96d9ad6aa95dfef579775299c1d9f8b7a961f62394d6e74b0b44af808678",
+    "effectiveBytes": 426792
   },
   {
     "id": "dukascopy",

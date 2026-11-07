@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @docker-http
 Feature: Qualified Docker HTTP and read-only attachment contracts
+  Scenario: Docker schema imports redact upstream sample credentials
+    Then Docker schema imports and bundled contracts contain only inert credential examples
+
   Scenario: Docker HTTP models retain native identities and require real destinations
     Then Docker HTTP source corrections preserve all native routes and refuse source drift
 
