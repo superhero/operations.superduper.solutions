@@ -21,6 +21,67 @@ import { createWorkflowExecution, createWorkflowRequestExecution, workflowExecut
 import { prepareRequest } from './lib/operation-input.ts';
 import { getOperationReport } from './lib/operation-report.ts';
 import { isValueConnection, isWorkflowConnectionTypeCompatible } from './lib/workflow-utilities.ts';
+import nativeResults from './lib/native-method-results.json' with { type: 'json' };
+import { nativeMethodResult, validateNativeMethodResults } from './lib/native-method-results.ts';
+import { prepareNativeRequest } from './lib/native-operation-input.ts';
+import { isNativeWorkflowOperation } from './lib/native-account.ts';
+
+Then('native method result declarations resolve every pinned method without enabling execution', async () => {
+  const document = await readServiceSchema('codex'); validateNativeMethodResults(document);
+  assert.equal(Object.keys(nativeResults.results).length, 105);
+  let blocked = 0;
+  for (const [method, ref] of Object.entries(nativeResults.results)) {
+    assert.deepEqual(nativeMethodResult(document, method), { $ref: ref });
+    const scoped = scopeNativeRpcSchema(document, method), operation = nativeRpcOperation(scoped, 'codex:' + method);
+    assert.deepEqual(operation.rpc.result, document.definitions.JSONRPCResponse.properties.result, 'The original generic wire envelope changed.');
+    if (isNativeWorkflowOperation(method)) {
+      assert.equal(scoped['x-operations-native-method-result'], undefined);
+      assert.equal(operation.rpc.methodResult, undefined); assert.equal(operation.unavailableReason, undefined);
+    } else {
+      blocked++; assert.deepEqual(operation.rpc.methodResult, { $ref: ref });
+      assert.equal(operation.unavailableReason, codexExecutionLimitation);
+      let target = scoped;
+      for (const part of ref.slice(2).split('/')) target = target[part];
+      assert.deepEqual(target, ref.slice(2).split('/').reduce((value, part) => value[part], document));
+      assert.deepEqual(scopeNativeRpcSchema(scoped, method), scoped);
+      assert.throws(() => prepareNativeRequest(operation, {}), /Unsupported native workflow method/);
+    }
+  }
+  assert.equal(blocked, 20);
+});
+
+Then('native account metadata exposes public and routing properties as connectable result ports', async () => {
+  const source = await readServiceSchema('codex'), document = scopeNativeRpcSchema(source, 'account/read');
+  const operation = nativeRpcOperation(document, 'codex:account/read');
+  assert.deepEqual(document.definitions.v2.GetAccountResponse, source.definitions.v2.GetAccountResponse, 'The original wire declaration is unchanged.');
+  assert.deepEqual(document['x-operations-native-workflow'].wireResult, { $ref: '#/definitions/v2/GetAccountResponse' });
+  assert.deepEqual(scopeNativeRpcSchema(document, 'account/read'), document);
+  const graph = createOperationGraph(operation, { x: 0, y: 0 }, 'account', document);
+  const fields = graph.nodes.filter(node => node.type === 'data' && node.data.direction === 'outputs').flatMap(node => node.data.fields);
+  for (const [path, type] of [['/result/requiresOpenaiAuth', 'Boolean'], ['/result/account/type', 'Text'], ['/result/account/email', 'Text'],
+    ['/result/account/planType', 'Text'], ['/result/workspaceRouting/chatgptAccountId', 'Text'],
+    ['/result/workspaceRouting/backendOrigin', 'Text'], ['/result/workspaceRouting/accountRoutingOverride', 'Text']]) {
+    const field = fields.find(field => JSON.parse(decodeURIComponent(field.id))[1] === path);
+    assert.ok(field?.connectable, path); assert.equal(field.type, type, path);
+  }
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(workflow(graph))), workflow(graph));
+});
+
+Then('native method result metadata preserves unknown models and rejects changed inventories', async () => {
+  const document = await readServiceSchema('codex');
+  for (const mutate of [doc => { doc.info.version = '0.164.0'; }, doc => { doc.definitions.ClientRequest.oneOf.pop(); },
+    doc => { doc.definitions.ClientRequest.oneOf.push(doc.definitions.ClientRequest.oneOf[0]); },
+    doc => { delete doc.definitions.v2.GetAccountResponse; }]) {
+    const changed = structuredClone(document); mutate(changed); assert.throws(() => validateNativeMethodResults(changed));
+  }
+  assert.equal(nativeMethodResult(document, 'unreviewed/method'), undefined);
+  assert.equal(nativeMethodResult({ ...document, info: { ...document.info, version: '0.164.0' } }, 'account/read'), undefined);
+  const small = fixture(); assert.equal(nativeRpcOperation(small, 'fixture:read/0').rpc.methodResult, undefined);
+  const scoped = scopeNativeRpcSchema(document, 'account/read');
+  scoped['x-operations-native-method-result'] = { type: 'string' };
+  const operation = nativeRpcOperation(scoped, 'codex:account/read');
+  await assert.rejects(approvedNativeOperation(operation, scoped), error => error.code === 'PERMISSION');
+});
 
 const fixture = (version = '0.163.0', count = 20) => ({ $schema: 'http://json-schema.org/draft-07/schema#',
   info: { title: 'Native fixture', version }, 'x-codex-app-server': { protocol: 'json-rpc', version }, definitions: {
@@ -59,18 +120,18 @@ Then('native RPC hydration preserves pinned methods versions and schema referenc
   const document = await readServiceSchema('codex'), index = await readServiceSchemaIndex('codex');
   const inspected = inspectServiceSchema(document, 'codex');
   assert.equal(serviceSchemaDescriptors.find(item => item.id === 'codex').protocol, 'json-rpc');
-  assert.equal(inspected.operations.length, 105);
+  assert.equal(inspected.operations.length, 104);
   assert.deepEqual(inspected.operations.map(value => value.id), index.operations.map(value => value.id));
-  for (const method of ['initialize', 'account/login/start', 'thread/start', 'turn/start']) {
+  for (const method of ['initialize', 'account/login/start', 'account/read', 'thread/start', 'turn/start', 'model/list', 'modelProvider/capabilities/read', 'permissionProfile/list', 'hooks/list', 'app/installed', 'app/list', 'app/read', 'feedback/upload', 'fs/readFile', 'fs/readDirectory', 'fs/getMetadata', 'fuzzyFileSearch', 'fs/writeFile', 'fs/createDirectory', 'fs/copy', 'fs/remove', 'fs/watch', 'fs/unwatch', 'threadSection/list', 'threadSection/create', 'threadSection/update', 'threadSection/delete', 'mcpServerStatus/list', 'mcpServer/resource/read', 'mcpServer/tool/call', 'mcpServer/oauth/login']) {
     const hydrated = model(document, `codex:${method}`);
     const selected = inspectServiceSchema(document, 'codex', new Set([`codex:${method}`])).operations[0];
     assert.deepEqual(hydrated.operation, selected);
     assert.equal(hydrated.protocol, 'json-rpc'); assert.equal(hydrated.operation.rpc.version, '0.163.0');
     assert.equal(hydrated.operation.rpc.method, method); assert.equal(hydrated.operation.rpc.result, true);
-    const handled = ['thread/start', 'thread/resume', 'turn/start'].includes(method);
+    const handled = isNativeWorkflowOperation(method);
     assert.equal(hydrated.operation.unavailableReason, handled ? undefined : codexExecutionLimitation);
     assert.equal(hydrated.operation.bodyRequired, false);
-    assert.equal(hydrated.operation.fields.length > 0, handled);
+    assert.equal(hydrated.operation.fields.length > 0, handled && !['initialize', 'modelProvider/capabilities/read'].includes(method));
     assert.deepEqual(hydrated.operation.rpc.params, document.definitions.ClientRequest.oneOf
       .find(request => request.properties.method.enum[0] === method).properties.params);
     assert.deepEqual(nativeRpcOperation(JSON.parse(JSON.stringify(hydrated.document)), `codex:${method}`), hydrated.operation);

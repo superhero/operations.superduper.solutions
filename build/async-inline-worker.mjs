@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
+import { adaptiveSchemaPackPrefix } from '../src/lib/schema-pack-codec.ts';
 
 export const maximumAsyncWorkerBytes = 24 * 1024 * 1024;
 // Reuse the actual compact-pack decoder, rather than maintaining a second
@@ -54,5 +55,6 @@ async function startPackedWorker(packed,expectedBytes,limit,decode) {
 export function createAsyncInlineWorkerProgram(packed,expectedBytes) {
   if (!Number.isSafeInteger(expectedBytes) || expectedBytes<=0 || expectedBytes>maximumAsyncWorkerBytes)
     throw new Error('Invalid asynchronous worker size.');
-  return `(()=>{${decoder}\n(${startPackedWorker.toString()})(${JSON.stringify(packed)},${expectedBytes},${maximumAsyncWorkerBytes},decodeCompactSchemaPack);})();`;
+  const decode = packed.startsWith(adaptiveSchemaPackPrefix) ? 'value=>decodeAdaptiveSchemaPack(value.slice(adaptiveSchemaPackPrefix.length))' : 'decodeCompactSchemaPack';
+  return `(()=>{${decoder}\n(${startPackedWorker.toString()})(${JSON.stringify(packed)},${expectedBytes},${maximumAsyncWorkerBytes},${decode});})();`;
 }

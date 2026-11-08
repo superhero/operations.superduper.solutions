@@ -36,9 +36,11 @@ export type VaultCredential = {
   dockerConnections?: import("./docker-config.ts").DockerConnection[];
   /** Encrypted managed-token payload; never part of key/value reads or summaries. */
   oauthState?: string;
+  /** Imported native values remain encrypted and never enter credential summaries. */
+  nativePrivateValues?: Record<string, string[]>;
 };
 export type VaultKey = Pick<VaultCredential, "id" | "label" | "kind">;
-export type CredentialSummary = Omit<VaultCredential, "value" | "oauthState">;
+export type CredentialSummary = Omit<VaultCredential, "value" | "oauthState" | "nativePrivateValues">;
 export type BasicCredentialReference = { username: string; password: string };
 export type OAuth1CredentialReference = { consumerKey: string; consumerSecret: string; accessToken: string; tokenSecret: string };
 export type AwsCredentialReference = { accessKeyId: string; secretAccessKey: string; sessionToken?: string };
@@ -75,14 +77,24 @@ export const defaultVaultPreferences: Readonly<VaultPreferences> = { idleLockEna
 export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number; epoch: number;
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
-  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN"
-  | "S3_INTEGRITY" | "WRITE_UNCONFIRMED" | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX" | "AWS_GET_BODY_TRANSPORT";
+  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN" | "NATIVE_QUERY" | "NATIVE_CONTRACT" | "NATIVE_FEEDBACK" | "NATIVE_FILESYSTEM" | "NATIVE_SECTIONS" | "NATIVE_MCP_READ" | "NATIVE_MCP_TOOL" | "NATIVE_MCP_OAUTH" | "NATIVE_COMMAND"
+  | "NATIVE_MIGRATION" | "S3_INTEGRITY" | "WRITE_UNCONFIRMED" | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX" | "AWS_GET_BODY_TRANSPORT";
 const messages: Record<VaultErrorCode, string> = {
+  NATIVE_MIGRATION: "The native migration could not be verified. Check its host permission, source files and import history. Applied changes are not retried.",
+  NATIVE_MCP_OAUTH: "MCP sign-in did not complete. Check its separate host opt-in, configured OAuth server and callback. An accepted credential change cannot be rolled back.",
+  NATIVE_MCP_TOOL: "The MCP tool request failed. Check the separate tool opt-in, configured server and owned thread. Accepted remote effects cannot be rolled back.",
+  NATIVE_MCP_READ: "The MCP read could not be verified. Check the companion MCP read opt-in, configured server and resource permissions.",
+  NATIVE_QUERY: "The native metadata request could not be completed. Check the companion's metadata opt-in and authorized workspace.",
+  NATIVE_SECTIONS: "The native section request could not be verified. Check its section read or write opt-in and paired runtime. Changes already saved cannot be rolled back.",
+  NATIVE_FILESYSTEM: "The native filesystem request could not be completed. Check its read or mutation opt-in, workspace paths and file/tree limits. Changes already applied cannot be rolled back.",
+  NATIVE_FEEDBACK: "Feedback delivery was not verified. Check companion permissions and delivery before retrying; a dispatched report may already have been accepted.",
+  NATIVE_CONTRACT: "The native runtime returned metadata outside its approved schema. Check the pinned runtime and source versions.",
   AWS_GET_BODY_TRANSPORT: "EFS pagination requires a GET request body. Select a saved HTTP connection with an EFS companion, or leave the optional pagination fields empty.",
   DOCKER_UNAVAILABLE: "The paired Docker host could not complete its read. Check the companion and configured daemon socket.",
   DOCKER_VERSION: "The Docker daemon does not support the paired API version 1.57.",
   DOCKER_AUTHORITY: "The Docker host, daemon, socket or approved source changed. Pair the selected host again.",
   DOCKER_DUPLEX: "Docker streaming and upgraded connections are unavailable in this native read mode.",
+  NATIVE_COMMAND: "The native command did not complete. Check its host grant, approval and process state; dispatched effects are not replayed.",
   NATIVE_FAILED: "The native operation failed. Check the thread before starting another turn.",
   NATIVE_UNKNOWN: "The native connection ended without a confirmed result. A dispatched turn may have taken effect; it will not be retried automatically.",
   S3_INTEGRITY: "The S3 object could not be verified. Check its checksum and exposed bucket CORS headers.",

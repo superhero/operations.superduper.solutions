@@ -4,7 +4,7 @@
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { parseAst } from 'rolldown/parseAst';
-import { encodeSchemaPack, compactSchemaPackPrefix } from '../src/lib/schema-pack-codec.ts';
+import { encodeSchemaPack, compactSchemaPackPrefix, encodeAdaptiveSchemaPack } from '../src/lib/schema-pack-codec.ts';
 import { createAsyncInlineWorkerProgram, maximumAsyncWorkerBytes } from './async-inline-worker.mjs';
 
 const codec = fileURLToPath(new URL('../src/lib/inline-worker-codec.ts', import.meta.url));
@@ -23,7 +23,9 @@ export function compactInlineWorkerModule(code, id, options = {}) {
   if (typeof source !== 'string') throw new Error('The Vite inline worker program format changed; requalify its packing.');
   const bytes = Buffer.from(source);
   if (bytes.length > limit) return;
-  const packed = encodeSchemaPack(gzipSync(bytes, { level: 9 })).slice(compactSchemaPackPrefix.length);
+  const compressed = gzipSync(bytes, { level: 9 }), adaptive = encodeAdaptiveSchemaPack(compressed);
+  const tail = compressed.length % 4, legacyLength = Math.floor(compressed.length / 4) * 5 + (tail ? tail + 1 : 0);
+  const packed = adaptive.length < legacyLength ? adaptive : encodeSchemaPack(compressed).slice(compactSchemaPackPrefix.length);
   if (bytes.length - packed.length < minSaving) return;
   const blob = declarations.find(node => node.declarations.some(entry => entry.id?.name === 'blob'));
   const factory = ast.body.find(node => node.type === 'ExportDefaultDeclaration')?.declaration;

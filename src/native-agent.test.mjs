@@ -287,7 +287,12 @@ function controlledAgent(options = {}) {
   }, close() { if (!v.closed++) v.events?.closed(); } };
   v.peer = { identity: v.identity, scope: { connectionId: v.connection.id }, expiresAt: Date.now() + (options.expiresMs ?? 5000),
     async request(method, params) { v.frames.push({ method, params });
-      if (options.request) return options.request(method, params, v);
+      if (options.request) {
+        const result = await options.request(method, params, v);
+        if (method === 'account/login/start' && params.type === 'apiKey' && result?.type === 'apiKey')
+          queueMicrotask(() => v.emit({ method: 'account/login/completed', params: { loginId: null, success: true, error: null } }));
+        return result;
+      }
       return method === 'turn/start' ? { turn: { id: 'turn_1' } } : { thread: { id: 'thread_1' } };
     }, reply(id, result) { v.replies.push({ id, result }); } };
   v.agent = new NativeAgentBroker(transport);
@@ -366,7 +371,7 @@ Then('native login rejects unsafe instructions failed completion and secret echo
 Then('native early login events and authority updates retain exact ownership', async () => {
   for (const mode of ['success', 'duplicate', 'foreign', 'malformed', 'authority']) {
     const v = controlledAgent({ request(method, _params, owner) {
-      if (method !== 'account/login/start') return { account: { type: 'chatgpt' }, requiresOpenaiAuth: true };
+      if (method !== 'account/login/start') return { account: { type: 'chatgpt', email: null, planType: 'unknown' }, requiresOpenaiAuth: true };
       const completed = { method: 'account/login/completed', params: { loginId: mode === 'foreign' ? 'foreign' : 'login_1', success: true } };
       if (mode === 'malformed') completed.params.success = 'yes';
       owner.emit(completed);

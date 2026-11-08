@@ -27,6 +27,8 @@ import { processingDefinition, processingPreview } from "./workflow-processing.t
 import { arrayFilterPlans, type ArrayFilterPlan } from "./workflow-array-filter.ts";
 import { isJsonResponseStream, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
 import { chartResultKey, emptyChartSnapshot, updateChartSnapshot, type ChartSnapshot } from "./workflow-chart.ts";
+import { isNativeFilesystemWatchValue, type NativeFilesystemWatchValue } from './native-filesystem-watch.ts';
+import { isNativeCommandValue, type NativeCommandValue } from './native-command.ts';
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
@@ -57,12 +59,13 @@ export type WorkflowExecution = AnyWorkflowExecutionResult & { operation: Operat
 export type WorkflowStreamStarted = { kind: "stream"; id: string };
 export type WorkflowSubmission = WorkflowExecution | WorkflowStreamStarted;
 export type WorkflowStream = { id: string; name: string; workflowName: string; state: "connecting" | "running" | "complete" | "stopped" | "error";
-  progress?: ResponseProgress; error?: string; result?: WorkflowExecution };
+  progress?: ResponseProgress; nativeUpdates?: number; nativeValue?: NativeFilesystemWatchValue | NativeCommandValue; error?: string; result?: WorkflowExecution };
 
 const port = (node: string, handle: string) => JSON.stringify([node, handle]);
 const inactive = Symbol("inactive branch");
 const unsupplied = Symbol("manual input");
 const processingWait = Symbol("background processing");
+const nativeStreamWait = Symbol('native notification');
 const inputTypes: Partial<Record<WorkflowField["type"], InputSchema["type"]>> = {
   Text: "string", Integer: "integer", Number: "number", Boolean: "boolean", Object: "object", Array: "array", Null: "null"
 };
@@ -283,15 +286,24 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   let processingTask: Promise<void> | undefined;
   let processingController: AbortController | undefined;
   let advancing: Promise<WorkflowStep> | undefined;
+  let nativeStreamTask: Promise<void> | undefined;
+  let nativeStreamWake: (() => void) | undefined;
   const processingResults: { nodeId: string; name: string; preview: string; matched?: boolean }[] = [];
   const chartResults = new Map<string, ChartSnapshot>();
   const streamingEdges = new Set<string>();
   const chartListeners = new Set<(results: ChartSnapshot[]) => void>();
   const activeStreams = new Map<string, AbortController>();
   const streamResults = new Map<string, WorkflowStream>();
+  const nativeSources = new Map<string, { frame: Frame; node: Owner; pendingGroups: Set<string> }>();
   const streamListeners = new Set<(streams: WorkflowStream[]) => void>();
   function publishStreams() {
     if (!stopped) for (const listener of streamListeners) listener(structuredClone([...streamResults.values()]));
+  }
+  function wakeNativeStreams() { const wake = nativeStreamWake; nativeStreamTask = undefined; nativeStreamWake = undefined; wake?.(); }
+  function finishNativeStream(id: string) {
+    const source = nativeSources.get(id);
+    if (source && !stopped) for (const group of source.pendingGroups) outputs(source.frame, source.node, undefined, undefined, false, group);
+    nativeSources.delete(id); wakeNativeStreams();
   }
 
   let chartTimer: ReturnType<typeof setTimeout> | undefined;
@@ -327,7 +339,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     for (const [id, controller] of activeStreams) {
       controller.abort(); streamResults.get(id)!.state = "stopped";
     }
-    activeStreams.clear(); streamListeners.clear();
+    activeStreams.clear(); nativeSources.clear(); streamListeners.clear(); wakeNativeStreams();
     current = undefined; choice = undefined; terminalError = undefined;
     stack.length = 0; message = reason;
   }
@@ -374,7 +386,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     }
   }
 
-  function outputs(frame: Frame, node: Owner, response?: WorkflowResponse | NativeResponse, child?: Frame, transient = false)
+  function outputs(frame: Frame, node: Owner, response?: WorkflowResponse | NativeResponse | NativeCommandValue | { protocol: 'json-rpc'; dispatched: { processId: string | null } }, child?: Frame, transient = false, nativeGroup?: string)
   {
     const http = response && !("protocol" in response) ? response : undefined;
     const selectedStatus = http && selectedResponseStatus(frame, node.id, http.status);
@@ -384,6 +396,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
     {
       if (stopped) return;
+      if (nativeGroup && (nativeGroup === 'rpc:ack' ? identity(field)[0] === 'rpc:notification' : identity(field)[0] !== nativeGroup)) continue;
       let value: unknown = inactive;
       if (child && field.endpoint)
       {
@@ -392,7 +405,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       }
       else if (response && "protocol" in response && field.connectable) {
         const [group, path] = identity(field);
-        if (group === "rpc:result") value = read(response, path);
+        if (group === "rpc:result" || group === 'rpc:notification' || group === 'rpc:dispatched') value = read(response, path);
       }
       else if (http && field.connectable)
       {
@@ -414,7 +427,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         }
       } else emit(frame, panel.id, field.id, value);
     }
-    if (!transient) emit(frame, node.id, "", response || child ? true : inactive);
+    if (!transient && (!nativeGroup || nativeGroup === 'rpc:ack' || nativeGroup === 'rpc:dispatched')) emit(frame, node.id, "", response || child ? true : inactive);
   }
 
   function settle(frame: Frame)
@@ -705,6 +718,10 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           current = { frame, node, visit: result };
           return result;
         }
+        if ([...nativeSources.values()].some(source => source.frame === frame && source.pendingGroups.size)) {
+          nativeStreamTask ??= new Promise(resolve => { nativeStreamWake = resolve; });
+          throw nativeStreamWait;
+        }
         const waiting = frame.edges.some(edge => !isStaticSource(frame, edge.source) && frame.contributions.get(edge.id)!.state === "value"
           && frame.states.get(targetOwner(frame, edge.target)) === "idle");
         if (waiting) throw new Error("The next operation is waiting for an unresolved branch or a routing cycle. Check its incoming connections.");
@@ -726,7 +743,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     }
     catch (error)
     {
-      if (error === processingWait) throw error;
+      if (error === processingWait || error === nativeStreamWait) throw error;
       terminalError = (error as Error).message;
       throw error;
     }
@@ -740,8 +757,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         while (true) {
           try { return next(); }
           catch (error) {
-            if (error !== processingWait || !processingTask) throw error;
-            await processingTask;
+            if (error === nativeStreamWait && nativeStreamTask) await nativeStreamTask;
+            else if (error === processingWait && processingTask) await processingTask;
+            else throw error;
           }
         }
       })().finally(() => { advancing = undefined; });
@@ -776,13 +794,18 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       for (const panel of dataNodes(completed.frame, completed.node.id, "outputs")) for (const edge of completed.frame.edges.filter(edge => edge.source === panel.id))
         streamingEdges.delete(JSON.stringify([framePath(completed.frame), edge.id]));
       const native = completed.visit.operation.protocol === "json-rpc";
-      if (native) prepareNativeRequest(completed.visit.operation, values);
+      const nativeRequest = native ? prepareNativeRequest(completed.visit.operation, values) : undefined;
       const selectedDocker = dockerBinding === null ? undefined : dockerBinding ?? completed.visit.dockerBinding;
       if (selectedDocker) prepareDockerReadRequest(completed.visit.operation, values);
       const controller = new AbortController();
-      const streaming = !native && !selectedDocker && isJsonResponseStream(completed.visit.operation.responseStream);
+      const nativeWatch = native && completed.visit.operation.rpc?.method === 'fs/watch';
+      const nativeCommand = native && completed.visit.operation.rpc?.method === 'command/exec';
+      const nativeStream = nativeWatch || nativeCommand;
+      const streaming = nativeStream || !native && !selectedDocker && isJsonResponseStream(completed.visit.operation.responseStream);
       if (streaming && activeStreams.size >= 8) throw new Error("Stop an active stream before starting another; at most eight streams can run together.");
       let promoted = false;
+      let sampleError: unknown;
+      let commandFinished = false;
       // Completion closes callback delivery before the observer's cleanup
       // microtask. Stream records remain available as the run's history.
       let acceptingSamples = true;
@@ -791,8 +814,56 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       if (streaming) {
         activeStreams.set(completed.visit.id, controller);
         streamResults.set(completed.visit.id, { id: completed.visit.id, name: completed.node.data.name, workflowName: completed.visit.workflowName, state: "connecting" });
+        if (nativeStream) {
+          const panels = dataNodes(completed.frame, completed.node.id, 'outputs');
+          const pendingGroups = new Set<string>();
+          for (const group of nativeCommand ? ['rpc:result', 'rpc:notification'] : ['rpc:notification']) {
+            const selected = panels.filter(panel => panel.data.fields.some(field => identity(field)[0] === group));
+            if (completed.frame.edges.some(edge => selected.some(panel => panel.id === edge.source) && completed.frame.nodes.get(edge.target)?.type !== 'chart')) pendingGroups.add(group);
+          }
+          // Retain a command's frame until its terminal output has been routed.
+          if (nativeCommand) pendingGroups.add('rpc:result');
+          nativeSources.set(completed.visit.id, { frame: completed.frame, node: completed.node, pendingGroups });
+        }
         publishStreams();
       }
+      const acceptSample = (sample: WorkflowResponse | NativeFilesystemWatchValue | NativeCommandValue) => {
+        if (!streaming || stopped || controller.signal.aborted || !acceptingSamples) return;
+        const command = nativeCommand && 'stage' in sample ? sample : undefined;
+        if (nativeCommand && (!command || commandFinished || command.processId !== (nativeRequest!.params.processId ?? null)
+          || !promoted && command.stage !== 'dispatched' || promoted && command.stage === 'dispatched')) throw new VaultError('NATIVE_CONTRACT');
+        const response = command?.stage === 'dispatched' ? { protocol: 'json-rpc' as const, dispatched: { processId: command.processId } } : sample;
+        outputs(completed.frame, completed.node, response, undefined, true);
+        if (nativeStream && 'protocol' in sample) {
+          const record = streamResults.get(completed.visit.id)!;
+          record.nativeValue = structuredClone(sample);
+          if ('notification' in sample && sample.notification) record.nativeUpdates = (record.nativeUpdates ?? 0) + 1;
+        }
+        if (!promoted) {
+          promoted = true;
+          completed.frame.states.set(completed.node.id, 'complete'); current = undefined; pending = undefined;
+          try { outputs(completed.frame, completed.node, response, undefined, false, nativeCommand ? 'rpc:dispatched' : nativeWatch ? 'rpc:ack' : undefined); }
+          catch (error) { if (nativeStream) throw error; terminalError = (error as Error).message; }
+          if (!stopped) streamResults.get(completed.visit.id)!.state = 'running';
+          publishStreams(); started({ kind: 'stream', id: completed.visit.id });
+        }
+        if (nativeStream && 'protocol' in sample && 'notification' in sample && sample.notification) {
+          const source = nativeSources.get(completed.visit.id)!;
+          if (source.pendingGroups.delete('rpc:notification')) {
+            outputs(completed.frame, completed.node, sample, undefined, false, 'rpc:notification');
+            wakeNativeStreams();
+          }
+          publishStreams();
+        }
+        if (command?.stage === 'completed') {
+          commandFinished = true;
+          const source = nativeSources.get(completed.visit.id)!;
+          if (!source.pendingGroups.delete('rpc:result')) throw new VaultError('NATIVE_CONTRACT');
+          outputs(completed.frame, completed.node, command, undefined, false, 'rpc:result');
+          outputs(completed.frame, completed.node, command, undefined, false, 'rpc:error');
+          wakeNativeStreams(); publishStreams();
+        }
+      };
       pending = controller;
       const completion = (async (): Promise<WorkflowExecution> => {
       let result: AnyWorkflowExecutionResult;
@@ -805,7 +876,13 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         } else if (native) {
           const selectedNative = nativeBinding === null ? undefined : nativeBinding ?? completed.visit.nativeBinding;
           if (!selectedNative || !execution.executeNative || completed.visit.vaultVariables?.length || selectedBinding) throw new VaultError("PERMISSION");
-          result = await execution.executeNative(completed.visit.operation, values, selectedNative, controller.signal, nativeProgress);
+          result = await execution.executeNative(completed.visit.operation, values, selectedNative, controller.signal, nativeProgress, sample => {
+            try {
+              if (nativeCommand ? !isNativeCommandValue(sample) : !nativeWatch || !isNativeFilesystemWatchValue(sample)) throw new VaultError('NATIVE_CONTRACT');
+              acceptSample(sample);
+            } catch (error) { sampleError = error; controller.abort(); }
+          });
+          if (nativeCommand && (!promoted || !commandFinished)) throw new VaultError('NATIVE_CONTRACT');
         } else {
         const variables = completed.visit.vaultVariables;
         const connected = binding !== null && !selectedBinding ? credentialSelectionForVariables(completed.visit.operation.security, variables) : undefined;
@@ -820,23 +897,12 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
             if (current === completed) onProgress?.(progress);
           },
           sample => {
-            if (!streaming || stopped || controller.signal.aborted || !acceptingSamples) return;
             const response = { status: sample.status, statusText: "", headers: {}, body: sample.body, mediaType: "application/json" };
-            outputs(completed.frame, completed.node, response, undefined, true);
-            if (!promoted) {
-              promoted = true;
-              completed.frame.states.set(completed.node.id, "complete");
-              current = undefined;
-              pending = undefined;
-              try { outputs(completed.frame, completed.node, response); }
-              catch (error) { terminalError = (error as Error).message; }
-              if (!stopped) streamResults.get(completed.visit.id)!.state = "running";
-              publishStreams(); started({ kind: "stream", id: completed.visit.id });
-            }
+            acceptSample(response);
           });
         }
       }
-      catch (error) { if (native && !(error instanceof InputValidationError)) { terminalError = (error as Error).message; current = undefined; } throw error; }
+      catch (error) { if (native && !promoted && !(error instanceof InputValidationError)) { terminalError = (error as Error).message; current = undefined; } throw sampleError ?? error; }
       finally { acceptingSamples = false; if (pending === controller) pending = undefined; }
       if (stopped || !promoted && current !== completed) throw new Error("This run has ended.");
       if (controller.signal.aborted) throw new Error("The request was cancelled.");
@@ -854,6 +920,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const observed = completion.then(result => {
         if (streaming) {
           activeStreams.delete(completed.visit.id);
+          if (nativeStream) finishNativeStream(completed.visit.id);
           const record = streamResults.get(completed.visit.id)!; record.state = "complete"; record.result = result;
           publishStreams();
         }
@@ -861,9 +928,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       }, error => {
         if (streaming) {
           activeStreams.delete(completed.visit.id);
+          if (nativeStream) finishNativeStream(completed.visit.id);
           const record = streamResults.get(completed.visit.id)!;
-          record.state = controller.signal.aborted ? "stopped" : "error";
-          if (!controller.signal.aborted) record.error = error instanceof Error ? error.message : "The stream ended unexpectedly.";
+          const cancelled = controller.signal.aborted && sampleError === undefined;
+          record.state = cancelled ? "stopped" : "error";
+          if (!cancelled) record.error = error instanceof Error ? error.message : "The stream ended unexpectedly.";
           publishStreams();
         }
         throw error;

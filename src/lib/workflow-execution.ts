@@ -28,7 +28,7 @@ export type WorkflowExecutionResult = { request: PreparedRequest; response: Work
 export type AnyWorkflowExecutionResult = WorkflowExecutionResult | NativeExecutionResult;
 export type WorkflowExecutor = {
   execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext, onProgress?: ResponseProgressCallback, onValue?: ResponseValueCallback): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
-  executeNative?(operation: Operation, values: InputValues, binding: NativeWorkflowBinding, signal?: AbortSignal, progress?: NativeProgressCallback): Promise<NativeExecutionResult>;
+  executeNative?(operation: Operation, values: InputValues, binding: NativeWorkflowBinding, signal?: AbortSignal, progress?: NativeProgressCallback, onValue?: import('./native-agent-contract.ts').NativeWorkflowValueCallback): Promise<NativeExecutionResult>;
   executeDocker?(operation: Operation, values: InputValues, binding: DockerBinding, signal?: AbortSignal): Promise<WorkflowExecutionResult>;
 };
 export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: InputValues,
@@ -156,9 +156,9 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
 {
   const anonymous = createWorkflowRequestExecution();
   return {
-    async executeNative(operation, values, binding, signal, progress) {
+    async executeNative(operation, values, binding, signal, progress, onValue) {
       const { executeNativeWorkflow } = await import("./secrets/native-workflow-executor.ts");
-      return executeNativeWorkflow(operation, values, binding, signal, progress);
+      return executeNativeWorkflow(operation, values, binding, signal, progress, onValue);
     },
     async executeDocker(operation, values, binding, signal) {
       const { executeDockerWorkflow } = await import("./secrets/docker-client.ts");

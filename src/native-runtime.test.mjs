@@ -18,6 +18,11 @@ import { VaultError } from './lib/secrets/types.ts';
 import { decryptJSON, encryptJSON, recoveryKey, unwrapVaultKey } from './lib/secrets/crypto.ts';
 import { sealSnapshot } from './lib/secrets/format.ts';
 import { openCodexRuntime } from '../companions/codex/runtime.mjs';
+import { publicNativeAccountResult, nativeAccountParams } from './lib/native-account.ts';
+import { prepareNativeRequest } from './lib/native-operation-input.ts';
+import { nativeInitializeParams, publicNativeInitializeResult } from './lib/native-initialize.ts';
+import { readServiceSchema } from './lib/service-schema-packs.ts';
+import { nativeRpcOperation, scopeNativeRpcSchema } from './lib/native-rpc.ts';
 
 Before({ tags: '@native-runtime' }, function () { this.nativeFixtures = []; this.nativeBrokers = []; });
 After({ tags: '@native-runtime' }, async function () {
@@ -29,6 +34,198 @@ const wait = async predicate => {
   while (!predicate()) { if (Date.now() > deadline) assert.fail('The owned native transition did not finish.'); await new Promise(resolve => setTimeout(resolve, 5)); }
 };
 async function fixture(world, options) { const f = await nativeHostFixture(options); world.nativeFixtures.push(f); return f; }
+
+async function initializeFixture(world) {
+  const f = await fixture(world, { onFrame(frame, f, receive) {
+    if (frame.method !== 'initialize') return;
+    f.initializations = (f.initializations ?? 0) + 1;
+    const result = Object.hasOwn(f, 'initializeResult') ? f.initializeResult : { codexHome: '/private/owned-codex',
+      platformFamily: 'unix', platformOs: 'linux', userAgent: 'codex/0.163.0 initialization-' + f.initializations };
+    const reply = () => receive({ id: frame.id, result });
+    if (f.holdInitialize) f.release.push(reply); else queueMicrotask(reply);
+    return true;
+  } });
+  const v = await vault(f), source = await readServiceSchema('codex'), document = scopeNativeRpcSchema(source, 'initialize');
+  return { f, v, selection: { operation: nativeRpcOperation(document, 'codex:initialize'), document } };
+}
+
+Then('native initialization workflows use new owned children and preserve the public handshake result', async function () {
+  const { f, v, selection } = await initializeFixture(this);
+  try {
+    const paired = await v.session.pairNativeRuntime(v.input, v.selection);
+    assert.deepEqual(selection.operation.capabilities.requirements.map(item => item.code), ['native-host']);
+    assert.deepEqual(selection.operation.rpc.workflowResult, { $ref: '#/definitions/InitializeResponse' });
+    for (const number of [2, 3]) {
+      const request = prepareNativeRequest(selection.operation, {});
+      const result = await v.session.executeNativeInitialize(nativeReference(paired), v.selection, selection, request.params);
+      assert.deepEqual(result.request, { protocol: 'json-rpc', method: 'initialize', params: nativeInitializeParams() });
+      assert.deepEqual(result.response.result, { codexHome: '/private/owned-codex', platformFamily: 'unix', platformOs: 'linux', userAgent: 'codex/0.163.0 initialization-' + number });
+      await wait(() => f.frames.filter(frame => frame.method === 'initialized').length === number);
+      assert.equal(f.starts, number); assert.equal(f.stops, number - 1);
+    }
+    assert.equal(f.frames.filter(frame => frame.method === 'account/read').length, 1);
+    assert.ok(f.frames.every(frame => !frame.method || ['initialize', 'initialized', 'account/read'].includes(frame.method)));
+    assert.equal(JSON.stringify(v.storage.state).includes(f.key), false);
+    // The initialize-scoped connection cannot be reused as an account read.
+    const account = await v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false });
+    assert.equal(account.response.result.account, null); assert.equal(f.starts, 4);
+    v.session.lock(); await wait(() => f.stops === f.starts);
+  } finally { v.session.lock(); }
+});
+
+Then('native initialization workflows reject unowned clients experimental capabilities and changed selections', async function () {
+  const { f, v, selection } = await initializeFixture(this);
+  try {
+    const paired = await v.session.pairNativeRuntime(v.input, v.selection), before = f.frames.length;
+    for (const input of [{ 'params:capabilities': '{"experimentalApi":true}' }, { 'params:clientInfo': '{}' }]) assert.throws(() => prepareNativeRequest(selection.operation, input));
+    for (const input of [{}, { ...nativeInitializeParams(), extra: true }, { ...nativeInitializeParams(), clientInfo: { name: 'other', version: '1' } },
+      { ...nativeInitializeParams(), capabilities: { experimentalApi: true } }, { ...nativeInitializeParams(), capabilities: { experimentalApi: false, explicitGatewayOauth: false } }, { ...nativeInitializeParams(), capabilities: { experimentalApi: false, requestAttestation: true } }]) {
+      assert.throws(() => nativeInitializeParams(input));
+      await assert.rejects(v.session.executeNativeInitialize(nativeReference(paired), v.selection, selection, input));
+    }
+    assert.equal(f.frames.length, before);
+    await assert.rejects(v.session.executeNativeInitialize(nativeReference(paired), selection, selection, nativeInitializeParams()), error => error.code === 'PERMISSION');
+    await assert.rejects(v.session.executeNativeInitialize(nativeReference(paired), v.selection, v.selection, nativeInitializeParams()), error => error.code === 'PERMISSION');
+    assert.equal(f.frames.length, before);
+    await wait(() => f.stops === f.starts);
+    const issued = await f.ticket({ connectionId: randomUUID(), method: 'initialize', fingerprint: 'c'.repeat(64) }), socket = await f.socket(issued.value.ticket);
+    await socket.next(); socket.ws.send(JSON.stringify(initialize)); await socket.next(); socket.ws.send(JSON.stringify({ method: 'initialized' }));
+    socket.ws.send(JSON.stringify({ id: 'unowned-read', method: 'account/read', params: { refreshToken: false } }));
+    assert.equal(await socket.next(), undefined); await socket.close();
+    assert.equal(f.frames.filter(frame => frame.method === 'account/read').length, 1);
+  } finally { v.session.lock(); }
+});
+
+Then('native initialization workflow results reject malformed paths unknown fields and credential echoes', async function () {
+  const valid = { codexHome: '/private/owned-codex', platformFamily: 'unix', platformOs: 'linux', userAgent: 'codex/0.163.0' };
+  assert.deepEqual(publicNativeInitializeResult({ ...valid, codexHome: 'C:\\private\\codex', platformFamily: 'windows', platformOs: 'windows' }).platformOs, 'windows');
+  for (const result of [{ ...valid, codexHome: 'relative' }, { ...valid, token: 'unclassified' }, { ...valid, platformFamily: null },
+    { ...valid, userAgent: 'invalid\nvalue' }, { userAgent: valid.userAgent }]) assert.throws(() => publicNativeInitializeResult(result));
+  const { f, v, selection } = await initializeFixture(this);
+  try {
+    const paired = await v.session.pairNativeRuntime(v.input, v.selection), secret = 'SYNTHETIC_INITIALIZE_ECHO_040';
+    await v.session.put(null, { label: 'Unrelated private value', kind: 'secret', value: secret });
+    f.initializeResult = { ...valid, userAgent: secret };
+    await assert.rejects(v.session.executeNativeInitialize(nativeReference(paired), v.selection, selection, nativeInitializeParams()), error => error.code === 'REDACTED');
+    await wait(() => f.stops === f.starts);
+    f.initializeResult = { ...valid, token: 'unclassified' };
+    await assert.rejects(v.session.executeNativeInitialize(nativeReference(paired), v.selection, selection, nativeInitializeParams()), error => error.code === 'AUTHORIZATION');
+    await wait(() => f.stops === f.starts);
+  } finally { v.session.lock(); }
+});
+
+Then('native initialization cancellation and source changes close only their owned child', async function () {
+  for (const mode of ['cancel', 'source', 'identity', 'stale']) {
+    const { f, v, selection } = await initializeFixture(this), controller = new AbortController();
+    try {
+      const paired = await v.session.pairNativeRuntime(v.input, v.selection);
+      if (mode === 'stale') {
+        const before = f.frames.length;
+        await assert.rejects(v.session.executeNativeInitialize({ ...nativeReference(paired), revision: 2 }, v.selection, selection, nativeInitializeParams()), error => error.code === 'CONFLICT');
+        assert.equal(f.frames.length, before); continue;
+      }
+      f.holdInitialize = true;
+      const work = v.session.executeNativeInitialize(nativeReference(paired), v.selection, selection, nativeInitializeParams(), controller.signal);
+      await wait(() => f.release.length === 1);
+      if (mode === 'cancel') controller.abort();
+      else { if (mode === 'source') v.enabled = false; else f.identity.workspace = 'd'.repeat(64); f.release[0](); }
+      await assert.rejects(work, error => mode === 'cancel' ? error.code === 'CANCELLED' : ['PERMISSION', 'AUTHORIZATION', 'NETWORK'].includes(error.code));
+      await wait(() => f.stops === f.starts);
+    } finally { v.session.lock(); }
+  }
+});
+
+Then('paired native account workflows preserve public results and encrypted authority across reload', async function () {
+  for (const account of [null, undefined, { type: 'apiKey' }, { type: 'chatgpt', email: null, planType: 'pro' }]) {
+    const f = await fixture(this); f.account = account;
+    const v = await vault(f);
+    try {
+      const paired = await v.session.pairNativeRuntime(v.input, v.selection);
+      assert.equal(paired.workflowFingerprint, undefined);
+      assert.equal(v.selection.operation.unavailableReason, undefined);
+      assert.deepEqual(v.selection.operation.capabilities.requirements.map(item => item.code), ['native-host']);
+      for (const planType of v.selection.document.definitions.v2.PlanType.enum)
+        assert.equal(publicNativeAccountResult({ account: { type: 'chatgpt', email: null, planType }, requiresOpenaiAuth: true }).account.planType, planType);
+      const result = await v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false });
+      assert.deepEqual(result.request, { protocol: 'json-rpc', method: 'account/read', params: { refreshToken: false } });
+      assert.deepEqual(result.response.result, { requiresOpenaiAuth: true, ...(account !== undefined ? { account } : {}) });
+      if (account === null) {
+        for (const routing of [null, { chatgptAccountId: 'owned-workspace', backendOrigin: 'https://backend.example.test', accountRoutingOverride: 'NO_CONSTRAINT' },
+          { chatgptAccountId: 'owned-workspace', backendOrigin: 'https://backend.example.test', accountRoutingOverride: 'us' },
+          { chatgptAccountId: 'owned-workspace', backendOrigin: 'https://backend.example.test', accountRoutingOverride: 'us_cr' }]) {
+          f.workspaceRouting = routing;
+          assert.deepEqual((await v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false })).response.result,
+            { requiresOpenaiAuth: true, account: null, workspaceRouting: routing });
+        }
+        delete f.workspaceRouting;
+      }
+      assert.ok(f.frames.every(frame => !frame.method || ['initialize', 'initialized', 'account/read'].includes(frame.method)));
+      assert.ok(f.frames.filter(frame => frame.method === 'account/read').every(frame => frame.params.refreshToken === false));
+      assert.equal(JSON.stringify(v.storage.state).includes(f.key), false);
+      if (account === null) {
+        v.session.lock(); await wait(() => f.stops === 1); await v.session.unlock(v.proof);
+        assert.equal((await v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false })).response.result.account, null);
+      }
+    } finally { v.session.lock(); }
+  }
+});
+
+Then('native account workflow inputs reject refresh and overrides before any native dispatch', async function () {
+  const f = await fixture(this), v = await vault(f);
+  try {
+    const paired = await v.session.pairNativeRuntime(v.input, v.selection), before = f.frames.length;
+    for (const values of [{ 'params:refreshToken': 'true' }, { 'params:refreshToken': null }, { 'params:cwd': '/unowned' }, { 'params:apiKey': 'raw-key' }])
+      assert.throws(() => prepareNativeRequest(v.selection.operation, values));
+    for (const params of [{ refreshToken: true }, { refreshToken: false, cwd: '/unowned' }, {}]) {
+      assert.throws(() => nativeAccountParams(params));
+      await assert.rejects(v.session.executeNativeAccount(nativeReference(paired), v.selection, params));
+    }
+    assert.equal(f.frames.length, before);
+    assert.deepEqual(prepareNativeRequest(v.selection.operation, {}).params, { refreshToken: false });
+    assert.deepEqual(prepareNativeRequest(v.selection.operation, { 'params:refreshToken': 'false' }).params, { refreshToken: false });
+  } finally { v.session.lock(); }
+});
+
+Then('native account workflows reject internal malformed and credential bearing results', async function () {
+  for (const value of [{ account: { type: 'amazonBedrock' }, requiresOpenaiAuth: false }, { account: undefined, requiresOpenaiAuth: true },
+    { account: null, requiresOpenaiAuth: 'true' }, { account: { type: 'apiKey', apiKey: 'unexpected' }, requiresOpenaiAuth: true },
+    { account: { type: 'chatgpt', email: null, planType: 'unreviewed' }, requiresOpenaiAuth: true },
+    { account: null, requiresOpenaiAuth: true, accessToken: 'unexpected' },
+    { account: null, requiresOpenaiAuth: true, workspaceRouting: undefined },
+    { account: null, requiresOpenaiAuth: true, workspaceRouting: { chatgptAccountId: 'owned', backendOrigin: {}, accountRoutingOverride: 'us' } },
+    { account: null, requiresOpenaiAuth: true, workspaceRouting: { chatgptAccountId: 'owned', backendOrigin: 'https://backend.test', accountRoutingOverride: 'unknown' } },
+    { account: null, requiresOpenaiAuth: true, workspaceRouting: { chatgptAccountId: 'owned', backendOrigin: 'https://backend.test', accountRoutingOverride: 'us', accessToken: 'unexpected' } }]) assert.throws(() => publicNativeAccountResult(value));
+  const f = await fixture(this, { account: { type: 'chatgpt', email: 'fixture@example.test', planType: 'free' } }), v = await vault(f);
+  try {
+    const paired = await v.session.pairNativeRuntime(v.input, v.selection), secret = 'SYNTHETIC_ACCOUNT_ECHO_040';
+    await v.session.put(null, { label: 'Unrelated private key', kind: 'secret', value: secret });
+    f.account = { type: 'chatgpt', email: secret, planType: 'free' };
+    await assert.rejects(v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false }), error => error.code === 'REDACTED');
+    await wait(() => f.stops === 1);
+    f.account = { type: 'chatgpt', email: 'fixture@example.test', planType: 'free', token: 'unclassified' };
+    await assert.rejects(v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false }), error => error.code === 'AUTHORIZATION');
+    await wait(() => f.stops === f.starts); f.account = { type: 'chatgpt', email: 'fixture@example.test', planType: 'free' };
+    f.workspaceRouting = { chatgptAccountId: secret, backendOrigin: 'https://backend.test', accountRoutingOverride: 'us' };
+    await assert.rejects(v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false }), error => error.code === 'REDACTED');
+  } finally { v.session.lock(); }
+});
+
+Then('native account workflow cancellation stale references and changed sources retain ownership', async function () {
+  for (const mode of ['cancel', 'source', 'account', 'workspace']) {
+    const f = await fixture(this), v = await vault(f), controller = new AbortController();
+    try {
+      const paired = await v.session.pairNativeRuntime(v.input, v.selection), before = f.frames.length;
+      await assert.rejects(v.session.executeNativeAccount({ ...nativeReference(paired), revision: paired.revision + 1 }, v.selection, { refreshToken: false }), error => error.code === 'CONFLICT');
+      assert.equal(f.frames.length, before); await wait(() => f.stops === 1); f.hold = true;
+      const result = v.session.executeNativeAccount(nativeReference(paired), v.selection, { refreshToken: false }, controller.signal);
+      await wait(() => f.release.length === 1);
+      if (mode === 'cancel') controller.abort();
+      else { if (mode === 'source') v.enabled = false; else if (mode === 'account') f.identity.accountEpoch = randomUUID(); else f.identity.workspace = 'd'.repeat(64); f.release[0](); }
+      await assert.rejects(result, error => mode === 'cancel' ? error.code === 'CANCELLED' : ['PERMISSION', 'NETWORK', 'AUTHORIZATION'].includes(error.code));
+      await wait(() => f.stops === 2);
+    } finally { v.session.lock(); }
+  }
+});
 function broker(world, f) { const value = new NativeRuntimeBroker(f.runtime); world.nativeBrokers.push(value); return value; }
 const initialize = { id: 'init', method: 'initialize', params: { clientInfo: { name: 'operations', version: '1' }, capabilities: { experimentalApi: false } } };
 async function raw(f) {

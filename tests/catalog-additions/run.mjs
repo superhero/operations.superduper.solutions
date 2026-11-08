@@ -9,9 +9,7 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
-import { build } from 'vite';
-import { compactSchemaPacks } from '../../build/schema-pack-plugin.mjs';
-import { compactInlineWorkers } from '../../build/inline-worker-plugin.mjs';
+import { buildAdditionFixture, saveAdditionFixture, loadAdditionFixture } from './fixture-build.mjs';
 import { auditOperations, selectOperations } from './audit.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -19,8 +17,11 @@ process.chdir(root);
 const directory = resolve(root, 'tmp/test/catalog-additions');
 const args = process.argv.slice(2);
 const options = { resume: false, catalogs: [], operations: [], limit: undefined };
+let prepareFixture = false, preparedFixture = false;
 for (let index = 0; index < args.length; index++) {
-  if (args[index] === '--resume') options.resume = true;
+  if (args[index] === '--prepare-fixture') prepareFixture = true;
+  else if (args[index] === '--prepared-fixture') preparedFixture = true;
+  else if (args[index] === '--resume') options.resume = true;
   else if (args[index] === '--catalog' && args[index + 1]) options.catalogs.push(...args[++index].split(','));
   else if (args[index] === '--operation' && args[index + 1]) options.operations.push(args[++index]);
   else if (args[index] === '--limit' && /^[1-9]\d*$/.test(args[index + 1] ?? '')) options.limit = Number(args[++index]);
@@ -29,12 +30,19 @@ for (let index = 0; index < args.length; index++) {
 await mkdir(directory, { recursive: true });
 async function fingerprint() {
   const files = [...new Set(execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--',
-    'src', 'package.json', 'tests/catalog-additions'], { encoding: 'utf8' }).split('\0').filter(Boolean))].sort();
+    'src', 'build', 'package.json', 'package-lock.json', 'tests/catalog-additions'], { encoding: 'utf8' }).split('\0').filter(Boolean))].sort();
   const hash = createHash('sha256');
   for (const name of files) hash.update(name).update(await readFile(resolve(root, name)));
   return hash.digest('hex');
 }
 const sourceFingerprint = await fingerprint();
+const fixtureFile = resolve(directory, 'prepared-fixture.json');
+if (prepareFixture) {
+  assert.ok(!preparedFixture && !options.resume && !options.catalogs.length && !options.operations.length && !options.limit, 'Prepare the fixture without an audit selection.');
+  await saveAdditionFixture(fixtureFile, sourceFingerprint, await buildAdditionFixture(root));
+  assert.equal(await fingerprint(), sourceFingerprint, 'Source changed during fixture preparation.');
+  console.log('Prepared catalog fixture: ' + sourceFingerprint); process.exit(0);
+}
 const metadataFile = resolve(directory, 'run.json'), resultsFile = resolve(directory, 'results.ndjson');
 let metadata = { version: 1, sourceFingerprint, options, startedAt: new Date().toISOString(), completed: false,
   boundary: 'Production hydration, graph/layout/validation, workflow save/readback/delete in isolated Chromium. No DOM menu/render or API execution.' };
@@ -98,13 +106,8 @@ async function openContext(baseURL) {
 }
 
 try {
-  console.log('Building test-only browser integration fixture.');
-  const built = await build({ configFile: false, root, logLevel: 'error', plugins: [compactSchemaPacks(), compactInlineWorkers()], worker: { format: 'es', plugins: () => [compactSchemaPacks()] },
-    build: { write: false, target: 'es2024', minify: false,
-      lib: { entry: resolve(root, 'tests/catalog-additions/browser.fixture.ts'), formats: ['es'] } } });
-  const output = Array.isArray(built) ? built[0] : built;
-  const files = new Map(output.output.map(file => ['/' + file.fileName, file.type === 'chunk' ? file.code : file.source]));
-  files.set('/fixture.js', output.output.find(file => file.type === 'chunk' && file.isEntry).code);
+  console.log(preparedFixture ? 'Loading verified prepared browser fixture.' : 'Building test-only browser integration fixture.');
+  const files = preparedFixture ? await loadAdditionFixture(fixtureFile, sourceFingerprint) : await buildAdditionFixture(root);
   server = createServer((request, response) => {
     const pathname = new URL(request.url, 'http://localhost').pathname;
     response.setHeader('Cross-Origin-Opener-Policy', 'same-origin'); response.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');

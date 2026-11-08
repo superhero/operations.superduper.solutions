@@ -259,6 +259,10 @@ export function createOperationGraph(operation: Operation, position: { x: number
     for (const [name, value] of [["result", operation.rpc.workflowResult ?? operation.rpc.result], ["error", operation.rpc.error]] as const)
       outputs.push({ id: `rpc:${name}`, label: name === "result" ? "Result" : "Error",
         schema: { type: "object", additionalProperties: false, properties: { [name]: value }, required: [name] } });
+    if (operation.rpc.workflowDispatched) outputs.push({ id: 'rpc:dispatched', label: 'Command dispatched',
+      schema: { type: 'object', additionalProperties: false, properties: { dispatched: operation.rpc.workflowDispatched }, required: ['dispatched'] } });
+    if (operation.rpc.workflowNotification) outputs.push({ id: 'rpc:notification', label: operation.rpc.method === 'command/exec' ? 'Command output' : 'Filesystem changes',
+      schema: { type: 'object', additionalProperties: false, properties: { notification: operation.rpc.workflowNotification }, required: ['notification'] } });
   }
   const responses = object(source?.responses) ? source.responses : {};
   for (const [status, raw] of Object.entries(responses))
@@ -437,9 +441,9 @@ function objectPanel(nodes: WorkflowDocumentNode[], nodeId: string, document: Sc
     let rpc;
     try { rpc = nativeRpcOperation(document, owner.data.operationId).rpc!; } catch { return; }
     if (node.data.direction === "inputs" && group === "input:params") value = rpc.workflowParams ?? rpc.params;
-    else if (node.data.direction === "outputs" && (group === "rpc:result" || group === "rpc:error")) {
-      const name = group === "rpc:result" ? "result" : "error";
-      value = { type: "object", additionalProperties: false, properties: { [name]: name === "result" ? rpc.workflowResult ?? rpc.result : rpc.error }, required: [name] };
+    else if (node.data.direction === "outputs" && (group === "rpc:result" || group === "rpc:error" || group === 'rpc:notification' && rpc.workflowNotification)) {
+      const name = group === "rpc:result" ? "result" : group === 'rpc:notification' ? 'notification' : "error";
+      value = { type: "object", additionalProperties: false, properties: { [name]: name === "result" ? rpc.workflowResult ?? rpc.result : name === 'notification' ? rpc.workflowNotification : rpc.error }, required: [name] };
     } else return;
   } else {
     const paths = object(document.paths) ? document.paths : {};

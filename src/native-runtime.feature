@@ -5,6 +5,30 @@
 Feature: Explicit private native runtime pairing
   An authenticated browser connection owns only its pinned runtime and read-only pairing scope.
 
+  Scenario: Initialization workflows return a fresh owned handshake rather than cached pairing metadata
+    Then native initialization workflows use new owned children and preserve the public handshake result
+
+  Scenario: Initialization workflows reject client and capability overrides before dispatch
+    Then native initialization workflows reject unowned clients experimental capabilities and changed selections
+
+  Scenario: Initialization results withhold credential echoes and unclassified fields
+    Then native initialization workflow results reject malformed paths unknown fields and credential echoes
+
+  Scenario: Initialization workflow cancellation and authority changes discard pending handshakes
+    Then native initialization cancellation and source changes close only their owned child
+
+  Scenario: Paired account workflows read anonymous and public metadata without enabling agent execution
+    Then paired native account workflows preserve public results and encrypted authority across reload
+
+  Scenario: Account workflow parameters cannot request credential changes
+    Then native account workflow inputs reject refresh and overrides before any native dispatch
+
+  Scenario: Native account workflow results withhold secrets and unknown fields
+    Then native account workflows reject internal malformed and credential bearing results
+
+  Scenario: Account workflow cancellation and source changes withhold pending replies
+    Then native account workflow cancellation stale references and changed sources retain ownership
+
   Scenario: Pairing requires HTTPS an exact allowed Origin and the private key
     Then native pairing rejects unsafe hosts origins and missing authorization before a child starts
 

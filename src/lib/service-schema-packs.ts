@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { compactSchemaPackPrefix, decodeCompactSchemaPack } from "./schema-pack-codec.ts";
+import { compactSchemaPackPrefix, decodeCompactSchemaPack, compactSchemaPack91Prefix, decodeCompactSchemaPack91, adaptiveSchemaPackPrefix, decodeAdaptiveSchemaPack } from "./schema-pack-codec.ts";
 import index from "../catalogs/services/index.json" with { type: "json" };
 import { applySchemaPatches, type SchemaPatch } from "./schema-patches.ts";
 
@@ -31,10 +31,12 @@ function base64Bytes(value: string): Uint8Array<ArrayBuffer>
 export async function decodeServiceSchema(pack: string, descriptor: Pick<ServiceSchemaDescriptor, "bytes" | "sha256">): Promise<Record<string, unknown>>
 {
   const compact = pack.startsWith(compactSchemaPackPrefix);
-  const encoded = compact ? pack.slice(compactSchemaPackPrefix.length) : pack.match(/^data:[^,]*;base64,([A-Za-z0-9+/=]+)$/)?.[1];
+  const compact91 = pack.startsWith(compactSchemaPack91Prefix);
+  const adaptive = pack.startsWith(adaptiveSchemaPackPrefix);
+  const encoded = adaptive ? pack.slice(adaptiveSchemaPackPrefix.length) : compact91 ? pack.slice(compactSchemaPack91Prefix.length) : compact ? pack.slice(compactSchemaPackPrefix.length) : pack.match(/^data:[^,]*;base64,([A-Za-z0-9+/=]+)$/)?.[1];
   if (!encoded || !Number.isSafeInteger(descriptor.bytes) || descriptor.bytes < 1 || descriptor.bytes > 64 * 1024 * 1024)
     throw new Error("The bundled schema pack metadata is invalid.");
-  const compressed = compact ? decodeCompactSchemaPack(encoded) : base64Bytes(encoded);
+  const compressed = adaptive ? decodeAdaptiveSchemaPack(encoded) : compact91 ? decodeCompactSchemaPack91(encoded) : compact ? decodeCompactSchemaPack(encoded) : base64Bytes(encoded);
   const reader = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
   const bytes = new Uint8Array(descriptor.bytes);
   let length = 0;

@@ -52,6 +52,7 @@ export type CredentialExecutionOptions = {
   oauth1Clock?: OAuth1Clock;
   uploadSessions?: CloudflareUploadSessions;
   privateSecrets?: readonly string[];
+  privateTokens?: readonly string[];
   adoptPrivateResults?: (values: readonly AcquiredValue[], signal: AbortSignal) => Promise<readonly AcquiredReference[]>;
 };
 
@@ -67,9 +68,11 @@ export class CredentialResponseError extends Error
   }
 }
 
-export function redactor(secrets: string[])
+export function redactor(secrets: string[], tokens: readonly string[] = [])
 {
   let changed = false;
+  const bounded = [...new Set(tokens.filter(Boolean))].map(token => ({ numeric: /^\d+$/.test(token),
+    pattern: new RegExp('(?<![\\p{L}\\p{N}_])' + token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}\\p{N}_])', 'gu') }));
   const text = (value: string): string =>
   {
     let result = value;
@@ -80,6 +83,10 @@ export function redactor(secrets: string[])
     {
       previous = result;
       for (const secret of secrets) if (result.includes(secret)) { changed = true; result = result.split(secret).join(""); }
+      for (const { pattern, numeric } of bounded) result = result.replace(pattern, (match: string, offset: number, source: string) => {
+        if (numeric && !(offset === 0 && match.length === source.length) && !/[:=]\s*["']?$/.test(source.slice(0, offset))) return match;
+        changed = true; return '';
+      });
     } while (previous !== result);
     return result;
   };
@@ -311,7 +318,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       secrets = [...new Set([...secrets, ...signed.secrets].flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
         .sort((a, b) => b.length - a.length);
     }
-    const preview = redactor(secrets).value(publicRequest) as PreparedRequest;
+    const preview = redactor(secrets, options.privateTokens).value(publicRequest) as PreparedRequest;
     await options.assertCurrent();
     if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");
@@ -335,7 +342,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         ...(options.onValue ? { onValue: sample => {
           if (signal.aborted) throw new VaultError("CANCELLED");
           if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
-          const scrub = redactor(secrets), body = scrub.value(sample.body);
+          const scrub = redactor(secrets, options.privateTokens), body = scrub.value(sample.body);
           if (scrub.changed) throw new VaultError("REDACTED");
           options.onValue!({ ...sample, body });
         } } : {}) });
@@ -370,7 +377,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       secrets = [...new Set([...secrets, ...completed.secrets].flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
         .sort((a, b) => b.length - a.length);
     }
-    const scrub = redactor(secrets);
+    const scrub = redactor(secrets, options.privateTokens);
     const safeHeaders: [string, string][] = [];
     for (const [name, value] of response.headers)
     {
@@ -437,7 +444,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (error instanceof CredentialResponseError) throw error;
     if (error instanceof InputValidationError)
     {
-      const scrub = redactor(secrets);
+      const scrub = redactor(secrets, options.privateTokens);
       throw new InputValidationError(scrub.text(error.fieldKey), scrub.text(error.message).slice(0, vaultLimits.diagnosticBytes));
     }
     if (error instanceof WorkflowBodyError) {

@@ -9,7 +9,7 @@ import { Then } from '@cucumber/cucumber';
 import { compactInlineWorkerModule } from '../build/inline-worker-plugin.mjs';
 import { createAsyncInlineWorkerProgram, maximumAsyncWorkerBytes } from '../build/async-inline-worker.mjs';
 import { decodeInlineWorkerSource, maxCompactInlineWorkerBytes } from './lib/inline-worker-codec.ts';
-import { encodeSchemaPack, decodeCompactSchemaPack, compactSchemaPackPrefix } from './lib/schema-pack-codec.ts';
+import { encodeSchemaPack, decodeCompactSchemaPack, compactSchemaPackPrefix, encodeAdaptiveSchemaPack, decodeAdaptiveSchemaPack, adaptiveSchemaPackPrefix } from './lib/schema-pack-codec.ts';
 
 const id = '/fixture/worker.ts?worker&inline';
 const source = 'self.onmessage=event=>self.postMessage(event.data);\n/*' + 'Repeated program 日本語 α / controls\n'.repeat(6000) + '*/';
@@ -69,11 +69,23 @@ Then('only bounded schema library workers use the asynchronous bootstrap without
   assert.ok(result.meta.originalBytes - result.meta.bootstrapBytes > 65536);
   const program = parseAst(bootstrap).body[0].expression.callee.body.body.at(-1).expression;
   const packed = program.arguments[0].value;
-  assert.equal(gunzipSync(decodeCompactSchemaPack(packed)).toString('utf8'), largeSource);
+  assert.equal(gunzipSync(packed.startsWith(adaptiveSchemaPackPrefix) ? decodeAdaptiveSchemaPack(packed.slice(adaptiveSchemaPackPrefix.length)) : decodeCompactSchemaPack(packed)).toString('utf8'), largeSource);
   assert.equal(program.arguments[1].value, Buffer.byteLength(largeSource));
   assert.match(bootstrap, /DecompressionStream\('gzip'\)/);
   assert.doesNotMatch(bootstrap, /\beval\s*\(|new Function\s*\(/);
   for (const size of [0, -1, NaN, Infinity, 1.5, maximumAsyncWorkerBytes + 1])
     assert.throws(() => createAsyncInlineWorkerProgram(packed, size), /size/);
   assert.equal(compactInlineWorkerModule(wrapper('x'.repeat(maximumAsyncWorkerBytes + 1)), '/fixture/schema-library.worker.ts?worker&inline'), undefined);
+});
+Then('adaptive worker transport saves bytes while legacy programs and integrity checks remain valid', () => {
+  const program = 'self.onmessage=e=>self.postMessage(e.data);/*' + Array.from({ length: 8000 }, (_, i) => createHash('sha256').update(String(i)).digest('hex')).join('\n') + '*/';
+  const bytes = Buffer.from(program), compressed = gzipSync(bytes, { level: 9 }), legacy = encodeSchemaPack(compressed).slice(compactSchemaPackPrefix.length), adaptive = encodeAdaptiveSchemaPack(compressed);
+  assert.ok(adaptive.length < legacy.length);
+  assert.equal(decodeInlineWorkerSource(legacy, bytes.length), program); assert.equal(decodeInlineWorkerSource(adaptive, bytes.length), program);
+  const built = compactInlineWorkerModule(wrapper(program), id), ast = parseAst(built.code);
+  const packed = ast.body.filter(node => node.type === 'VariableDeclaration').flatMap(node => node.declarations).find(node => node.id.name === '__operationsPackedWorker').init.value;
+  assert.equal(packed, adaptive);
+  for (const invalid of [adaptiveSchemaPackPrefix + '!', adaptive + '!', adaptive.slice(0, -1)]) assert.throws(() => decodeInlineWorkerSource(invalid, bytes.length));
+  assert.throws(() => decodeInlineWorkerSource(adaptive, bytes.length + 1), /length/);
+  process.stdout.write(JSON.stringify({ workerSourceBytes: bytes.length, legacyCharacters: legacy.length, adaptiveCharacters: adaptive.length, savedBytes: legacy.length - adaptive.length }) + '\n');
 });

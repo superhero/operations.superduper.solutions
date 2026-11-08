@@ -12,3 +12,19 @@ An isolated Chromium context calls the production hydration, capability checks, 
 Use repeatable `--operation <catalog:operationId>` arguments for focused rechecks.
 Unknown IDs, including those outside a supplied `--catalog`, fail the run.
 The same fresh-workflow and delete-before-next-operation guarantees apply.
+
+When the browser runner has a small Node heap, compile the integration fixture
+in a separately bounded build step, then run the browser audit with that exact
+fixture:
+
+```sh
+npm run test:catalog-additions -- --prepare-fixture
+npm run test:catalog-additions -- --prepared-fixture --operation codex:thread/list
+```
+
+Preparation does not run operations or reset audit results. The browser phase
+checks the current source/build fingerprint and every cached asset's content
+hash before starting. Changed sources require preparation again. Both paths use
+the same production integration fixture and workflow cleanup rules. Keep the
+build and browser phases within their declared resource budgets; preparation
+does not change browser limits or turn failures into passes.

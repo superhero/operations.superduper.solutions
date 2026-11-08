@@ -12,3 +12,8 @@ Feature: Qualify the production paired runtime with the pinned Codex binary
   Scenario: The real pinned runtime accepts the isolated agent permission profile
     Given I create a vault in the Secrets settings and save a synthetic credential
     Then native runtime settings pair reconnect and disconnect through the production worker
+
+  @native-feedback-ui @native-feedback-disabled
+  Scenario: The pinned runtime enforces disabled feedback without external delivery
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then a read only native pairing queries "feedback/upload" through the production workflow worker

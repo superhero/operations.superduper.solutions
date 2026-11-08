@@ -10,3 +10,6 @@ Feature: Bounded inline worker program packing
 
   Scenario: Large schema workers retain exact programs with asynchronous inflation
     Then only bounded schema library workers use the asynchronous bootstrap without changing their factory
+
+  Scenario: Adaptive transport reduces worker size without changing its program
+    Then adaptive worker transport saves bytes while legacy programs and integrity checks remain valid

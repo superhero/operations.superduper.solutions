@@ -24,10 +24,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution, type WorkflowStream } from "$lib/workflow-runner.ts";
   import { WorkflowResponseError, workflowExecutionForOperation, type WorkflowResponse } from "$lib/workflow-execution.ts";
   import type { ResponseProgress } from "$lib/workflow-response-stream.ts";
-  import type { NativeRequest, NativeResponse, NativeInteraction } from "$lib/native-agent-contract.ts";
+  import type { NativeMcpOAuthNotice } from '$lib/native-mcp-oauth.ts';
+  import type { NativeCommandProgress } from '$lib/native-command.ts';
+  import type { NativeThreadShellNotice } from '$lib/native-thread-shell.ts';
+  import type { NativeRequest, NativeResponse, NativeInteraction, NativeAgentProgress } from "$lib/native-agent-contract.ts";
   import type { NativeWorkflowBinding } from "$lib/secrets/native-runtime-config.ts";
   import { prepareNativeRequest } from "$lib/native-operation-input.ts";
-  import { replyNativeInteraction } from "$lib/secrets/client.ts";
+  import { replyNativeInteraction, replyNativeCommand, vaultCall } from "$lib/secrets/client.ts";
+  import { nativeWorkflowSelection } from '$lib/secrets/native-runtime-client.ts';
   import NativeRuntimeSelector from "$lib/components/NativeRuntimeSelector.svelte";
   import DockerHostSelector from "$lib/components/DockerHostSelector.svelte";
   import type { DockerBinding } from "$lib/secrets/docker-config.ts";
@@ -52,6 +56,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let values = $state<InputValues>({});
   let credentialBinding = $state<CredentialBinding>();
   let nativeBinding = $state<NativeWorkflowBinding>(), nativeApprovals = $state<NativeInteraction[]>([]);
+  let nativeAccountLogin = $state<Extract<NativeAgentProgress, { kind: 'login' }>>();
+  let nativeGatewayLogin = $state<Extract<NativeAgentProgress, { kind: 'gateway-login' }>>();
+  let nativeMcpLogin = $state<NativeMcpOAuthNotice | null>(null);
+  let nativeCommandApproval = $state<NativeCommandProgress | null>(null);
+  let nativeShellApproval = $state<NativeThreadShellNotice | null>(null);
+  let nativeActionApproval = $state<Extract<NativeAgentProgress, { kind: 'account-action-approval' }> | null>(null);
+  let nativeGuardianApproval = $state<Extract<NativeAgentProgress, { kind: 'guardian-approval' }> | null>(null);
+  let nativeGuardianDenials = $state<(Extract<NativeAgentProgress, { kind: 'guardian-denial' }> & { runtimeId: string })[]>([]);
+  let nativeTurn = $state<Extract<NativeAgentProgress, { kind: 'running' }> | null>(null);
+  let nativeSteerText = $state(''), nativeControlStatus = $state(''), nativeControlBusy = $state(false);
   let dockerBinding = $state<DockerBinding>(), dockerReady = $state(false);
   let selected = $state("");
   let error = $state("");
@@ -125,7 +139,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     currentStreamId = "";
     retry = false;
     responseProgress = null;
-    nativeApprovals = [];
+    nativeApprovals = []; nativeTurn = null; nativeSteerText = ''; nativeControlStatus = ''; nativeControlBusy = false; nativeAccountLogin = undefined; nativeGatewayLogin = undefined; nativeMcpLogin = null;
     try
     {
       const next = await runner!.nextAsync();
@@ -176,12 +190,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const submittedValues = { ...values };
       if (!view.vaultVariables?.length) prepared = view.operation.protocol === "json-rpc" ? prepareNativeRequest(view.operation, submittedValues)
         : dockerBinding ? prepareDockerReadRequest(view.operation, submittedValues) : prepareRequest(view.operation, submittedValues);
-      const visitId = view.id;
+      const visitId = view.id, nativeRuntimeId = nativeBinding?.runtime.id;
       const result = await runner!.submit(submittedValues, credentialBinding ?? null, progress => {
         if (!disposed && view?.kind === "operation" && view.id === visitId && sending) responseProgress = progress;
       }, nativeBinding ?? null, progress => {
-        if (!disposed && view?.kind === "operation" && view.id === visitId && sending && progress.kind === "approval")
-          nativeApprovals = [...nativeApprovals, progress.interaction];
+        if (!disposed && view?.kind === "operation" && view.id === visitId && sending) {
+          if (progress.kind === "approval") nativeApprovals = [...nativeApprovals, progress.interaction];
+          if (progress.kind === 'login') { nativeAccountLogin = progress; activeTab = 'forms'; }
+          if (progress.kind === 'gateway-login') { nativeGatewayLogin = progress; activeTab = 'forms'; }
+          if (progress.kind === "mcp-login") { nativeMcpLogin = progress; activeTab = "forms"; }
+          if (progress.kind === 'command-approval') { nativeCommandApproval = progress; activeTab = 'forms'; }
+          if (progress.kind === 'account-action-approval') { nativeActionApproval = progress; activeTab = 'forms'; }
+          if (progress.kind === 'guardian-approval') { nativeGuardianApproval = progress; activeTab = 'forms'; }
+          if (progress.kind === 'guardian-denial' && nativeRuntimeId) nativeGuardianDenials = [...nativeGuardianDenials.filter(denial => denial.reviewId !== progress.reviewId || denial.runtimeId !== nativeRuntimeId), { ...progress, runtimeId: nativeRuntimeId }].slice(-32);
+          if (progress.kind === 'shell-approval') { nativeShellApproval = progress; activeTab = 'forms'; }
+          if (progress.kind === 'running') { nativeTurn = progress; activeTab = 'forms'; }
+        }
       }, dockerBinding ?? null);
       if (!disposed) {
         streams = runner!.streams;
@@ -205,7 +229,26 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         globalThis.document.getElementById(`run-${cause.fieldKey}`)?.focus();
       }
     }
-    finally { busy = false; sending = false; responseProgress = null; nativeApprovals = []; }
+    finally { busy = false; sending = false; responseProgress = null; nativeApprovals = []; nativeTurn = null; nativeSteerText = ''; nativeControlStatus = ''; nativeControlBusy = false; nativeAccountLogin = undefined; nativeGatewayLogin = undefined; nativeMcpLogin = null; nativeCommandApproval = null; nativeShellApproval = null; nativeActionApproval = null; nativeGuardianApproval = null; }
+  }
+
+  async function sendNativeTurnControl(method: 'turn/interrupt' | 'turn/steer') {
+    if (!nativeBinding || !nativeTurn || nativeControlBusy) return;
+    const owned = nativeTurn, runtime = nativeBinding.runtime;
+    nativeControlBusy = true; nativeControlStatus = '';
+    try {
+      const selections = await nativeWorkflowSelection(), selection = selections.find(item => item.operation.rpc?.method === method);
+      if (!selection) throw new Error('Native turn control is unavailable.');
+      const params = method === 'turn/interrupt' ? { threadId: owned.threadId, turnId: owned.turnId }
+        : { threadId: owned.threadId, expectedTurnId: owned.turnId, input: [{ type: 'text', text: nativeSteerText }] };
+      await vaultCall('controlNativeTurn', [runtime, selections, selection, params]);
+      if (nativeTurn?.threadId === owned.threadId && nativeTurn.turnId === owned.turnId) {
+        nativeControlStatus = method === 'turn/interrupt' ? 'Stop acknowledged.' : 'Instruction sent.';
+        if (method === 'turn/steer') nativeSteerText = '';
+      }
+    } catch (failure) {
+      if (nativeTurn?.threadId === owned.threadId && nativeTurn.turnId === owned.turnId) nativeControlStatus = failure instanceof Error ? failure.message : 'Native turn control failed.';
+    } finally { nativeControlBusy = false; }
   }
 
   function edit(field: InputField, value: string | null | undefined) {
@@ -237,6 +280,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if "protocol" in response}
       <p class="run-status">Native operation completed</p>
       <JsonView value={response.result} label={`${label} JSON`} />
+      {#if response.notification}<JsonView value={response.notification} label={`${label} filesystem change`} />{/if}
     {:else}
     <p class="run-status">HTTP {response.status}{response.statusText ? ` ${response.statusText}` : ""}</p>
     <section class="run-response-body" aria-label="Response body">
@@ -253,7 +297,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if views.length}
     <div class="run-tabs" use:wheelTabs role="tablist" aria-label="Workflow run views" tabindex="-1" onkeydown={tabKeys}>
       <button type="button" role="tab" id={`${operationFormId}-forms-tab`} aria-controls={`${operationFormId}-forms-panel`}
-        aria-selected={activeTab === "forms"} tabindex={activeTab === "forms" ? 0 : -1} onclick={() => activeTab = "forms"}>Forms{error || nativeApprovals.length ? " · Attention" : ""}</button>
+        aria-selected={activeTab === "forms"} tabindex={activeTab === "forms" ? 0 : -1} onclick={() => activeTab = "forms"}>Forms{error || nativeApprovals.length || nativeMcpLogin || nativeAccountLogin || nativeGatewayLogin || nativeActionApproval || nativeGuardianApproval ? " · Attention" : ""}</button>
       {#each views as item, index (item.key)}
         <button type="button" role="tab" id={`${operationFormId}-view-tab-${index}`} aria-controls={`${operationFormId}-view-panel`}
           aria-selected={activeTab === item.key} tabindex={activeTab === item.key ? 0 : -1} onclick={() => activeTab = item.key}>{item.title}</button>
@@ -323,6 +367,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               }} />
           {/key}
         {/if}
+        {#if view.operation.rpc?.method === 'account/login/start' && values['params:type'] === 'apiKey'}
+          <VaultVariableAccess selected={values['params:credentialId'] ?? ''} disabled={busy || executed}
+            onselect={id => edit('params:credentialId', id)} />
+        {/if}
         {#key view.id}<OperationFields operation={view.operation} {values} {fieldError} idPrefix="run" portalZIndex={90}
           disabled={busy || executed} mappedFields={view.mappedFields} onValueChange={edit} />{/key}
         {#if executed}
@@ -356,6 +404,45 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </details>
   {/if}
   {#if failedResponse}{@render responseDetails(failedResponse, "Operation response")}{/if}
+  {#if nativeTurn && sending}
+    <section aria-label="Running native turn" class="run-response">
+      <h3>Agent turn in progress</h3>
+      {#if view?.kind === 'operation' && view.operation.rpc?.method === 'turn/start'}
+        <label for={`${operationFormId}-native-steer`}>Instruction for the running turn</label>
+        <textarea id={`${operationFormId}-native-steer`} aria-label="Instruction for the running turn" bind:value={nativeSteerText} rows={2} maxlength={24576} disabled={nativeControlBusy}></textarea>
+        <button type="button" class="run-primary" disabled={nativeControlBusy || !nativeSteerText.trim()} onclick={() => sendNativeTurnControl('turn/steer')}>Send instruction</button>
+      {/if}
+      <button type="button" class="run-primary" disabled={nativeControlBusy} onclick={() => sendNativeTurnControl('turn/interrupt')}>Stop turn</button>
+      {#if nativeControlStatus}<p role="status">{nativeControlStatus}</p>{/if}
+    </section>
+  {/if}
+  {#if nativeAccountLogin && sending}
+    <section aria-label="Account sign-in" class="run-response">
+      <h3>Sign in to the native runtime</h3>
+      <p class="hint">Waiting for the runtime to confirm your account.</p>
+      <a href={nativeAccountLogin.login === 'chatgpt' ? nativeAccountLogin.authUrl : nativeAccountLogin.verificationUrl}
+        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open account sign-in</a>
+      {#if nativeAccountLogin.login === 'chatgptDeviceCode'}<p>Code: <code>{nativeAccountLogin.userCode}</code></p>{/if}
+      <p>Sign-in ID: <code>{nativeAccountLogin.loginId}</code></p>
+      <button type="button" onclick={() => runner?.cancelPending()}>Cancel sign-in</button>
+    </section>
+  {/if}
+  {#if nativeGatewayLogin && sending}
+    <section aria-label="Gateway sign-in" class="run-response">
+      <h3>Sign in to {nativeGatewayLogin.providerId}</h3>
+      <p class="hint">Waiting for the native runtime to confirm gateway access.</p>
+      <a href={nativeGatewayLogin.authUrl} target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open gateway sign-in</a>
+      <button type="button" onclick={() => runner?.cancelPending()}>Cancel sign-in</button>
+    </section>
+  {/if}
+  {#if nativeMcpLogin}
+    <section aria-label="MCP sign-in" class="run-response">
+      <h3>Sign in to {nativeMcpLogin.server}</h3>
+      <p class="hint">Waiting for the connected runtime to confirm sign-in.</p>
+      <a href={nativeMcpLogin.authorizationUrl} target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open MCP sign-in</a>
+      <button type="button" onclick={() => runner?.cancelPending()}>Cancel sign-in</button>
+    </section>
+  {/if}
   {#each nativeApprovals as prompt (prompt.token)}
     <section aria-label="Codex approval" class="run-response">
       <h3>{prompt.kind === "command" ? "Allow this command?" : "Allow this file change?"}</h3>
@@ -372,6 +459,88 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <button type="button" onclick={() => runner?.cancelPending()}>Cancel turn</button>
     </section>
   {/each}
+  {#if nativeCommandApproval}
+    {@const prompt = nativeCommandApproval}
+    <section aria-label="Command approval" class="run-response">
+      <h3>Allow this command?</h3>
+      <JsonView value={prompt.params} label="Command arguments and environment" />
+      {#each [{ label: 'Allow once', decision: 'accept' }, { label: 'Decline', decision: 'decline' }] as choice}
+        <button type="button" onclick={() => {
+          if (!nativeBinding) return;
+          replyNativeCommand(nativeBinding.runtime.id, prompt.token, choice.decision as 'accept' | 'decline');
+          nativeCommandApproval = null;
+        }}>{choice.label}</button>
+      {/each}
+      <button type="button" onclick={() => runner?.cancelPending()}>Cancel command</button>
+    </section>
+  {/if}
+  {#if view?.kind === 'operation' && view.operation.rpc?.method === 'thread/approveGuardianDeniedAction' && nativeBinding}
+    <section aria-label="Observed Guardian denials" class="run-response">
+      <h3>Recent denied actions</h3>
+      {#each nativeGuardianDenials.filter(denial => denial.runtimeId === nativeBinding?.runtime.id) as denial (denial.reviewId)}
+        <p>{denial.actionType} · Review <code>{denial.reviewId}</code></p>
+        <button type="button" disabled={sending || busy} onclick={() => { values = { ...values, 'params:threadId': denial.threadId, 'params:reviewId': denial.reviewId }; }}>Select this denial</button>
+      {/each}
+    </section>
+  {/if}
+  {#if nativeGuardianApproval}
+    {@const prompt = nativeGuardianApproval}
+    <section aria-label="Guardian denial approval" class="run-response">
+      <h3>Approve this denied action for one retry?</h3>
+      <p>{prompt.denial.review.rationale}</p>
+      <p>Risk: {prompt.denial.review.riskLevel ?? 'Unknown'} · User authorization: {prompt.denial.review.userAuthorization ?? 'Unknown'}</p>
+      <pre>{JSON.stringify(prompt.denial.action, null, 2)}</pre>
+      <p class="hint">Approval records permission for a retry. It does not run the action.</p>
+      {#each [{ label: 'Approve one retry', decision: 'accept' }, { label: 'Decline', decision: 'decline' }] as choice}
+        <button type="button" onclick={() => {
+          if (!nativeBinding) return;
+          replyNativeInteraction(nativeBinding.runtime.id, prompt.token, choice.decision as 'accept' | 'decline');
+          nativeGuardianApproval = null;
+        }}>{choice.label}</button>
+      {/each}
+    </section>
+  {/if}
+  {#if nativeActionApproval}
+    {@const prompt = nativeActionApproval}
+    {@const reset = prompt.method === 'account/rateLimitResetCredit/consume'}
+    <section aria-label="Account action approval" class="run-response">
+      <h3>{reset ? 'Use a rate-limit reset credit?' : 'Email the workspace owner about credits?'}</h3>
+      <p>This action uses the ChatGPT account signed in on the selected native runtime.</p>
+      {#if prompt.account.account?.type === 'chatgpt' && prompt.account.account.email}
+        <p>Account: <strong>{prompt.account.account.email}</strong></p>
+      {/if}
+      {#if reset}
+        <p>Reset credit: <code>{String(prompt.params.creditId ?? 'Next available credit')}</code></p>
+        <p>Idempotency key: <code>{String(prompt.params.idempotencyKey)}</code></p>
+      {:else}
+        <p>Credit type: {prompt.params.creditType === 'usage_limit' ? 'Usage limit' : 'Credits'}</p>
+      {/if}
+      {#each [{ label: reset ? 'Use reset credit' : 'Send credit email', decision: 'accept' }, { label: 'Decline', decision: 'decline' }] as choice}
+        <button type="button" onclick={() => {
+          if (!nativeBinding) return;
+          replyNativeInteraction(nativeBinding.runtime.id, prompt.token, choice.decision as 'accept' | 'decline');
+          nativeActionApproval = null; nativeGuardianApproval = null;
+        }}>{choice.label}</button>
+      {/each}
+    </section>
+  {/if}
+  {#if nativeShellApproval}
+    {@const prompt = nativeShellApproval}
+    <section aria-label="Thread shell approval" class="run-response">
+      <h3>Run this shell command without a sandbox?</h3>
+      <p>This command runs with the runtime user's filesystem and network access.</p>
+      <pre>{prompt.command}</pre>
+      <p class="hint">Thread: {prompt.threadId} · Timeout: {prompt.timeoutMs} ms</p>
+      {#each [{ label: 'Run once without sandbox', decision: 'accept' }, { label: 'Decline', decision: 'decline' }] as choice}
+        <button type="button" onclick={() => {
+          if (!nativeBinding) return;
+          replyNativeInteraction(nativeBinding.runtime.id, prompt.token, choice.decision as 'accept' | 'decline');
+          nativeShellApproval = null; nativeActionApproval = null; nativeGuardianApproval = null;
+        }}>{choice.label}</button>
+      {/each}
+      <button type="button" onclick={() => runner?.cancelPending()}>Cancel shell command</button>
+    </section>
+  {/if}
   {#if prepared && !executed}<div class="json-report" role="region" aria-label="Prepared request"><pre>{JSON.stringify(prepared, null, 2)}</pre></div>{/if}
   {#if history.length}
     <section class="run-results" aria-label="Workflow results">
@@ -399,7 +568,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <h3>Streams · {streams.filter(stream => stream.state === "connecting" || stream.state === "running").length} active</h3>
       {#each streams as stream (stream.id)}
         <div class="run-stream">
-          <div><strong>{stream.name}</strong><span class="stream-state">{stream.state}{stream.progress ? ` · ${stream.progress.events} updates` : ""}</span>
+          <div><strong>{stream.name}</strong><span class="stream-state">{stream.state}{stream.nativeUpdates !== undefined ? ` · ${stream.nativeUpdates} updates` : stream.progress ? ` · ${stream.progress.events} updates` : ""}</span>
+            {#if stream.nativeValue && 'notification' in stream.nativeValue && stream.nativeValue.notification}<JsonView value={stream.nativeValue.notification} label={stream.nativeValue.notification.method === 'command/exec/outputDelta' ? 'Latest command output' : 'Latest filesystem change'} />{/if}
             {#if stream.error}<p class="run-error" role="alert">{stream.error}</p>{/if}</div>
           {#if stream.state === "running" || stream.state === "connecting"}
             <button type="button" aria-label={`Stop stream ${stream.name}`} onclick={() => runner?.stopStream(stream.id)}>Stop stream</button>

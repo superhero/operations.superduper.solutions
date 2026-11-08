@@ -16,3 +16,6 @@ Feature: Bounded catalog addition audit
 
   Scenario: Reused workflow identities are rejected
     Then the catalog audit refuses to reuse a previous workflow identity
+
+  Scenario: Prepared fixtures retain exact bytes and reject stale or damaged inputs
+    Then prepared catalog fixtures preserve binary assets and reject changed sources or contents

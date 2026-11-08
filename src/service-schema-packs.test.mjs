@@ -530,7 +530,7 @@ Then('the pinned Codex schema preserves native contracts and qualifies only priv
   assert.equal(source.name, 'OpenAI / Codex / App Server');
   assert.equal(source.version, '0.163.0');
   assert.equal(source.protocol, 'json-rpc');
-  assert.equal(source.operations, 105);
+  assert.equal(source.operations, 104);
   assert.ok(source.url.includes('/openai/codex/rust-v0.163.0/'));
   const document = await readServiceSchema(source.id);
   const { info, 'x-codex-app-server': metadata, ...native } = document;
@@ -554,7 +554,9 @@ Then('the pinned Codex schema preserves native contracts and qualifies only priv
   assert.equal(inspected.operations.length, source.operations);
   for (const method of ['initialize', 'account/login/start', 'account/read', 'model/list', 'thread/start', 'thread/resume', 'turn/start', 'turn/interrupt'])
     assert.ok(inspected.operations.some(operation => operation.id === `codex:${method}`), method);
-  const qualified = new Set(['thread/start', 'thread/resume', 'turn/start']);
+  const qualified = new Set(document.definitions.ClientRequest.oneOf.map(request => request.properties.method.enum[0])
+    .filter(method => method !== 'windowsSandbox/setupStart'));
+  assert.equal(qualified.size, 104);
   assert.deepEqual(inspected.operations.filter(operation => !operation.unavailableReason).map(operation => operation.path).sort(), [...qualified].sort());
   for (const operation of inspected.operations) {
     assert.equal(operation.method, 'RPC');
@@ -564,7 +566,7 @@ Then('the pinned Codex schema preserves native contracts and qualifies only priv
   const discovery = createSchemaDiscovery(inspected, source.sha256);
   assert.deepEqual(validateSchemaDiscovery(discovery, source.id, source.sha256), discovery);
   assert.equal(discovery.summary.protocol, 'json-rpc');
-  assert.equal(discovery.summary.unavailableCount, 102);
+  assert.equal(discovery.summary.unavailableCount, 0);
   assert.equal(discovery.document.openapi, undefined);
   assert.equal(discovery.document.paths, undefined);
   assert.equal(discovery.document.definitions, undefined, 'Discovery does not copy the full protocol bundle.');
