@@ -28,6 +28,10 @@ Then('JSON and Query native bindings preserve omitted declarations and reject mi
   assert.deepEqual(operation['x-upstream-aws-query-contract'].parameters,[]);
   assert.deepEqual(operation['x-upstream-aws-query-contract'].pathParameters,[]);assert.equal(operation['x-upstream-aws-query-contract'].requestBody,null);
   assert.equal(operation['x-operations-aws-query'],'aws-query-v1');assert.ok(Object.keys(query.components.schemas).some(name=>name.startsWith('OperationsAwsQuery_')));
+  const invalidQuery=structuredClone(await readServiceSchemaUpstream('aws-iam'));
+  invalidQuery.components.securitySchemes.hmac.type='http';const queryBefore=JSON.stringify(invalidQuery);
+  assert.throws(()=>bindAwsQuery(invalidQuery),{message:'AWS Query requires the pinned native and SDK contracts (IAM declaration).'});
+  assert.equal(JSON.stringify(invalidQuery),queryBefore);
 });
 
 Then('REST native route corrections retain signer and body provenance while removing orphaned native paths',async()=>{
