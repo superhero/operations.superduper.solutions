@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { nativeObject } from "../native-runtime-contract.ts";
-import { dockerIdentity, dockerDigest, dockerNativeProfile, type DockerHostIdentity } from "../docker-native-contract.ts";
+import { dockerIdentity, dockerDigest, dockerNativeProfile, isDockerReadOperation, type DockerHostIdentity, type DockerReadOperationId } from "../docker-native-contract.ts";
 import { validateNativeInput, validateNativeReference, nativeReference, type NativeRuntimeInput, type NativeRuntimeReference } from "./native-runtime-config.ts";
 import { VaultError, type VaultCredential } from "./types.ts";
 export type DockerHostReference = NativeRuntimeReference;
 export type DockerHostInput = NativeRuntimeInput;
 export type DockerBinding = { host: DockerHostReference; fingerprint: string };
 export type DockerConnection = DockerHostReference & DockerHostInput & { profile: typeof dockerNativeProfile;
-  keyHash: string; modelFingerprint: string; identity: DockerHostIdentity };
+  keyHash: string; modelFingerprint: string; identity: DockerHostIdentity; operation?: DockerReadOperationId };
 export const dockerReference = nativeReference;
 export const validateDockerReference = validateNativeReference;
 export const validateDockerInput = validateNativeInput;
@@ -22,10 +22,12 @@ export function validateDockerBinding(value: unknown): DockerBinding {
 }
 export function validateDockerConnection(value: unknown): DockerConnection {
   try {
-    const item = nativeObject(value, ["id", "revision", "fingerprint", "label", "host", "pairingKeyId", "profile", "keyHash", "modelFingerprint", "identity"]);
+    const hasOperation = !!value && typeof value === "object" && Object.hasOwn(value, "operation");
+    const item = nativeObject(value, ["id", "revision", "fingerprint", "label", "host", "pairingKeyId", "profile", "keyHash", "modelFingerprint", "identity", ...(hasOperation ? ["operation"] : [])]);
     validateDockerReference({ id: item.id, revision: item.revision, fingerprint: item.fingerprint });
     const input = validateDockerInput({ label: item.label, host: item.host, pairingKeyId: item.pairingKeyId });
-    if (item.host !== input.host || item.profile !== dockerNativeProfile || !dockerDigest(item.keyHash) || !dockerDigest(item.modelFingerprint)) throw new Error();
+    if (item.host !== input.host || item.profile !== dockerNativeProfile || !dockerDigest(item.keyHash) || !dockerDigest(item.modelFingerprint)
+      || hasOperation && !isDockerReadOperation(item.operation)) throw new Error();
     return { ...item, identity: dockerIdentity(item.identity) } as DockerConnection;
   } catch { throw new VaultError("INVALID"); }
 }

@@ -7,6 +7,14 @@ import type { PreparedRequest } from "./operation-input.ts";
 export type QuerySerialization = "form-csv";
 const primitives = new Set(["string", "number", "integer", "boolean"]);
 
+/** Scalar form parameters have the same wire representation in both explode modes. */
+export function acceptsScalarQueryExplode(input: InputField, parameter: Record<string, unknown>): boolean {
+  return input.location === "query" && primitives.has(input.type) && !input.format
+    && typeof parameter.explode === "boolean"
+    && (parameter.allowReserved === undefined || parameter.allowReserved === false)
+    && (parameter.allowEmptyValue === undefined || parameter.allowEmptyValue === false);
+}
+
 /** The reviewed non-exploded form slice; other parameter styles stay guarded. */
 export function configureQueryArray(input: InputField, parameter: Record<string, unknown>): boolean {
   if (input.location !== "query" || input.type !== "array" || parameter.explode !== false) return false;

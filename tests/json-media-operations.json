@@ -1,0 +1,26 @@
+{
+  "atlassian-marketplace": [
+    "atlassian-marketplace:PATCH /addons/{addonKey}",
+    "atlassian-marketplace:PATCH /addons/{addonKey}/migration",
+    "atlassian-marketplace:PATCH /addons/{addonKey}/privacy-and-security",
+    "atlassian-marketplace:PATCH /addons/{addonKey}/versions/build/{pluginBuildNumber}",
+    "atlassian-marketplace:PATCH /vendors/{vendorId}/promotions/{promotionId}"
+  ],
+  "bitbucket-dc": [
+    "bitbucket-dc:POST /branch-permissions/latest/projects/{projectKey}/repos/{repositorySlug}/restrictions",
+    "bitbucket-dc:POST /branch-permissions/latest/projects/{projectKey}/restrictions"
+  ],
+  "cloudflare": [
+    "cloudflare:scim-groups-create",
+    "cloudflare:scim-groups-patch",
+    "cloudflare:scim-groups-put",
+    "cloudflare:scim-users-create",
+    "cloudflare:scim-users-patch",
+    "cloudflare:scim-users-put"
+  ],
+  "jira": [
+    "jira:updateAtlassianTeam",
+    "jira:updatePlan",
+    "jira:updatePlanOnlyTeam"
+  ]
+}

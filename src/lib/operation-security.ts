@@ -1,18 +1,22 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { telegramPrivateEndpoint, telegramPathSecurity } from "./server-url.ts";
+import { telegramPrivateEndpoint, telegramPathSecurity, digitalOceanPathSecurity, type PrivatePathProfile } from "./server-url.ts";
+import { validateDigitalOceanUploadSource } from "./digitalocean-destinations.ts";
 import { awsRestProfile, awsSigningMarker } from "./aws-signing.ts";
+import { awsRestSigningProfile, type AwsRestSigningProfile } from "./aws-rest.ts";
 import { awsWireSigningProfiles, type AwsWireSigningProfile } from "./aws-wire.ts";
+import { awsJsonSigningProfile, type AwsJsonSigningProfile } from "./aws-json.ts";
+import { awsQuerySigningProfile, type AwsQuerySigningProfile } from "./aws-query.ts";
 import { s3SigningProfile } from "./s3-files.ts";
 
 export type OperationSecurityScheme =
-  | { name: string; kind: "aws-sigv4"; header: "Authorization"; profile: "lambda-list-functions" | "s3-object" | AwsWireSigningProfile; query?: never; path?: never }
+  | { name: string; kind: "aws-sigv4"; header: "Authorization"; profile: "lambda-list-functions" | "s3-object" | AwsWireSigningProfile | AwsRestSigningProfile | AwsJsonSigningProfile | AwsQuerySigningProfile; query?: never; path?: never }
   | { name: string; kind: "cloudflare-upload"; header: "Authorization"; profile: "workers" | "pages"; query?: never; path?: never }
   | { name: string; kind: "oauth1"; header: "Authorization"; profile: "x-hmac-sha1"; query?: never; path?: never }
   | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never; path?: never }
   | { name: string; kind: "apiKey"; query: string; header?: never; path?: never }
-  | { name: string; kind: "apiKey"; path: "telegram-bot"; header?: never; query?: never };
+  | { name: string; kind: "apiKey"; path: PrivatePathProfile; header?: never; query?: never };
 export type UnavailableSecurityScheme = { name: string; kind: "unsupported"; reason: string } &
   ({ header: string; query?: never; path?: never } | { query: string; header?: never; path?: never });
 export type OperationSecurityRequirement = OperationSecurityScheme | UnavailableSecurityScheme;
@@ -120,11 +124,20 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean, 
   if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))
     throw new Error(`${context}: unsupported security scheme fields.`);
   const signing = definition["x-operations-aws-sigv4"] ?? requestedSigning;
-  if (requestedSigning !== undefined && requestedSigning !== s3SigningProfile && !awsWireSigningProfiles.includes(requestedSigning as AwsWireSigningProfile)
+  if (requestedSigning !== undefined && requestedSigning !== awsRestSigningProfile && requestedSigning !== awsJsonSigningProfile && requestedSigning !== awsQuerySigningProfile && requestedSigning !== s3SigningProfile && !awsWireSigningProfiles.includes(requestedSigning as AwsWireSigningProfile)
     || requestedSigning !== undefined && definition["x-operations-aws-sigv4"] !== undefined && definition["x-operations-aws-sigv4"] !== requestedSigning)
     throw new Error(`${context}: unsupported or conflicting AWS signing profile.`);
   if (awsSigningMarker(definition))
-    result = definition["x-amazon-apigateway-authtype"] === "awsSigv4" && signing === awsRestProfile
+    result = definition["x-amazon-apigateway-authtype"] === "awsSigv4" && signing === awsQuerySigningProfile
+      && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsQuerySigningProfile }
+      : definition["x-amazon-apigateway-authtype"] === "awsSigv4" && signing === awsJsonSigningProfile
+      && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsJsonSigningProfile }
+      : ["awsSigv4", "awsS3"].includes(String(definition["x-amazon-apigateway-authtype"])) && signing === awsRestSigningProfile
+      && result.kind === "apiKey" && result.header === "Authorization"
+      ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsRestSigningProfile }
+      : definition["x-amazon-apigateway-authtype"] === "awsSigv4" && signing === awsRestProfile
       && result.kind === "apiKey" && result.header === "Authorization"
       ? { name, kind: "aws-sigv4", header: "Authorization", profile: awsRestProfile }
       : definition["x-amazon-apigateway-authtype"] === "awsSigv4" && awsWireSigningProfiles.includes(signing as AwsWireSigningProfile) && result.kind === "apiKey" && result.header === "Authorization"
@@ -140,6 +153,10 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean, 
 function operationSecurity(document: ObjectValue, operation: ObjectValue, allowUnsupported: boolean): OperationSecurity | undefined
 {
   if (telegramPrivateEndpoint(document, operation)) return telegramPathSecurity();
+  if (operation["x-operations-private-path"] === "digitalocean-upload") {
+    validateDigitalOceanUploadSource(document, operation);
+    return digitalOceanPathSecurity();
+  }
   const declaration = operation.security === undefined ? document.security : operation.security;
   if (declaration === undefined) return undefined;
   if (!Array.isArray(declaration)) throw new Error("Security requirements must be an array.");

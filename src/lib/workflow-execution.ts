@@ -4,6 +4,8 @@
 
 import { requestBody } from "./request-body.ts";
 import { supportedSecurityAlternative } from "./operation-security.ts";
+import { privateResultInputKeys } from "./credential-results.ts";
+import { hasDockerNestedPrivateInput, dockerAttachOperationId } from "./docker-http.ts";
 import { operationForId, operationOrigin, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
@@ -26,7 +28,7 @@ export type WorkflowExecutionResult = { request: PreparedRequest; response: Work
 export type AnyWorkflowExecutionResult = WorkflowExecutionResult | NativeExecutionResult;
 export type WorkflowExecutor = {
   execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext, onProgress?: ResponseProgressCallback, onValue?: ResponseValueCallback): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
-  executeNative?(operation: Operation, values: InputValues, binding: NativeWorkflowBinding, signal?: AbortSignal, progress?: NativeProgressCallback): Promise<NativeExecutionResult>;
+  executeNative?(operation: Operation, values: InputValues, binding: NativeWorkflowBinding, signal?: AbortSignal, progress?: NativeProgressCallback, onValue?: import('./native-agent-contract.ts').NativeWorkflowValueCallback): Promise<NativeExecutionResult>;
   executeDocker?(operation: Operation, values: InputValues, binding: DockerBinding, signal?: AbortSignal): Promise<WorkflowExecutionResult>;
 };
 export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: InputValues,
@@ -88,7 +90,9 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
-      if (context?.variables !== undefined || context?.binding.connection) throw new VaultError("PERMISSION");
+      if (canonical.id === dockerAttachOperationId || hasDockerNestedPrivateInput(canonical, values)) throw new VaultError("PERMISSION");
+      if (canonical.credentialResult || context?.variables !== undefined || context?.binding.connection
+        || privateResultInputKeys(canonical).some(key => values[key] !== undefined && values[key] !== null && values[key] !== "")) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
       if (canonical.cloudflareUpload || canonical.privatePath || new URL(origin).origin === telegramBotOrigin) throw new VaultError("PERMISSION");
@@ -111,7 +115,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         const requestSignal = lifetime.signal;
         let response: Response;
         const headers: Record<string, string> = { Accept: responseAccept(canonical.responseStream, canonical.responseMediaType, request.body), ...request.headers };
-        if (request.body !== undefined && request.contentType !== "multipart/form-data")
+        if (request.body !== undefined && request.contentType !== "multipart/form-data" && request.bodyFormat !== "gmail-related" && request.bodyFormat !== "google-related")
           headers["Content-Type"] = request.contentType ?? "application/json";
         try
         {
@@ -152,9 +156,9 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
 {
   const anonymous = createWorkflowRequestExecution();
   return {
-    async executeNative(operation, values, binding, signal, progress) {
+    async executeNative(operation, values, binding, signal, progress, onValue) {
       const { executeNativeWorkflow } = await import("./secrets/native-workflow-executor.ts");
-      return executeNativeWorkflow(operation, values, binding, signal, progress);
+      return executeNativeWorkflow(operation, values, binding, signal, progress, onValue);
     },
     async executeDocker(operation, values, binding, signal) {
       const { executeDockerWorkflow } = await import("./secrets/docker-client.ts");
@@ -173,7 +177,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       const hasVariables = invocation?.variables !== undefined;
       if (invocation?.binding.connection && !canonical.security?.length) throw new VaultError("PERMISSION");
       if (canonical.cloudflareUpload && !canonical.security?.length) throw new VaultError("PERMISSION");
-      if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal, undefined, onProgress, onValue);
+      if (!canonical.security?.length && !hasVariables && !canonical.credentialResult) return anonymous.execute(operation, values, signal, undefined, onProgress, onValue);
       if (!invocation) throw new VaultError("PERMISSION");
       const submitted = { ...values };
       const { origin } = workflowExecutionForOperation(canonical);
@@ -190,7 +194,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
         if (!alternative.length) throw new VaultError("PERMISSION");
         return credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue);
       }
-      if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue) : anonymous.execute(operation, submitted, signal, invocation, onProgress, onValue);
+      if (!alternative.length) return hasVariables || canonical.credentialResult ? credentialExecution(descriptor, submitted, invocation, signal, onProgress, onValue) : anonymous.execute(operation, submitted, signal, invocation, onProgress, onValue);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name)
           || (scheme.kind === "basic" ? !isBasicCredentialReference(invocation.binding.credentials[scheme.name])

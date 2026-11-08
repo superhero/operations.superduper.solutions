@@ -12,7 +12,7 @@ import { scopeOperationSchema } from '../src/lib/operation-report.ts';
 export async function dockerVaultFixture(f) {
   const value = await nativeVaultFixture({ key: f.key, publicOrigin: f.host, runtime: {} });
   value.session.lock();
-  const source = await readServiceSchema('docker'), operation = inspectServiceSchema(source, 'docker', new Set(['docker:ContainerList'])).operations[0];
+  const source = await readServiceSchema('docker'), operation = inspectServiceSchema(source, 'docker', new Set([f.scope.operation])).operations[0];
   value.selection = { operation, document: scopeOperationSchema(source, operation.path, operation.method, true).schema };
   value.input = { label: 'Docker fixture', host: f.host, pairingKeyId: value.keyId };
   value.newSession = () => new VaultSession(value.storage, undefined, async descriptor => {

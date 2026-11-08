@@ -64,9 +64,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <article aria-label={`Runtime ${connection.label}`}>
       <strong>{connection.label}</strong><span>{connection.connected ? "Connected" : "Disconnected"}</span>
       <p class="host">{connection.host}</p>
-      <p class="help">Codex {connection.identity.version} · {connection.accountType === "none" ? "No account connected" : connection.accountType === "chatgpt" ? "ChatGPT account" : "API key account"}</p>
+      <p class="help">Codex {connection.identity.version} · {connection.requiresOpenaiAuth === false ? "Account not required by this runtime" : connection.accountType === "none" ? "No account connected" : connection.accountType === "chatgpt" ? "ChatGPT account" : "API key account"}</p>
       {#if connection.workflowFingerprint}
-        <p class="help">Workflows enabled · Uses the host’s approved workspace. Commands that need approval wait for your decision.</p>
+        <p class="help">Workflows enabled · Uses the host’s approved workspace. Commands that need approval wait for your decision. MCP tools need a separate host opt-in and use their configured server’s permissions. Thread shell commands need separate host permission and ask before running without a sandbox.</p>
+        {#if connection.requiresOpenaiAuth !== false}
         <form aria-label={`Sign in to ${connection.label}`} onsubmit={event => { event.preventDefault(); void signIn(connection); }}>
           <FieldSelect id={`${keyId}-login-${connection.id}`} label="Codex sign-in method" value={loginKind} disabled={busy}
             options={[{ value: "chatgptDeviceCode", label: "ChatGPT device code" }, { value: "chatgpt", label: "ChatGPT browser sign-in" }, { value: "apiKey", label: "API key from vault" }]}
@@ -89,6 +90,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <button type="button" onclick={() => loginController?.abort()}>Cancel sign-in</button>
           </section>
         {/if}
+        {/if}
+        <button type="button" disabled={busy} onclick={() => void action("Updating native workflow approval…", async () => {
+          await vaultCall("enableNativeWorkflow", [nativeReference(connection), await nativeWorkflowSelection()]);
+          notice = "Workflow approval updated. Select this runtime again in workflow steps.";
+        })}>Update workflow approval</button>
       {:else}
         <button type="button" disabled={busy} onclick={() => void action("Enabling native workflows…", async () => {
           await vaultCall("enableNativeWorkflow", [nativeReference(connection), await nativeWorkflowSelection()]);

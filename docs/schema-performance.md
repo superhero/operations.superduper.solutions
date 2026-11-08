@@ -1,5 +1,75 @@
 # Schema performance
 
+## AWS Query contracts and asynchronous schema worker inflation (2026-11-06)
+
+The pinned Query/EC2 codecs for 2,726 operations pushed the HTML to 26,684,537
+bytes, 470,137 bytes above the 25 MiB deployment limit. The compiled schema
+worker alone contains 20,540,341 bytes. Its exact program now uses gzip/compact85
+transport with native asynchronous decompression inside the worker, bounded at
+24 MiB. Other workers retain the existing 2 MiB synchronous limit. The original
+Vite factory, options, Blob fallback and URL/error handling remain unchanged.
+No schema, operation, source documentation or offline capability is removed.
+
+The resulting production HTML is **25,582,999 bytes**, saving 1,101,538 bytes
+and leaving 631,401 bytes of headroom. Its SHA-256 is
+`e04372547443343b901cd08fdbc45348739f862ddeca4076f5c75446d9bab39b`.
+The production build and deployment bundle contract pass.
+
+This trades worker startup time for bundle size. Three alternating Chromium
+pairs after one warm-up pair measured median schema-worker readiness of
+655.26 ms (645.20–661.45), versus 223.04 ms (206.71–223.36): 432.22 ms additional
+startup time. Median page-side Blob preparation fell from 40.99 ms
+(40.96–42.68) to 21.26 ms (21.08–21.46). These samples use the exact compiled
+program, a fresh isolated context and worker, a reused browser, and an immediate
+`prepareStorage` RPC through empty storage migration. They measure this startup
+boundary, not full application readiness, UI interaction latency or field data.
+
+Conditions: sds-01, Node 26.7.0, headless Chromium 153.0.8010.12, 4 CPUs,
+4 GiB RAM, zero additional swap, 512 PIDs and no physical GPU. Programs are
+prepared outside timing, there is no external network, and source SHA-256 and
+decoded bytes are checked outside the measured interval. Decompression adds
+temporary compressed and decoded buffers inside the worker. Early messages
+remain buffered in arrival order, including transferred MessagePorts; malformed
+programs surface a worker error. Three focused source scenarios verify exact
+programs, unchanged factories, bounds and compiler-format rejection.
+
+[Raw paired samples and artifact identities](schema-async-worker.json) retain
+the measurements. Recheck this bootstrap after Vite output changes or changes
+to supported worker/browser compression APIs; reconsider the tradeoff if worker
+startup becomes an interaction bottleneck.
+
+## AWS JSON contracts and bounded inline worker programs (2026-11-06)
+
+Adding the pinned AWS JSON codecs for 1,784 operations produced a 26,769,605-byte
+HTML file, exceeding the 26,214,400-byte deployment limit. Measurements of the
+compiled worker programs identified five programs below 2 MiB with useful gzip
+savings. The build now packs programs of at most 2 MiB when that saves at least
+64 KiB, and decodes their exact bytes inside Vite's original worker constructor.
+Worker options, Blob fallback and URL/error handling retain their original code.
+
+The resulting production HTML is **25,419,141 bytes**, a reduction of 1,350,464
+bytes (5.04%), with 795,259 bytes of headroom. Its SHA-256 is
+`52e3886ad6717b669c084978dc23beff178fb5171346d60f6b0051af72b0399d`.
+The full build and bundle contract pass. The 1,784 isolated workflow additions
+pass across retained first-pass results and 24 targeted description retries;
+each attempt uses a fresh workflow and verified removal.
+
+Packing adds synchronous work when a selected worker is constructed. Three
+alternating paired Node samples, after one warm-up on the same 1-CPU/2-GiB
+Swarm allocation, measured median decode-plus-Blob times of 3.42–22.07 ms,
+versus 0.11–0.89 ms for preparing the original Blob. These are warm Node
+microbenchmarks, not browser startup or field latency measurements. Exact source
+hashes and Blob sizes were checked outside timing; these samples precede the
+final credential-map guard, and identify their measured worker bytes separately. Two focused Gherkin cases
+verify program equality, constructor preservation, bounds and compiler drift;
+the actual compressed vault worker also passes browser initialization,
+lock/unlock, private RPC acquisition and encrypted persistence checks.
+
+[Raw paired samples and artifact identities](schema-inline-workers.json) retain
+the conditions and limits. Recheck the constructor transformation after Vite
+worker-output changes, and reassess the size threshold if worker creation becomes
+a measured interaction bottleneck.
+
 The first optimization was measured on 19 October 2026 against `70c484c`
 (0.0.54). The optimized build keeps all 42 service packs and 13,859 operations,
 plus the two examples. Numeric samples,
@@ -587,3 +657,140 @@ zero additional swap and 512 processes, with no GPU. The focused Gherkin case is
 `tests/browser/browser-settings-building.feature`. Raw baseline, intermediate and
 corrected captures and resource receipts are retained under the ignored
 `.agents/tmp/browser-settings-flicker-20261102/` run directory.
+
+
+## 2026-11-05: Offline schema transport and the deployment size limit
+
+The 80 operation-metadata corrections raised the single-file HTML to
+26,242,175 bytes, above the deployment guard of 26,214,400 bytes.
+The build now encodes bundled gzip schema/discovery assets with a delimiter-safe
+85-symbol alphabet. It decodes the exact original gzip bytes before the existing
+uncompressed-length, SHA-256 and JSON checks. Schema files, source identities,
+full documentation and offline loading remain unchanged; no new requests or
+runtime dependency are introduced. Legacy Base64 transport remains supported.
+
+The same Node 26.7.0 / Vite 8.3.2 production build on sds-01, capped at 4 CPUs,
+8 GiB RAM, zero additional swap, 512 PIDs and no GPU, produces 25,038,414
+bytes: 1,203,761 fewer bytes and 1,175,986 bytes
+of headroom. These are deterministic artifact sizes, not latency measurements.
+Vite's reported gzip transfer size rises from about 16.70 MB to 16.86 MB; the
+tradeoff preserves the existing single-file distribution within its hard limit.
+
+All 448 schema/index gzip files roundtrip byte-for-byte, malformed frames and
+changed document hashes are rejected, the production bundle contract passes,
+and all 80 corrected operations pass the compact-transport Chromium
+hydration/graph/save/readback/delete audit with one fresh workflow per operation.
+The focused source cases are in `src/schema-pack-codec.feature`; runtime receipts
+and exact before/after sizes are under the ignored
+`.agents/tmp/catalog-80-release-20261105/` run directory.
+
+### Native response-table bytes (2026-11-07)
+
+The MCP OAuth build initially produced 26,217,902 bytes of single-file HTML,
+3,502 bytes over the unchanged 26,214,400-byte deployment guard. Compacting
+only the generated native response table reduced the same build to 26,210,405
+bytes, a saving of 7,497 bytes. Adding the generated table to discovery-adapter
+provenance produced a 26,210,403-byte comparison build. These are deterministic
+artifact sizes, with no startup or interaction latency claim.
+
+The readable pinned JSON remains unchanged. The generated runtime representation
+removes repeated naming text only when the reconstructed reference exactly
+matches the source; nonconventional names stay explicit. All 105 references
+roundtrip during generation and pass the existing per-method declaration case.
+No gzip decoder, new network request, catalog removal or changed execution grant
+is involved. A gzip candidate was rejected because its decoder increased HTML
+size to 26,221,643 bytes. Measurements use the same pinned Node/Vite build on
+sds-01, capped at four CPUs, 6 GiB RAM, zero swap, 512 PIDs and no GPU. Focused
+receipts are in `.agents/tmp/catalog-pending-release-20261105/`.
+
+### Dense inline schema transport (2026-11-07)
+
+The private command integration produced 26,220,433 bytes of HTML, exceeding the
+unchanged 26,214,400-byte deployment guard by 6,033 bytes. Versioned printable
+radix-91 transport for inline schema/index gzip assets reduced that comparison
+build to 26,187,207 bytes: 33,226 fewer bytes and 27,193 bytes of headroom. This
+is an artifact measurement, with no claim about startup or interaction latency.
+
+Fixed 13-bit groups encode as two printable digits; a short final group uses
+one digit. The alphabet excludes double quotes, backslashes, less-than and
+ampersand characters so the JSON string remains safe in the offline HTML.
+The older radix-85 and base64 inputs remain readable. Worker packing and AWS
+contract packing keep their existing codec. No catalog content, gzip bytes,
+network access or document integrity checks change.
+
+Six focused codec cases pass, including all 448 shipped gzip assets, all 8,192
+full digit pairs, partial groups, malformed lengths/digits/padding and the
+existing byte count, SHA-256 and JSON checks. The production build and actual
+SDK production-worker command browser case pass with the new format. Both
+comparison builds use the same pinned Node/Vite inputs on sds-01 at four CPUs,
+6 GiB RAM, zero swap, 512 PIDs and no GPU. Exact receipts and hashes are retained
+under `.agents/tmp/catalog-pending-release-20261105/`.
+
+
+## Adaptive inline schema encoding — 2026-11-07
+
+The current transport uses otherwise unused radix-91 pairs for 14-bit groups.
+All 448 catalog/discovery gzip files retain their exact bytes; the earlier
+radix-85, fixed radix-91 and base64 transports remain readable. Full document
+size, hash and JSON checks remain active. The format has its own prefix and
+rejects noncanonical pairs and tails. Four focused codec cases cover all assets,
+all 65,536 two-byte values, partial groups, canonical input fuzzing, the build
+plugin and all legacy integrity paths.
+
+Across these assets, encoded characters decrease from 17,668,022 to 17,653,891
+(14,131 saved). With the same configuration-control implementation, production
+HTML decreases from 26,215,053 to 26,185,866 bytes, below the unchanged 26,214,400
+limit. Build inputs run on sds-01 at 4 CPUs/6 GiB, zero swap, 512 PIDs, no GPU.
+
+Node v26.7.0 decode-only measurements use the four largest gzip packs, warm
+functions, three alternating paired samples per pack and exact output checks.
+The capped source job uses 2 CPUs/4 GiB, zero swap, 512 PIDs and no GPU. Values
+below are milliseconds, median (range). They exclude decompression, JSON parsing,
+browser startup and interactions; no browser latency improvement is claimed.
+
+| Pack | Fixed pairs | Adaptive pairs |
+| --- | ---: | ---: |
+| cloudflare.json.gz | 44.30 (42.91–47.93) | 42.92 (42.69–53.18) |
+| github.json.gz | 19.93 (19.41–26.41) | 22.55 (21.92–23.61) |
+| aws-ec2.json.gz | 15.97 (15.78–16.06) | 17.76 (17.61–18.75) |
+| digitalocean.json.gz | 12.98 (12.94–13.04) | 14.68 (14.56–14.88) |
+
+The small decode timing changes are a measured size/CPU tradeoff. The real
+workflow browser checks validate startup and schema use separately.
+[Raw samples, input hashes, source hashes and artifact identities](schema-inline-encoding.json).
+
+## Adaptive inline worker transport — 2026-11-07
+
+The stored-thread implementation initially produced 26,219,335 HTML bytes.
+Sharing its bounded input checks reduced this to 26,217,805 bytes, still 3,405
+bytes over the unchanged 26,214,400-byte limit. Inline worker programs were
+still using radix-85 even though the schema transport already supported the
+versioned adaptive encoding above.
+
+Worker packing now chooses the smaller of legacy radix-85 and adaptive
+radix-91, including the latter's format prefix. Both bounded synchronous
+construction and asynchronous schema-library inflation retain legacy decoding,
+exact source bytes, length/UTF-8 checks, native constructors, message ordering
+and URL/error handling. Gzip inputs and catalog contents are unchanged.
+
+The deterministic 520,046-byte worker fixture uses 355,018 legacy characters
+or 349,258 adaptive characters, saving 5,760 bytes. Four focused worker cases
+pass, including exact Unicode/source roundtrips, malformed data, constructor
+drift, both transports and the large-worker path. This is a size comparison;
+no startup or interaction latency improvement is claimed.
+
+With the same stored-thread implementation, production HTML decreases by
+337,148 bytes to **25,880,657 bytes**, leaving **333,743 bytes** below the same
+limit. SHA256: `c431d035178c622bfe851b80ddb91796b2e837f5fa82ae31f57fe2ec08987f08`.
+All 224 discovery indexes verify. Source checks use 2 CPUs/4 GiB; the build
+uses 4 CPUs/8 GiB. Both enforce zero additional swap, 512 PIDs and no GPU.
+
+Worker format selection computes the exact legacy encoded length before
+allocating that encoding. Two audit attempts still exceeded the fixture
+compiler's 512 MiB old-space cap before adding an operation. The audit now
+supports separate fixture preparation under the build budget, followed by
+source/asset verification and browser execution under the original 512 MiB
+old-space cap. Eight stored-thread additions pass in that browser phase, with
+one workflow at a time and zero remaining after every attempt. Eight separate
+production-browser workflows also pass. The final production HTML retains
+the same hash after the allocation change.

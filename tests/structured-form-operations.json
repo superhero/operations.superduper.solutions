@@ -1,0 +1,15 @@
+[
+  "cloudflare:cloudflare-images-create-authenticated-direct-upload-url-v-2",
+  "cloudflare:cloudflare-images-upload-an-image-via-url",
+  "gitlab:postApiV4BulkImports",
+  "gitlab:postApiV4Groups",
+  "gitlab:postApiV4Projects",
+  "gitlab:postApiV4ProjectsImport",
+  "gitlab:postApiV4ProjectsRemoteImport",
+  "gitlab:postApiV4ProjectsRemoteImportS3",
+  "gitlab:postApiV4ProjectsUserUserId",
+  "gitlab:putApiV4GroupsId",
+  "gitlab:putApiV4ProjectsId",
+  "openai:createFile",
+  "replicate:files.create"
+]

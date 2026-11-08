@@ -4,7 +4,7 @@
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { isCodexSchema } from "./codex-schema.ts";
-import { summarizeOperationCapabilities, validateOperationCapabilities, validateCapabilitySummary } from "./operation-capabilities.ts";
+import { operationInsertionBlockReason, summarizeOperationCapabilities, validateOperationCapabilities, validateCapabilitySummary } from "./operation-capabilities.ts";
 
 export const schemaIndexVersion = 2;
 export type SchemaSummary = { name: string; description?: string; serverUrl: string; operationCount: number; unavailableCount?: number; protocol?: "json-rpc" };
@@ -35,7 +35,7 @@ export function createSchemaSummary(inspected: { document: Record<string, unknow
   const description = typeof info.description === "string" ? info.description.trim() : "";
   return { name, serverUrl, ...(description ? { description } : {}), operationCount: operations.length,
     ...(isCodexSchema(document) ? { protocol: "json-rpc" as const } : {}),
-    unavailableCount: operations.filter(operation => operation.unavailableReason).length };
+    unavailableCount: operations.filter(operation => operationInsertionBlockReason(operation)).length };
 }
 
 export function createSchemaDiscovery(inspected: { document: Record<string, unknown>; name: string;

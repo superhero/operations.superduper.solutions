@@ -9,13 +9,15 @@ import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import { assistantRuntimeDevelopment } from "./build/assistant-plugin.mjs";
 import {speechRuntimeDevelopment} from './build/speech-development-worker.mjs';
+import { compactSchemaPacks } from "./build/schema-pack-plugin.mjs";
+import { compactInlineWorkers } from "./build/inline-worker-plugin.mjs";
 import { parakeetSerialInitialization } from "./build/parakeet-plugin.mjs";
 
 const isolationHeaders = {
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Embedder-Policy": "credentialless"
 };
-const distributionNotices = ["./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md", "./src/lib/workflow-chart-NOTICES.txt"]
+const distributionNotices = ["./src/lib/aws-rest-data.NOTICE", "./src/lib/aws-json-data.NOTICE", "./src/lib/aws-query-data.NOTICE", "./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md", "./src/lib/workflow-chart-NOTICES.txt"]
   .map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n\n");
 let building = false;
 
@@ -83,6 +85,8 @@ export default defineConfig({
     ]
   },
   plugins: [
+    compactInlineWorkers(),
+    compactSchemaPacks(),
     parakeetSerialInitialization(),
     assistantRuntimeDevelopment(),
     speechRuntimeDevelopment(),
@@ -121,6 +125,7 @@ export default defineConfig({
     }),
     viteSingleFile()
   ],
+  worker: { plugins: () => [compactSchemaPacks()] },
   build: {
     target: "es2024",
     outDir: "../dist",

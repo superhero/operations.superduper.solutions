@@ -4,6 +4,9 @@
 @validation-reuse
 Feature: Reuse complete validation only for trusted identical inputs
 
+  Scenario: Unsupported artifact filenames are identified safely
+    Then unsupported artifact filenames identify their escaped relative path without host paths
+
   Scenario Outline: Exact inputs preserve the original tested commit and reports
     Given a completed validation run with "<condition>"
     When matching validation artifacts are requested

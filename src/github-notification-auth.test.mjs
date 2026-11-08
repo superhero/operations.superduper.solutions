@@ -42,7 +42,7 @@ Then('the ten GitHub Notifications contracts preserve their pinned source and di
   const f = await fixture(), native = await readServiceSchemaUpstream('github');
   assert.equal(createHash('sha256').update(JSON.stringify(native)).digest('hex'), f.contracts.sourceSha256);
   assert.equal(serviceSchemaDescriptors.find(source => source.id === 'github').sha256, f.contracts.sourceSha256);
-  assert.equal(f.contracts.version, 2); assert.equal(f.contracts.sourceVersion, '1.1.4'); assert.equal(f.contracts.apiVersion, '2022-11-28');
+  assert.equal(f.contracts.version, 8); assert.equal(f.contracts.sourceVersion, '1.1.4'); assert.equal(f.contracts.apiVersion, '2022-11-28');
   assert.equal(f.models.size, 10);
   for (const [name] of routes) {
     const contract = f.contracts.operations[`activity/${name}`], operation = f.models.get(name);
@@ -109,10 +109,20 @@ Then('GitHub Notifications never fall back after denial and retain unreviewed an
   }), error => { assert.ok(error instanceof CredentialResponseError); assert.equal(error.response.status, 401);
     assert.ok(!JSON.stringify(error.response).includes(f.credential.value)); return true; });
   assert.equal(calls, 1);
-  assert.equal(Object.values(f.contracts.operations).filter(contract => contract.profiles.includes('unreviewed')).length, 80);
+  const retired = Object.entries(f.contracts.operations).filter(([, contract]) => contract.profiles.includes('unreviewed'));
+  assert.equal(retired.length, 6);
+  assert.ok(retired.every(([id, contract]) => id.startsWith('classroom/') && !f.document.paths[contract.path]));
+  assert.deepEqual([...f.document['x-operations-github-classroom-retirement'].operationIds].sort(), retired.map(([id]) => id).sort());
   assert.equal(Object.values(f.contracts.operations).filter(contract => contract.credentialFields?.length).length, 19);
   const selected = new Set(['github:activity/get-repo-subscription', 'github:agent-tasks/list-tasks', 'github:apps/create-from-manifest']);
   const residuals = inspectServiceSchema(f.document, 'github', selected).operations;
   assert.equal(residuals.length, 3);
-  for (const residual of residuals) { assert.ok(residual.unavailableReason); await assert.rejects(approvedOperation(residual, host), { code: 'PERMISSION' }); }
+  for (const residual of residuals) {
+    assert.equal(residual.unavailableReason, undefined);
+    const approved = await approvedOperation(residual, host);
+    await assert.rejects(executeCredentialed(approved, {}, binding(descriptor, f.credential), [f.credential],
+      { assertCurrent() {}, fetchRequest: async () => assert.fail('A notification approval cannot authorize another operation.') }), { code: 'PERMISSION' });
+  }
+  assert.equal(residuals.find(operation => operation.id === 'github:apps/create-from-manifest').credentialResultProfile, 'private-result-v1');
+  assert.equal(calls, 1);
 });

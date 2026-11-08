@@ -5,6 +5,8 @@ import { hydrateOperation } from "../schema-library.ts";
 import { catalogForOperation } from "../catalog-registry.ts";
 import { VaultError } from "./types.ts";
 import { nativeAgentMethods } from "../native-agent-contract.ts";
+import { nativeFilesystemWatchMethods } from '../native-filesystem-watch.ts';
+import { nativeCommandMethods } from '../native-command.ts';
 export async function nativeOperationSelection(method: string) {
   const operation = await hydrateOperation("codex:" + method), document = catalogForOperation(operation.id)?.document;
   if (operation.protocol !== "json-rpc" || !document) throw new VaultError("PERMISSION");
@@ -14,3 +16,5 @@ export async function nativeRuntimeSelection() {
   return nativeOperationSelection("account/read");
 }
 export const nativeWorkflowSelection = () => Promise.all(nativeAgentMethods.map(method => nativeOperationSelection(method)));
+export const nativeWatchSelection = () => Promise.all(nativeFilesystemWatchMethods.map(nativeOperationSelection));
+export const nativeCommandSelection = () => Promise.all(nativeCommandMethods.map(nativeOperationSelection));

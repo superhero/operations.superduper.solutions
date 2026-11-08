@@ -1,9 +1,26 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { isNativeWindowsSandboxReadinessMethod } from './native-windows-sandbox.ts';
+import { isNativePluginShareMethod } from './native-plugin-share.ts';
+import { isNativePluginInstallMethod } from './native-plugin-install.ts';
+import { isNativeAccountAuthMethod } from './native-account-auth.ts';
+import { isNativeAccountReadMethod, nativeAccountReadNeedsChatgpt } from './native-account-read.ts';
 import type { Operation } from "./catalog.ts";
 import { securityRequiresCredentials, supportedSecurityAlternative } from "./operation-security.ts";
-import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
+import { nativeRuntimeVersion, isNativeStandaloneMethod, isNativeAppQueryMethod, isNativeFilesystemReadMethod, isNativeFilesystemWriteMethod } from "./native-runtime-contract.ts";
+import { nativeMcpOAuthMethod } from './native-mcp-oauth.ts';
+import { nativeFeedbackMethod } from "./native-feedback-contract.ts";
+import { isNativeMarketplaceMethod } from './native-marketplace.ts';
+import { isNativePluginReadMethod } from './native-plugin-read.ts';
+import { isNativeConfigurationReadMethod } from './native-configuration-read.ts';
+
+import { isNativeConfigurationControlMethod } from './native-configuration-control.ts';
+import { isNativeConfigurationWriteMethod } from './native-configuration-write.ts';
+import { isNativeMigrationMethod } from './native-migration.ts';
+import { isNativeThreadContentMethod, isNativeThreadContentPairedMethod } from './native-thread-content.ts';
+import { isNativeThreadLifecycleMethod } from './native-thread-lifecycle.ts';
+import { isNativeStoredThreadReadMethod } from './native-stored-thread.ts';
 
 export type CapabilityArea = "schema" | "endpoint" | "request" | "authentication" | "response" | "runtime";
 export type CapabilityIssue = { area: CapabilityArea; code: string; message: string };
@@ -40,15 +57,49 @@ export function withOperationCapabilities<T extends Operation>(operation: T, iss
   });
   const requirements: CapabilityRequirement[] = [];
   if (securityRequiresCredentials(operation.security) && operation.security?.some(supportedSecurityAlternative)) requirements.push({ code: "credentials", message: operation.privatePath
-    ? "Select a private connection for this operation." : "Select and authorize credentials or a matching connection for a supported alternative." });
+    ? operation.privatePath === "digitalocean-upload" ? "Select the private signed-URL credential or a matching connection."
+      : "Select a private connection for this operation." : "Select and authorize credentials or a matching connection for a supported alternative." });
   if (unique.some(issue => issue.code === "configuration-required")) requirements.push({ code: "server", message: "Configure an absolute server URL for this schema." });
+  const rpcMethod = operation.rpc?.method ?? (operation.method === "RPC" ? operation.path : undefined);
   if (operation.method === "RPC") requirements.push(
     { code: "native-host", message: "Pair a compatible runtime using the trusted companion and exact allowed application origin." },
+    ...(isNativeAccountAuthMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable account authentication in the companion. Sign-in uses a saved vault key or a transient browser/device link. Cancellation targets this pairing’s owned workflow attempt. Sign-out revokes this runtime’s account.' },
+        { code: 'native-terminal', message: 'Sign-in and sign-out complete after native account confirmation. Successful changes update the encrypted pairing; cancelling cannot undo an account change already applied.' }] as CapabilityRequirement[] : isNativeAccountReadMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable account reads in the companion. Usage and workspace messages use its signed-in account; returned metadata passes privacy checks.' },
+        ...(nativeAccountReadNeedsChatgpt(rpcMethod) ? [{ code: 'native-account', message: 'Connect a ChatGPT account. API-key and anonymous runtimes cannot read ChatGPT usage or workspace messages.' }] : [])] as CapabilityRequirement[] : rpcMethod === nativeMcpOAuthMethod
+      ? [{ code: 'native-method', message: 'Enable MCP sign-in in the companion. A thread ID also requires current workflow approval and a thread loaded by that runtime.' },
+        { code: 'native-terminal', message: 'Finish sign-in with the configured MCP server; the matching runtime completion continues the workflow.' }] as CapabilityRequirement[] : rpcMethod === nativeFeedbackMethod
+      ? [{ code: "native-method", message: "Enable feedback uploads in the companion. Selected diagnostics/files need its additional opt-in and are shared with OpenAI feedback. Cancellation cannot undo accepted uploads." }] as CapabilityRequirement[] : isNativeMigrationMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable configuration migration and its protected source home in the companion. Imports update local configuration and files; verified private values stay in the encrypted vault. Applied changes are not retried.' }] as CapabilityRequirement[] : isNativeThreadContentMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable thread content writes in the companion. Attachments keep stable identities; goal provenance stays explicit. Active goals may start background agent work. Revert changes conversation history and leaves files unchanged.' },
+        ...(!isNativeThreadContentPairedMethod(rpcMethod) ? [{ code: 'native-account', message: 'Use current workflow approval and an agent thread owned and loaded by this pairing.' }] : [])] as CapabilityRequirement[] : isNativeThreadLifecycleMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable thread lifecycle writes in the companion. Archive/delete include spawned descendants; every affected thread must belong to the paired workspace. Applied changes are not retried.' },
+        ...(rpcMethod === 'thread/fork' ? [{ code: 'native-account', message: 'Use an authorized agent runtime and current workflow approval. Fork requires a thread owned and loaded by this pairing.' }] : [])] as CapabilityRequirement[] : isNativeStoredThreadReadMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable stored-thread reads in the companion. History, goals and attachments stay inside its paired workspace and pass privacy checks. Reading a stored thread does not authorize agent execution on it.' }] as CapabilityRequirement[] : isNativeConfigurationWriteMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable configuration writes in the companion. Reviewed public preferences and skill overrides are saved to its user configuration. Verified writes update the encrypted pairing and retain its session. Cancellation cannot undo applied changes.' }] as CapabilityRequirement[] : isNativeConfigurationControlMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable configuration controls in the companion. Feature overrides and skill roots affect its shared session; MCP reload refreshes loaded threads and may start configured servers using their credentials. Cancellation cannot undo accepted effects.' }] as CapabilityRequirement[] : isNativeWindowsSandboxReadinessMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable Windows sandbox readiness queries in the companion. Linux reports notConfigured. A Windows host may refresh registered provisioning before reporting readiness.' }] as CapabilityRequirement[] : isNativePluginShareMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable plugin sharing and ChatGPT sign-in in the companion. Save uploads the selected plugin folder and creates or updates its remote share. Target updates change access; checkout writes the private personal marketplace and preserves existing edits; delete removes the remote share and its local association. Effects are checked before completion is reported. Applied effects are not retried.' }] as CapabilityRequirement[] : isNativePluginInstallMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable plugin management in the companion. Installations activate reviewed marketplace packages and can start configured MCP authentication or hooks. Uninstall removes selected private packages; reconciliation updates remote bundles and reports per-pass changes and failures. Verified effects update the encrypted runtime binding. Applied effects are not retried.' }] as CapabilityRequirement[] : isNativeMarketplaceMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable marketplace management in the companion. Adding registers workspace sources or clones Git sources; removal deletes private cached clones; upgrade activates configured Git revisions and may refresh extension runtimes. Verified effects update the encrypted runtime binding. Applied effects are not retried.' }] as CapabilityRequirement[] : isNativePluginReadMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable plugin reads in the companion. Local sources stay inside its workspace or private plugin caches. Remote catalogs, skills and shares use its signed-in ChatGPT account. A forced refresh may update caches and refresh configured extension runtimes.' }] as CapabilityRequirement[] : isNativeConfigurationReadMethod(rpcMethod)
+      ? [{ code: 'native-method', message: 'Enable public configuration and skill reads in the companion. Directories stay inside its paired workspace. A thread ID also needs agent authority and an owned loaded thread.' }] as CapabilityRequirement[] : isNativeStandaloneMethod(rpcMethod)
+      ? [{ code: "native-method", message: isNativeFilesystemWriteMethod(rpcMethod)
+        ? "Enable filesystem mutations in the companion. Changes stay inside its workspace and exclude runtime configuration. Cancellation cannot undo changes already applied."
+        : isNativeFilesystemReadMethod(rpcMethod)
+        ? "Enable filesystem reads for the companion's authorized workspace. File contents and returned paths must pass its privacy and size checks."
+        : isNativeAppQueryMethod(rpcMethod)
+        ? "Enable app access in the companion. App listings and installed refresh may start its configured connector runtime; loaded-thread inputs are unavailable."
+        : "Enable metadata queries in the companion. Directory inputs must stay inside its authorized workspace." }] as CapabilityRequirement[] :
+    (["account/read", "initialize"].includes(rpcMethod ?? "") ? [] : [
     { code: "native-account", message: "Connect an authorized public account; internal authentication modes remain unavailable." },
     { code: "native-workspace", message: "Select the runtime's authorized private workspace." },
     { code: "native-method", message: "Enable the selected workflow method and approve any supported interaction explicitly." },
-    { code: "native-terminal", message: "The owned turn must produce a terminal result before the workflow continues." });
-  if (operation.dockerNative) requirements.push({ code: "docker-destination", message: "Select a separately paired Docker host or a configured absolute HTTP server." });
+    { code: "native-terminal", message: "The owned turn must produce a terminal result before the workflow continues." }] as CapabilityRequirement[])));
+  if (operation.dockerNative) requirements.push({ code: "docker-destination", message: operation.id === "docker:ContainerAttachWebsocket"
+    ? "Select a separately paired Docker host that enables read-only container attachment. Stdin is unavailable."
+    : "Select a separately paired Docker host or a configured absolute HTTP server." });
   if (unique.length || alternatives?.length || requirements.length) operation.capabilities = {
     issues: unique, ...(alternatives?.length ? { alternatives } : {}), ...(requirements.length ? { requirements } : {}) };
   if (unique.length) operation.unavailableReason ??= unique[0]!.message;
@@ -58,6 +109,13 @@ export function withOperationCapabilities<T extends Operation>(operation: T, iss
 /** Always call this on the current canonical model before execution. */
 export function operationBlockReason(operation: Operation): string | undefined {
   return operation.capabilities?.issues[0]?.message ?? operation.capabilitySummary?.i[0]?.[2] ?? operation.unavailableReason;
+}
+/** Adding an operation does not require an account destination. Execution still
+ * uses operationBlockReason and cannot approve an unconfigured route. */
+export function operationInsertionBlockReason(operation: Operation): string | undefined {
+  const issues = readOperationCapabilities(operation)?.issues;
+  if (!issues?.length) return operation.unavailableReason;
+  return issues.find(issue => issue.area !== "endpoint" || issue.code !== "configuration-required")?.message;
 }
 export function operationCapabilityHint(operation: Operation): string | undefined {
   const issues = readOperationCapabilities(operation)?.issues;

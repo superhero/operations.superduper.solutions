@@ -90,6 +90,19 @@ Feature: Incremental CI retains only independently verified feature results
     Then the browser controller publishes completed evidence and closes its container
     And the standalone browser launcher preserves the same host-aware resource boundary
 
+  Scenario: Native executable verification retains the reviewed runtime identity
+    Then native executable verification enforces the reviewed release pins and regular file bytes
+
+  Scenario: Native release acquisition rejects failures and cleans its temporary files
+    Then failed native release acquisition leaves no executable directory or runnable fixture
+
+  Scenario: Real native browser units acquire their pinned runtime before offline execution
+    Given a hermetic CI feature-unit execution
+    Then only outstanding real native browser units receive the readonly qualified runtime
+
+  Scenario: Native SDK namespace permissions retain the qualified default seccomp boundary
+    Then the qualified native seccomp profile retains every default rule and only six namespace exceptions
+
   Scenario Outline: Browser containers use runner capacity while preserving host headroom
     Then a "<profile>" browser job on <cpus> CPUs and <ram> GiB of RAM uses <allocated_cpu> CPUs and <allocated_ram> GiB with a <heap> MiB Node heap
     Examples:

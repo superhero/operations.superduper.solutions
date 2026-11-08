@@ -84,9 +84,12 @@ async function oneFileSession(f) {
 }
 
 Then('the pinned Cloudflare upload correction preserves native bytes and unrelated contracts', async () => {
-  const raw = await readServiceSchemaUpstream('cloudflare'), patched = await readServiceSchema('cloudflare');
+  const raw = await readServiceSchemaUpstream('cloudflare'), active = await readServiceSchema('cloudflare');
+  const patched = applySchemaPatches(raw, [cloudflarePrivateUpload]);
   assert.equal(createHash('sha256').update(JSON.stringify(raw)).digest('hex'), cloudflarePrivateUploadSourceSha256);
-  assert.deepEqual(serviceSchemaDescriptors.find(item => item.id === 'cloudflare').patches, [cloudflarePrivateUpload]);
+  assert.deepEqual(serviceSchemaDescriptors.find(item => item.id === 'cloudflare').patches,
+    ['cloudflare-private-upload', 'cloudflare-logo-upload', 'multipart-part-contracts', 'multipart-root-contracts', 'structured-form-contracts'].map(id => ({ id, version: 1 })));
+  assert.deepEqual(applySchemaPatches(active, [cloudflarePrivateUpload]), active);
   assert.deepEqual(applySchemaPatches(patched, [cloudflarePrivateUpload]), patched);
   const changed = structuredClone(patched); delete changed.components.securitySchemes.assets_jwt; delete changed.components.securitySchemes.pages_upload_token;
   const selected = new Set();
@@ -98,7 +101,7 @@ Then('the pinned Cloudflare upload correction preserves native bytes and unrelat
     delete adapted['x-operations-cloudflare-upload']; adapted.responses = original.responses; selected.add('cloudflare:'+original.operationId);
   }
   assert.deepEqual(changed, raw);
-  const models = inspectServiceSchema(patched, 'cloudflare', selected).operations;
+  const models = inspectServiceSchema(active, 'cloudflare', selected).operations;
   assert.equal(models.length, 10); assert.deepEqual(models.filter(item => item.unavailableReason).map(item => [item.id, item.unavailableReason]), []);
   assert.equal(models.filter(item => item.security?.[0]?.[0]?.kind === 'cloudflare-upload').length, 4);
   const evil = structuredClone(raw); evil.servers[0].url = 'https://evil.example.test'; assert.throws(() => applySchemaPatches(evil, [cloudflarePrivateUpload]), /reviewed/);

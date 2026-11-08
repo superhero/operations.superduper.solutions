@@ -1,0 +1,14 @@
+[
+  "cloudflare:updateZoneSnippet",
+  "groq:createTranscription",
+  "groq:createTranslation",
+  "jira:addAttachment",
+  "jira-dc:POST /api/2/issue/{issueIdOrKey}/attachments",
+  "jira-dc:POST /api/2/user/avatar/temporary",
+  "jira-service-management:POST /rest/servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile",
+  "jira-service-management-dc:POST /api/2/issue/{issueIdOrKey}/attachments",
+  "jira-service-management-dc:POST /api/2/user/avatar/temporary",
+  "jira-service-management-dc:POST /assets/1.0/attachments/object/{objectId}",
+  "jira-service-management-dc:POST /servicedeskapi/servicedesk/{serviceDeskId}/attachTemporaryFile",
+  "mistral:audio_api_v1_transcriptions_post"
+]

@@ -5,10 +5,17 @@
 import { parseDocument } from "yaml";
 import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
-import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin } from "./server-url.ts";
+import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin, ServerConfigurationRequiredError } from "./server-url.ts";
+import { validateDigitalOceanUploadSource, digitalOceanStorageOrigin } from "./digitalocean-destinations.ts";
 import { awsWirePath, awsWireProfile } from "./aws-wire.ts";
+import { awsJsonContract, awsJsonContracts, awsJsonSigningProfile } from "./aws-json.ts";
+import { awsQueryContract, awsQueryContracts, awsQuerySigningProfile } from "./aws-query.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
+import { validateAtlassianTenantServer } from "./atlassian-tenant-servers.ts";
+import { validateAtlassianRelativeServer } from "./atlassian-relative-servers.ts";
+import { validateDockerHttpServer } from "./docker-http.ts";
 import { validateAtlassianServerBinding } from "./atlassian-server-bindings.ts";
+import { literalQueryRoute } from "./literal-query.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
 export type SchemaDocumentRecord = {
@@ -120,6 +127,7 @@ function resolve(value: unknown, document: ObjectValue, context: string): Object
 
 function safePath(path: string): void
 {
+  path = literalQueryRoute(path)?.path ?? path;
   if (!path.startsWith("/") || path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path))
     unsupported(`Operation path ${JSON.stringify(path)} must be an absolute path without double slashes, backslashes, query strings or fragments.`);
   for (const segment of path.split("/"))
@@ -143,14 +151,22 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   const selected = object(servers[0], `${context}: first server`);
   if (typeof selected.url !== "string" || !selected.url.trim()) invalid(`${context}: server url must be a nonempty string.`);
   validateAtlassianServerBinding(selected);
+  validateAtlassianTenantServer(selected);
+  validateAtlassianRelativeServer(selected);
+  validateDockerHttpServer(selected);
   const variables = selected.variables === undefined ? {} : object(selected.variables, `${context}: server variables`);
+  let configurationMessage: string | undefined;
   const expanded = selected.url.replace(/\{([^{}]+)\}/g, (_match, name: string) => {
     const variable = object(variables[name], `${context}: server variable ${name}`);
     if (typeof variable.default !== "string") invalid(`${context}: server variable ${name} requires a string default.`);
     if (variable.enum !== undefined && (!Array.isArray(variable.enum) || !variable.enum.includes(variable.default)))
       invalid(`${context}: server variable ${name} default must belong to its enum.`);
-    if (serverUrlHasPlaceholder(variable.default))
-      unsupported(`${context}: server variable ${name} still contains a placeholder. Configure it before running this operation.`);
+    if (serverUrlHasPlaceholder(variable.default)) {
+      if (!/^(?:<[A-Za-z0-9_-]+>|\{[A-Za-z0-9_-]+\})$/.test(variable.default))
+        unsupported(`${context}: server variable ${name} contains an invalid placeholder value.`);
+      configurationMessage = `${context}: server variable ${name} still contains a placeholder. Configure it before running this operation.`;
+      return "unconfigured";
+    }
     return variable.default;
   });
   if (serverUrlHasPlaceholder(expanded))
@@ -166,6 +182,7 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password || url.search || url.hash)
     unsupported(`${context}: use an HTTP or HTTPS server URL without credentials, query strings or fragments.`);
   if (url.origin === telegramBotOrigin) unsupported("Telegram requires a saved private bot token connection and its reviewed endpoint template.");
+  if (configurationMessage) throw new ServerConfigurationRequiredError(configurationMessage);
   return url.href.replace(/\/$/, "");
 }
 
@@ -175,6 +192,7 @@ export function operationServerUrl(document: ObjectValue, operation: Pick<Operat
   const paths = object(document.paths, "paths");
   const item = resolve(paths[operation.path], document, operation.path);
   const value = object(item[operation.method.toLowerCase()], `${operation.method} ${operation.path}`);
+  if (value["x-operations-private-path"] === "digitalocean-upload") validateDigitalOceanUploadSource(document, value, item);
   const privateEndpoint = telegramPrivateEndpoint(document, value, item);
   if (privateEndpoint) {
     if (!/^(?:GET|POST)$/.test(operation.method) || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path))
@@ -186,7 +204,7 @@ export function operationServerUrl(document: ObjectValue, operation: Pick<Operat
   const path = () => serverUrl(item.servers, top, operation.path);
   const server = serverUrl(value.servers, path, `${operation.method} ${operation.path}`);
   if (!server) unsupported(`${operation.method} ${operation.path}: a usable absolute HTTP or HTTPS server URL is required.`);
-  return server;
+  return value["x-operations-private-path"] === "digitalocean-upload" ? digitalOceanStorageOrigin(server) : server;
 }
 
 function generatedGroups(document: ObjectValue, operations: Operation[], id: string): CatalogGroup[]
@@ -232,7 +250,16 @@ export function validateSchemaDocument(value: unknown, id: string): {
     const item = resolve(raw, document, path);
     const invocations = Object.entries(item).filter(([method]) => methods.has(method));
     const reviewedWirePath = invocations.length > 0 && invocations.every(([method, raw]) => {
-      const wire = awsWireProfile(object(raw, `${method} ${path}`)["x-operations-aws-wire"]);
+      const operation = object(raw, `${method} ${path}`);
+      if (operation["x-operations-aws-query"] === awsQuerySigningProfile) {
+        const matches = Object.entries(awsQueryContracts().sources).filter(([, source]) => source.title === info.title && source.version === info.version && source.openapi === document.openapi);
+        return matches.length === 1 && !!awsQueryContract({ id: `${matches[0]![0]}:${operation.operationId}`, method: method.toUpperCase(), path });
+      }
+      if (operation["x-operations-aws-json"] === awsJsonSigningProfile) {
+        const matches = Object.entries(awsJsonContracts().sources).filter(([, source]) => source.title === info.title && source.version === info.version && source.openapi === document.openapi);
+        return matches.length === 1 && !!awsJsonContract({ id: `${matches[0]![0]}:${operation.operationId}`, method: method.toUpperCase(), path });
+      }
+      const wire = awsWireProfile(operation["x-operations-aws-wire"]);
       return wire !== undefined && awsWirePath(path, method.toUpperCase(), wire);
     });
     if (!reviewedWirePath) safePath(path);

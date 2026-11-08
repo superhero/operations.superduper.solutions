@@ -1,0 +1,7 @@
+The AWS JSON wire contracts derive from the official AWS SDK for JavaScript
+v2.1692.0 service models, licensed under Apache License 2.0. Exact source URLs
+and SHA-256 hashes are retained in aws-json-pins.json and the generated pack.
+Original copyright: Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+The Apache License is reproduced in aws-rest-data.NOTICE. Operations' generator
+and protocol adapter retain the project license stated in their source headers.

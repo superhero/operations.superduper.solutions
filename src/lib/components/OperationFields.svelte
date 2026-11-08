@@ -4,6 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
+  import { privateResultInputKeys } from "../credential-results.ts";
   import type { InputField, Operation } from "../catalog.ts";
   import { inputAllowsNull, type InputValues, type InputValidationError } from "../operation-input.ts";
   import OperationFieldControl from "./OperationFieldControl.svelte";
@@ -21,6 +22,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   const locations = [{ key: "path", label: "Path" }, { key: "query", label: "Query" },
     { key: "header", label: "Headers" }, { key: "body", label: "Request body" }, { key: "params", label: "Parameters" }] as const;
+  const privateInputs = $derived(privateResultInputKeys(operation));
   let fieldHelp = $state<string[]>([]);
   let drafts = $state<Record<string, string>>({});
   let includedValues = $state<InputValues>({});
@@ -86,7 +88,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <div class="joined-field">
               <label for={`${idPrefix}-${field.key}`}>{field.label}</label>
               <OperationFieldControl {field} id={`${idPrefix}-${field.key}`} value={values[field.key] ?? drafts[field.key] ?? ""} {active}
-                disabled={disabled || connected || omitted || nullValue} {portalZIndex} onValueChange={value => onValueChange(field, value)}
+                disabled={disabled || connected || omitted || nullValue || privateInputs.includes(field.key)} {portalZIndex} onValueChange={value => onValueChange(field, value)}
                 required={field.required && (field.location !== "body" || bodyProvided)}
                 multiline={field.location === "body" && operation.bodyMediaType === "text/plain"}
                 invalid={fieldError?.fieldKey === field.key} describedBy={describedBy(field)} />
@@ -116,6 +118,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 </HintButton>
               </div>
             </div>
+            {#if privateInputs.includes(field.key)}<p class="hint">Connect a Secrets node to supply this value privately.</p>{/if}
             {#if connected}<p class="hint" id={`${idPrefix}-connected-${field.key}`}>Connected from workflow</p>{/if}
             {#if omitted || nullValue}<p class="hint" id={`${idPrefix}-state-${field.key}`}>{omitted ? "Not sent" : "Sent as null"}</p>{/if}
             <Reveal open={fieldHelp.includes(field.key)} id={`${idPrefix}-help-${field.key}`}>

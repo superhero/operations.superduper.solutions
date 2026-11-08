@@ -1,0 +1,300 @@
+{
+  "version": 1,
+  "source": {
+    "sha256": "4bcce59b45927194934c760b8201d34bcde63a7caea21840aaa2f6dc68c5b0fd",
+    "openapi": "3.0.0",
+    "info": {
+      "title": "DigitalOcean API",
+      "version": "2.0",
+      "description": "",
+      "license": {
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+      },
+      "contact": {
+        "name": "DigitalOcean API Team",
+        "email": "api-engineering@digitalocean.com"
+      },
+      "termsOfService": "https://www.digitalocean.com/legal/terms-of-service-agreement/"
+    },
+    "servers": [
+      {
+        "url": "https://api.digitalocean.com",
+        "description": "production"
+      }
+    ]
+  },
+  "operations": {
+    "agentInference_create_chat_completion": {
+      "path": "/api/v1/chat/completions",
+      "method": "POST",
+      "servers": [
+        {
+          "url": "https://{agent_url}",
+          "description": "production",
+          "variables": {
+            "agent_url": {
+              "default": "{your-agent-url}",
+              "description": "The agent URL assigned to your provisioned agent (e.g. fuauiziwb5xm6xka4c7aer5k.agents.do-ai.run)."
+            }
+          }
+        }
+      ],
+      "pathServers": null,
+      "security": [
+        {
+          "inference_bearer_auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "agent",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "boolean",
+            "default": true
+          },
+          "description": "Must be set to true for agent-based completion behavior.",
+          "example": true
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/paths/~1v1~1chat~1completions/post/requestBody/content/application~1json/schema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful chat completion. When stream is true, response is sent as Server-Sent Events (text/event-stream); otherwise a single JSON object (application/json) is returned.",
+          "headers": {
+            "ratelimit-limit": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-limit"
+            },
+            "ratelimit-remaining": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-remaining"
+            },
+            "ratelimit-reset": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-reset"
+            }
+          },
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/paths/~1v1~1chat~1completions/post/responses/200/content/application~1json/schema"
+              }
+            },
+            "text/event-stream": {
+              "schema": {
+                "$ref": "#/paths/~1v1~1chat~1completions/post/responses/200/content/text~1event-stream/schema"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/401"
+        },
+        "429": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/429"
+        },
+        "500": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/500"
+        },
+        "default": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/default"
+        }
+      }
+    },
+    "inference_create_batch_file": {
+      "path": "/v1/batches/files",
+      "method": "POST",
+      "servers": [
+        {
+          "url": "https://inference.do-ai.run",
+          "description": "production"
+        }
+      ],
+      "pathServers": null,
+      "security": [
+        {
+          "inference_bearer_auth": []
+        }
+      ],
+      "parameters": null,
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "title": "BatchFileCreateRequest",
+              "description": "Request body for creating a batch input file intent.",
+              "required": [
+                "file_name"
+              ],
+              "properties": {
+                "file_name": {
+                  "type": "string",
+                  "description": "The file you plan to upload. Must end with `.jsonl` (case-insensitive) and contain one request per line in the schema expected by the target `provider`.\n",
+                  "minLength": 7,
+                  "pattern": ".+\\.[Jj][Ss][Oo][Nn][Ll]$",
+                  "example": "batch_requests.jsonl"
+                }
+              }
+            },
+            "examples": {
+              "Default": {
+                "value": {
+                  "file_name": "batch_requests.jsonl"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "File intent created.",
+          "headers": {
+            "ratelimit-limit": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-limit"
+            },
+            "ratelimit-remaining": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-remaining"
+            },
+            "ratelimit-reset": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-reset"
+            }
+          },
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Presigned upload URL and `file_id` for a new batch input file.",
+                "required": [
+                  "file_id",
+                  "upload_url"
+                ],
+                "properties": {
+                  "file_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Pass this value as `file_id` when creating a batch job.",
+                    "example": "a1b2c3d4-e5f6-4789-90ab-cdef12345678"
+                  },
+                  "upload_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Short-lived presigned `PUT` URL (typically valid for ~15 minutes). If it expires before upload, create a new file intent.\n",
+                    "example": "https://batch-inference.nyc3.digitaloceanspaces.com/uploads/a1b2c3d4-e5f6-4789-90ab-cdef12345678.jsonl?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=900&X-Amz-Signature=..."
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true,
+                    "description": "When `upload_url` expires.",
+                    "example": "2026-04-24T19:34:19Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/paths/~1v1~1consent/get/responses/400"
+        },
+        "401": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/401"
+        },
+        "403": {
+          "$ref": "#/paths/~1v1~1batches/get/responses/403"
+        },
+        "422": {
+          "$ref": "#/paths/~1v1~1batches/post/responses/422"
+        },
+        "429": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/429"
+        },
+        "500": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/500"
+        },
+        "default": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/default"
+        }
+      }
+    },
+    "inference_upload_batch_file": {
+      "path": "/<upload_url>",
+      "method": "PUT",
+      "servers": [
+        {
+          "url": "https://",
+          "description": "Use the exact `upload_url` returned by `POST /v1/batches/files`. Do not construct this URL — it is presigned, short-lived, and different per request.\n"
+        }
+      ],
+      "pathServers": null,
+      "security": [],
+      "parameters": null,
+      "requestBody": {
+        "required": true,
+        "description": "Raw JSONL bytes — one request per line.",
+        "content": {
+          "application/octet-stream": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Upload accepted by object storage.",
+          "headers": {
+            "ratelimit-limit": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-limit"
+            },
+            "ratelimit-remaining": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-remaining"
+            },
+            "ratelimit-reset": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-reset"
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/401"
+        },
+        "403": {
+          "description": "Signature mismatch or URL expired. Create a new file intent with `POST /v1/batches/files` and upload again.\n",
+          "headers": {
+            "ratelimit-limit": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-limit"
+            },
+            "ratelimit-remaining": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-remaining"
+            },
+            "ratelimit-reset": {
+              "$ref": "#/paths/~1v1~1models/get/responses/200/headers/ratelimit-reset"
+            }
+          }
+        },
+        "429": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/429"
+        },
+        "500": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/500"
+        },
+        "default": {
+          "$ref": "#/paths/~1v2~1nfs/get/responses/default"
+        }
+      }
+    }
+  },
+  "wireReference": "https://raw.githubusercontent.com/digitalocean/godo/main/batch_inference.go"
+}

@@ -17,10 +17,22 @@
       {
         "id": "anthropic-authentication",
         "version": 1
+      },
+      {
+        "id": "beta-route-contracts",
+        "version": 1
+      },
+      {
+        "id": "multipart-file-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "986cca3a187a8388cc1d73418112bb1976799a1ad6691795f6ef9e8299d04b9a",
-    "effectiveBytes": 1662627
+    "effectiveSha256": "bc5a60f16fbd17790700977767a8fd9aa66dbbfb8644c246075b311f5b217e29",
+    "effectiveBytes": 1682957
   },
   {
     "id": "atlassian-admin-api-access",
@@ -84,7 +96,15 @@
     "sha256": "270392b944e9ad895c2c6ce6d81db50d5da336d0bb10a0edc47619ae44263bb1",
     "sourceSha256": "84d325e0640afed8890c7e9e1d258d7ed553eeda24314dc5d20ff75532455485",
     "bytes": 184146,
-    "compressedBytes": 24449
+    "compressedBytes": 24449,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "9e712cd49030bd38196272fc032873bca842e7de210af744ccd30fa8d6daa443",
+    "effectiveBytes": 184401
   },
   {
     "id": "atlassian-admin-users",
@@ -132,7 +152,19 @@
     "sha256": "b24a0654a2f53a586724c2c4d2e323784988dca369af768d0b65ba4c39f4f794",
     "sourceSha256": "dd0ac28f2fafb7535de11a6d1ed954b742d7ee186a618edd821e6ed9c798eaac",
     "bytes": 20434,
-    "compressedBytes": 4535
+    "compressedBytes": 4535,
+    "patches": [
+      {
+        "id": "atlassian-relative-servers",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1702176141f73438952a7fac9fe1c0dfc2555d0a84db035fe5619afd486e41da",
+    "effectiveBytes": 25517
   },
   {
     "id": "atlassian-assets",
@@ -154,10 +186,18 @@
       {
         "id": "atlassian-server-bindings",
         "version": 1
+      },
+      {
+        "id": "assets-import-source-parameter",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "1770d858b48117ef5501810378ae01c41cfa182a405694934923ee4c6af8054e",
-    "effectiveBytes": 275034
+    "effectiveSha256": "5811b484d75ac6a268168017d911646ccbc5bf53b73def6855bc8882d30cbe24",
+    "effectiveBytes": 276086
   },
   {
     "id": "atlassian-automation",
@@ -198,6 +238,7 @@
     "url": "https://dac-static.atlassian.com/server/bamboo/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/bamboo/rest",
     "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication",
     "version": "12.1.12",
     "openapi": "3.0.1",
     "operations": 404,
@@ -205,7 +246,23 @@
     "sha256": "a5f54819ac94622e3855a4a809404b538858fd98ac51690e25960643634a2b4e",
     "sourceSha256": "3d6e237ee6a5deb5c3d3cacf2964d3be6cc4f02b1fd9c5ffddc152ab646dfab9",
     "bytes": 593182,
-    "compressedBytes": 51740
+    "compressedBytes": 51740,
+    "patches": [
+      {
+        "id": "atlassian-dc-authentication",
+        "version": 1
+      },
+      {
+        "id": "atlassian-file-parts",
+        "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e03ac69137d7a801496ff737b113de364e670870fe3cda2b0976c3263d6d11cd",
+    "effectiveBytes": 615217
   },
   {
     "id": "bitbucket",
@@ -236,7 +293,23 @@
     "sha256": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
     "sourceSha256": "e736bc5916a1078955f5c28f47ccb67dc5b9b778f4abc77addfad56974bc4ad9",
     "bytes": 1309472,
-    "compressedBytes": 119473
+    "compressedBytes": 119473,
+    "patches": [
+      {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      },
+      {
+        "id": "bitbucket-content-parameters",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "a001bc55f356f0346c2b61f0a59a1ea8c156ce4e66596d264dcd6c6680fee491",
+    "effectiveBytes": 1317129
   },
   {
     "id": "atlassian-capacity-planning",
@@ -268,7 +341,19 @@
     "sha256": "f857bab047794449bede893e617f6d8f07169837197a6848546546b48faa1d08",
     "sourceSha256": "37f169f9a452b2a46edb85621e0bd730e7d2a31cbe41e57d0e338546c4a94067",
     "bytes": 455678,
-    "compressedBytes": 53641
+    "compressedBytes": 53641,
+    "patches": [
+      {
+        "id": "atlassian-commerce-authentication",
+        "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "530288b8d7166cc62bc95fbd2dbb127924673cab7ae8f88ca55c32accb05b0f4",
+    "effectiveBytes": 456312
   },
   {
     "id": "atlassian-commerce-it",
@@ -331,7 +416,15 @@
     "sha256": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
     "sourceSha256": "6c66a606fa7535268512f07f599fe1e3f9de2ba0b1da7eb6ead405509875577e",
     "bytes": 425694,
-    "compressedBytes": 54772
+    "compressedBytes": 54772,
+    "patches": [
+      {
+        "id": "atlassian-relative-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2f69d90215774cbe0a1bbaaaf16d26e9219c8cf923f2e53c3152a178e2b1cd21",
+    "effectiveBytes": 530975
   },
   {
     "id": "confluence-dc",
@@ -363,7 +456,19 @@
     "sha256": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
     "sourceSha256": "18aa47f13f41b239d515510e8ed95497adc591afebb52e6f7ad9097edba7cca4",
     "bytes": 264596,
-    "compressedBytes": 35462
+    "compressedBytes": 35462,
+    "patches": [
+      {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
+        "id": "atlassian-file-parts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d0903f37b41afe1d9dfef6b1fad881422b758d1a6f681a0a100a62b0dff3f9db",
+    "effectiveBytes": 265677
   },
   {
     "id": "atlassian-customer-service-management",
@@ -379,7 +484,15 @@
     "sha256": "e4f38a292bbdd3ac6344be7b1bd8a8fbd92007c21480cd2afa671bd8fa6d0e02",
     "sourceSha256": "50ba64f4531535799215f019eff3bc8b0bf65f0ea8a8a7a97ced24333ce4b199",
     "bytes": 160470,
-    "compressedBytes": 22214
+    "compressedBytes": 22214,
+    "patches": [
+      {
+        "id": "atlassian-tenant-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1383821c74d1d36676820b7600c5863a7943983032ce9e214587fe98ccde77e3",
+    "effectiveBytes": 160751
   },
   {
     "id": "atlassian-focus",
@@ -395,7 +508,15 @@
     "sha256": "1c6c34f5e4269cbb6de5ee2460c6cc8b0c7070116742fc194cfddc038285d7a4",
     "sourceSha256": "3de8efb4cf5353bd4bbad9ad430afd669d6bca7da54399a8ac7beb2d9b3b82d5",
     "bytes": 53839,
-    "compressedBytes": 7138
+    "compressedBytes": 7138,
+    "patches": [
+      {
+        "id": "atlassian-relative-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e110f625a5c8e59bc39abd401f6ee35b59eb3f5795aeb4e6cce0598b5250d6bd",
+    "effectiveBytes": 63430
   },
   {
     "id": "atlassian-forge-containers",
@@ -406,12 +527,20 @@
     "operationIds": "method-path",
     "version": "1.0.0",
     "openapi": "3.0.3",
-    "operations": 60,
+    "operations": 58,
     "license": null,
     "sha256": "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1",
     "sourceSha256": "3754f2e3a2c828e8ad2386bac26a72bdca9209f4d54081197d498e7c3f2a490f",
     "bytes": 123698,
-    "compressedBytes": 18715
+    "compressedBytes": 18715,
+    "patches": [
+      {
+        "id": "forge-llm-exclusion",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e1f9f2d702027c071433525d7257dc8d285b7f942811630534c73b80eae84560",
+    "effectiveBytes": 122397
   },
   {
     "id": "atlassian-forge-storage",
@@ -443,7 +572,15 @@
     "sha256": "59bc96a8e30792e5be7af817ac37100d9ffbebdde4d2c3614b288333b0220688",
     "sourceSha256": "62ee88220ca72fcaf261ed1a3c167619438ed7558e8047512c1963d87e26c7d0",
     "bytes": 124718,
-    "compressedBytes": 14375
+    "compressedBytes": 14375,
+    "patches": [
+      {
+        "id": "atlassian-tenant-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c7710c0d10ff88d44d17247d85843c4b85410379cfd6b9c8c1088db5a76b1ada",
+    "effectiveBytes": 125256
   },
   {
     "id": "atlassian-incidents",
@@ -459,12 +596,22 @@
     "sha256": "9788e6bd62b45a5a157e5a0854f9586ea9bf18bfe573ea6d6932d5a40e950339",
     "sourceSha256": "a2d5a9c2807675c32b70d86f9f43d106e9a6d16297c9ec1afb81783903bb1e1c",
     "bytes": 58761,
-    "compressedBytes": 7794
+    "compressedBytes": 7794,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "40de4bbcb3380621d8bd9a110a455eb490ce0f879ed56b0b553a2228e6c687ac",
+    "effectiveBytes": 67423
   },
   {
     "id": "jira",
     "name": "Atlassian / Jira / Cloud",
     "url": "https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/jira/platform/rest/",
+    "provider": "atlassian",
     "version": "1001.0.0-SNAPSHOT-cb5afcc2a0901f4ca3e6469acd6245b98aa5a2ca",
     "openapi": "3.0.1",
     "operations": 630,
@@ -476,8 +623,18 @@
     "sourceSha256": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
     "bytes": 2509957,
     "compressedBytes": 310020,
-    "provider": "atlassian",
-    "provenance": "https://developer.atlassian.com/cloud/jira/platform/rest/"
+    "patches": [
+      {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "54bf4b7cd242c5dd8d3838092ee56fbdeaddf6c5aab80bc78e28cb4c3aa9a698",
+    "effectiveBytes": 2513773
   },
   {
     "id": "jira-service-management",
@@ -493,7 +650,15 @@
     "sha256": "e2ff7579a087099e6482b78475730ea508e8933e8349af3b4fe58eb1a9cad944",
     "sourceSha256": "01a692e5eb65d977c607246e27ba02ed809af2f85877cb418f16620d0fb79354",
     "bytes": 377308,
-    "compressedBytes": 42985
+    "compressedBytes": 42985,
+    "patches": [
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "a87ddb62abcc2cfd5753a824f58d31dac04141d68fbffe076bb9b8dce96f18c6",
+    "effectiveBytes": 378005
   },
   {
     "id": "jira-service-management-dc",
@@ -502,6 +667,7 @@
     "url": "https://dac-static.atlassian.com/server/jira-servicedesk/11.3.swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/jira-servicedesk/rest/",
     "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication",
     "version": "11.3.12",
     "openapi": "3.0.1",
     "operations": 514,
@@ -509,7 +675,31 @@
     "sha256": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
     "sourceSha256": "9c01dc60ef7b6699852d3216694864d05e27b2417e6221513bd6984aadc1820d",
     "bytes": 760421,
-    "compressedBytes": 89095
+    "compressedBytes": 89095,
+    "patches": [
+      {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
+        "id": "atlassian-dc-authentication",
+        "version": 1
+      },
+      {
+        "id": "atlassian-file-parts",
+        "version": 1
+      },
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "39b039fa15470d2bc9ba2a4aac5eea26b52e577ddbac4977a226857613cf748d",
+    "effectiveBytes": 791714
   },
   {
     "id": "jira-service-management-ops",
@@ -535,10 +725,14 @@
       {
         "id": "atlassian-server-bindings",
         "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
       }
     ],
-    "effectiveSha256": "ef77a1a70332a053b8fb636f4cbe911acb58cdff5fc04f3b8cda596730e9e797",
-    "effectiveBytes": 695949
+    "effectiveSha256": "7f087622eec225ebcc2f12cd64b5e101b6d127017e88b4f14d17779b5fcd8b09",
+    "effectiveBytes": 702614
   },
   {
     "id": "jira-software",
@@ -566,6 +760,7 @@
     "url": "https://dac-static.atlassian.com/server/jira/platform/jira_software_dc_11003_swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/jira/platform/rest/",
     "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication",
     "version": "11.3.12",
     "openapi": "3.0.1",
     "operations": 437,
@@ -573,7 +768,31 @@
     "sha256": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
     "sourceSha256": "1c2671f61cc8e7a7f6e6fcd238397a54eeb58dfe548d8e82a01699f517e92408",
     "bytes": 608325,
-    "compressedBytes": 80847
+    "compressedBytes": 80847,
+    "patches": [
+      {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
+        "id": "atlassian-dc-authentication",
+        "version": 1
+      },
+      {
+        "id": "atlassian-file-parts",
+        "version": 1
+      },
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
+      },
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1178580ab3d7002c663baf02d7b519fd2543ce728dfe65c808e1e495d9594ddd",
+    "effectiveBytes": 638269
   },
   {
     "id": "atlassian-marketplace",
@@ -605,7 +824,15 @@
     "sha256": "b2ff5be0cacb2b1ec99fb496c271806513f7b1be71c5c7308ac11d07b3d40660",
     "sourceSha256": "9689c778628b66a72f5db62050eab0cb0b3c66661e5480899f1b78ab0433df37",
     "bytes": 3158,
-    "compressedBytes": 961
+    "compressedBytes": 961,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "32d47cdc35298885d57d2968f65d48de269345a8248f5c180902483df4734522",
+    "effectiveBytes": 3376
   },
   {
     "id": "atlassian-migration-api",
@@ -637,7 +864,15 @@
     "sha256": "8bdd7cc1b4f8f01115d78bb5a2db3be0f7b2dc2be9582198ae28efbd0862ae4d",
     "sourceSha256": "0db2968dccf39d4882264753ecbc6102f85ce466c3b41a55f25834ef88652da2",
     "bytes": 12743,
-    "compressedBytes": 3441
+    "compressedBytes": 3441,
+    "patches": [
+      {
+        "id": "atlassian-tenant-servers",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "5d5f9273ac423448fe700490f327a3c85862f6000a94068625fe8aff2dc9f8bf",
+    "effectiveBytes": 13013
   },
   {
     "id": "opsgenie",
@@ -738,7 +973,19 @@
     "sha256": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
     "sourceSha256": "b07c97d06e93f7caff661a307e86f2b58c1f97591614ac8179f8e31bda27334b",
     "bytes": 291280,
-    "compressedBytes": 34309
+    "compressedBytes": 34309,
+    "patches": [
+      {
+        "id": "catalog-path-bindings",
+        "version": 1
+      },
+      {
+        "id": "trello-parameter-arrays",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "3b62ba002352be3754dddc0e059ceba79eed948b3768785fee68fc51d2aa528d",
+    "effectiveBytes": 291796
   },
   {
     "id": "aws-apigatewayv2",
@@ -757,7 +1004,15 @@
     "sha256": "fec5b78bf48681187bd549d526da351d49a8e04d76e99a3248c37deb20c50f18",
     "sourceSha256": "dcb635027e79e66a88a46322a75a652d51511cb78f7316599df6edd25cb7f7e8",
     "bytes": 386074,
-    "compressedBytes": 47572
+    "compressedBytes": 47572,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2b353fe0fc8aeb3b04baac1703fdac2f90d05b192f1a1ad49fd3f589f8ab55fb",
+    "effectiveBytes": 474516
   },
   {
     "id": "aws-apigateway",
@@ -776,7 +1031,19 @@
     "sha256": "356f372e1b3a48d7a22aed61c7c0797dc8af5c4ed550ac8e8babab68d83b8917",
     "sourceSha256": "b38e21b01a2eab0363c36ee4266efaef995d760f19fb6225bb34004bbf6cb470",
     "bytes": 392645,
-    "compressedBytes": 47931
+    "compressedBytes": 47931,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "7d05ecb2414aa475300c7cad8e3dc8b393863e96be9a0d769d65829fafb11a71",
+    "effectiveBytes": 560966
   },
   {
     "id": "aws-athena",
@@ -795,7 +1062,15 @@
     "sha256": "1f4e7736ea3b962dd749aa5746575c4845f91a175d334c6974c505bfeee9c1ff",
     "sourceSha256": "cfd32ff656fe94c1aadbde70a071478706d8dafdabe58791f095c1a8980fb08e",
     "bytes": 259011,
-    "compressedBytes": 29321
+    "compressedBytes": 29321,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "81bb414f439804128a281b71d2da4acc57f80516312600556ef036bc53784185",
+    "effectiveBytes": 465705
   },
   {
     "id": "aws-autoscaling",
@@ -814,7 +1089,15 @@
     "sha256": "3dfd2af80a4764189fc0d3ea5a28bc9479e45447b1aae5efddf26d60a919ae3f",
     "sourceSha256": "afede5724cba405d5c2e74811e262cf18c1fb2f00220ec25d34844c5160460d1",
     "bytes": 621183,
-    "compressedBytes": 81658
+    "compressedBytes": 81658,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "8b5203059932e60042bf38e4a078a7790eb4e6ad45ec51b2724762e963602637",
+    "effectiveBytes": 1155434
   },
   {
     "id": "aws-backup",
@@ -833,7 +1116,15 @@
     "sha256": "421781af6fbb43cf42a8d55dfbe68431a0df8c08d47afdd9c52404281a5e5990",
     "sourceSha256": "8e8bb24810515b456a0f3d9dd7335a963724f61e175bc8e7e7aaad4124c5c65b",
     "bytes": 346573,
-    "compressedBytes": 43200
+    "compressedBytes": 43200,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "289f3d0242a073f0dc49ae8a48baffb653a62239738a831d69c6180fb6e1c383",
+    "effectiveBytes": 446495
   },
   {
     "id": "aws-batch",
@@ -852,7 +1143,15 @@
     "sha256": "d3b0ea44f93b92609c9766312593952f9fb10b8cbbd0c294445e8538c6ff86e2",
     "sourceSha256": "d0ff1b6d9e45f8d2f6eeb4eea80541fcd53dad2fe6404377e9c379629785dbcc",
     "bytes": 388567,
-    "compressedBytes": 62461
+    "compressedBytes": 62461,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "00b5910e9af378f11ca7f32fab674d0a609bdf347c608344bc1c15eade6e8be1",
+    "effectiveBytes": 630090
   },
   {
     "id": "aws-budgets",
@@ -871,7 +1170,15 @@
     "sha256": "53960528036628b78617ff8ed599d3b17b8fc0621acee9b2042d5daf222af954",
     "sourceSha256": "d23ff724b39063155f08c9a897faed78d37d28a9f8026fdc7c135b03cbc23c40",
     "bytes": 107549,
-    "compressedBytes": 12277
+    "compressedBytes": 12277,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c462c9b788ba911fa8691388a557278a2f299cf4bac3293e622be612c1eddf87",
+    "effectiveBytes": 159359
   },
   {
     "id": "aws-cloudformation",
@@ -890,7 +1197,15 @@
     "sha256": "4a68c9cffa40499b55c50b970591ff86129e779b0ef9e8bdfcaef552ebc14e3f",
     "sourceSha256": "cbc89071b2a1f82426db9c4a0d16788f13752c6f527b85507901fd76a8a47c2d",
     "bytes": 799346,
-    "compressedBytes": 104048
+    "compressedBytes": 104048,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4614255cb7417ee1dbed5a10c29499882af8373a4c87aac068db56bc7c4865c4",
+    "effectiveBytes": 1335270
   },
   {
     "id": "aws-cloudfront",
@@ -909,7 +1224,15 @@
     "sha256": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
     "sourceSha256": "5faba00e57ef0af89609f6e45e48fbf28a879d43920b1039c3035578d1d62f53",
     "bytes": 623245,
-    "compressedBytes": 79291
+    "compressedBytes": 79291,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "7a379f563daa8c189b1faa3d41aa07821115bdac7d65135856cd3f9efe85009f",
+    "effectiveBytes": 1109672
   },
   {
     "id": "aws-cloudtrail",
@@ -928,7 +1251,15 @@
     "sha256": "8d2daf1667f87143c7310a436a53e35517a8679054cf84b3e295bddc497019d8",
     "sourceSha256": "0240a617f76689ff993cf1c1e2b8281bdc6caa1aaf4686cfe19d4c9e145d6da2",
     "bytes": 283903,
-    "compressedBytes": 33335
+    "compressedBytes": 33335,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "ef4cbe4170486e32e304bc3a9cfcc0a19c01d8aa8e4716d5fdff027eb545f6f6",
+    "effectiveBytes": 480206
   },
   {
     "id": "aws-logs",
@@ -947,7 +1278,15 @@
     "sha256": "738f035ec0d944b378fa9f82c98c4f4af7689cbe4816aa07064b4831a88886b6",
     "sourceSha256": "f614ca1065e622d12f2b1614e058679349a9c5e242422fee7e0f770c3a20ed16",
     "bytes": 211713,
-    "compressedBytes": 27917
+    "compressedBytes": 27917,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "6e0eaffec69510a30df16ac0956e4a18459b712edae100a2e52ce3f739d529ec",
+    "effectiveBytes": 372490
   },
   {
     "id": "aws-monitoring",
@@ -966,7 +1305,15 @@
     "sha256": "85ff979bad127aab83a73b775f9905aac586238122296feb00b685d8deff936a",
     "sourceSha256": "ebef8efd176d4d90d4708a975f4e337ed4337a27d1ee473574559e9cbe8a4f53",
     "bytes": 383244,
-    "compressedBytes": 53372
+    "compressedBytes": 53372,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f9e5bf81a3b64390c7cd78410875d0f8dcfd9378844d53adca1a442f414b2859",
+    "effectiveBytes": 673224
   },
   {
     "id": "aws-codebuild",
@@ -985,7 +1332,15 @@
     "sha256": "0e6b6a34f533bb23aef8395ee8b4b1c968dff7940c2e501672ce755ebb17553d",
     "sourceSha256": "7409cd7fe899fc73af6a994060f01303fa8fa462991c70d1b931f18f1b883b81",
     "bytes": 255794,
-    "compressedBytes": 34788
+    "compressedBytes": 34788,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "3abb442b5bfd69bc75cbc99487af452d104c489abff31c2c93bfb9be94034637",
+    "effectiveBytes": 409400
   },
   {
     "id": "aws-codepipeline",
@@ -1004,7 +1359,15 @@
     "sha256": "5cc1dc46e043c2a4abdbb902cbff0a14e441bd3245ea93ac9695716caf6824b1",
     "sourceSha256": "9e95307d4e7cbf4f9c34f01afc53282e328c84f246af34b57ae9a8b7fcc63ae6",
     "bytes": 194121,
-    "compressedBytes": 25986
+    "compressedBytes": 25986,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "ef779ab8c34acb70b6f3c4a84891ecc50e5a4f17cc0c32c7faac278cef705af1",
+    "effectiveBytes": 371311
   },
   {
     "id": "aws-cognito-idp",
@@ -1023,7 +1386,15 @@
     "sha256": "ba12458942a09007e006e4406e4aa86577b23b7b14ef07618da8a9b277a57e98",
     "sourceSha256": "19e1e272bae8d2441860656fb5229685c9f7bcac2b045912ca484059b37acdc2",
     "bytes": 641131,
-    "compressedBytes": 70882
+    "compressedBytes": 70882,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f9ded31629c4c46aea619e491a88d17efe3a3ac1781d93b6a5371613b63e654f",
+    "effectiveBytes": 1089526
   },
   {
     "id": "aws-comprehend",
@@ -1042,7 +1413,15 @@
     "sha256": "93f4ec0615f3af4ec36b57402ba5546693ebf41575fb61b334a38075be84905a",
     "sourceSha256": "0f82bff16c6408a4ed11c84ca42d59462c00a7fabe524dd273c6cf6d74f0f44d",
     "bytes": 432358,
-    "compressedBytes": 41456
+    "compressedBytes": 41456,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "66d0d25da00cca4b25a531a577a0e7a924925824390f9a1f29746f3bb09b8212",
+    "effectiveBytes": 717355
   },
   {
     "id": "aws-ce",
@@ -1061,7 +1440,15 @@
     "sha256": "73470bd31bb69e4c637bd5e031c47906412bd2ec3e3c4f3ed067dd51adcc10b1",
     "sourceSha256": "b34851cc94ba8158ef199c4705da3a55108f21cf599fadf68eef613c7869fb96",
     "bytes": 278776,
-    "compressedBytes": 36382
+    "compressedBytes": 36382,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "57ffd65e1d7c3e863407a368af18128a5ffb84578cbba57db9db44ae037a21a5",
+    "effectiveBytes": 342880
   },
   {
     "id": "aws-firehose",
@@ -1080,7 +1467,15 @@
     "sha256": "d4ce44694309b05adfc13f5ff0304ef1a357340252c0aa8335df84d93c062522",
     "sourceSha256": "d7f92f586d6f7042f1b11b8ef05c7f219527ff3d5e1a80c895f5e524dc9a8938",
     "bytes": 185889,
-    "compressedBytes": 26473
+    "compressedBytes": 26473,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "db21f97315bf96be32db80fc0e467f37a9582e4d960f1d8ffaccf9eb301ee19c",
+    "effectiveBytes": 268962
   },
   {
     "id": "aws-dynamodb",
@@ -1105,10 +1500,14 @@
       {
         "id": "aws-wire-protocols",
         "version": 1
+      },
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "24a1381ac9a7039886253dc4b4ac9ff947cfbd85a15ba906054e0d91bd62038f",
-    "effectiveBytes": 464296
+    "effectiveSha256": "8d6e276606b042de12d3bfcb207a95266e8ee30ed0e54657ebbb5df7ac8455a6",
+    "effectiveBytes": 626062
   },
   {
     "id": "aws-ec2",
@@ -1127,7 +1526,15 @@
     "sha256": "ea5b1da045efed071bd26efab3b896f71282f662cc1e1683194d66023d3cfd04",
     "sourceSha256": "4b4da0ce2b0c6ab3d0fe912f4472532c09749481ce4cb2dc03e60660fcefee77",
     "bytes": 4730525,
-    "compressedBytes": 531488
+    "compressedBytes": 531488,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "627a2d0fb6ca74c40c78473605e40eb770d3a01eea8b66d829ec711ea350c0f6",
+    "effectiveBytes": 9202149
   },
   {
     "id": "aws-ecr",
@@ -1146,7 +1553,15 @@
     "sha256": "fbeab5c68abfe83723d66352c751edc87347a72204c1b68e6607c1043250d01b",
     "sourceSha256": "40087f6c59f07bfc315ba6846ab6ed6cfc5361a38637a9d8855cc34c2adc2765",
     "bytes": 185567,
-    "compressedBytes": 20183
+    "compressedBytes": 20183,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "bcfb14e39f0ed4c91750bbf63cb104ff1a85d7914feeadb9c8f88a8fdc0d5e52",
+    "effectiveBytes": 322573
   },
   {
     "id": "aws-ecs",
@@ -1165,7 +1580,15 @@
     "sha256": "4bf57dddad6c0cc36532b5b8fa76f9c110f786db7172982f133f5b4e7171d314",
     "sourceSha256": "6de2389dd8386e6bd43f0f230724909b1475e6be6fc8db9237d58fe7aba302c6",
     "bytes": 582220,
-    "compressedBytes": 88265
+    "compressedBytes": 88265,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "73fb99178004d7307565500b4bf26eaee6583e55b1f185527b47617c632210a6",
+    "effectiveBytes": 770537
   },
   {
     "id": "aws-elasticfilesystem",
@@ -1184,7 +1607,15 @@
     "sha256": "dade2231707fbb8542eaecdf0215aa791cb409dd608c7ee8336c4f1dee408bf2",
     "sourceSha256": "fb9df1d57d591b6f9af74733a7d3a6301f7adf8c324a814fbaba226566d24c29",
     "bytes": 152163,
-    "compressedBytes": 24538
+    "compressedBytes": 24538,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4c023b9f79ec043aacb5b3743938c6a7d8678c6ceeb53f77cd05c18ad80869e8",
+    "effectiveBytes": 192454
   },
   {
     "id": "aws-eks",
@@ -1203,7 +1634,15 @@
     "sha256": "476f3cff5ca1a16490dcf49ef5aee2c1041b9a1fa71289ae9ed5e5f7f643d302",
     "sourceSha256": "586aed26ac973ed9da25f7d11e6673d767fb934ed4b7ef9d165767604f2ae009",
     "bytes": 244360,
-    "compressedBytes": 37095
+    "compressedBytes": 37095,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "9b383eee50ef3513f1108bc7e5fe0226a941f08d5643a4f5683c090565604f32",
+    "effectiveBytes": 321398
   },
   {
     "id": "aws-elasticloadbalancingv2",
@@ -1222,7 +1661,15 @@
     "sha256": "9bb94556618707f774795169f97fedcdc28f89a69a39627c6c14500ed5d6ada5",
     "sourceSha256": "cc928509dbdb05f4f8bedb9e1093a0643ae3e9cfd1bad3bb1f17f466d8193ca1",
     "bytes": 282272,
-    "compressedBytes": 31804
+    "compressedBytes": 31804,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d623329c0cba53ff9b3175c522b1227576712aa457b279dc776fed24c3fe914f",
+    "effectiveBytes": 601589
   },
   {
     "id": "aws-elasticache",
@@ -1241,7 +1688,15 @@
     "sha256": "f73df542876aded5810cd60675f944fa512810eb4875ab4b05e9cca1a42d3f7e",
     "sourceSha256": "730685d51cf7e4c1f830cbfdda023c37a665c11a20f081fd9b3f2bd6ec9d38ca",
     "bytes": 675482,
-    "compressedBytes": 73824
+    "compressedBytes": 73824,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f7c06106ea377f04cdc111f74811e79aa3a0e5c725c69fcd72951ad726e445a0",
+    "effectiveBytes": 1238362
   },
   {
     "id": "aws-events",
@@ -1260,7 +1715,15 @@
     "sha256": "f8db1a08e00a64700d8561f161bb4df554a848193db9e5128b00f7be72f895d9",
     "sourceSha256": "99625f4517dc6196fd55264b882ce4ce4db0e44b99f9c46eb06040a615b9ae6a",
     "bytes": 226862,
-    "compressedBytes": 29192
+    "compressedBytes": 29192,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "65ca79e269ab091c9855b60489c63d3636a2ec1ad23d5b121cb95b243a40c518",
+    "effectiveBytes": 386429
   },
   {
     "id": "aws-fsx",
@@ -1279,7 +1742,15 @@
     "sha256": "34700f933d923f7e41dd007eac9345e3ad706486bde3df7a1cf9bea6bd84aa85",
     "sourceSha256": "5c3266c87d22ccb22e8051f2f49df629762b09b86ec6350150ac76d5bb5ef0d0",
     "bytes": 406012,
-    "compressedBytes": 62942
+    "compressedBytes": 62942,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "eda43251baa031eee3497d685fc070153109a044479cc2f188dca34ead26b73a",
+    "effectiveBytes": 602073
   },
   {
     "id": "aws-glue",
@@ -1298,7 +1769,15 @@
     "sha256": "27f1694cedeb25ce41ed5dc9b119ddd7953e18e4a96677498ca0ab7801ceceb6",
     "sourceSha256": "76f941f3406a4c05602be11b8d440a5ec238ccfce2fc720838644e332378cc5e",
     "bytes": 1004097,
-    "compressedBytes": 119312
+    "compressedBytes": 119312,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "b9e85e9807b76273794dd86295abce4a30843c7d55180a11804468eddb11ff7f",
+    "effectiveBytes": 1765766
   },
   {
     "id": "aws-iam",
@@ -1317,7 +1796,15 @@
     "sha256": "75b86d2d22322f224d07485f0a74f0927ec4b6bb90d6f4108c6cf98f89132b3d",
     "sourceSha256": "f96be26bcfb5daca6aa3f74e920de0857ef032aa43e1b50a52de2f16e80d96c0",
     "bytes": 1265127,
-    "compressedBytes": 105396
+    "compressedBytes": 105396,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "7fa00d64bee53dad08537dc100b481ecdb75629a1fb7aba60703c99a792040f0",
+    "effectiveBytes": 2021976
   },
   {
     "id": "aws-kinesis",
@@ -1336,7 +1823,15 @@
     "sha256": "bd4ea6c0e6f082d9b9fbbce188a623c034dee5ffa136b5d3aaa2325ead224ba5",
     "sourceSha256": "8a0a452912bfbf6d3e2393835bbcabe60034ffd9d4163d899a7e8baa217ae62c",
     "bytes": 163123,
-    "compressedBytes": 22370
+    "compressedBytes": 22370,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "5e1ac27cb3bb3c8bbb46f85ecb0293639cc4912ca413861310384a2e21e7510b",
+    "effectiveBytes": 256958
   },
   {
     "id": "aws-kms",
@@ -1355,7 +1850,15 @@
     "sha256": "f0c9733d4dd7ce2c51e3a49dea35531a37711c1ef2fecc09aa12615cf0500cb4",
     "sourceSha256": "3fa52a80dbffd1d19e7b5e8c7eba44dfc6541f4294712addd0d2e2ab7c153372",
     "bytes": 487481,
-    "compressedBytes": 67149
+    "compressedBytes": 67149,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "7e7b41c4d73a6d073e8669848e4c75cb57795b7e9d223f6b7e1db90f8b13c798",
+    "effectiveBytes": 682044
   },
   {
     "id": "aws-lambda",
@@ -1374,7 +1877,19 @@
     "sha256": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
     "sourceSha256": "9c96dc5c3cd3ee0e49c18e7aafbec47027368d30acca009d364a0b9fc3db990f",
     "bytes": 383934,
-    "compressedBytes": 53669
+    "compressedBytes": 53669,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "313c4ef241ff6984e6d63894debd5063b4b0fc1e4bde21dd6bb9501e9f23d674",
+    "effectiveBytes": 535468
   },
   {
     "id": "aws-opensearch",
@@ -1393,7 +1908,15 @@
     "sha256": "01d0ee509fc29cefc2403b8dff507be3bba690f3583710fe9b95bedb5a519d9e",
     "sourceSha256": "d537e000277e9c960befad3110df5c2c174927dde71f4f1fb3f4cfa0b8f236e8",
     "bytes": 328909,
-    "compressedBytes": 43252
+    "compressedBytes": 43252,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "83c9e46c153a5706ea37228d1ac966f5fb96ced3d95d7924d45cfae6b1d8bfe9",
+    "effectiveBytes": 426951
   },
   {
     "id": "aws-organizations",
@@ -1412,7 +1935,15 @@
     "sha256": "a16e015497cbd98a09e67d6321e123d68bfb0fa916af5ccab77d815dfcb37f3c",
     "sourceSha256": "d9b363677673bbcc2df38e2e3d78074aecaaac971081d7c71143e044174f50e4",
     "bytes": 324960,
-    "compressedBytes": 34248
+    "compressedBytes": 34248,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2b2d0f4abf96907b53bead74aabc0a1d7de8d3cc712297dc8b21508de98f1ce7",
+    "effectiveBytes": 538264
   },
   {
     "id": "aws-polly",
@@ -1431,7 +1962,15 @@
     "sha256": "62fa911eba1d9141664783718fa74d34c1ba257025cd72df5a057e54d796ff55",
     "sourceSha256": "7308cacb7da4a95d11264a335030fe6f8328c3b383a5cfc23e535a27db98d2f0",
     "bytes": 55206,
-    "compressedBytes": 8687
+    "compressedBytes": 8687,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c80de7b5d9a12b9ea320f8509d908f1fa622f7976e47616dac5632efd91cd7a5",
+    "effectiveBytes": 71280
   },
   {
     "id": "aws-rds",
@@ -1450,7 +1989,15 @@
     "sha256": "c21871f272a1f369d3802e13d76f0625eac5dfc240c320f38c3a547da1901be5",
     "sourceSha256": "98ecba13962fe584aa696192c509e4be6349c31b08efcbf331b04b0af9e37a06",
     "bytes": 1805535,
-    "compressedBytes": 222036
+    "compressedBytes": 222036,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "222a704bb07ab8e214fc2a2d366f3f145e928138a0f3447d0328b73d8e2625f0",
+    "effectiveBytes": 3027996
   },
   {
     "id": "aws-redshift",
@@ -1469,7 +2016,15 @@
     "sha256": "d6271729a44df045024d5dff64e01968f4d1def0470f8aec3eac648fc8ec8b28",
     "sourceSha256": "9cadf958d4d8e9eab504ff198b42ef68562576190ed6f8eda7e14dc9109a930c",
     "bytes": 921159,
-    "compressedBytes": 96590
+    "compressedBytes": 96590,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "121e614b6b7b57f9677b88840549df8d4fb96c18eb51ee8cf4035ddde7919959",
+    "effectiveBytes": 1884363
   },
   {
     "id": "aws-rekognition",
@@ -1488,7 +2043,15 @@
     "sha256": "eb61aa3f8f2f58f7890b06fd3af72bddddb454e7f372bcecadd2eb7fcbf2194f",
     "sourceSha256": "cdead0011ac2ca6d89ae65d6797083a87ee5c4d56f2e3ffd3a6bdc2d375f5f9e",
     "bytes": 518893,
-    "compressedBytes": 72856
+    "compressedBytes": 72856,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "7e105e191f0d3a2a3c40b10b8d70983cd3c8d6563c5dc447463a254b859d6c1f",
+    "effectiveBytes": 795348
   },
   {
     "id": "aws-route53",
@@ -1507,7 +2070,15 @@
     "sha256": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
     "sourceSha256": "d773387958a187f8f1b8c217cf0059dccbdd5d5cf16372dbcd41475b60b44206",
     "bytes": 447841,
-    "compressedBytes": 71369
+    "compressedBytes": 71369,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "38505d61b726aeaaa413b29dcaeb10799cda63c4548fa0244e27a409b1ef125a",
+    "effectiveBytes": 610972
   },
   {
     "id": "aws-s3",
@@ -1532,10 +2103,14 @@
       {
         "id": "aws-s3-files",
         "version": 1
+      },
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "1abeda3df1f4fc0835e5c91144542f89542e3d92e3bceab95e497b1393547586",
-    "effectiveBytes": 781954
+    "effectiveSha256": "4be8a4510ca84100dfcb1891d2c1fd24d02adc3a084d1c9427be16da51fe9773",
+    "effectiveBytes": 1102566
   },
   {
     "id": "aws-s3control",
@@ -1554,7 +2129,15 @@
     "sha256": "983b1815b0cd68eaf86d6cd316ba6177013be242600789992bf0d9cb83808e32",
     "sourceSha256": "b77d761b0be0aa33826182d7e2a566c5d605801d5e0125b7aa770a519e118207",
     "bytes": 341817,
-    "compressedBytes": 43734
+    "compressedBytes": 43734,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "597f36a1c6be61ea75264b0eee21a914ed4652f36fcf59181f48c47d5737a088",
+    "effectiveBytes": 467894
   },
   {
     "id": "aws-sagemaker",
@@ -1573,7 +2156,15 @@
     "sha256": "2847fe69e459daa1eeafb95e2dffd5a52cee372709c718ff8f2e52ca6103ae09",
     "sourceSha256": "c59fe2efe51aba45841c617851c5f8ae03617bdf539e0980127eb59208e52d6c",
     "bytes": 1776189,
-    "compressedBytes": 251904
+    "compressedBytes": 251904,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4a597e328efe2be0ac1f7a935e823d8ae56ad5b44c438c9958b6c3c91f6e4d7f",
+    "effectiveBytes": 2633594
   },
   {
     "id": "aws-runtime-sagemaker",
@@ -1592,7 +2183,15 @@
     "sha256": "d8a12efce47afa804033ea5428ae5168ebb8e100397672464aecc0ca6a16b7bf",
     "sourceSha256": "912f2d9a7076b49d0b46462a120207ec693c29aadbf68bf530064c0ac826f51a",
     "bytes": 19803,
-    "compressedBytes": 4252
+    "compressedBytes": 4252,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4a1dcb158f83268535639e8f6638795008185c8a7df75647da56036ddd117b48",
+    "effectiveBytes": 29115
   },
   {
     "id": "aws-secretsmanager",
@@ -1611,7 +2210,15 @@
     "sha256": "1c7ad235b89a6ebf714a9116d5be5055aced880a9227adabfb76a43a0c06f795",
     "sourceSha256": "ad4d7db5a51d0c11aab8d7751c4f19475a47f1b3b9d8aa9aacc54de266346ca2",
     "bytes": 155412,
-    "compressedBytes": 21209
+    "compressedBytes": 21209,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e75e60895cc7b80e9d088e4db3b6f816ae360a9c9d027a105fcbfd1ce77d2aa6",
+    "effectiveBytes": 234264
   },
   {
     "id": "aws-sesv2",
@@ -1630,7 +2237,15 @@
     "sha256": "d8193d3b10ba22cf265b0fe76ff4474dbe8eb052a8b407c96eeda4d20b564aa5",
     "sourceSha256": "0d6df7185ed1e5fe01d9240af61fed579435a5fb9696db3074a187280bcac2be",
     "bytes": 398329,
-    "compressedBytes": 54514
+    "compressedBytes": 54514,
+    "patches": [
+      {
+        "id": "aws-rest-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "6cb5c0b0ba01ae2348cf843e5150c7cf90c929a32823b7ddd9b4f9dc98f3b655",
+    "effectiveBytes": 529604
   },
   {
     "id": "aws-sns",
@@ -1649,7 +2264,15 @@
     "sha256": "14a210cbd1167e49aeb461e4ba8bff533c7bb6473f7cb8ff91f83beaf932f195",
     "sourceSha256": "a00fb09864096aabf90ec41cab56fe90bf968671a6bd2bf53407b33c43e71d04",
     "bytes": 307584,
-    "compressedBytes": 36079
+    "compressedBytes": 36079,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "abb1e27846965c4b0c1d66def84581cfca52add101692b7be9d910e9a7c38a27",
+    "effectiveBytes": 632755
   },
   {
     "id": "aws-sqs",
@@ -1668,7 +2291,15 @@
     "sha256": "5ba8e13697b8c58dd867c87318478c346afe694fdf47ccecae7404474d6b890b",
     "sourceSha256": "603a85901e582c4832c14c3ed58dca52d79ad39f7905fd402a29b1cac82fe332",
     "bytes": 266392,
-    "compressedBytes": 36726
+    "compressedBytes": 36726,
+    "patches": [
+      {
+        "id": "aws-query-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f55ae42635b46406bea210d4c5db43c742a0e8f691ebb3b64769327b120d6b4a",
+    "effectiveBytes": 421904
   },
   {
     "id": "aws-states",
@@ -1687,7 +2318,15 @@
     "sha256": "015f7480d4276fe656b24c7dcd8880473ec534e0ea37445dc417cacfb830165e",
     "sourceSha256": "76601f2d21171acf7c9f0fee328589f2e1cdcd4cc9a4b53139016bea17af81fa",
     "bytes": 186934,
-    "compressedBytes": 21171
+    "compressedBytes": 21171,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "741ed022b669a3cd8c70ebaca54bf5061c1452115b1e3d7b9e239ac3151b06e4",
+    "effectiveBytes": 294194
   },
   {
     "id": "aws-sts",
@@ -1712,10 +2351,14 @@
       {
         "id": "aws-wire-protocols",
         "version": 1
+      },
+      {
+        "id": "aws-query-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "886ede5b183bd23c14cd512169cab958f68d53a849c6e62fd4e7e30e977cda65",
-    "effectiveBytes": 209105
+    "effectiveSha256": "7b573570deafff78a5d393754d2fc20453ffb743359cb5cd633dcf620603a580",
+    "effectiveBytes": 254616
   },
   {
     "id": "aws-ssm",
@@ -1734,7 +2377,15 @@
     "sha256": "ea1da9646ab7a272056e2f0d41fb933a0efc86c777f8aaefd35c111678cc7628",
     "sourceSha256": "8b9ddff5bc32e71b8af159d6110b355578b0a9e2417ad6442517ff85b959a0f2",
     "bytes": 862547,
-    "compressedBytes": 121708
+    "compressedBytes": 121708,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "bb56a489928ade4838ed7358074f059bc3407a7b17732a3850e6be5aa7089ec2",
+    "effectiveBytes": 1311343
   },
   {
     "id": "aws-textract",
@@ -1753,7 +2404,15 @@
     "sha256": "d3c0dbdf67385e256a951ed8d08661a9168c2432820433a46c6d3caa3f8b58a3",
     "sourceSha256": "f57240c13958c630041916d62d0e7636a6dbfe9361886921c9b11718a2762de5",
     "bytes": 121414,
-    "compressedBytes": 17194
+    "compressedBytes": 17194,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d2bec9f20e32f2ff1cb055e2fde555677bacb6a16db0f8944700b0adb55cc771",
+    "effectiveBytes": 174616
   },
   {
     "id": "aws-transcribe",
@@ -1772,7 +2431,15 @@
     "sha256": "b5cb42260d51188fefc2765402bd2e3fc1229467a15831d7972478268b6a3855",
     "sourceSha256": "fe76d9ad4cc84e2e1df470b3d14b6daf6db276817ede028697091c6d89db5e63",
     "bytes": 273091,
-    "compressedBytes": 29688
+    "compressedBytes": 29688,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "3adf1ffdc1be0aba3df0ff496409fd9bb6b46e4f05a31979fd1e92fb47df79d1",
+    "effectiveBytes": 399693
   },
   {
     "id": "aws-transfer",
@@ -1791,7 +2458,15 @@
     "sha256": "dd19a58db893773435f113141bcc8972b0d9373bac3f0f88eb5e07d0b4337efc",
     "sourceSha256": "1a03526230910bc58a3b25a187b80fbbe56bb242d066a17ad2c3fbdf54ecbee2",
     "bytes": 328727,
-    "compressedBytes": 46501
+    "compressedBytes": 46501,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "bbc3a693a86ecadc3f5defac3d1dabfe60711f8c517817d3a2e17739c7fdbffb",
+    "effectiveBytes": 524815
   },
   {
     "id": "aws-translate",
@@ -1810,7 +2485,15 @@
     "sha256": "1f9b0d20961033124575dd053bf84a7a63ba22d85816406cc7aaaf6cefa0e433",
     "sourceSha256": "cc17649ae2cebe30cb2345d17fa18dfce2943cf0f8872c670ff0ea43d533818b",
     "bytes": 99651,
-    "compressedBytes": 13337
+    "compressedBytes": 13337,
+    "patches": [
+      {
+        "id": "aws-json-target-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "35972f04963ffc6d8816ff6c5e410bc0c6622ab145d93ae604dc1c85490eb0fc",
+    "effectiveBytes": 164424
   },
   {
     "id": "bluesky-app",
@@ -1826,7 +2509,15 @@
     "sha256": "02fc57bf6b47faca285b60712403939e36ed4e997ad13ca52b2c523862df20ba",
     "sourceSha256": "f224143320a72c47d1db9dad939debe53e3e632033ee8fa66effef5fa2161d69",
     "bytes": 557190,
-    "compressedBytes": 51746
+    "compressedBytes": 51746,
+    "patches": [
+      {
+        "id": "upload-body-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "293121bf1dbde034f7080fc23da42c097d787b9e83c1fe27dce2237f1b627bbf",
+    "effectiveBytes": 558487
   },
   {
     "id": "bluesky-dms",
@@ -1882,10 +2573,26 @@
       {
         "id": "cloudflare-private-upload",
         "version": 1
+      },
+      {
+        "id": "cloudflare-logo-upload",
+        "version": 1
+      },
+      {
+        "id": "multipart-part-contracts",
+        "version": 1
+      },
+      {
+        "id": "multipart-root-contracts",
+        "version": 1
+      },
+      {
+        "id": "structured-form-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "ca3f09b346bba9872f2aee6b4f243dbaf19da995f896b9d1de846994250e226a",
-    "effectiveBytes": 13590340
+    "effectiveSha256": "8dc18e4f062587f51e2d8a44a091d889e4cf3936c2f50722ec7d57ff142fc9ff",
+    "effectiveBytes": 13600548
   },
   {
     "id": "cloudflare-realtime-sfu",
@@ -1956,10 +2663,18 @@
       {
         "id": "digitalocean-bearer-permissions",
         "version": 1
+      },
+      {
+        "id": "digitalocean-destinations",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "5626dec576f33c3e55f04713ea83242bb246bec91c4bb623587a6a900b378738",
-    "effectiveBytes": 3317876
+    "effectiveSha256": "2d0f73366ef14b602b21b4921be67da03b702dfeb0ab39dcc23c810baadc6f0b",
+    "effectiveBytes": 3321281
   },
   {
     "id": "discord",
@@ -1975,7 +2690,15 @@
     "sha256": "07512fa28e35b7e6df694f685b0a43fca8fe9e9bddf8da71d6c630171ed4683f",
     "sourceSha256": "79e3faff046cd35e432e4cbaacd457c5f4b0e01149c541c010366191e38bc18a",
     "bytes": 612366,
-    "compressedBytes": 56276
+    "compressedBytes": 56276,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "10201acddc4ad8a2e07bc097aa420a10ec2b210f5258f915dce685ed320ed1a5",
+    "effectiveBytes": 613178
   },
   {
     "id": "docker",
@@ -1986,10 +2709,22 @@
     "openapi": "3.0.0",
     "operations": 108,
     "license": null,
-    "sha256": "84e994fb0d80850cb01d1a098c89ead30ca0c9cd8aff6cdbcd46f258304d88ba",
+    "sha256": "ece637cf4dc2c637d7b7bb2d41b504c5691a182a8fbb17363c7bebd19c047937",
     "sourceSha256": "65be7f5d09afed6c4af003304c086edf92067bdd7a29c71a591dce806c34d56d",
-    "bytes": 388129,
-    "compressedBytes": 78649
+    "bytes": 387808,
+    "compressedBytes": 78445,
+    "patches": [
+      {
+        "id": "docker-http-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "602e96d9ad6aa95dfef579775299c1d9f8b7a961f62394d6e74b0b44af808678",
+    "effectiveBytes": 426792
   },
   {
     "id": "dukascopy",
@@ -2019,7 +2754,15 @@
     "sha256": "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020",
     "sourceSha256": "2c172ea3a80567939d828b6f5bfb8fea3530387a2786542a186bdc5786084911",
     "bytes": 36129,
-    "compressedBytes": 5799
+    "compressedBytes": 5799,
+    "patches": [
+      {
+        "id": "ecb-registration-parameters",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2e565438c7897c410cde664702a974883e814a392ecf72ecaf7068dc3d86f97d",
+    "effectiveBytes": 36571
   },
   {
     "id": "elevenlabs",
@@ -2039,10 +2782,22 @@
       {
         "id": "elevenlabs-authentication",
         "version": 1
+      },
+      {
+        "id": "multipart-file-contracts",
+        "version": 1
+      },
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "27493b88c935cdb3d67c4e95c6df3e7f93a9b8afe876e8f3fe2f8ad5180833fa",
-    "effectiveBytes": 2784202
+    "effectiveSha256": "b6ef906c97e74a5a257f322fd141aa37fddcd1144223c4d69c34e7a7e7bba1a4",
+    "effectiveBytes": 2808710
   },
   {
     "id": "alfred",
@@ -2100,7 +2855,7 @@
     "profile": "github-auth",
     "version": "1.1.4",
     "openapi": "3.1.0",
-    "operations": 1242,
+    "operations": 1236,
     "license": {
       "name": "MIT",
       "url": "https://spdx.org/licenses/MIT"
@@ -2113,10 +2868,18 @@
       {
         "id": "github-authentication",
         "version": 1
+      },
+      {
+        "id": "github-classroom-retirement",
+        "version": 1
+      },
+      {
+        "id": "private-credential-results",
+        "version": 1
       }
     ],
-    "effectiveSha256": "472100e160a2a52bf0ab574584e40026cc4677f4304ecb16580142447b1ee9f0",
-    "effectiveBytes": 7455275
+    "effectiveSha256": "520011c61d83c4ef656283e04ed2ff6544a6e45109e61710e8d8030f9c42a12c",
+    "effectiveBytes": 7902687
   },
   {
     "id": "gitlab",
@@ -2139,10 +2902,14 @@
       {
         "id": "provider-path-bindings",
         "version": 1
+      },
+      {
+        "id": "structured-form-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "6292ee3a934391007c0e45878929a2243fab0739685c7138a72f1c95636451cf",
-    "effectiveBytes": 3413129
+    "effectiveSha256": "5e93d0d15794858ace891e980c6b182685f1960cebf4afdfa6988ea633da027a",
+    "effectiveBytes": 3416585
   },
   {
     "id": "google-analytics-admin",
@@ -2277,12 +3044,16 @@
     "compressedBytes": 15815,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "f0b2069f264e1ec82dd0dd8d9b367c02f38496efd1c0fc91d1ecec8c936a0d0d",
-    "effectiveBytes": 107805
+    "effectiveSha256": "591442aa817531e0888dc3410a14e1ed2d0df7ffcb1e917c68ec655ccf36c73c",
+    "effectiveBytes": 108975
   },
   {
     "id": "gcp-cloudasset",
@@ -3875,12 +4646,16 @@
     "compressedBytes": 32558,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "376ea9392e52f5c11e643539539645636b450103da8f97bc5b8cace6fe1a9d39",
-    "effectiveBytes": 170694
+    "effectiveSha256": "c7425f01366354709d0e9725eb83557a141b14e5415dcb58a9bf572f481a1aca",
+    "effectiveBytes": 170915
   },
   {
     "id": "google-classroom",
@@ -3987,12 +4762,16 @@
     "compressedBytes": 22693,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "3eb1cb005a27f06c51a7f3880dcb3fa7ffdec18f30f3343202f503b6110f03c7",
-    "effectiveBytes": 196870
+    "effectiveSha256": "3bb263ed25bb0170c4ef06b5b21523621b9e39ebd3f7d091a4e47fa65f6c57c9",
+    "effectiveBytes": 197272
   },
   {
     "id": "google-drive-labels",
@@ -4073,10 +4852,14 @@
       {
         "id": "google-oauth-alternatives",
         "version": 1
+      },
+      {
+        "id": "gmail-message-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "ce3d1b266163f6bcdd13342d06cae5e2daad26bd0d13e43522d08e6b3f2b3032",
-    "effectiveBytes": 198943
+    "effectiveSha256": "899f234c70768af0600d1e1ba59ab88bb1fddbf45a1c9cf1942ffbc576de8db0",
+    "effectiveBytes": 199969
   },
   {
     "id": "google-keep",
@@ -4295,12 +5078,16 @@
     "compressedBytes": 46475,
     "patches": [
       {
+        "id": "upload-body-contracts",
+        "version": 1
+      },
+      {
         "id": "google-oauth-alternatives",
         "version": 1
       }
     ],
-    "effectiveSha256": "1fea92aedfb6713b9b61a7aeb6ea523dea30689c054725e02c0e2a5edb0174bc",
-    "effectiveBytes": 408504
+    "effectiveSha256": "466a59d4eb07671d19823a4b2efa83acab732fb97fbeacea555b42c42bdf65e2",
+    "effectiveBytes": 409778
   },
   {
     "id": "groq",
@@ -4573,7 +5360,19 @@
     "sha256": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
     "sourceSha256": "60f5e92dcc4cae89a1c1eec614c409a1ce9da37f1e856d2868ff6734474f5859",
     "bytes": 516319,
-    "compressedBytes": 65731
+    "compressedBytes": 65731,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      },
+      {
+        "id": "mistral-variant-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "15fbb44e452c60daa6482e89f133715e512527492652abcda152814d117f7211",
+    "effectiveBytes": 532571
   },
   {
     "id": "ollama",
@@ -4620,10 +5419,26 @@
       {
         "id": "http-response-streaming",
         "version": 1
+      },
+      {
+        "id": "beta-route-contracts",
+        "version": 1
+      },
+      {
+        "id": "multipart-part-contracts",
+        "version": 1
+      },
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      },
+      {
+        "id": "structured-form-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "4353c83f3262ce57d1f276bb8e9c06e250232a83601fbffbd4b74523e4bc71da",
-    "effectiveBytes": 3150328
+    "effectiveSha256": "222af8c3f94134365b497775354c6a9b6ccdca25fb4435a7e449a33d0a664a6b",
+    "effectiveBytes": 3160240
   },
   {
     "id": "codex",
@@ -4634,7 +5449,7 @@
     "version": "0.163.0",
     "format": "codex-app-server",
     "protocol": "json-rpc",
-    "operations": 105,
+    "operations": 104,
     "license": {
       "name": "Apache-2.0",
       "url": "https://github.com/openai/codex/blob/rust-v0.163.0/LICENSE"
@@ -4684,7 +5499,15 @@
     "sha256": "790b5dfeb6e9fffc5c967de5dd30b17e305bad4686ad700ad91650de7a457468",
     "sourceSha256": "4500bf86453ef1ab65a9e133929ce97f468cff9aa62ab7512d00fd588abb8b39",
     "bytes": 92802,
-    "compressedBytes": 16354
+    "compressedBytes": 16354,
+    "patches": [
+      {
+        "id": "structured-form-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "52de0c58730e7a062b328e71aeb17dde1349ffb8fb5594a64af38d257ddcf0fa",
+    "effectiveBytes": 93405
   },
   {
     "id": "resend",
@@ -4716,10 +5539,14 @@
       {
         "id": "telegram-private-path",
         "version": 1
+      },
+      {
+        "id": "form-field-contracts",
+        "version": 1
       }
     ],
-    "effectiveSha256": "87e24e72f3a76ccfef04c486bd8fd11eed40851917d2e4e7b851531c34e1038d",
-    "effectiveBytes": 1001475
+    "effectiveSha256": "196b24b4de00a0e352be826e863af09c98368cf8c2fa481c566e102c13aa3251",
+    "effectiveBytes": 1002004
   },
   {
     "id": "together",
@@ -4735,7 +5562,15 @@
     "sha256": "5e1162180a8e29e07f9d0754f0d82815f493c7cea34b3c9ca2d7bd5b2115c69f",
     "sourceSha256": "4a7b9e7cac217b475361af6c177c46016d44b454e0c2c0bc5c7d77f82cb4e2ac",
     "bytes": 806593,
-    "compressedBytes": 122943
+    "compressedBytes": 122943,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1098149319b725413e96d99b704a71000d3a3ab4a84dbd042b5469a39b7c2b9e",
+    "effectiveBytes": 811884
   },
   {
     "id": "twilio",
@@ -4751,7 +5586,15 @@
     "sha256": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
     "sourceSha256": "052b294839a56c89a921c77639305d99ad15be6e248bdeaef8975aea6cfcb339",
     "bytes": 1126109,
-    "compressedBytes": 85562
+    "compressedBytes": 85562,
+    "patches": [
+      {
+        "id": "form-field-contracts",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "18cb3856d15926e7b09df1b14a02e51045f762624dc53b06c4068b8fb4635ec9",
+    "effectiveBytes": 1130709
   },
   {
     "id": "vercel",

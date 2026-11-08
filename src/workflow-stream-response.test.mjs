@@ -17,6 +17,7 @@ import { createOperationGraph, isWorkflowConnection } from './lib/workflow-graph
 import { createWorkflowRunner } from './lib/workflow-runner.ts';
 import { readServiceSchema, readServiceSchemaUpstream, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { applySchemaPatches, httpResponseStreaming } from './lib/schema-patches.ts';
+import { openaiChatAccumulator } from './lib/openai-chat-stream.ts';
 
 const origin = 'https://stream.example.test', canary = 'private-stream-canary-5192', encoder = new TextEncoder();
 const finalResponse = text => ({ id: 'resp_fixture', object: 'response', status: 'completed', error: null,
@@ -204,9 +205,10 @@ Then('private stream progress contains counts only and the assembled result is s
 });
 
 Then('pinned OpenAI and Ollama operations select reviewed stream profiles while unrelated streams stay unavailable', async () => {
-  for (const [id, names] of [['openai', { createResponse: 'openai-responses' }], ['ollama', { chat: 'ollama-chat', generate: 'ollama-generate' }]]) {
+  for (const [id, names] of [['openai', { createResponse: 'openai-responses', beta_createResponse: 'openai-responses' }], ['ollama', { chat: 'ollama-chat', generate: 'ollama-generate' }]]) {
     const source = serviceSchemaDescriptors.find(item => item.id === id), raw = await readServiceSchemaUpstream(id), doc = await readServiceSchema(id);
-    assert.deepEqual(source.patches, [httpResponseStreaming]);
+    assert.deepEqual(source.patches, [httpResponseStreaming, ...(id === 'openai'
+      ? ['beta-route-contracts', 'multipart-part-contracts', 'form-field-contracts', 'structured-form-contracts'].map(id => ({ id, version: 1 })) : [])]);
     assert.equal(createHash('sha256').update(JSON.stringify(raw)).digest('hex'), source.sha256);
     assert.deepEqual(applySchemaPatches(doc, [httpResponseStreaming]), doc);
     const inspected = inspectServiceSchema(doc, id);
@@ -217,7 +219,8 @@ Then('pinned OpenAI and Ollama operations select reviewed stream profiles while 
       const result = await readWorkflowResponseBody(reply(profile, wire(profile), 7), op, 'POST', new AbortController().signal);
       assert.equal(result.mediaType, 'application/json'); assert.equal(result.transportMediaType, streamMediaType(profile));
     }
-    assert.equal(inspected.operations.filter(op => op.responseStream).length, Object.keys(names).length);
+    assert.equal(inspected.operations.filter(op => op.responseStream).length, Object.keys(names).length,
+      JSON.stringify(inspected.operations.filter(op => op.responseStream).map(op => [op.id, op.path, op.responseStream])));
     const changed = structuredClone(raw); changed.servers[0].url = 'https://unreviewed.example.test';
     assert.throws(() => applySchemaPatches(changed, [httpResponseStreaming]), /reviewed/);
   }
@@ -345,4 +348,73 @@ Then('response declarations and body cancellation preserve fail closed media and
     new AbortController().signal), error => error.code === 'MEDIA');
   assert.equal(cancelled, 4);
   assert.equal(responseFileName('attachment; filename='), 'response.bin');
+});
+
+Then('chat completion fragments preserve sorted choices tool calls and probability arrays',()=>{
+  const chunk=choices=>({id:'chat_owned',object:'chat.completion.chunk',created:1,model:'owned-model',choices});
+  const choice=(delta,extra={})=>({index:0,delta,finish_reason:null,...extra});
+  const a=openaiChatAccumulator(),annotation={type:'url_citation',url:'https://example.test/owned'};
+  const polluted=JSON.parse('{"__proto__":{"polluted":"withheld"}}');
+  a.frame(chunk([{index:1,delta:{},finish_reason:null},choice({...polluted,role:'assistant',content:null,annotations:null,audio:null,
+    tool_calls:[{index:1,id:'second',type:'function',function:{name:'second',arguments:'{}'}},{index:0,id:'first',type:'function',function:{name:'first',arguments:'{"ok":'}}]},
+    {logprobs:{content:[{token:'a',logprob:-1}],refusal:null}})]));
+  a.frame(chunk([choice({role:'assistant',content:'Hello ',annotations:[annotation],audio:{data:'a',expires_at:123},
+    tool_calls:[{index:0,type:'function',function:{arguments:'true}'}}]},{logprobs:{content:[{token:'b',logprob:-2}]}})]));
+  a.frame(chunk([choice({content:'world',annotations:[{type:'owned_metadata'}],audio:{data:'b',expires_at:null}},
+    {logprobs:{refusal:[{token:'r',logprob:-3}]}})]));
+  a.frame(chunk([choice({content:null}),{index:1,delta:{},finish_reason:'stop'}]));
+  a.frame(chunk([choice({},{finish_reason:'tool_calls'})]));
+  a.frame({...chunk([]),usage:{total_tokens:5}});
+  const result=a.finish(),first=result.choices[0];
+  assert.deepEqual(result.choices.map(c=>c.index),[0,1]);assert.equal(result.usage.total_tokens,5);
+  assert.equal(first.message.content,'Hello world');assert.equal(first.message.role,'assistant');
+  assert.deepEqual(first.message.tool_calls.map(tool=>tool.id),['first','second']);
+  assert.equal(first.message.tool_calls[0].function.arguments,'{"ok":true}');
+  assert.deepEqual(first.logprobs.content.map(p=>p.token),['a','b']);assert.equal(first.logprobs.refusal[0].token,'r');
+  assert.deepEqual(first.message.audio,{data:'ab',expires_at:123});assert.equal(first.message.annotations.length,2);
+  first.message.annotations[0].url='changed';assert.equal(annotation.url,'https://example.test/owned');
+  assert.equal(Object.hasOwn(first.message,'__proto__'),true);assert.equal({}.polluted,undefined);
+  assert.equal(result.choices[1].message.role,'assistant');assert.equal(result.choices[1].message.content,null);
+});
+
+Then('chat completion frames reject incompatible updates malformed tools and incomplete choices',()=>{
+  const chunk=choice=>({id:'chat_owned',object:'chat.completion.chunk',created:1,model:'owned-model',choices:[{index:0,delta:{},finish_reason:null,...choice}]});
+  const rejected=(first,next)=>{const a=openaiChatAccumulator();a.frame(chunk(first));assert.throws(()=>a.frame(chunk(next)),error=>error.code==='FRAME');};
+  assert.throws(()=>openaiChatAccumulator().frame({...chunk({}),error:{message:'synthetic'}}),error=>error.code==='PROVIDER');
+  for(const choice of [null,{index:-1,delta:{},finish_reason:null},{index:0,delta:[],finish_reason:null},
+    {index:0,delta:{},finish_reason:1},{index:0,delta:{},finish_reason:''}])
+    assert.throws(()=>openaiChatAccumulator().frame({...chunk({}),choices:[choice]}),error=>error.code==='FRAME');
+  rejected({delta:{role:'assistant'}},{delta:{role:'user'}});
+  rejected({delta:{metadata:5}},{delta:{metadata:'text'}});
+  rejected({delta:{metadata:5}},{delta:{metadata:[]}});
+  rejected({delta:{metadata:'text'}},{delta:{metadata:{field:'value'}}});
+  rejected({delta:{metadata:5}},{delta:{metadata:{field:'value'}}});
+  rejected({finish_reason:'stop'},{delta:{content:'late'}});
+  rejected({finish_reason:'stop'},{finish_reason:'length'});
+  for(const key of ['content','refusal'])rejected({logprobs:{content:[],refusal:[]}},{logprobs:{[key]:1}});
+  for(const value of [null,{},'not-an-array'])assert.throws(()=>openaiChatAccumulator().frame(chunk({delta:{tool_calls:value}})),error=>error.code==='FRAME');
+  for(const tool of [null,{}, {index:-1},{index:1.5}])assert.throws(()=>openaiChatAccumulator().frame(chunk({delta:{tool_calls:[tool]}})),error=>error.code==='FRAME');
+  rejected({delta:{tool_calls:[{index:0,type:'function'}]}},{delta:{tool_calls:[{index:0,type:'other'}]}});
+  for(const state of [undefined,{choices:[]},{}]){
+    const a=openaiChatAccumulator();if(state)a.frame(state.choices?{...chunk({}),...state}:chunk(state));
+    assert.throws(()=>a.finish(),error=>error.code==='INCOMPLETE');
+  }
+});
+
+Then('response stream readers retain empty Docker results and reject changed conversation identities',async()=>{
+  const signal=new AbortController().signal;
+  assert.deepEqual(await readResponseStream(new Response(null),'docker-progress',signal),{body:{messages:[]},stream:{bytes:0,events:0}});
+  await assert.rejects(readResponseStream(reply('docker-progress','{"error":1}\n',7,true),'docker-progress',signal),error=>error.code==='FRAME');
+  const started='event: conversation.response.started\ndata: {"conversation_id":"owned"}\n\n';
+  const done='event: conversation.response.done\ndata: {"conversation_id":"owned","usage":{}}\n\n';
+  const valid=await readResponseStream(reply('mistral-conversation',started+done,7,true),'mistral-conversation',signal);
+  assert.deepEqual(valid.body.events.map(item=>item.event),['conversation.response.started','conversation.response.done']);
+  for(const conversation_id of [1,'foreign']){
+    const changed='event: message.output.delta\ndata: '+JSON.stringify({conversation_id})+'\n\n';
+    await assert.rejects(readResponseStream(reply('mistral-conversation',started+changed,7,true),'mistral-conversation',signal),error=>error.code==='FRAME');
+  }
+  let cancelled=0;
+  const response=new Response(new ReadableStream({cancel(){cancelled++;return Promise.reject(new Error('Owned cancellation failure'));}}),{headers:{'Content-Type':'application/json'}});
+  await assert.rejects(readWorkflowResponseBody(response,{id:'fixture:stream',method:'GET',path:'/stream',fields:[],responseStream:'mistral-conversation'},'GET',signal),error=>error.code==='MEDIA');
+  await Promise.resolve();assert.equal(cancelled,1);
 });

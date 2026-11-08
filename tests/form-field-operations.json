@@ -1,0 +1,15 @@
+[
+  "discord:create_guild_sticker",
+  "discord:update_invite_target_users",
+  "discord:upload_application_attachment",
+  "elevenlabs:speech_to_text",
+  "elevenlabs:upload_song",
+  "mistral:files_api_routes_upload_file",
+  "openai:createImageVariation",
+  "openai:createTranscription",
+  "openai:createTranslation",
+  "telegram:setChatPhoto",
+  "together:audio-transcriptions",
+  "together:audio-translations",
+  "twilio:CreatePayments"
+]

@@ -5,6 +5,30 @@
 Feature: Explicit private native runtime pairing
   An authenticated browser connection owns only its pinned runtime and read-only pairing scope.
 
+  Scenario: Initialization workflows return a fresh owned handshake rather than cached pairing metadata
+    Then native initialization workflows use new owned children and preserve the public handshake result
+
+  Scenario: Initialization workflows reject client and capability overrides before dispatch
+    Then native initialization workflows reject unowned clients experimental capabilities and changed selections
+
+  Scenario: Initialization results withhold credential echoes and unclassified fields
+    Then native initialization workflow results reject malformed paths unknown fields and credential echoes
+
+  Scenario: Initialization workflow cancellation and authority changes discard pending handshakes
+    Then native initialization cancellation and source changes close only their owned child
+
+  Scenario: Paired account workflows read anonymous and public metadata without enabling agent execution
+    Then paired native account workflows preserve public results and encrypted authority across reload
+
+  Scenario: Account workflow parameters cannot request credential changes
+    Then native account workflow inputs reject refresh and overrides before any native dispatch
+
+  Scenario: Native account workflow results withhold secrets and unknown fields
+    Then native account workflows reject internal malformed and credential bearing results
+
+  Scenario: Account workflow cancellation and source changes withhold pending replies
+    Then native account workflow cancellation stale references and changed sources retain ownership
+
   Scenario: Pairing requires HTTPS an exact allowed Origin and the private key
     Then native pairing rejects unsafe hosts origins and missing authorization before a child starts
 
@@ -80,3 +104,33 @@ Feature: Explicit private native runtime pairing
   @coverage-gaps
   Scenario: A missing native pairing acknowledgement expires before request dispatch
     Then native handshake expiry closes an unacknowledged socket before the overall request deadline
+
+  Scenario: Native query metadata retains its exact scalar collection and reference constraints
+    Then native query results enforce declared scalar collection and reference constraints without coercion
+
+  Scenario: Explicit query JSON allowances remain bounded and preserve Unicode
+    Then native query JSON allowances retain UTF-8 shape node and nesting limits
+
+  Scenario: Faulty query metadata cannot expose internal errors
+    Then native query metadata faults are reduced to the public contract error
+
+  Scenario: Scoped transports retain opening ownership and shared owner capacity
+    Then native scoped transports retain concurrent opening ownership and the shared four owner cap
+
+  Scenario: Native command and watch peers retain exact current owner authority
+    Then native command and watch channels reuse only exact current authority and preserve owner conflicts
+
+  Scenario: Native request IDs remain unique and specialized deadline defaults remain valid
+    Then native peer request identities remain unique and specialized deadlines retain their defaults
+
+  Scenario: Scoped transport failures retain cancellation and operation error identity
+    Then native scoped error mapping retains cancellation when a transport guard fails during abort
+
+  Scenario: Late opening failure preserves a newer paired owner and transport
+    Then late native opening failures cannot remove a newer paired owner or its transport
+
+  Scenario: Scoped native failures retain MCP login and feedback diagnostic codes
+    Then native scoped failures retain MCP login and feedback diagnostic codes
+
+  Scenario: Rejected native agent tickets leave no owned peer or initialized socket
+    Then a rejected native agent ticket leaves no owned peer or initialized socket

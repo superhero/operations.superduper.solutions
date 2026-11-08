@@ -1,14 +1,28 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { createCodexMcpOAuthSession } from './mcp-oauth.mjs';
+import { createCodexCommandSession } from './command.mjs';
+import { nativeCommandScope } from '../../src/lib/native-command.ts';
+import { nativeMcpOAuthMethod, nativeMcpOAuthNotification } from '../../src/lib/native-mcp-oauth.ts';
+import { isNativeMcpReadMethod } from '../../src/lib/native-mcp-read.ts';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
 import { createCodexAgentSession } from './agent.mjs';
 import { nativeIdentity, nativeObject, nativeScope, sameNativeIdentity, nativeRuntimeProfile as profile,
-  nativeRuntimeVersion as version, nativeRuntimeLimits as limits } from '../../src/lib/native-runtime-contract.ts';
+  nativeRuntimeVersion as version, nativeRuntimeLimits as limits, isNativeStandaloneMethod, isNativeAppQueryMethod, isNativeFilesystemReadMethod, isNativeFilesystemWriteMethod, isNativeStandaloneMutationMethod, isNativeSectionMethod, isNativeSectionMutationMethod } from '../../src/lib/native-runtime-contract.ts';
+import { nativeQueryParams } from '../../src/lib/native-query-contract.ts';
+import { nativeFeedbackMethod, nativeFeedbackParams } from '../../src/lib/native-feedback-contract.ts';
+import { nativeFilesystemWatchScope } from '../../src/lib/native-filesystem-watch.ts';
+import { createCodexFilesystemWatchSession } from './filesystem-watch.mjs';
+import { nativeInitializeParams } from '../../src/lib/native-initialize.ts';
+import { createCodexGatewayOAuthSession } from './gateway-oauth.mjs';
+import { nativeGatewayOAuthScope } from '../../src/lib/native-gateway-oauth.ts';
+import { nativeAccountActionScope } from '../../src/lib/native-account-actions.ts';
+import { createCodexAccountActionSession } from './account-actions.mjs';
 
 /** Browser access is paired before an owned stdio child can start. No proxy or
- * arbitrary-method surface is exposed by the read-only pairing profile. */
+ * arbitrary-method surface is exposed by the reviewed pairing profile. */
 export function createCodexCompanion(config, runtime) {
   const publicUrl = new URL(config.publicOrigin);
   if (publicUrl.protocol !== 'https:' || publicUrl.origin !== config.publicOrigin || !/^[A-Za-z0-9_-]{43,256}$/.test(config.pairingKey)
@@ -47,7 +61,30 @@ export function createCodexCompanion(config, runtime) {
       const input = nativeObject(JSON.parse(Buffer.concat(parts).toString('utf8')), ['profile', 'version', 'scope']);
       if (input.profile !== profile || input.version !== version) throw new Error();
       const scope = nativeScope(input.scope), identity = nativeIdentity(await runtime.authority());
-      if (scope.method === 'codex-workflow' && config.allowAgent !== true) throw new Error();
+      if (scope.method === nativeMcpOAuthMethod && config.allowMcpOAuth !== true) throw new Error();
+      if (scope.method === 'codex-account-auth' && (config.allowAccountAuth !== true || typeof runtime.reviewAccountMetadata !== 'function')) throw new Error();
+      if (scope.method === nativeAccountActionScope && (config.allowAccountActions !== true
+        || ![runtime.prepareAccountAction, runtime.checkAccountAction, runtime.reviewAccountAction].every(value => typeof value === 'function'))) throw new Error();
+      if (scope.method === nativeGatewayOAuthScope && (config.allowGatewayOAuth !== true
+        || ![runtime.prepareGatewayOAuth, runtime.gatewayOAuthAuthority, runtime.reviewGatewayOAuth, runtime.reviewGatewayOAuthNotice, runtime.finishGatewayOAuth].every(value => typeof value === 'function'))) throw new Error();
+      if (scope.method === nativeCommandScope && (config.allowCommands !== true || typeof runtime.prepareCommand !== 'function' || typeof runtime.reviewCommand !== 'function')) throw new Error();
+      if (scope.method === 'codex-workflow' && config.allowAgent !== true
+        && !(config.allowAccountRead === true && typeof runtime.prepareAccountRead === 'function' && typeof runtime.reviewAccountRead === 'function')
+        && !(config.allowThreadsWrite === true && typeof runtime.prepareThreadLifecycle === 'function' && typeof runtime.reviewThreadLifecycle === 'function')
+        && !(config.allowThreadsRead === true && typeof runtime.prepareStoredThreadRead === 'function' && typeof runtime.reviewStoredThreadRead === 'function')
+        && !(config.allowWindowsSandboxReadiness === true && [runtime.prepareWindowsReadiness, runtime.reviewWindowsReadiness].every(value => typeof value === 'function'))
+        && !(config.allowPluginSharing === true && [runtime.preparePluginShare, runtime.reviewPluginShare, runtime.configurationWriteAuthority].every(value => typeof value === 'function'))
+        && !(config.allowPluginManagement === true && [runtime.preparePluginInstall, runtime.reviewPluginInstall, runtime.configurationWriteAuthority].every(value => typeof value === 'function'))
+        && !(config.allowMarketplaces === true && [runtime.prepareMarketplace, runtime.reviewMarketplace, runtime.configurationWriteAuthority].every(value => typeof value === 'function'))
+        && !(config.allowPluginsRead === true && typeof runtime.preparePluginRead === 'function' && typeof runtime.reviewPluginRead === 'function')
+        && !(config.allowConfigurationRead === true && typeof runtime.prepareConfigurationRead === 'function' && typeof runtime.reviewConfigurationRead === 'function')
+        && !(config.allowConfigurationControl === true && typeof runtime.prepareConfigurationControl === 'function' && typeof runtime.reviewConfigurationControl === 'function')
+        && !(config.allowConfigurationWrite === true && typeof runtime.prepareConfigurationWrite === 'function' && typeof runtime.reviewConfigurationWrite === 'function' && typeof runtime.configurationWriteAuthority === 'function')
+        && !(config.allowMigration === true && [runtime.prepareMigration, runtime.dispatchMigration, runtime.reviewMigration, runtime.migrationAuthority, runtime.finishMigration, runtime.abortMigration].every(value => typeof value === 'function'))) throw new Error();
+      if (scope.method === nativeFilesystemWatchScope && (config.allowFilesystemWatch !== true || typeof runtime.prepareWatch !== 'function' || typeof runtime.reviewWatchChange !== 'function')) throw new Error();
+      if (isNativeStandaloneMethod(scope.method) && ((isNativeMcpReadMethod(scope.method) ? config.allowMcpRead : isNativeSectionMethod(scope.method) ? isNativeSectionMutationMethod(scope.method) ? config.allowSectionsWrite : config.allowSectionsRead : isNativeFilesystemWriteMethod(scope.method) ? config.allowFilesystemWrite : isNativeFilesystemReadMethod(scope.method) ? config.allowFilesystemRead : isNativeAppQueryMethod(scope.method) ? config.allowApps : config.allowMetadata) !== true || typeof runtime.prepareQuery !== 'function')) throw new Error();
+      if (isNativeFilesystemReadMethod(scope.method) && typeof runtime.reviewQueryResult !== 'function') throw new Error();
+      if (scope.method === nativeFeedbackMethod && (config.allowFeedback !== true || typeof runtime.prepareFeedback !== 'function')) throw new Error();
       const ticket = randomBytes(32).toString('base64url'), expiresAt = now() + limits.ticketMs;
       tickets.set(ticket, { scope, identity, expiresAt, origin });
       return answer(200, { ticket, expiresAt, identity });
@@ -61,10 +98,12 @@ export function createCodexCompanion(config, runtime) {
     sockets.handleUpgrade(request, socket, head, ws => attach(ws, request.headers.origin));
   }
   function attach(ws, origin) {
-    unpaired.add(ws); let child, ticket, agent, expiry, heartbeat, initializing = false, initialized = false, accepting = false, expiresAt = 0;
+    unpaired.add(ws); let child, ticket, agent, mcpOAuth, command, watch, expiry, heartbeat, initializing = false, initialized = false, accepting = false, expiresAt = 0;
     let queued = 0, sequence = Promise.resolve();
     let nativeQueued = 0, nativeSequence = Promise.resolve();
     const pending = new Map();
+    const queryInputs = new Map();
+    let mutationUsed = false, feedbackPreparation;
     let pairingTimer = setTimeout(() => ws.close(1008, 'Pairing required'), limits.pairingMs);
     const send = frame => {
       const text = JSON.stringify(frame);
@@ -73,9 +112,12 @@ export function createCodexCompanion(config, runtime) {
     };
     let stopped;
     const stop = () => stopped ??= (async () => {
-      clearTimeout(pairingTimer); clearTimeout(expiry); clearInterval(heartbeat); unpaired.delete(ws); pending.clear();
+      clearTimeout(pairingTimer); clearTimeout(expiry); clearInterval(heartbeat); unpaired.delete(ws); pending.clear(); queryInputs.clear();
       agent?.close();
-      try { await child?.close(); } finally { if (active?.ws === ws) active = undefined; }
+      command?.close();
+      watch?.close();
+      try { await child?.close(); }
+      finally { try { await (await feedbackPreparation)?.close(); } finally { if (active?.ws === ws) active = undefined; } }
     })();
     ws.once('close', () => {
       const work = stop(); stopping.add(work);
@@ -89,18 +131,33 @@ export function createCodexCompanion(config, runtime) {
     async function receiveFrame(frame) {
       try {
         if (!frame || typeof frame !== 'object' || Array.isArray(frame)) throw new Error();
+        // Read-only responses are subject to the same authority pin as their
+        // requests. A changed account/workspace during a pending read withholds
+        // that reply immediately rather than waiting for the heartbeat.
+        if (!agent && (!ticket || !sameNativeIdentity(ticket.identity, await runtime.authority()))) throw new Error();
+        if (watch && await watch.receive(frame)) return;
+        if (command && await command.receive(frame)) return;
         if (Object.hasOwn(frame, 'method')) {
+          if (mcpOAuth && frame.method === nativeMcpOAuthNotification && mcpOAuth.receive(frame)) return;
           if (agent) { await agent.receive(frame); return; }
           // Pairing has no interactive approval or login surface. Never expose a
           // server-initiated request as a client operation or auto-approve it.
           if (Object.hasOwn(frame, 'id')) child.send({ id: frame.id, error: { code: -32601, message: 'Interaction unavailable in this profile.' } });
-          else if (frame.method === 'account/updated') ws.close(1008, 'Account authority changed');
+          else if (frame.method === 'account/updated' && !(await runtime.accountUpdateIsUnchanged?.(ticket.identity))) ws.close(1008, 'Account authority changed');
           return;
         }
         if (!pending.has(frame.id) || (Object.hasOwn(frame, 'result') === Object.hasOwn(frame, 'error'))) throw new Error();
         const method = pending.get(frame.id); pending.delete(frame.id);
+        if (isNativeFilesystemReadMethod(method) && Object.hasOwn(frame, 'result')) {
+          const input = queryInputs.get(frame.id); queryInputs.delete(frame.id);
+          await runtime.reviewQueryResult(method, input, frame.result);
+          if (!sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
+        }
+        queryInputs.delete(frame.id);
+        if (method === nativeFeedbackMethod) await (await feedbackPreparation)?.close();
         if (method === 'initialize' && Object.hasOwn(frame, 'result')) initializing = true;
         if (agent && await agent.receive(frame)) return;
+        if (mcpOAuth && mcpOAuth.receive(frame)) return;
         send(frame);
       } catch { ws.close(1008, 'Native protocol unavailable'); }
     }
@@ -118,8 +175,49 @@ export function createCodexCompanion(config, runtime) {
             || !sameNativeIdentity(selected.identity, await runtime.authority())) throw new Error();
           if (active) throw new Error();
           ticket = selected; active = { ws, alive: true }; unpaired.delete(ws); clearTimeout(pairingTimer);
-          if (ticket.scope.method === 'codex-workflow') agent = createCodexAgentSession({ identity: ticket.identity,
-            authority: runtime.authority, send, write: value => child.send(value), threads });
+          if (ticket.scope.method === nativeAccountActionScope) agent = createCodexAccountActionSession({ identity: ticket.identity, authority: runtime.authority,
+            accountUpdateIsUnchanged: runtime.accountUpdateIsUnchanged, prepare: runtime.prepareAccountAction, checkAction: runtime.checkAccountAction,
+            review: runtime.reviewAccountAction, send, write: frame => child.send(frame) });
+          if (ticket.scope.method === nativeGatewayOAuthScope) agent = createCodexGatewayOAuthSession({ identity: ticket.identity, authority: runtime.authority,
+            prepare: runtime.prepareGatewayOAuth, checkAuthority: runtime.gatewayOAuthAuthority, review: runtime.reviewGatewayOAuth,
+            reviewNotice: runtime.reviewGatewayOAuthNotice, finish: runtime.finishGatewayOAuth, send, write: frame => child.send(frame) });
+          if (['codex-workflow', 'codex-account-auth'].includes(ticket.scope.method)) agent = createCodexAgentSession({ identity: ticket.identity,
+            authority: runtime.authority, accountUpdateIsUnchanged: runtime.accountUpdateIsUnchanged, send, write: value => child.send(value), threads, allowAgent: ticket.scope.method === 'codex-workflow' && config.allowAgent === true,
+            allowGuardian: ticket.scope.method === 'codex-workflow' && config.allowGuardian === true, prepareGuardianDenial: runtime.prepareGuardianDenial,
+            allowAccountAuth: ticket.scope.method === 'codex-account-auth' && config.allowAccountAuth === true, reviewAccountMetadata: runtime.reviewAccountMetadata,
+            allowAccountRead: ticket.scope.method === 'codex-workflow' && config.allowAccountRead === true, prepareAccountRead: runtime.prepareAccountRead, reviewAccountRead: runtime.reviewAccountRead,
+            allowThreadsRead: ticket.scope.method === 'codex-workflow' && config.allowThreadsRead === true, prepareStoredThreadRead: runtime.prepareStoredThreadRead, reviewStoredThreadRead: runtime.reviewStoredThreadRead,
+            allowThreadsWrite: ticket.scope.method === 'codex-workflow' && config.allowThreadsWrite === true, prepareThreadLifecycle: runtime.prepareThreadLifecycle, reviewThreadLifecycle: runtime.reviewThreadLifecycle,
+            prepareThreadContent: runtime.prepareThreadContent, reviewThreadContent: runtime.reviewThreadContent, inspectThreadGoal: runtime.inspectThreadGoal,
+            allowMcpTools: ticket.scope.method === 'codex-workflow' && config.allowMcpTools === true, allowMcpOAuth: ticket.scope.method === 'codex-workflow' && config.allowMcpOAuth === true, allowThreadShell: ticket.scope.method === 'codex-workflow' && config.allowThreadShell === true,
+            allowWindowsSandboxReadiness: ticket.scope.method === 'codex-workflow' && config.allowWindowsSandboxReadiness === true, prepareWindowsReadiness: runtime.prepareWindowsReadiness, reviewWindowsReadiness: runtime.reviewWindowsReadiness,
+            allowPluginSharing: ticket.scope.method === 'codex-workflow' && config.allowPluginSharing === true, preparePluginShare: runtime.preparePluginShare, reviewPluginShare: runtime.reviewPluginShare,
+            allowPluginManagement: ticket.scope.method === 'codex-workflow' && config.allowPluginManagement === true, preparePluginInstall: runtime.preparePluginInstall, reviewPluginInstall: runtime.reviewPluginInstall,
+            allowMarketplaces: ticket.scope.method === 'codex-workflow' && config.allowMarketplaces === true, prepareMarketplace: runtime.prepareMarketplace, reviewMarketplace: runtime.reviewMarketplace,
+            allowPluginsRead: ticket.scope.method === 'codex-workflow' && config.allowPluginsRead === true, preparePluginRead: runtime.preparePluginRead, reviewPluginRead: runtime.reviewPluginRead,
+            allowConfigurationRead: ticket.scope.method === 'codex-workflow' && config.allowConfigurationRead === true, prepareConfigurationRead: runtime.prepareConfigurationRead, reviewConfigurationRead: runtime.reviewConfigurationRead,
+            allowConfigurationControl: ticket.scope.method === 'codex-workflow' && config.allowConfigurationControl === true, prepareConfigurationControl: runtime.prepareConfigurationControl, reviewConfigurationControl: runtime.reviewConfigurationControl,
+            allowConfigurationWrite: ticket.scope.method === 'codex-workflow' && config.allowConfigurationWrite === true, prepareConfigurationWrite: runtime.prepareConfigurationWrite,
+            reviewConfigurationWrite: runtime.reviewConfigurationWrite, configurationWriteAuthority: runtime.configurationWriteAuthority,
+            allowMigration: ticket.scope.method === 'codex-workflow' && config.allowMigration === true, prepareMigration: runtime.prepareMigration, dispatchMigration: runtime.dispatchMigration,
+            reviewMigration: runtime.reviewMigration, migrationAuthority: runtime.migrationAuthority, finishMigration: runtime.finishMigration, abortMigration: runtime.abortMigration });
+          if (ticket.scope.method === nativeMcpOAuthMethod) mcpOAuth = createCodexMcpOAuthSession({ send });
+          if (ticket.scope.method === nativeCommandScope) command = createCodexCommandSession({ send, write: frame => child.send(frame), secrets: [config.pairingKey],
+            prepare: async params => {
+              const prepared = await runtime.prepareCommand(params);
+              if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
+              return prepared;
+            }, review: async root => {
+              await runtime.reviewCommand(root);
+              if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
+            } });
+          if (ticket.scope.method === nativeFilesystemWatchScope) watch = createCodexFilesystemWatchSession({
+            prepare: params => runtime.prepareWatch(params),
+            review: async (root, paths) => {
+              const result = await runtime.reviewWatchChange(root, paths);
+              if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
+              return result;
+            }, send, end: () => ws.close(1008, 'Watch root authority lost') });
           child = await runtime.start(receive, () => ws.close(1011, 'Native runtime stopped'));
           if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) { await child.close(); throw new Error(); }
           expiresAt = now() + limits.sessionMs;
@@ -136,7 +234,7 @@ export function createCodexCompanion(config, runtime) {
         if (!accepting || now() >= expiresAt) throw new Error();
         if (agent) await agent.check(); else if (!sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
         if (frame.type === 'cancel') {
-          nativeObject(frame, ['type', 'id']); if (!pending.has(frame.id)) throw new Error();
+          nativeObject(frame, ['type', 'id']); if (!pending.has(frame.id) && !watch?.ownsRequest(frame.id) && !command?.ownsRequest(frame.id)) throw new Error();
           ws.close(1000, 'Owned request cancelled'); return;
         }
         if (frame.method === 'initialized') {
@@ -144,25 +242,52 @@ export function createCodexCompanion(config, runtime) {
           initialized = true; child.send({ method: 'initialized' }); return;
         }
         if (agent && initialized && (Object.hasOwn(frame, 'result') || Object.hasOwn(frame, 'error'))) {
-          agent.request(frame); return;
+          await agent.request(frame); return;
         }
+        if (command && initialized && (Object.hasOwn(frame, 'result') || Object.hasOwn(frame, 'error'))) { await command.reply(frame); return; }
         nativeObject(frame, ['id', 'method', 'params']);
         if (!(Number.isSafeInteger(frame.id) && frame.id >= 0 || typeof frame.id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(frame.id))
           || pending.has(frame.id) || pending.size >= limits.pending) throw new Error();
         if (frame.method === 'initialize') {
           if (initializing || initialized || pending.size) throw new Error();
-          nativeObject(frame.params, ['clientInfo', 'capabilities']); nativeObject(frame.params.clientInfo, ['name', 'version']);
-          nativeObject(frame.params.capabilities, ['experimentalApi']);
-          if (frame.params.clientInfo.name !== 'operations' || frame.params.clientInfo.version !== '1' || frame.params.capabilities.experimentalApi !== false) throw new Error();
+          frame = { ...frame, params: nativeInitializeParams(frame.params) };
         } else {
           if (!initialized) throw new Error();
-          if (agent) frame = agent.request(frame);
+          if (command) { await command.request(frame); return; }
+          if (watch) {
+            frame = await watch.request(frame);
+            if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
+            child.send(frame); return;
+          }
+          else if (agent) {
+            pending.set(frame.id, frame.method);
+            frame = await agent.request(frame); if (!frame) return;
+          }
+          else if (mcpOAuth) frame = mcpOAuth.request(frame);
+          else if (ticket.scope.method === nativeFeedbackMethod) {
+            if (frame.method !== nativeFeedbackMethod || mutationUsed) throw new Error();
+            const params = nativeFeedbackParams(frame.params);
+            if ((params.includeLogs || params.extraLogFiles?.length) && config.allowFeedbackDiagnostics !== true) throw new Error();
+            if (params.threadId != null && (!threads.has(params.threadId) || !sameNativeIdentity(threads.get(params.threadId), ticket.identity))) throw new Error();
+            mutationUsed = true; feedbackPreparation = runtime.prepareFeedback(params, config.pairingKey);
+            const prepared = await feedbackPreparation;
+            if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) { await prepared.close(); throw new Error(); }
+            frame = { ...frame, params: prepared.params };
+          }
+          else if (isNativeStandaloneMethod(ticket.scope.method)) {
+            if (frame.method !== ticket.scope.method || isNativeStandaloneMutationMethod(frame.method) && mutationUsed) throw new Error();
+            if (isNativeStandaloneMutationMethod(frame.method)) mutationUsed = true;
+            frame = { ...frame, params: await runtime.prepareQuery(frame.method, nativeQueryParams(frame.method, frame.params)) };
+            if (ws.readyState !== 1 || !sameNativeIdentity(ticket.identity, await runtime.authority())) throw new Error();
+          }
           else {
             if (frame.method !== ticket.scope.method) throw new Error();
             nativeObject(frame.params, ['refreshToken']); if (frame.params.refreshToken !== false) throw new Error();
           }
         }
-        pending.set(frame.id, frame.method); child.send(frame);
+        pending.set(frame.id, frame.method);
+        if (isNativeFilesystemReadMethod(frame.method)) queryInputs.set(frame.id, frame.params);
+        child.send(frame);
       } catch { ws.close(1008, 'Native access denied'); }
     }
   }

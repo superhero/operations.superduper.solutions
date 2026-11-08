@@ -1116,12 +1116,13 @@ Then('the ElevenLabs private key connection survives reload without exposing cre
 
 Then('S3 transfers at {int} pixels use private signatures raw bytes and verified binary downloads', { timeout: 90_000 }, async function (width) {
   const page=this.page,endpoint='https://s3.us-east-1.amazonaws.com',bucket='operations-test-bucket',key='folder//雪 +?%2F/data.bin';
-  const bytes=Buffer.from([0,255,13,10,239,187,191,65]),calls=[];let stored;
+  const bytes=Buffer.from([0,255,13,10,239,187,191,65]),calls=[],transfers=[];let stored;
   await page.setViewportSize({width,height:900});await invoke(page,'seedAWS',this.baseURL,randomUUID(),awsSyntheticValues);
   await this.context.route(endpoint+'/**',async route=>{
     const request=route.request(),cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'GET, PUT, OPTIONS','Access-Control-Expose-Headers':'ETag, x-amz-checksum-sha256, x-amz-checksum-type, Content-Disposition'};
     if(request.method()==='OPTIONS')return route.fulfill({status:204,headers:cors});
-    const body=request.postDataBuffer()??undefined,signature=verifyAwsSignature(request.url(),{method:request.method(),headers:request.headers(),body},awsSyntheticValues,'s3');calls.push(signature);
+    const body=request.postDataBuffer()??undefined;transfers.push({method:request.method(),path:new URL(request.url()).pathname,bodyBytes:body?.length??0});
+    const signature=verifyAwsSignature(request.url(),{method:request.method(),headers:request.headers(),body},awsSyntheticValues,'s3');calls.push(signature);
     assert.equal(decodeURIComponent(new URL(request.url()).pathname),'/'+bucket+'/'+key);assert.equal(request.headers().cookie,undefined);assert.equal(request.headers().referer,undefined);
     if(request.method()==='PUT'){assert.deepEqual(body,bytes);assert.equal(request.headers()['content-type'],'application/octet-stream');assert.equal(request.headers()['x-amz-meta-note'],'exact file');stored=body;
       return route.fulfill({status:200,headers:{...cors,...s3FixtureChecksums(body),'Content-Type':'text/plain'},body:''});}
@@ -1129,6 +1130,14 @@ Then('S3 transfers at {int} pixels use private signatures raw bytes and verified
     return route.fulfill({status:200,headers:{...cors,...s3FixtureChecksums(stored),'Content-Type':'application/octet-stream','Content-Disposition':'attachment; filename="s3-object.bin"'},body:stored});
   });
   const names={put:'S3 upload fixture',get:'S3 download fixture'};
+  const savedBinding=async name=>(await repository(page,'list')).flatMap(document=>document.nodes).find(node=>node.data?.name===name)?.data.credentialBinding;
+  const completed=async phase=>{
+    try{await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();}
+    catch(cause){
+      const diagnostic={phase,errors:await page.locator('#workflow-run-error').allTextContents(),transfers};
+      await this.attach(JSON.stringify(diagnostic),'application/json');throw new Error('S3 transfer failed: '+JSON.stringify(diagnostic),{cause});
+    }
+  };
   const document={openapi:'3.0.3',info:{title:'S3 files fixture',version:'1'},servers:[{url:endpoint}],security:[{hmac:[]}],components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':'awsS3'}}},
     paths:{'/{Bucket}/{Key}':Object.fromEntries(['put','get'].map(method=>[method,{operationId:method+'Object',summary:names[method],'x-operations-s3-files':method==='put'?'put-object':'get-object','x-operations-aws-signing':'s3-object',
       ...(method==='put'?{requestBody:{required:true,content:{'application/octet-stream':{schema:{type:'string',format:'binary'}}}}}:{}),responses:{200:{description:'Object result',content:{[method==='put'?'text/plain':'application/octet-stream']:{schema:{type:'string',...(method==='get'?{format:'binary'}:{})}}}}}}]))}};
@@ -1141,15 +1150,21 @@ Then('S3 transfers at {int} pixels use private signatures raw bytes and verified
     await page.getByRole('combobox',{name:label+' for hmac',exact:true}).click();await page.getByRole('option',{name:'AWS '+part,exact:true}).click();}
   await page.getByText('Save as connection',{exact:true}).click();await page.getByLabel('Connection name',{exact:true}).fill('S3 connection');await page.getByLabel('Account label',{exact:true}).fill('S3 sandbox');await page.getByRole('button',{name:'Save connection',exact:true}).click();
   const connection=page.getByRole('combobox',{name:'Saved HTTP connection',exact:true});await expect(connection).toContainText('S3 connection · S3 sandbox');
+  await expect(page.getByRole('button',{name:'Use connection',exact:true})).toBeEnabled();
+  await expect.poll(async()=>!!(await savedBinding(names.put))?.connection).toBe(true);
+  const putBinding=await savedBinding(names.put);assert.deepEqual(putBinding.credentials,{});
   await page.getByRole('textbox',{name:'Bucket',exact:true}).fill(bucket);await page.getByRole('textbox',{name:'Key',exact:true}).fill(key);
   await page.getByRole('checkbox',{name:'Do not send Metadata',exact:true}).uncheck();await page.getByRole('textbox',{name:'Metadata',exact:true}).fill('{"note":"exact file"}');
   await page.getByLabel('Object data',{exact:true}).setInputFiles({name:'source.bin',mimeType:'application/octet-stream',buffer:bytes});
-  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();
+  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await completed('upload');
   assert.equal(calls.length,1);await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});await chooseCatalogOperation(page,names.get);
   await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'hmac',exact:true}).click();
   await unlock.fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();await connection.click();await page.getByRole('option',{name:'S3 connection · S3 sandbox',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Use connection',exact:true})).toBeEnabled();
+  await expect.poll(async()=>(await savedBinding(names.get))?.connection).toEqual(putBinding.connection);
+  const getBinding=await savedBinding(names.get);assert.deepEqual(getBinding.credentials,{});assert.notEqual(getBinding.fingerprint,putBinding.fingerprint);
   await page.getByRole('textbox',{name:'Bucket',exact:true}).fill(bucket);await page.getByRole('textbox',{name:'Key',exact:true}).fill(key);
-  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();
+  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await completed('download');
   const body=page.locator('[aria-label="Response body"]').last();await expect(body).toContainText('s3-object.bin');const downloading=page.waitForEvent('download');await body.getByRole('button',{name:'Download file',exact:true}).click();
   const chunks=[];for await(const chunk of await (await downloading).createReadStream())chunks.push(chunk);assert.deepEqual(Buffer.concat(chunks),bytes);assert.equal(calls.length,2);
   const secrets=[...Object.values(awsSyntheticValues),...calls.flatMap(call=>[call.authorization,call.signature])];for(const value of [await page.locator('body').innerText(),await repository(page,'list'),await storage(page,'read')])for(const secret of secrets)assert.ok(!JSON.stringify(value).includes(secret));

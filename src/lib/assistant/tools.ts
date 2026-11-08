@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { operationInsertionBlockReason, readOperationCapabilities } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
 import type { WorkflowDocument } from "../workflow-document.ts";
 import type { AssistantSettings } from "./config.ts";
@@ -85,7 +86,9 @@ export async function executeAssistantTool(host: AssistantHost, settings: Pick<A
     const words = String(args.query).toLowerCase().trim().split(/\s+/).filter(Boolean);
     const operations = host.operations().filter(operation => (!args.catalogId || operation.id.startsWith(`${args.catalogId}:`)) &&
       words.every(word => `${operation.name} ${operation.method} ${operation.path} ${operation.group} ${operation.description}`.toLowerCase().includes(word)));
-    result = page(operations.map(({ id, name, method, path, group, description, unavailableReason }) => ({ id, name, method, path, group, description: description.slice(0, 500), unavailableReason })), args);
+    result = page(operations.map(operation => ({ id: operation.id, name: operation.name, method: operation.method, path: operation.path, group: operation.group,
+      description: operation.description.slice(0, 500), unavailableReason: operationInsertionBlockReason(operation),
+      requirements: readOperationCapabilities(operation)?.requirements })), args);
   } else if (name === "read_operation") result = await host.operation(String(args.operationId));
   else if (name === "read_schema") {
     const value = schemaAt(await host.schema(String(args.catalogId)), String(args.pointer));

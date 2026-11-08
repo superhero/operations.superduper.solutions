@@ -112,24 +112,27 @@ Then('the cloud collections retain their provider counts and representative work
   await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('DescribeInstances');
   await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'DescribeInstances');
   const aws = page.locator('[data-operation-id="aws-ec2:GET_DescribeInstances"] > button');
-  await expect(aws).toHaveAttribute('aria-disabled', 'true');
+  await expect(aws).toHaveAttribute('aria-disabled', 'false');
   await aws.press('Enter');
-  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
   const requirements = page.getByRole('dialog', { name: 'Requirements: GET_DescribeInstances', exact: true });
-  await expect(requirements).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(requirements).toBeHidden();
+  await expect(requirements).toHaveCount(0);
+  if (page.viewportSize().width < 900)
+    await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeHidden();
+  await openCatalog(page);
   await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Vaults_ListBySubscription');
   await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'Vaults_ListBySubscription');
   const azure = page.locator('[data-operation-id="azure-keyvault:Vaults_ListBySubscription"] > button');
   await expect(azure).toHaveAttribute('aria-disabled', 'false');
   await azure.press('Enter');
-  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
   await closeCatalog(page);
   await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
   await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' });
-  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
+  await expect(page.locator('.svelte-flow__node-operation').filter({ hasText: 'GET_DescribeInstances' })).toHaveCount(1);
+  await expect(page.locator('.svelte-flow__node-operation').filter({ hasText: 'Vaults_ListBySubscription' })).toHaveCount(1);
   await expect(page.locator('.svelte-flow__node-operation').getByRole('alert')).toHaveCount(0);
 });
 

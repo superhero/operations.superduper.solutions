@@ -1,0 +1,1937 @@
+{
+  "version": 1,
+  "source": {
+    "sha256": "ece637cf4dc2c637d7b7bb2d41b504c5691a182a8fbb17363c7bebd19c047937",
+    "openapi": "3.0.0",
+    "title": "Docker Engine API",
+    "version": "1.57",
+    "servers": [
+      {
+        "url": "/v1.57"
+      }
+    ],
+    "url": "https://raw.githubusercontent.com/moby/moby/master/api/swagger.yaml"
+  },
+  "routes": {
+    "ContainerList": {
+      "method": "GET",
+      "path": "/containers/json"
+    },
+    "ContainerCreate": {
+      "method": "POST",
+      "path": "/containers/create"
+    },
+    "ContainerInspect": {
+      "method": "GET",
+      "path": "/containers/{id}/json"
+    },
+    "ContainerTop": {
+      "method": "GET",
+      "path": "/containers/{id}/top"
+    },
+    "ContainerLogs": {
+      "method": "GET",
+      "path": "/containers/{id}/logs"
+    },
+    "ContainerChanges": {
+      "method": "GET",
+      "path": "/containers/{id}/changes"
+    },
+    "ContainerExport": {
+      "method": "GET",
+      "path": "/containers/{id}/export"
+    },
+    "ContainerStats": {
+      "method": "GET",
+      "path": "/containers/{id}/stats"
+    },
+    "ContainerResize": {
+      "method": "POST",
+      "path": "/containers/{id}/resize"
+    },
+    "ContainerStart": {
+      "method": "POST",
+      "path": "/containers/{id}/start"
+    },
+    "ContainerStop": {
+      "method": "POST",
+      "path": "/containers/{id}/stop"
+    },
+    "ContainerRestart": {
+      "method": "POST",
+      "path": "/containers/{id}/restart"
+    },
+    "ContainerKill": {
+      "method": "POST",
+      "path": "/containers/{id}/kill"
+    },
+    "ContainerUpdate": {
+      "method": "POST",
+      "path": "/containers/{id}/update"
+    },
+    "ContainerRename": {
+      "method": "POST",
+      "path": "/containers/{id}/rename"
+    },
+    "ContainerPause": {
+      "method": "POST",
+      "path": "/containers/{id}/pause"
+    },
+    "ContainerUnpause": {
+      "method": "POST",
+      "path": "/containers/{id}/unpause"
+    },
+    "ContainerAttach": {
+      "method": "POST",
+      "path": "/containers/{id}/attach"
+    },
+    "ContainerAttachWebsocket": {
+      "method": "GET",
+      "path": "/containers/{id}/attach/ws"
+    },
+    "ContainerWait": {
+      "method": "POST",
+      "path": "/containers/{id}/wait"
+    },
+    "ContainerDelete": {
+      "method": "DELETE",
+      "path": "/containers/{id}"
+    },
+    "ContainerArchiveInfo": {
+      "method": "HEAD",
+      "path": "/containers/{id}/archive"
+    },
+    "ContainerArchive": {
+      "method": "GET",
+      "path": "/containers/{id}/archive"
+    },
+    "PutContainerArchive": {
+      "method": "PUT",
+      "path": "/containers/{id}/archive"
+    },
+    "ContainerPrune": {
+      "method": "POST",
+      "path": "/containers/prune"
+    },
+    "ImageList": {
+      "method": "GET",
+      "path": "/images/json"
+    },
+    "ImageBuild": {
+      "method": "POST",
+      "path": "/build"
+    },
+    "BuildPrune": {
+      "method": "POST",
+      "path": "/build/prune"
+    },
+    "ImageCreate": {
+      "method": "POST",
+      "path": "/images/create"
+    },
+    "ImageInspect": {
+      "method": "GET",
+      "path": "/images/{name}/json"
+    },
+    "ImageAttestations": {
+      "method": "GET",
+      "path": "/images/{name}/attestations"
+    },
+    "ImageHistory": {
+      "method": "GET",
+      "path": "/images/{name}/history"
+    },
+    "ImagePush": {
+      "method": "POST",
+      "path": "/images/{name}/push"
+    },
+    "ImageTag": {
+      "method": "POST",
+      "path": "/images/{name}/tag"
+    },
+    "ImageDelete": {
+      "method": "DELETE",
+      "path": "/images/{name}"
+    },
+    "ImageSearch": {
+      "method": "GET",
+      "path": "/images/search"
+    },
+    "ImagePrune": {
+      "method": "POST",
+      "path": "/images/prune"
+    },
+    "SystemAuth": {
+      "method": "POST",
+      "path": "/auth"
+    },
+    "SystemInfo": {
+      "method": "GET",
+      "path": "/info"
+    },
+    "SystemVersion": {
+      "method": "GET",
+      "path": "/version"
+    },
+    "SystemPing": {
+      "method": "GET",
+      "path": "/_ping"
+    },
+    "SystemPingHead": {
+      "method": "HEAD",
+      "path": "/_ping"
+    },
+    "ImageCommit": {
+      "method": "POST",
+      "path": "/commit"
+    },
+    "SystemEvents": {
+      "method": "GET",
+      "path": "/events"
+    },
+    "SystemDataUsage": {
+      "method": "GET",
+      "path": "/system/df"
+    },
+    "ImageGet": {
+      "method": "GET",
+      "path": "/images/{name}/get"
+    },
+    "ImageGetAll": {
+      "method": "GET",
+      "path": "/images/get"
+    },
+    "ImageLoad": {
+      "method": "POST",
+      "path": "/images/load"
+    },
+    "ContainerExec": {
+      "method": "POST",
+      "path": "/containers/{id}/exec"
+    },
+    "ExecStart": {
+      "method": "POST",
+      "path": "/exec/{id}/start"
+    },
+    "ExecResize": {
+      "method": "POST",
+      "path": "/exec/{id}/resize"
+    },
+    "ExecInspect": {
+      "method": "GET",
+      "path": "/exec/{id}/json"
+    },
+    "VolumeList": {
+      "method": "GET",
+      "path": "/volumes"
+    },
+    "VolumeCreate": {
+      "method": "POST",
+      "path": "/volumes/create"
+    },
+    "VolumeInspect": {
+      "method": "GET",
+      "path": "/volumes/{name}"
+    },
+    "VolumeUpdate": {
+      "method": "PUT",
+      "path": "/volumes/{name}"
+    },
+    "VolumeDelete": {
+      "method": "DELETE",
+      "path": "/volumes/{name}"
+    },
+    "VolumePrune": {
+      "method": "POST",
+      "path": "/volumes/prune"
+    },
+    "NetworkList": {
+      "method": "GET",
+      "path": "/networks"
+    },
+    "NetworkInspect": {
+      "method": "GET",
+      "path": "/networks/{id}"
+    },
+    "NetworkDelete": {
+      "method": "DELETE",
+      "path": "/networks/{id}"
+    },
+    "NetworkCreate": {
+      "method": "POST",
+      "path": "/networks/create"
+    },
+    "NetworkConnect": {
+      "method": "POST",
+      "path": "/networks/{id}/connect"
+    },
+    "NetworkDisconnect": {
+      "method": "POST",
+      "path": "/networks/{id}/disconnect"
+    },
+    "NetworkPrune": {
+      "method": "POST",
+      "path": "/networks/prune"
+    },
+    "PluginList": {
+      "method": "GET",
+      "path": "/plugins"
+    },
+    "GetPluginPrivileges": {
+      "method": "GET",
+      "path": "/plugins/privileges"
+    },
+    "PluginPull": {
+      "method": "POST",
+      "path": "/plugins/pull"
+    },
+    "PluginInspect": {
+      "method": "GET",
+      "path": "/plugins/{name}/json"
+    },
+    "PluginDelete": {
+      "method": "DELETE",
+      "path": "/plugins/{name}"
+    },
+    "PluginEnable": {
+      "method": "POST",
+      "path": "/plugins/{name}/enable"
+    },
+    "PluginDisable": {
+      "method": "POST",
+      "path": "/plugins/{name}/disable"
+    },
+    "PluginUpgrade": {
+      "method": "POST",
+      "path": "/plugins/{name}/upgrade"
+    },
+    "PluginCreate": {
+      "method": "POST",
+      "path": "/plugins/create"
+    },
+    "PluginPush": {
+      "method": "POST",
+      "path": "/plugins/{name}/push"
+    },
+    "PluginSet": {
+      "method": "POST",
+      "path": "/plugins/{name}/set"
+    },
+    "NodeList": {
+      "method": "GET",
+      "path": "/nodes"
+    },
+    "NodeInspect": {
+      "method": "GET",
+      "path": "/nodes/{id}"
+    },
+    "NodeDelete": {
+      "method": "DELETE",
+      "path": "/nodes/{id}"
+    },
+    "NodeUpdate": {
+      "method": "POST",
+      "path": "/nodes/{id}/update"
+    },
+    "SwarmInspect": {
+      "method": "GET",
+      "path": "/swarm"
+    },
+    "SwarmInit": {
+      "method": "POST",
+      "path": "/swarm/init"
+    },
+    "SwarmJoin": {
+      "method": "POST",
+      "path": "/swarm/join"
+    },
+    "SwarmLeave": {
+      "method": "POST",
+      "path": "/swarm/leave"
+    },
+    "SwarmUpdate": {
+      "method": "POST",
+      "path": "/swarm/update"
+    },
+    "SwarmUnlockkey": {
+      "method": "GET",
+      "path": "/swarm/unlockkey"
+    },
+    "SwarmUnlock": {
+      "method": "POST",
+      "path": "/swarm/unlock"
+    },
+    "ServiceList": {
+      "method": "GET",
+      "path": "/services"
+    },
+    "ServiceCreate": {
+      "method": "POST",
+      "path": "/services/create"
+    },
+    "ServiceInspect": {
+      "method": "GET",
+      "path": "/services/{id}"
+    },
+    "ServiceDelete": {
+      "method": "DELETE",
+      "path": "/services/{id}"
+    },
+    "ServiceUpdate": {
+      "method": "POST",
+      "path": "/services/{id}/update"
+    },
+    "ServiceLogs": {
+      "method": "GET",
+      "path": "/services/{id}/logs"
+    },
+    "TaskList": {
+      "method": "GET",
+      "path": "/tasks"
+    },
+    "TaskInspect": {
+      "method": "GET",
+      "path": "/tasks/{id}"
+    },
+    "TaskLogs": {
+      "method": "GET",
+      "path": "/tasks/{id}/logs"
+    },
+    "SecretList": {
+      "method": "GET",
+      "path": "/secrets"
+    },
+    "SecretCreate": {
+      "method": "POST",
+      "path": "/secrets/create"
+    },
+    "SecretInspect": {
+      "method": "GET",
+      "path": "/secrets/{id}"
+    },
+    "SecretDelete": {
+      "method": "DELETE",
+      "path": "/secrets/{id}"
+    },
+    "SecretUpdate": {
+      "method": "POST",
+      "path": "/secrets/{id}/update"
+    },
+    "ConfigList": {
+      "method": "GET",
+      "path": "/configs"
+    },
+    "ConfigCreate": {
+      "method": "POST",
+      "path": "/configs/create"
+    },
+    "ConfigInspect": {
+      "method": "GET",
+      "path": "/configs/{id}"
+    },
+    "ConfigDelete": {
+      "method": "DELETE",
+      "path": "/configs/{id}"
+    },
+    "ConfigUpdate": {
+      "method": "POST",
+      "path": "/configs/{id}/update"
+    },
+    "DistributionInspect": {
+      "method": "GET",
+      "path": "/distribution/{name}/json"
+    },
+    "Session": {
+      "method": "POST",
+      "path": "/session"
+    }
+  },
+  "special": {
+    "ImageBuild": {
+      "parameters": [
+        {
+          "name": "dockerfile",
+          "in": "query",
+          "description": "Path within the build context to the `Dockerfile`. This is ignored if `remote` is specified and points to an external `Dockerfile`.",
+          "schema": {
+            "type": "string",
+            "default": "Dockerfile"
+          }
+        },
+        {
+          "name": "t",
+          "in": "query",
+          "description": "A name and optional tag to apply to the image in the `name:tag` format. If you omit the tag the default `latest` value is assumed. You can provide several `t` parameters.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "extrahosts",
+          "in": "query",
+          "description": "Extra hosts to add to /etc/hosts",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "remote",
+          "in": "query",
+          "description": "A Git repository URI or HTTP/HTTPS context URI. If the URI points to a single text file, the file\u2019s contents are placed into a file called `Dockerfile` and the image is built from that file. If the URI points to a tarball, the file is downloaded by the daemon and the contents therein used as the context for the build. If the URI points to a tarball and the `dockerfile` parameter is also specified, there must be a file with the corresponding path inside the tarball.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "q",
+          "in": "query",
+          "description": "Suppress verbose build output.",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "nocache",
+          "in": "query",
+          "description": "Do not use the cache when building the image.",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "cachefrom",
+          "in": "query",
+          "description": "JSON array of images used for build cache resolution.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "pull",
+          "in": "query",
+          "description": "Attempt to pull the image even if an older image exists locally.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "rm",
+          "in": "query",
+          "description": "Remove intermediate containers after a successful build.",
+          "schema": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        {
+          "name": "forcerm",
+          "in": "query",
+          "description": "Always remove intermediate containers, even upon failure.",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "memory",
+          "in": "query",
+          "description": "Set memory limit for build.",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "memswap",
+          "in": "query",
+          "description": "Total memory (memory + swap). Set as `-1` to disable swap.",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "cpushares",
+          "in": "query",
+          "description": "CPU shares (relative weight).",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "cpusetcpus",
+          "in": "query",
+          "description": "CPUs in which to allow execution (e.g., `0-3`, `0,1`).",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cpuperiod",
+          "in": "query",
+          "description": "The length of a CPU period in microseconds.",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "cpuquota",
+          "in": "query",
+          "description": "Microseconds of CPU time that the container can get in a CPU period.",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "buildargs",
+          "in": "query",
+          "description": "JSON map of string pairs for build-time variables. Users pass these values at build-time. Docker uses the buildargs as the environment context for commands run via the `Dockerfile` RUN instruction, or for variable expansion in other `Dockerfile` instructions. This is not meant for passing secret values.\n\nFor example, the build arg `FOO=bar` would become `{\"FOO\":\"bar\"}` in JSON. This would result in the query parameter `buildargs={\"FOO\":\"bar\"}`. Note that `{\"FOO\":\"bar\"}` should be URI component encoded.\n\n[Read more about the buildargs instruction.](https://docs.docker.com/engine/reference/builder/#arg)\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "shmsize",
+          "in": "query",
+          "description": "Size of `/dev/shm` in bytes. The size must be greater than 0. If omitted the system uses 64MB.",
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        {
+          "name": "squash",
+          "in": "query",
+          "description": "Squash the resulting images layers into a single layer. *(Experimental release only.)*",
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "labels",
+          "in": "query",
+          "description": "Arbitrary key/value labels to set on the image, as a JSON map of string pairs.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "networkmode",
+          "in": "query",
+          "description": "Sets the networking mode for the run commands during build. Supported\nstandard values are: `bridge`, `host`, `none`, and `container:<name|id>`.\nAny other value is taken as a custom network's name or ID to which this\ncontainer should connect to.\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "Content-type",
+          "in": "header",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "application/x-tar"
+            ],
+            "default": "application/x-tar"
+          }
+        },
+        {
+          "name": "X-Registry-Config",
+          "in": "header",
+          "description": "This is a base64-encoded JSON object with auth configurations for multiple registries that a build may refer to.\n\nThe key is a registry URL, and the value is an auth configuration object, [as described in the authentication section](#section/Authentication). For example:\n\n```\n{\n  \"docker.example.com\": {\n    \"username\": \"janedoe\",\n    \"password\": \"hunter2\"\n  },\n  \"https://index.docker.io/v1/\": {\n    \"username\": \"mobydock\",\n    \"password\": \"conta1n3rize14\"\n  }\n}\n```\n\nOnly the registry domain name (and port if not the default 443) are required. However, for legacy reasons, the Docker Hub registry must be specified with both a `https://` prefix and a `/v1/` suffix even though Docker will prefer to use the v2 registry API.\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "platform",
+          "in": "query",
+          "description": "Platform in the format os[/arch[/variant]]",
+          "schema": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        {
+          "name": "target",
+          "in": "query",
+          "description": "Target build stage",
+          "schema": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        {
+          "name": "outputs",
+          "in": "query",
+          "description": "BuildKit output configuration in the format of a stringified JSON array of objects.\nEach object must have two top-level properties: `Type` and `Attrs`.\nThe `Type` property must be set to 'moby'.\nThe `Attrs` property is a map of attributes for the BuildKit output configuration.\nSee https://docs.docker.com/build/exporters/oci-docker/ for more information.\n\nExample:\n\n```\n[{\"Type\":\"moby\",\"Attrs\":{\"type\":\"image\",\"force-compression\":\"true\",\"compression\":\"zstd\"}}]\n```\n",
+          "schema": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        {
+          "name": "version",
+          "in": "query",
+          "description": "Version of the builder backend to use.\n\n- `1` is the first generation classic (deprecated) builder in the Docker daemon (default)\n- `2` is [BuildKit](https://github.com/moby/buildkit)\n",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "1",
+              "2"
+            ],
+            "default": "1"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/octet-stream": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        },
+        "description": "A tar archive compressed with one of the following algorithms: identity (no compression), gzip, bzip2, xz."
+      },
+      "responses": {
+        "200": {
+          "description": "no error"
+        },
+        "400": {
+          "description": "Bad parameter",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ImageCreate": {
+      "parameters": [
+        {
+          "name": "fromImage",
+          "in": "query",
+          "description": "Name of the image to pull. If the name includes a tag or digest, specific behavior applies:\n\n- If only `fromImage` includes a tag, that tag is used.\n- If both `fromImage` and `tag` are provided, `tag` takes precedence.\n- If `fromImage` includes a digest, the image is pulled by digest, and `tag` is ignored.\n- If neither a tag nor digest is specified, all tags are pulled.\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "fromSrc",
+          "in": "query",
+          "description": "Source to import. The value may be a URL from which the image can be retrieved or `-` to read the image from the request body. This parameter may only be used when importing an image.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "repo",
+          "in": "query",
+          "description": "Repository name given to an image when it is imported. The repo may include a tag. This parameter may only be used when importing an image.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tag",
+          "in": "query",
+          "description": "Tag or digest. If empty when pulling an image, this causes all tags for the given image to be pulled.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "message",
+          "in": "query",
+          "description": "Set commit message for imported image.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "X-Registry-Auth",
+          "in": "header",
+          "description": "A base64url-encoded auth configuration.\n\nRefer to the [authentication section](#section/Authentication) for\ndetails.\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "changes",
+          "in": "query",
+          "description": "Apply `Dockerfile` instructions to the image that is created,\nfor example: `changes=ENV DEBUG=true`.\nNote that `ENV DEBUG=true` should be URI component encoded.\nRepeat the parameter to apply multiple instructions.\n\nSupported `Dockerfile` instructions:\n`CMD`|`ENTRYPOINT`|`ENV`|`EXPOSE`|`ONBUILD`|`USER`|`VOLUME`|`WORKDIR`\n",
+          "explode": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "name": "platform",
+          "in": "query",
+          "description": "Platform in the format os[/arch[/variant]].\n\nWhen used in combination with the `fromImage` option, the daemon checks\nif the given image is present in the local image cache with the given\nOS and Architecture, and otherwise attempts to pull the image. If the\noption is not set, the host's native OS and Architecture are used.\nIf the given image does not exist in the local image cache, the daemon\nattempts to pull the image with the host's native OS and Architecture.\nIf the given image does exists in the local image cache, but its OS or\narchitecture does not match, a warning is produced.\n\nWhen used with the `fromSrc` option to import an image from an archive,\nthis option sets the platform information for the imported image. If\nthe option is not set, the host's native OS and Architecture are used\nfor the imported image.\n",
+          "schema": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "text/plain": {
+            "schema": {
+              "type": "string"
+            }
+          },
+          "application/octet-stream": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Image content if the value `-` has been specified in fromSrc query parameter"
+      },
+      "responses": {
+        "200": {
+          "description": "no error"
+        },
+        "404": {
+          "description": "repository does not exist or no read access",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ImagePush": {
+      "parameters": [
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the image to push. For example, `registry.example.com/myimage`.\nThe image must be present in the local image store with the same name.\n\nThe name should be provided without tag; if a tag is provided, it\nis ignored. For example, `registry.example.com/myimage:latest` is\nconsidered equivalent to `registry.example.com/myimage`.\n\nUse the `tag` parameter to specify the tag to push.\n",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "tag",
+          "in": "query",
+          "description": "Tag of the image to push. For example, `latest`. If no tag is provided,\nall tags of the given image that are present in the local image store\nare pushed.\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "platform",
+          "in": "query",
+          "description": "JSON-encoded OCI platform to select the platform-variant to push.\nIf not provided, all available variants will attempt to be pushed.\n\nIf the daemon provides a multi-platform image store, this selects\nthe platform-variant to push to the registry. If the image is\na single-platform image, or if the multi-platform image does not\nprovide a variant matching the given platform, an error is returned.\n\nExample: `{\"os\": \"linux\", \"architecture\": \"arm\", \"variant\": \"v5\"}`\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "X-Registry-Auth",
+          "in": "header",
+          "description": "A base64url-encoded auth configuration.\n\nRefer to the [authentication section](#section/Authentication) for\ndetails.\n",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "No error"
+        },
+        "404": {
+          "description": "No such image",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ImageLoad": {
+      "parameters": [
+        {
+          "name": "quiet",
+          "in": "query",
+          "description": "Suppress progress details during load.",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "platform",
+          "in": "query",
+          "description": "JSON encoded OCI platform(s) which will be used to select the\nplatform-specific image(s) to load if the image is\nmulti-platform. If not provided, the full multi-platform image\nwill be loaded.\n\nExample: `{\"os\": \"linux\", \"architecture\": \"arm\", \"variant\": \"v5\"}`\n",
+          "explode": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/x-tar": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        },
+        "description": "Tar archive containing images"
+      },
+      "responses": {
+        "200": {
+          "description": "no error"
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "PluginPull": {
+      "parameters": [
+        {
+          "name": "remote",
+          "in": "query",
+          "description": "Remote reference for plugin to install.\n\nThe `:latest` tag is optional, and is used as the default if omitted.\n",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "description": "Local name for the pulled plugin.\n\nThe `:latest` tag is optional, and is used as the default if omitted.\n",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "X-Registry-Auth",
+          "in": "header",
+          "description": "A base64url-encoded auth configuration to use when pulling a plugin\nfrom a registry.\n\nRefer to the [authentication section](#section/Authentication) for\ndetails.\n",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "$ref": "#/components/requestBodies/PluginPrivilegeArray"
+      },
+      "responses": {
+        "204": {
+          "description": "no error"
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "PluginPush": {
+      "parameters": [
+        {
+          "name": "name",
+          "in": "path",
+          "description": "The name of the plugin. The `:latest` tag is optional, and is the\ndefault if omitted.\n",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "no error"
+        },
+        "404": {
+          "description": "plugin not installed",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "PluginUpgrade": {
+      "parameters": [
+        {
+          "name": "name",
+          "in": "path",
+          "description": "The name of the plugin. The `:latest` tag is optional, and is the\ndefault if omitted.\n",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "remote",
+          "in": "query",
+          "description": "Remote reference to upgrade to.\n\nThe `:latest` tag is optional, and is used as the default if omitted.\n",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "X-Registry-Auth",
+          "in": "header",
+          "description": "A base64url-encoded auth configuration to use when pulling a plugin\nfrom a registry.\n\nRefer to the [authentication section](#section/Authentication) for\ndetails.\n",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "$ref": "#/components/requestBodies/PluginPrivilegeArray"
+      },
+      "responses": {
+        "204": {
+          "description": "no error"
+        },
+        "404": {
+          "description": "plugin not installed",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "SystemEvents": {
+      "parameters": [
+        {
+          "name": "since",
+          "in": "query",
+          "description": "Show events created since this timestamp then stream new events.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "until",
+          "in": "query",
+          "description": "Show events created until this timestamp then stop streaming.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "filters",
+          "in": "query",
+          "description": "A JSON encoded value of filters (a `map[string][]string`) to process on the event list. Available filters:\n\n- `config=<string>` config name or ID\n- `container=<string>` container name or ID\n- `daemon=<string>` daemon name or ID\n- `event=<string>` event type\n- `image=<string>` image name or ID\n- `label=<string>` image or container label\n- `network=<string>` network name or ID\n- `node=<string>` node ID\n- `plugin`=<string> plugin name or ID\n- `scope`=<string> local or swarm\n- `secret=<string>` secret name or ID\n- `service=<string>` service name or ID\n- `type=<string>` object to filter by, one of `container`, `image`, `volume`, `network`, `daemon`, `plugin`, `node`, `service`, `secret` or `config`\n- `volume=<string>` volume name\n",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "no error",
+          "content": {
+            "application/jsonl": {
+              "schema": {
+                "$ref": "#/components/schemas/EventMessage"
+              }
+            },
+            "application/x-ndjson": {
+              "schema": {
+                "$ref": "#/components/schemas/EventMessage"
+              }
+            },
+            "application/json-seq": {
+              "schema": {
+                "$ref": "#/components/schemas/EventMessage"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "bad parameter",
+          "content": {
+            "application/jsonl": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "application/x-ndjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "application/json-seq": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/jsonl": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "application/x-ndjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "application/json-seq": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ContainerAttachWebsocket": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "ID or name of the container",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "detachKeys",
+          "in": "query",
+          "description": "Override the key sequence for detaching a container.Format is a single\ncharacter `[a-Z]` or `ctrl-<value>` where `<value>` is one of: `a-z`,\n`@`, `^`, `[`, `,`, or `_`.\n",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "logs",
+          "in": "query",
+          "description": "Return logs",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "stream",
+          "in": "query",
+          "description": "Return stream",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "stdin",
+          "in": "query",
+          "description": "Attach to `stdin`",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "stdout",
+          "in": "query",
+          "description": "Attach to `stdout`",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        {
+          "name": "stderr",
+          "in": "query",
+          "description": "Attach to `stderr`",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "101": {
+          "description": "no error, hints proxy about hijacking"
+        },
+        "200": {
+          "description": "no error, no upgrade header found"
+        },
+        "400": {
+          "description": "bad parameter",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "no such container",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              },
+              "examples": {
+                "response": {
+                  "value": {
+                    "message": "No such container: c2ada9df5af8"
+                  }
+                }
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "SystemAuth": {
+      "parameters": null,
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AuthConfig"
+            }
+          }
+        },
+        "description": "Authentication to check"
+      },
+      "responses": {
+        "200": {
+          "description": "An identity token was generated successfully.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthResponse"
+              }
+            }
+          }
+        },
+        "204": {
+          "description": "No error"
+        },
+        "401": {
+          "description": "Auth error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "SwarmInspect": {
+      "parameters": null,
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "no error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Swarm"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/Swarm"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "no such swarm",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "503": {
+          "description": "node is not part of a swarm",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "SwarmUnlockkey": {
+      "parameters": null,
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "no error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "UnlockKeyResponse",
+                "properties": {
+                  "UnlockKey": {
+                    "description": "The swarm's unlock key.",
+                    "type": "string"
+                  }
+                },
+                "example": {
+                  "UnlockKey": "<docker-swarm-unlock-key>"
+                }
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "object",
+                "title": "UnlockKeyResponse",
+                "properties": {
+                  "UnlockKey": {
+                    "description": "The swarm's unlock key.",
+                    "type": "string"
+                  }
+                },
+                "example": {
+                  "UnlockKey": "<docker-swarm-unlock-key>"
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "503": {
+          "description": "node is not part of a swarm",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "GetPluginPrivileges": {
+      "parameters": [
+        {
+          "name": "remote",
+          "in": "query",
+          "description": "The name of the plugin. The `:latest` tag is optional, and is the\ndefault if omitted.\n",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "no error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PluginPrivilege"
+                },
+                "example": [
+                  {
+                    "Name": "network",
+                    "Description": "",
+                    "Value": [
+                      "host"
+                    ]
+                  },
+                  {
+                    "Name": "mount",
+                    "Description": "",
+                    "Value": [
+                      "/data"
+                    ]
+                  },
+                  {
+                    "Name": "device",
+                    "Description": "",
+                    "Value": [
+                      "/dev/cpu_dma_latency"
+                    ]
+                  }
+                ]
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PluginPrivilege"
+                },
+                "example": [
+                  {
+                    "Name": "network",
+                    "Description": "",
+                    "Value": [
+                      "host"
+                    ]
+                  },
+                  {
+                    "Name": "mount",
+                    "Description": "",
+                    "Value": [
+                      "/data"
+                    ]
+                  },
+                  {
+                    "Name": "device",
+                    "Description": "",
+                    "Value": [
+                      "/dev/cpu_dma_latency"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "DistributionInspect": {
+      "parameters": [
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Image name or id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "descriptor and platform information",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistributionInspect"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Failed authentication or no image found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              },
+              "examples": {
+                "response": {
+                  "value": {
+                    "message": "No such image: someimage (tag: latest)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ImageSearch": {
+      "parameters": [
+        {
+          "name": "term",
+          "in": "query",
+          "description": "Term to search",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "description": "Maximum number of results to return",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "filters",
+          "in": "query",
+          "description": "A JSON encoded value of the filters (a `map[string][]string`) to process on the images list. Available filters:\n\n- `is-official=(true|false)`\n- `stars=<number>` Matches images that has at least 'number' stars.\n",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "No error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "title": "ImageSearchResponseItem",
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "is_official": {
+                      "type": "boolean"
+                    },
+                    "is_automated": {
+                      "description": "Whether this repository has automated builds enabled.\n\n<p><br /></p>\n\n> **Deprecated**: This field is deprecated and will always be \"false\".\n",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "star_count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "examples": {
+                "response": {
+                  "value": [
+                    {
+                      "description": "A minimal Docker image based on Alpine Linux with a complete package index and only 5 MB in size!",
+                      "is_official": true,
+                      "is_automated": false,
+                      "name": "alpine",
+                      "star_count": 10093
+                    },
+                    {
+                      "description": "Busybox base image.",
+                      "is_official": true,
+                      "is_automated": false,
+                      "name": "Busybox base image.",
+                      "star_count": 3037
+                    },
+                    {
+                      "description": "The PostgreSQL object-relational database system provides reliability and data integrity.",
+                      "is_official": true,
+                      "is_automated": false,
+                      "name": "postgres",
+                      "star_count": 12408
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "privateInputs": {
+    "ImageBuild": [
+      "header:X-Registry-Config"
+    ],
+    "ImageCreate": [
+      "header:X-Registry-Auth"
+    ],
+    "ImagePush": [
+      "header:X-Registry-Auth"
+    ],
+    "PluginPull": [
+      "header:X-Registry-Auth"
+    ],
+    "PluginUpgrade": [
+      "header:X-Registry-Auth"
+    ],
+    "ServiceCreate": [
+      "header:X-Registry-Auth"
+    ],
+    "ServiceUpdate": [
+      "header:X-Registry-Auth"
+    ],
+    "SystemAuth": [
+      "body:username",
+      "body:password"
+    ],
+    "SecretCreate": [
+      "body:Data"
+    ],
+    "SecretUpdate": [
+      "body:Data"
+    ],
+    "SwarmJoin": [
+      "body:JoinToken"
+    ],
+    "SwarmUnlock": [
+      "body:UnlockKey"
+    ],
+    "PluginPush": [
+      "header:X-Registry-Auth"
+    ],
+    "GetPluginPrivileges": [
+      "header:X-Registry-Auth"
+    ],
+    "DistributionInspect": [
+      "header:X-Registry-Auth"
+    ],
+    "ImageSearch": [
+      "header:X-Registry-Auth"
+    ]
+  },
+  "privatePaths": {
+    "SwarmInit": [
+      {
+        "key": "body:Spec",
+        "path": [
+          "CAConfig",
+          "SigningCAKey"
+        ]
+      }
+    ],
+    "SwarmUpdate": [
+      {
+        "key": "body:CAConfig",
+        "path": [
+          "SigningCAKey"
+        ]
+      }
+    ]
+  },
+  "schemas": {
+    "AuthConfig": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "serveraddress": {
+          "type": "string"
+        }
+      },
+      "example": {
+        "username": "hannibal",
+        "password": "xxxx",
+        "serveraddress": "https://index.docker.io/v1/"
+      }
+    },
+    "AuthResponse": {
+      "description": "An identity token was generated successfully.\n",
+      "type": "object",
+      "required": [
+        "Status"
+      ],
+      "properties": {
+        "Status": {
+          "description": "The status of the authentication",
+          "type": "string",
+          "example": "Login Succeeded",
+          "nullable": false
+        },
+        "IdentityToken": {
+          "description": "An opaque token used to authenticate a user after a successful login",
+          "type": "string",
+          "example": "9cbaf023786cd7...",
+          "nullable": false
+        }
+      }
+    },
+    "Swarm": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/ClusterInfo"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "JoinTokens": {
+              "$ref": "#/components/schemas/JoinTokens"
+            }
+          }
+        }
+      ]
+    },
+    "JoinTokens": {
+      "description": "JoinTokens contains the tokens workers and managers need to join the swarm.\n",
+      "type": "object",
+      "properties": {
+        "Worker": {
+          "description": "The token workers can use to join the swarm.\n",
+          "type": "string",
+          "example": "<docker-swarm-join-token>"
+        },
+        "Manager": {
+          "description": "The token managers can use to join the swarm.\n",
+          "type": "string",
+          "example": "<docker-swarm-join-token>"
+        }
+      }
+    }
+  },
+  "references": {
+    "api": "https://raw.githubusercontent.com/moby/moby/master/api/swagger.yaml",
+    "websocket": "https://github.com/websockets/ws/blob/8.22.0/doc/ws.md",
+    "registry": "https://github.com/docker/cli/blob/master/cli/command/registry.go",
+    "pluginPush": "https://raw.githubusercontent.com/moby/moby/master/client/plugin_push.go",
+    "pluginStreams": "https://raw.githubusercontent.com/moby/moby/402d0a16f131d93ee89f1b06cb5fc8c98e766dfc/daemon/server/router/plugin/plugin_routes.go",
+    "distribution_inspect": "https://raw.githubusercontent.com/moby/moby/402d0a16f131d93ee89f1b06cb5fc8c98e766dfc/client/distribution_inspect.go",
+    "image_search": "https://raw.githubusercontent.com/moby/moby/402d0a16f131d93ee89f1b06cb5fc8c98e766dfc/client/image_search.go"
+  },
+  "registryHeaderAdditions": [
+    "PluginPush",
+    "GetPluginPrivileges",
+    "DistributionInspect",
+    "ImageSearch"
+  ]
+}

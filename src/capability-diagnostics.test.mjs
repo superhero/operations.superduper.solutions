@@ -5,10 +5,10 @@ import assert from 'node:assert/strict';
 import { Before, After, Then } from '@cucumber/cucumber';
 import { capabilityDocument } from '../tests/capability-diagnostics.fixture.mjs';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
-import { operationBlockReason, operationCapabilityHint, readOperationCapabilities, summarizeOperationCapabilities,
+import { operationBlockReason, operationCapabilityHint, readOperationCapabilities, summarizeOperationCapabilities,withOperationCapabilities,
   validateCapabilitySummary } from './lib/operation-capabilities.ts';
 import { createSchemaDiscovery, validateSchemaDiscovery, schemaIndexVersion } from './lib/schema-index.ts';
-import { prepareRequest } from './lib/operation-input.ts';
+import { prepareRequest,validateInputValue,InputValidationError } from './lib/operation-input.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { catalogs } from './lib/catalog-registry.ts';
@@ -84,7 +84,7 @@ Then('supported authentication native and Docker operations describe their indep
   assert.deepEqual(operation.capabilities.requirements.map(value => value.code), ['native-host', 'native-account', 'native-workspace', 'native-method', 'native-terminal']);
   const old = structuredClone(native); old.info.version = old['x-codex-app-server'].version = '0.162.0';
   const incompatible = inspectServiceSchema(old, 'codex').operations.find(value => value.name === 'initialize');
-  assert.deepEqual(incompatible.capabilities.issues.map(value => value.code), ['unsupported-native-method', 'runtime-version']);
+  assert.deepEqual(incompatible.capabilities.issues.map(value => value.code), ['runtime-version']);
   const docker = inspectServiceSchema(await readServiceSchema('docker'), 'docker', new Set(['docker:ContainerList'])).operations[0];
   assert.equal(docker.capabilities.requirements[0].code, 'docker-destination'); assert.equal(operationBlockReason(docker), undefined);
 });
@@ -175,4 +175,52 @@ Then('compact capability records preserve reason references and reject invalid w
     { i: [], r: [null] }, { i: [], r: [['credentials']] }, { i: [], r: [['foreign', 'Reason']] },
     { i: [], r: [['credentials', 42]] }];
   for (const value of malformed) assert.throws(() => validateCapabilitySummary(value), /diagnostics/);
+});
+
+Then('malformed union branches and form encoding metadata fail with precise diagnostics', async () => {
+  const { normalizeStringUnion, validateFormBody } = await import('./lib/form-input.ts');
+  const { parameterContext } = await import('./lib/parameter-serialization.ts');
+  for (const branch of [null, 'string', []]) {
+    const shape = { anyOf: [branch, { type: 'string' }] };
+    assert.equal(normalizeStringUnion(shape), shape, 'Malformed branches cannot be silently normalized.');
+  }
+  const empty = { type: 'object' };
+  assert.doesNotThrow(() => validateFormBody(empty, false));
+  for (const encoding of [null, 42, []])
+    assert.throws(() => validateFormBody(empty, false, encoding), /Form part encoding must be an object keyed by field name/);
+  for (const settings of [null, 42, [], {}])
+    assert.throws(() => validateFormBody(empty, true, { file: settings }), /Form part "file": encoding must name a declared field/);
+  assert.equal(parameterContext({}), 'unknown parameter "<unnamed>" (type=unknown, style="simple", explode=false)');
+  assert.equal(parameterContext({ in: 42, name: null, style: {}, explode: [] }, 'array'),
+    'unknown parameter "<unnamed>" (type=array, style=<invalid object>, explode=<invalid object>)');
+  assert.equal(parameterContext({ in: 'query', name: 'key', style: null, explode: null }),
+    'query parameter "key" (type=unknown, style=null, explode=null)');
+});
+
+Then('runtime request validation refuses malformed unions exclusive fields and forged serialization',async()=>{
+  const input=schema=>({key:'body:value',name:'value',label:'Value',description:'',location:'body',required:false,type:schema.type,schema});
+  const nullable={type:'json',nullable:true,anyOf:[{type:'string'},{type:'integer'}]};
+  assert.doesNotThrow(()=>validateInputValue(input(nullable),null));
+  assert.throws(()=>validateInputValue(input({...nullable,enum:['allowed']}),null),/allowed schema alternative/);
+  for(const schema of [{type:'json',anyOf:[{type:'string'}],oneOf:[{type:'string'},{type:'integer'}]},
+    {type:'json',anyOf:{}},{type:'json',oneOf:[]},{type:'json',anyOf:Array.from({length:33},()=>({type:'string'}))}])
+    assert.throws(()=>validateInputValue(input(schema),'value'),/invalid schema union/);
+  const failure=new Error('Owned schema access failure'),broken={get type(){throw failure;}};
+  assert.throws(()=>validateInputValue(input({type:'json',anyOf:[{type:'string'},broken]}),'value'),error=>error===failure);
+  const properties={left:{type:'string'},right:{type:'string'}};
+  for(const requiredOneOf of [null,[],Array.from({length:17},()=>['left']),[[],['right']],[['left','left'],['right']],[[1],['right']],[['unknown'],['right']]])
+    assert.throws(()=>validateInputValue(input({type:'object',properties,requiredOneOf}),{}),/invalid exclusive required-field contract/);
+  assert.throws(()=>validateInputValue(input({type:'object',requiredOneOf:[['left'],['right']]}),{}),/invalid exclusive required-field contract/);
+  const operation=inspect(supported());
+  for(const changes of [{bodyMediaType:'application/json'}, {bodyMediaType:'multipart/form-data'}])
+    assert.throws(()=>prepareRequest({...operation,...changes,multipartParts:{}},{}),error=>error instanceof InputValidationError&&error.fieldKey==='body:$');
+  for(const settings of [{location:'header',parameterContentType:'text/plain'}, {location:'header',parameterContentType:'application/json'},
+    {location:'query',parameterContentType:'application/json',querySerialization:'form-csv',type:'array',schema:{type:'array',items:{type:'string'}}}]){
+    const field={...input({type:'string'}),...settings,key:settings.location+':value'};
+    assert.throws(()=>prepareRequest({...operation,fields:[field]},{[field.key]:field.type==='array'?'["value"]':'value'}),/content parameter serialization is not supported/);
+  }
+  await assert.rejects(approvedOperation({...operation,security:[{}]},'https://example.test'),error=>error.code==='PERMISSION');
+  await assert.rejects(approvedOperation({...operation,security:[[{name:'GitHubPersonalAccessToken',kind:'bearer',header:'Authorization'}],{}]},'https://example.test'),error=>error.code==='PERMISSION');
+  const native=withOperationCapabilities({...operation,method:'RPC',path:undefined});
+  assert.ok(native.capabilities.requirements.some(requirement=>requirement.code==='native-account'));
 });

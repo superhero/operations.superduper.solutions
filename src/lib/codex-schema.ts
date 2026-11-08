@@ -5,7 +5,7 @@ import { withOperationCapabilities, nativeCapabilityIssues } from "./operation-c
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { nativeRpcOperation, codexExecutionLimitation } from "./native-rpc.ts";
-import { isNativeWorkflowMethod } from "./native-agent-contract.ts";
+import { isNativeWorkflowOperation } from "./native-account.ts";
 import { nativeRuntimeVersion } from "./native-runtime-contract.ts";
 export { codexExecutionLimitation } from "./native-rpc.ts";
 
@@ -42,11 +42,14 @@ export function inspectCodexSchema(document: Value, id: string, selected?: Reado
       throw new Error("Invalid Codex App Server schema: client requests must have unique method names and request IDs.");
     const method = methods[0];
     seen.add(method);
+    // Preserve the native protocol, but omit setup until Windows provisioning
+    // has a qualified runtime. Readiness and the other methods stay available.
+    if (method === "windowsSandbox/setupStart") continue;
     const identity = `${id}:${method}`;
     if (selected && !selected.has(identity)) continue;
     operations.push(selected ? nativeRpcOperation(document, identity) : withOperationCapabilities({ id: identity, name: method, description: typeof source.description === "string" ? source.description : "",
       group: "Client requests", method: "RPC", path: method, fields: [], bodyRequired: false,
-      ...(!(isNativeWorkflowMethod(method) && info.version === nativeRuntimeVersion) ? { unavailableReason: codexExecutionLimitation } : {}) }, nativeCapabilityIssues(isNativeWorkflowMethod(method), info.version as string, codexExecutionLimitation)));
+      ...(!(isNativeWorkflowOperation(method) && info.version === nativeRuntimeVersion) ? { unavailableReason: codexExecutionLimitation } : {}) }, nativeCapabilityIssues(isNativeWorkflowOperation(method), info.version as string, codexExecutionLimitation)));
   }
   return { document, operations, name: info.title.trim(), serverUrl: "",
     groups: [{ id, name: info.title.trim(), description: typeof info.description === "string" ? info.description : "",

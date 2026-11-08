@@ -6,7 +6,32 @@ import { awsSigningRegions } from "./aws-signing.ts";
 export { awsWireSources } from "./aws-wire.ts";
 import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
+import { excludeRetiredGithubClassroom } from "./github-classroom-retirement.ts";
 import { telegramBotTemplate } from "./server-url.ts";
+import { bindBetaRoutes } from "./literal-query.ts";
+import { bindMultipartFiles, bindCloudflareLogo } from "./multipart-file-contracts.ts";
+import { bindUploadBodies } from "./upload-body-contracts.ts";
+import { bindDigitalOceanDestinations } from "./digitalocean-destinations.ts";
+import { bindAtlassianRelativeServers } from "./atlassian-relative-servers.ts";
+import { bindDockerHttp } from "./docker-http.ts";
+import { bindAwsRest } from "./aws-rest-bindings.ts";
+import { bindAwsJson } from "./aws-json-bindings.ts";
+import { bindAwsQuery } from "./aws-query-bindings.ts";
+import { bindMultipartParts } from "./multipart-part-contracts.ts";
+import { bindGmailMessages } from "./gmail-message-contracts.ts";
+import { bindMistralVariants } from "./mistral-variant-contracts.ts";
+import { bindStructuredForms } from "./structured-form-contracts.ts";
+import { bindFormFields } from "./form-field-contracts.ts";
+import { bindMultipartRoots } from "./multipart-root-contracts.ts";
+import { bindAtlassianFiles } from "./atlassian-file-parts.ts";
+import { bindAtlassianTenantServers } from "./atlassian-tenant-servers.ts";
+import { bindAssetsImportSource } from "./assets-import-source.ts";
+import { bindCredentialResults } from "./credential-results.ts";
+import { bindBitbucketContentParameters } from "./parameter-content.ts";
+import { bindTrelloParameterArrays } from "./trello-parameter-arrays.ts";
+import { bindCatalogPaths } from "./catalog-path-bindings.ts";
+import { bindAtlassianDcAuthentication } from "./atlassian-dc-authentication.ts";
+import { bindCommerceAuthentication } from "./atlassian-commerce-authentication.ts";
 import { bindProviderPaths } from "./provider-path-bindings.ts";
 import { bindAtlassianServers } from "./atlassian-server-bindings.ts";
 import { configureS3Files, s3SigningProfile } from "./s3-files.ts";
@@ -14,7 +39,36 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media"; version: 1 };
+export type SchemaPatch = { id: "docker-http-contracts" | "atlassian-relative-servers" | "digitalocean-destinations" | "upload-body-contracts" | "cloudflare-logo-upload" | "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters" | "forge-llm-exclusion" | "github-classroom-retirement"; version: 1 };
+export const forgeLlmExclusion: SchemaPatch = { id: "forge-llm-exclusion", version: 1 };
+export const forgeContainersSourceSha256 = "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1";
+export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
+export const dockerHttpContracts: SchemaPatch = { id: "docker-http-contracts", version: 1 };
+export const atlassianRelativeServers: SchemaPatch = { id: "atlassian-relative-servers", version: 1 };
+export const digitalOceanDestinations: SchemaPatch = { id: "digitalocean-destinations", version: 1 };
+export const uploadBodyContractsPatch: SchemaPatch = { id: "upload-body-contracts", version: 1 };
+export const cloudflareLogoUpload: SchemaPatch = { id: "cloudflare-logo-upload", version: 1 };
+export const multipartFileContracts: SchemaPatch = { id: "multipart-file-contracts", version: 1 };
+export const gmailMessageContracts: SchemaPatch = { id: "gmail-message-contracts", version: 1 };
+export const mistralVariantContracts: SchemaPatch = { id: "mistral-variant-contracts", version: 1 };
+export const structuredFormContracts: SchemaPatch = { id: "structured-form-contracts", version: 1 };
+export const formFieldContracts: SchemaPatch = { id: "form-field-contracts", version: 1 };
+export const multipartRootContracts: SchemaPatch = { id: "multipart-root-contracts", version: 1 };
+export const atlassianFileParts: SchemaPatch = { id: "atlassian-file-parts", version: 1 };
+export const multipartPartContracts: SchemaPatch = { id: "multipart-part-contracts", version: 1 };
+export const awsQueryActions: SchemaPatch = { id: "aws-query-contracts", version: 1 };
+export const awsJsonTargets: SchemaPatch = { id: "aws-json-target-contracts", version: 1 };
+export const awsRestContractsPatch: SchemaPatch = { id: "aws-rest-contracts", version: 1 };
+export const atlassianTenantServers: SchemaPatch = { id: "atlassian-tenant-servers", version: 1 };
+export const assetsImportSourceParameter: SchemaPatch = { id: "assets-import-source-parameter", version: 1 };
+export const privateCredentialResults: SchemaPatch = { id: "private-credential-results", version: 1 };
+export const bitbucketContentParameters: SchemaPatch = { id: "bitbucket-content-parameters", version: 1 };
+export const trelloParameterArrays: SchemaPatch = { id: "trello-parameter-arrays", version: 1 };
+export const catalogPathBindings: SchemaPatch = { id: "catalog-path-bindings", version: 1 };
+export const atlassianDcAuthentication: SchemaPatch = { id: "atlassian-dc-authentication", version: 1 };
+export const commerceAuthentication: SchemaPatch = { id: "atlassian-commerce-authentication", version: 1 };
+export const ecbRegistrationParameters: SchemaPatch = { id: "ecb-registration-parameters", version: 1 };
+export const ecbRegistrationSourceSha256 = "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020";
 export const bigqueryJobMetadata: SchemaPatch = { id: "bigquery-job-metadata", version: 1 };
 export const bigqueryJobSourceSha256 = "84a35e70565d01face776e9dddecb1fc1ffda5bdf60e15fe41b96728c71b2b44";
 export const googleStorageMedia: SchemaPatch = { id: "google-storage-media", version: 1 };
@@ -30,6 +84,7 @@ export const azureEventGridManagementAuth: SchemaPatch = { id: "azure-eventgrid-
 export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authentication", version: 1 };
 export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
 export const githubAuthentication: SchemaPatch = { id: "github-authentication", version: 1 };
+export const githubClassroomRetirement: SchemaPatch = { id: "github-classroom-retirement", version: 1 };
 export const httpResponseStreaming: SchemaPatch = { id: "http-response-streaming", version: 1 };
 export const cloudflarePrivateUpload: SchemaPatch = { id: "cloudflare-private-upload", version: 1 };
 export const cloudflarePrivateUploadSourceSha256 = "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778";
@@ -42,7 +97,35 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "bigquery-job-metadata" ? "BigQuery JSON job metadata"
+  return patch.id === "github-classroom-retirement" ? "Retired GitHub Classroom endpoints"
+    : patch.id === "forge-llm-exclusion" ? "Forge LLM operations awaiting runtime support"
+    : patch.id === "gmail-message-contracts" ? "Gmail JSON resources and MIME uploads"
+    : patch.id === "mistral-variant-contracts" ? "Mistral fragment variants and finite streams"
+    : patch.id === "structured-form-contracts" ? "Reviewed structured form encodings"
+    : patch.id === "form-field-contracts" ? "Reviewed form field wire contracts"
+    : patch.id === "multipart-root-contracts" ? "Reviewed multipart body roots"
+    : patch.id === "atlassian-file-parts" ? "Atlassian multipart file declarations"
+    : patch.id === "multipart-part-contracts" ? "Multipart part media and file names"
+    : patch.id === "aws-query-contracts" ? "AWS Query actions and XML wire contracts"
+    : patch.id === "aws-json-target-contracts" ? "AWS JSON targets and private results"
+    : patch.id === "beta-route-contracts" ? "Beta routes and private work results"
+    : patch.id === "docker-http-contracts" ? "Docker destinations, streams and private registry values"
+    : patch.id === "atlassian-relative-servers" ? "Atlassian relative destinations and required authentication"
+    : patch.id === "digitalocean-destinations" ? "DigitalOcean agent and private upload destinations"
+    : patch.id === "upload-body-contracts" ? "Reviewed native upload body contracts"
+    : patch.id === "cloudflare-logo-upload" ? "Cloudflare logo multipart upload"
+    : patch.id === "multipart-file-contracts" ? "Reviewed multipart file wire contracts"
+    : patch.id === "aws-rest-contracts" ? "AWS REST signing and wire contracts"
+    : patch.id === "atlassian-tenant-servers" ? "Atlassian tenant server variables"
+    : patch.id === "assets-import-source-parameter" ? "Assets import-source path identity"
+    : patch.id === "private-credential-results" ? "Private credential result adoption"
+    : patch.id === "bitbucket-content-parameters" ? "Bitbucket scalar content parameter corrections"
+    : patch.id === "trello-parameter-arrays" ? "Trello primitive parameter arrays"
+    : patch.id === "catalog-path-bindings" ? "Reviewed catalog path parameter bindings"
+    : patch.id === "atlassian-dc-authentication" ? "Atlassian Data Center bearer permissions"
+    : patch.id === "atlassian-commerce-authentication" ? "Commerce access token authentication"
+    : patch.id === "ecb-registration-parameters" ? "ECB registration path parameters"
+    : patch.id === "bigquery-job-metadata" ? "BigQuery JSON job metadata"
     : patch.id === "google-storage-media" ? "Google Storage media upload"
     : patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
@@ -349,6 +432,38 @@ function elevenLabsAuth(document: Record<string, any>): void {
   }
 }
 
+/** The SDMX 2.2.2 source reuses resourceIDs for two differently named routes. */
+function registrationParameters(document: Record<string, any>): void {
+  const parameters = document.components?.parameters;
+  if (document.openapi !== "3.0.0" || document.info?.title !== "SDMX RESTful API, v2.2.2" || document.info.version !== "2.2.2"
+    || document.servers?.length !== 1 || document.servers[0]?.url !== "https://data-api.ecb.europa.eu/service"
+    || !object(parameters) || ["resourceIDs", "providers"].some((key, index) => {
+      const parameter = parameters[key];
+      return parameter?.in !== "path" || parameter.name !== ["resourceID", "providerID"][index] || parameter.required !== true
+        || parameter.style !== "simple" || parameter.schema?.type !== "array" || parameter.schema.items?.type !== "string";
+    })) throw new Error("ECB registration correction requires the reviewed SDMX version, destination and path lists.");
+  const contracts = [
+    { path: "/registration/id/{registrationID}", refs: ["resourceIDs"], index: 0,
+      replacement: { ...structuredClone(parameters.resourceIDs), name: "registrationID", description: "The registration ID(s)." } },
+    { path: "/registration/provider/{agencyID}/{providerID}", refs: ["agencies", "resourceIDs", "updatedBeforeReg", "updatedAfterReg"], index: 1,
+      replacement: { $ref: "#/components/parameters/providers" } },
+  ];
+  const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
+  for (const contract of contracts) {
+    const item = document.paths?.[contract.path], operation = item?.get;
+    if (!object(item) || item.servers !== undefined || item.parameters !== undefined || !object(operation) || operation.servers !== undefined)
+      throw new Error(`ECB registration correction requires the reviewed GET ${contract.path}.`);
+    const original = contract.refs.map(name => ({ $ref: `#/components/parameters/${name}` }));
+    const corrected = original.map((parameter, index) => index === contract.index ? contract.replacement : parameter);
+    if (same(operation.parameters, corrected)
+      && (!Object.hasOwn(operation, "x-upstream-parameters") || same(operation["x-upstream-parameters"], original))) continue;
+    if (!same(operation.parameters, original) || Object.hasOwn(operation, "x-upstream-parameters"))
+      throw new Error(`ECB registration correction requires the reviewed parameters and unused provenance for GET ${contract.path}.`);
+    operation["x-upstream-parameters"] = structuredClone(operation.parameters);
+    operation.parameters = corrected;
+  }
+}
+
 function bigqueryMetadata(document: Record<string, any>): void {
   const item = document.paths?.["/projects/{projectId}/jobs"], operation = item?.post;
   if (document.openapi !== "3.0.0" || document.info?.title !== "BigQuery API" || document.info.version !== "v2"
@@ -410,6 +525,29 @@ function responseStreaming(document: Record<string, any>): void {
       throw new Error("HTTP streaming adaptation cannot replace an unreviewed operation or response contract.");
     operation["x-operations-response-stream"] = profile;
   }
+}
+
+/** These two routes require a Forge-hosted runtime that Operations does not provide.
+ * Keep the native bundle intact; only its active catalog projection omits them. */
+function excludeForgeLlm(document: Record<string, any>): void {
+  const selected = [["/forge/llm", "get", "GET /forge/llm"], ["/forge/llm/{model}", "post", "POST /forge/llm/{model}"]] as const;
+  const marker = { version: 1, reason: "Forge-hosted LLM runtime integration is unavailable.", operationIds: selected.map(row => row[2]) };
+  const fail = () => { throw new Error("Forge LLM exclusion requires the reviewed native routes and runtime contract."); };
+  if (document.openapi !== "3.0.3" || document.info?.title !== "Forge Containers API" || document.info.version !== "1.0.0"
+    || !object(document.paths) || document.servers?.length !== 1 || document.servers[0]?.url !== "{FORGE_EGRESS_PROXY_URL}"
+    || JSON.stringify(document.security) !== '[{"ForgeProxyAuthorization":[]}]') fail();
+  if (document["x-operations-forge-llm-exclusion"] !== undefined) {
+    if (JSON.stringify(document["x-operations-forge-llm-exclusion"]) !== JSON.stringify(marker)
+      || selected.some(([path]) => Object.hasOwn(document.paths, path))) fail();
+    return;
+  }
+  for (const [path, method, id] of selected) {
+    const item = document.paths[path], operation = item?.[method];
+    if (!object(item) || Object.keys(item).length !== 1 || !object(operation) || operation.operationId !== id
+      || JSON.stringify(operation.security) !== '[{"forgeProxyToken":[]}]') fail();
+  }
+  for (const [path] of selected) delete document.paths[path];
+  document["x-operations-forge-llm-exclusion"] = marker;
 }
 
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
@@ -567,10 +705,38 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["docker-http-contracts", "atlassian-relative-servers", "digitalocean-destinations", "upload-body-contracts", "cloudflare-logo-upload", "atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters", "forge-llm-exclusion", "github-classroom-retirement"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "bigquery-job-metadata") bigqueryMetadata(document);
+    if (patch.id === "github-classroom-retirement") excludeRetiredGithubClassroom(document);
+    else if (patch.id === "forge-llm-exclusion") excludeForgeLlm(document);
+    else if (patch.id === "gmail-message-contracts") bindGmailMessages(document);
+    else if (patch.id === "mistral-variant-contracts") bindMistralVariants(document);
+    else if (patch.id === "structured-form-contracts") bindStructuredForms(document);
+    else if (patch.id === "form-field-contracts") bindFormFields(document);
+    else if (patch.id === "multipart-root-contracts") bindMultipartRoots(document);
+    else if (patch.id === "atlassian-file-parts") bindAtlassianFiles(document);
+    else if (patch.id === "multipart-part-contracts") bindMultipartParts(document);
+    else if (patch.id === "aws-query-contracts") bindAwsQuery(document);
+    else if (patch.id === "aws-json-target-contracts") bindAwsJson(document);
+    else if (patch.id === "aws-rest-contracts") bindAwsRest(document);
+    else if (patch.id === "beta-route-contracts") bindBetaRoutes(document);
+    else if (patch.id === "docker-http-contracts") bindDockerHttp(document);
+    else if (patch.id === "atlassian-relative-servers") bindAtlassianRelativeServers(document);
+    else if (patch.id === "digitalocean-destinations") bindDigitalOceanDestinations(document);
+    else if (patch.id === "upload-body-contracts") bindUploadBodies(document);
+    else if (patch.id === "cloudflare-logo-upload") bindCloudflareLogo(document);
+    else if (patch.id === "multipart-file-contracts") bindMultipartFiles(document);
+    else if (patch.id === "atlassian-tenant-servers") bindAtlassianTenantServers(document);
+    else if (patch.id === "assets-import-source-parameter") bindAssetsImportSource(document);
+    else if (patch.id === "private-credential-results") bindCredentialResults(document);
+    else if (patch.id === "bitbucket-content-parameters") bindBitbucketContentParameters(document);
+    else if (patch.id === "trello-parameter-arrays") bindTrelloParameterArrays(document);
+    else if (patch.id === "catalog-path-bindings") bindCatalogPaths(document);
+    else if (patch.id === "atlassian-dc-authentication") bindAtlassianDcAuthentication(document);
+    else if (patch.id === "atlassian-commerce-authentication") bindCommerceAuthentication(document);
+    else if (patch.id === "ecb-registration-parameters") registrationParameters(document);
+    else if (patch.id === "bigquery-job-metadata") bigqueryMetadata(document);
     else if (patch.id === "google-storage-media") storageMedia(document);
     else if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
     else if (patch.id === "digitalocean-bearer-permissions") digitalOceanPermissions(document);

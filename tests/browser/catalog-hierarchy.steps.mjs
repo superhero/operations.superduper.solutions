@@ -11,6 +11,8 @@ import { operationNavigation, operationResourceGroups, navigationOperations } fr
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 import { categoryLabel } from '../../src/lib/category-label.ts';
+import { inspectServiceSchema } from '../../src/lib/service-catalog.ts';
+import { readOperationCapabilities } from '../../src/lib/operation-capabilities.ts';
 import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
@@ -26,7 +28,7 @@ Then('Codex schema settings preserve native data and guard unsupported methods',
   const card = page.locator('[data-schema-id="codex"]');
   await expandSchemaCard(card);
   await expect(card.locator('.schema-description')).toContainText('Codex App Server JSON-RPC protocol');
-  await expect(card.locator('.schema-operation-count dd')).toHaveText('105');
+  await expect(card.locator('.schema-operation-count dd')).toHaveText('104');
   await card.locator('.schema-disclosure > summary').click();
   const viewer = card.getByRole('region', { name: 'Full JSON-RPC JSON: OpenAI / Codex / App Server', exact: true });
   await expect(viewer).toBeVisible();
@@ -41,6 +43,18 @@ Then('Codex schema settings preserve native data and guard unsupported methods',
   assert.equal(document.definitions.ServerNotification.oneOf.length, 85);
   assert.equal(document.paths, undefined);
   assert.equal(download.suggestedFilename(), 'codex.schema.json');
+  const descriptor = descriptors.find(source => source.id === 'codex');
+  assert.equal(document.info.version, descriptor.version);
+  assert.equal(document['x-codex-app-server'].version, descriptor.version);
+  assert.ok(document.definitions.ClientRequest.oneOf.some(request => request.properties.method.enum[0] === 'windowsSandbox/setupStart'));
+  const inspected = inspectServiceSchema(document, 'codex');
+  assert.equal(inspected.operations.length, 104);
+  assert.equal(inspected.operations.some(operation => operation.id === 'codex:windowsSandbox/setupStart'), false);
+  const fork = inspected.operations.find(operation => operation.id === 'codex:thread/fork');
+  assert.ok(fork);
+  const capabilities = readOperationCapabilities(fork);
+  assert.deepEqual(capabilities.issues, []);
+  assert.deepEqual(capabilities.requirements.map(requirement => requirement.code), ['native-host', 'native-method', 'native-account']);
   const enabled = card.getByRole('switch');
   await enabled.click();
   await expect(enabled).toHaveAttribute('aria-checked', 'false');
@@ -56,17 +70,17 @@ Then('Codex schema settings preserve native data and guard unsupported methods',
   await searchOperations(page, 'thread/fork');
   const start = operation(page, 'codex:thread/fork');
   await expect(start).toBeVisible();
-  await expect(start).toHaveAttribute('aria-disabled', 'true');
+  await expect(start).toHaveAttribute('aria-disabled', 'false');
   await start.press('Enter');
-  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
-  const requirements = page.getByRole('dialog', { name: 'Requirements: thread/fork', exact: true });
-  await expect(requirements).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(requirements).toBeHidden();
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
+  await expect(page.getByRole('dialog', { name: 'Requirements: thread/fork', exact: true })).not.toBeVisible();
+  await openCatalog(page);
+  await searchOperations(page, 'windowsSandbox/setupStart');
+  await expect(operation(page, 'codex:windowsSandbox/setupStart')).toHaveCount(0);
   await searchOperations(page, 'thread/start');
   const reviewed = operation(page, 'codex:thread/start');
   await expect(reviewed).toBeVisible(); await expect(reviewed).not.toHaveAttribute('aria-disabled', 'true');
-  await reviewed.press('Enter'); await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
+  await reviewed.press('Enter'); await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
 });
 
 async function expand(page, id, root) {

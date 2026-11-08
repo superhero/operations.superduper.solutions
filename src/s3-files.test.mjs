@@ -110,7 +110,8 @@ async function fixture(style='path') {
 
 Then('S3 corrects only reviewed object byte contracts and retains all native methods',async()=>{
   const raw=await readServiceSchemaUpstream('aws-s3');assert.equal(hash(gunzipSync(await readFile('src/catalogs/services/aws-s3.json.gz')),'sha256','hex'),s3SourceSha256);
-  const doc=applySchemaPatches(raw,[awsS3Files]);assert.deepEqual(await readServiceSchema('aws-s3'),doc);const item=doc.paths['/{Bucket}/{Key}'];
+  const doc=applySchemaPatches(raw,[awsS3Files]), active=await readServiceSchema('aws-s3');const item=doc.paths['/{Bucket}/{Key}'];
+  for(const method of ['get','put'])assert.deepEqual(active.paths['/{Bucket}/{Key}'][method],item[method],'Legacy object byte contracts survive the additional AWS REST correction.');
   for(const [method,profile] of [['get','get-object'],['put','put-object']]){
     const source=raw.paths['/{Bucket}/{Key}'][method],op=item[method];assert.equal(op.operationId,source.operationId);assert.equal(op['x-operations-s3-files'],profile);
     assert.deepEqual(op['x-upstream-s3-object-contract'].responses,source.responses);assert.ok(op.responses.default.content['application/xml']);

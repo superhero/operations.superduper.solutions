@@ -1,10 +1,11 @@
 # Docker native host
 
 Operations can list containers through an optional, separately paired Docker
-companion. The initial native mode is an operator-configured Linux Unix socket.
-It supports only the bundled `docker:ContainerList` operation, using
-`GET /v1.57/containers/json`. Configured ordinary HTTP Docker servers remain a
-separate destination choice.
+companion using an operator-configured Linux Unix socket. The default method
+is `docker:ContainerList`, using `GET /v1.57/containers/json`. Operators can also
+enable `docker:ContainerAttachWebsocket` for bounded, read-only output over a
+real WebSocket connection to that socket. Configured ordinary HTTP Docker
+servers remain a separate destination choice for HTTP operations.
 
 ## Operator configuration
 
@@ -24,6 +25,7 @@ Use this project's pinned Node runtime and `npm run companion:docker`. Configure
 | `OPERATIONS_DOCKER_ALLOWED_ORIGINS` | JSON array of exact Operations origins; HTTPS except explicit loopback development |
 | `OPERATIONS_DOCKER_PAIRING_KEY_FILE` | Owner-only regular file containing a separate base64url key of 43–256 characters |
 | `OPERATIONS_DOCKER_TLS_KEY_FILE`, `OPERATIONS_DOCKER_TLS_CERT_FILE` | Trusted HTTPS certificate and private key files |
+| `OPERATIONS_DOCKER_OPERATIONS` | Optional JSON array of enabled read IDs; defaults to `["docker:ContainerList"]`. Add `"docker:ContainerAttachWebsocket"` explicitly to enable output attachment. |
 
 Listening defaults to `127.0.0.1:8447`. Set `OPERATIONS_DOCKER_LISTEN_HOST` and
 `OPERATIONS_DOCKER_PORT` explicitly when needed. As an alternative to direct TLS,
@@ -46,12 +48,14 @@ for the host's socket and TLS authority.
 1. Enable the Docker schema. In Settings → Secrets, save the companion key as a
    secret credential.
 2. In **Docker hosts**, enter a name and HTTPS companion URL, select that key
-   reference, and choose **Pair Docker host**.
+   reference and read operation, and choose **Pair Docker host**. Each saved
+   pairing authorizes that operation alone.
 3. Verify the displayed engine identity and API. Saved profiles are encrypted;
    reconnect and check actions retain the original identity pins.
-4. Add Docker's container-list operation to the workspace. In its run dialog,
+4. Add the selected Docker read operation to the workspace. In its run dialog,
    unlock Docker hosts if necessary and choose the named **Docker destination**.
-   A configured absolute HTTP server can instead be selected explicitly.
+   For container listing a configured absolute HTTP server can instead be
+   selected explicitly. WebSocket attachment requires its paired companion.
 
 Changed daemon/socket/companion identities require removing the old pairing and
 pairing again. A stale saved native destination cannot silently select HTTP.
@@ -67,17 +71,37 @@ checks the exact allowed origin and bearer key before touching the daemon, and
 binds pairing to host generation, configuration, socket, daemon, API and source
 fingerprint. It checks daemon identity around each container read.
 
-Only `all`, `limit`, `size` and bounded JSON `filters` are accepted. Responses
-retain actual Docker HTTP status, permitted headers and JSON body. Writes,
-upgraded/hijacked streams and non-JSON responses remain unavailable. There is
-no automatic replay. Registered secret values cannot be sent as parameters or
-returned in a workflow result.
+Container listing accepts only `all`, `limit`, `size` and bounded JSON `filters`.
+It retains actual Docker HTTP status, permitted headers and JSON body. The
+optional attachment method accepts a container ID/name, detach keys and output
+flags; `stdin=true` is rejected. It requests saved logs and stdout/stderr by
+default, collects exact WebSocket message bytes into a workflow binary file,
+and publishes the actual 101 handshake status only after a clean close. It
+does not send application messages. Oversized, cancelled or abnormally closed
+attachments produce no partial workflow result. Writes, arbitrary paths and
+other upgraded/hijacked transports remain unavailable. There is no automatic
+replay. Registered secret values cannot be sent as parameters or returned in a
+workflow result, including binary attachment bytes.
 
 Limits are 64 KiB request frames, 2 MiB daemon JSON responses, four in-flight
 requests, 15-second browser requests, five-second socket requests and 15-minute
 pairing sessions. Response metadata and framing have a separate 64 KiB browser
 allowance. The host retains at most 64 pairings; the worker retains four live
 sessions and at most 32 encrypted profiles.
+
+Attachments share the 15-second request deadline and five-second handshake
+limit and have the workflow-file limit of 500,000 bytes. Long-running live
+attachments that do not finish within that budget remain incomplete. Changing
+enabled host methods changes its configuration identity and requires explicit
+re-pairing. Legacy saved profiles without a method field retain listing scope.
+
+Ordinary HTTP methods require an operator-supplied complete HTTP(S) endpoint
+including `/v1.57`; no daemon address is guessed. Registry headers, authentication
+passwords, swarm keys and Docker secret data use private vault inputs. Issued
+identity tokens, swarm join tokens and unlock/signing keys are adopted as vault
+references. Docker JSON progress replies retain every bounded record and fail
+on provider errors; event replies use the existing event stream reader. These
+readers accept Docker's legacy JSON media label only for their reviewed routes.
 
 `src/docker-native.feature` covers the source, companion, private vault,
 identity/version, cancellation, secret handling and HTTP/native graph boundary.

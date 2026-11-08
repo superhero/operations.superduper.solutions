@@ -237,6 +237,12 @@ protocol errors.
 
 ---
 
+<a href="https://www.npmjs.com/package/fflate"><img src=".github/badges/version-dependency-fflate.svg" alt="fflate declared version"></a>
+
+Decompresses embedded schema data and worker programs within the offline bundle.
+
+---
+
 <a href="https://www.npmjs.com/package/ws"><img src=".github/badges/version-dependency-ws.svg" alt="ws declared version"></a>
 
 Provides the WebSocket transport for the optional private Codex companion.

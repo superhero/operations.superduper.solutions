@@ -52,7 +52,7 @@ async function fixture(action) {
 Then('the reviewed Telegram correction retains native bytes and qualifies only its fixed private template', async () => {
   const raw = await readServiceSchemaUpstream('telegram'), doc = await readServiceSchema('telegram');
   assert.equal(createHash('sha256').update(JSON.stringify(raw)).digest('hex'), telegramPrivatePathSourceSha256);
-  assert.deepEqual(serviceSchemaDescriptors.find(item => item.id === 'telegram').patches, [telegramPrivatePath]);
+  assert.deepEqual(serviceSchemaDescriptors.find(item => item.id === 'telegram').patches, [telegramPrivatePath, { id: 'form-field-contracts', version: 1 }]);
   assert.deepEqual(doc.servers, raw.servers); assert.deepEqual(applySchemaPatches(doc, [telegramPrivatePath]), doc);
   const inspected = inspectServiceSchema(doc, 'telegram'); assert.equal(inspected.operations.length, 180);
   assert.equal(inspected.operations.find(item => item.id === 'telegram:getMe').unavailableReason, undefined);
@@ -150,7 +150,7 @@ Then('malformed missing cross origin stale and traversal Telegram bindings fail 
 
 Then('unreviewed Telegram and unrelated server placeholders cannot enter public execution', async () => {
   const doc = document(); delete doc.paths['/getMe'].post['x-operations-private-path'];
-  assert.throws(() => operationServerUrl(doc, { path: '/getMe', method: 'POST' }), /placeholder/);
+  assert.throws(() => operationServerUrl(doc, { path: '/getMe', method: 'POST' }), /private bot token connection/);
   for (const server of ['https://{account}.example.test', 'https://api.telegram.org/bot{other}', 'https://api.telegram.org/bot%7BbotToken%7D']) {
     const changed = document(); changed.servers[0].url = server;
     assert.throws(() => validateSchemaDocument(changed, 'telegram-fixture'));

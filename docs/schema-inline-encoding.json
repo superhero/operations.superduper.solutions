@@ -1,0 +1,137 @@
+{
+  "runtime": "v26.7.0",
+  "measurement": "Node decode only, warm functions, alternating paired order, no gzip/JSON parsing or browser startup claim",
+  "files": 448,
+  "fixedCharacters": 17668022,
+  "adaptiveCharacters": 17653891,
+  "savedCharacters": 14131,
+  "samples": [
+    {
+      "file": "src/catalogs/services/cloudflare.json.gz",
+      "bytes": 1281653,
+      "sha256": "b3b4c501177e463b908e853501523c93e858a9b592405457b365fc4553383116",
+      "sample": 0,
+      "fixedMs": 47.93383700000004,
+      "adaptiveMs": 42.68561
+    },
+    {
+      "file": "src/catalogs/services/cloudflare.json.gz",
+      "bytes": 1281653,
+      "sha256": "b3b4c501177e463b908e853501523c93e858a9b592405457b365fc4553383116",
+      "sample": 1,
+      "adaptiveMs": 53.18362799999977,
+      "fixedMs": 42.90700900000047
+    },
+    {
+      "file": "src/catalogs/services/cloudflare.json.gz",
+      "bytes": 1281653,
+      "sha256": "b3b4c501177e463b908e853501523c93e858a9b592405457b365fc4553383116",
+      "sample": 2,
+      "fixedMs": 44.30483400000048,
+      "adaptiveMs": 42.916283999999905
+    },
+    {
+      "file": "src/catalogs/services/github.json.gz",
+      "bytes": 662463,
+      "sha256": "70ec46ad2f85e022ec5f754911ed78404fcd8aad125a5a5145bd72cd3eaf1c08",
+      "sample": 0,
+      "fixedMs": 26.414160000000265,
+      "adaptiveMs": 23.60947699999997
+    },
+    {
+      "file": "src/catalogs/services/github.json.gz",
+      "bytes": 662463,
+      "sha256": "70ec46ad2f85e022ec5f754911ed78404fcd8aad125a5a5145bd72cd3eaf1c08",
+      "sample": 1,
+      "adaptiveMs": 22.552353999999468,
+      "fixedMs": 19.929925000000367
+    },
+    {
+      "file": "src/catalogs/services/github.json.gz",
+      "bytes": 662463,
+      "sha256": "70ec46ad2f85e022ec5f754911ed78404fcd8aad125a5a5145bd72cd3eaf1c08",
+      "sample": 2,
+      "fixedMs": 19.40503699999954,
+      "adaptiveMs": 21.91580199999953
+    },
+    {
+      "file": "src/catalogs/services/aws-ec2.json.gz",
+      "bytes": 531488,
+      "sha256": "26f1e3f3a2f46c0213a328e6b0b4f1757e16c7398b991f44d084c9ead77eaa7a",
+      "sample": 0,
+      "fixedMs": 16.059009999999944,
+      "adaptiveMs": 17.76351700000032
+    },
+    {
+      "file": "src/catalogs/services/aws-ec2.json.gz",
+      "bytes": 531488,
+      "sha256": "26f1e3f3a2f46c0213a328e6b0b4f1757e16c7398b991f44d084c9ead77eaa7a",
+      "sample": 1,
+      "adaptiveMs": 18.75120599999991,
+      "fixedMs": 15.784574000000248
+    },
+    {
+      "file": "src/catalogs/services/aws-ec2.json.gz",
+      "bytes": 531488,
+      "sha256": "26f1e3f3a2f46c0213a328e6b0b4f1757e16c7398b991f44d084c9ead77eaa7a",
+      "sample": 2,
+      "fixedMs": 15.973638999999821,
+      "adaptiveMs": 17.607191000000057
+    },
+    {
+      "file": "src/catalogs/services/digitalocean.json.gz",
+      "bytes": 443622,
+      "sha256": "7258ef3e58de580fb3ad2989cd8e528a892e05a0f5c9ef659b563eb7a528fda8",
+      "sample": 0,
+      "fixedMs": 13.035096000000522,
+      "adaptiveMs": 14.876478000000134
+    },
+    {
+      "file": "src/catalogs/services/digitalocean.json.gz",
+      "bytes": 443622,
+      "sha256": "7258ef3e58de580fb3ad2989cd8e528a892e05a0f5c9ef659b563eb7a528fda8",
+      "sample": 1,
+      "adaptiveMs": 14.56367500000033,
+      "fixedMs": 12.97508099999959
+    },
+    {
+      "file": "src/catalogs/services/digitalocean.json.gz",
+      "bytes": 443622,
+      "sha256": "7258ef3e58de580fb3ad2989cd8e528a892e05a0f5c9ef659b563eb7a528fda8",
+      "sample": 2,
+      "fixedMs": 12.941289999999753,
+      "adaptiveMs": 14.683289000000514
+    }
+  ],
+  "context": {
+    "name": "ops-catalog-pending-source-native-configuration-co-1794044023",
+    "host": "sds-01",
+    "cpus": 2,
+    "memoryBytes": 4294967296,
+    "additionalSwapBytes": 0,
+    "pids": 512,
+    "gpu": 0
+  },
+  "sourceHashes": {
+    "src/lib/schema-pack-codec.ts": "f830f145cfd2b5057c8e84a6cc3814fd2e5cc4e78e51c71214ef218e926ffce1",
+    "src/lib/service-schema-packs.ts": "653bdd66b099ba51e2b1e14647f06edf62fd7301757e82afed2ab308cf5436f5",
+    "build/schema-pack-plugin.mjs": "ddf7a4d4c26335712dbb9c3dfba53b928adc2039fdfd9028adf1bb292fba9c10"
+  },
+  "artifactBefore": {
+    "bytes": 26215053,
+    "sha256": "3578878072b75981eddf58d464d5d7275363d480c188635fac3d15228b02cd85",
+    "limitBytes": 26214400
+  },
+  "artifactAfter": {
+    "bytes": 26185866,
+    "sha256": "62e73f14721f7e606b550cbbd581d419b58d3c5abc6d830c5150033f286497ef",
+    "limitBytes": 26214400
+  },
+  "buildResources": {
+    "cpus": 4,
+    "memoryBytes": 6442450944,
+    "additionalSwapBytes": 0,
+    "pids": 512,
+    "gpu": 0
+  }
+}

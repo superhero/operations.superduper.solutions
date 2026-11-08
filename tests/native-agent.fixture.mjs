@@ -6,13 +6,14 @@ import { nativeHostFixture } from './native-runtime.fixture.mjs';
 
 export async function nativeAgentFixture(options = {}) {
   let number = 0;
-  return nativeHostFixture({ ...options, allowAgent: true, onFrame(frame, f, emit) {
+  return nativeHostFixture({ ...options, allowAgent: options.allowAgent ?? true, onFrame(frame, f, emit) {
+    if (options.onFrame?.(frame, f, emit) === true) return true;
     const reply = result => queueMicrotask(() => emit({ id: frame.id, result }));
     if (frame.method === 'account/login/start') {
-      const kind = frame.params.type, loginId = 'login_' + ++number;
+      const kind = frame.params.type, loginId = randomUUID();
       f.finishLogin = (success = true, overrideId = loginId) => {
-        if (success) { f.account = { type: kind === 'apiKey' ? 'apiKey' : 'chatgpt' }; f.identity.accountEpoch = randomUUID(); emit({ method: 'account/updated', params: {} }); }
-        if (kind !== 'apiKey') emit({ method: 'account/login/completed', params: { loginId: overrideId, success, error: success ? null : 'Synthetic login failure' } });
+        if (success) { f.account = kind === 'apiKey' ? { type: 'apiKey' } : { type: 'chatgpt', email: null, planType: 'unknown' }; f.identity.accountEpoch = randomUUID(); emit({ method: 'account/updated', params: {} }); }
+        emit({ method: 'account/login/completed', params: { loginId: kind === 'apiKey' ? null : overrideId, success, error: success ? null : 'Synthetic login failure' } });
       };
       const result = kind === 'apiKey' ? { type: kind } : kind === 'chatgpt' ? { type: kind, loginId, authUrl: 'https://auth.openai.com/authorize?synthetic=true' }
         : { type: kind, loginId, userCode: 'ABCD-EFGH', verificationUrl: 'https://auth.openai.com/codex/device' };

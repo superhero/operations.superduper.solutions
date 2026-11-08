@@ -8,12 +8,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import { vaultCall, readVaultConnections } from "$lib/secrets/client.ts";
   import { dockerHostSelection } from "$lib/secrets/docker-client.ts";
+  import { dockerNativeOperationId, dockerNativeAttachOperationId, isDockerReadOperation, type DockerReadOperationId } from "$lib/docker-native-contract.ts";
   import { dockerReference, type DockerConnection } from "$lib/secrets/docker-config.ts";
   import { safeVaultError, type VaultKey } from "$lib/secrets/types.ts";
   let { records, busy, run, refresh }: { records: VaultKey[]; busy: boolean;
     run: (message: string, action: () => Promise<void>) => Promise<void>; refresh: () => Promise<void> } = $props();
   const keyId = $props.id();
   let label = $state("Docker"), host = $state(""), pairingKeyId = $state("");
+  let operation = $state<DockerReadOperationId>(dockerNativeOperationId);
   let connections = $state<(DockerConnection & { connected: boolean })[]>([]), error = $state(""), notice = $state("");
   async function reload() { connections = await readVaultConnections("dockerConnections"); }
   async function action(message: string, call: () => Promise<void>) {
@@ -27,13 +29,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 <section aria-label="Docker hosts" class="docker-hosts">
   <h4>Docker hosts</h4>
-  <p class="help">Pair a separate Docker companion for container listing. Enable the Docker schema first. Use trusted HTTPS and a host reachable from this device.</p>
+  <p class="help">Pair a separate Docker companion for the selected read operation. Enable the Docker schema first. Use trusted HTTPS and a host reachable from this device.</p>
   {#if records.length}
     <form onsubmit={event => { event.preventDefault(); void action("Pairing Docker host…", async () => {
-      await vaultCall("pairDockerHost", [{ label, host, pairingKeyId }, await dockerHostSelection()]); host = ""; pairingKeyId = ""; notice = "Docker host paired.";
+      await vaultCall("pairDockerHost", [{ label, host, pairingKeyId }, await dockerHostSelection(operation)]); host = ""; pairingKeyId = ""; notice = "Docker host paired.";
     }); }}>
       <label>Name<input aria-label="Docker host name" bind:value={label} maxlength="120" required disabled={busy} /></label>
       <label>Companion URL<input aria-label="Docker companion URL" bind:value={host} type="url" placeholder="https://your-host:8447" required disabled={busy} /></label>
+      <label for={`${keyId}-operation`}>Read operation</label>
+      <FieldSelect id={`${keyId}-operation`} label="Docker read operation" value={operation}
+        options={[{ value: dockerNativeOperationId, label: "List containers" }, { value: dockerNativeAttachOperationId, label: "Read container attachment" }]}
+        required disabled={busy} onValueChange={value => { if (isDockerReadOperation(value)) operation = value; }} />
       <label for={keyId}>Pairing key</label>
       <FieldSelect id={keyId} label="Docker pairing key" value={pairingKeyId} options={records.map(record => ({ value: record.id, label: record.label }))}
         required disabled={busy} onValueChange={value => pairingKeyId = value} />
@@ -43,10 +49,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#each connections as connection (connection.id)}
     <article aria-label={`Docker host ${connection.label}`}>
       <strong>{connection.label}</strong><span>{connection.connected ? "Connected" : "Disconnected"}</span>
-      <p class="identity">{connection.host}<br />Engine {connection.identity.daemonId} · API {connection.identity.apiVersion}</p>
+      <p class="identity">{connection.host}<br />Engine {connection.identity.daemonId} · API {connection.identity.apiVersion}<br />
+        {connection.operation === dockerNativeAttachOperationId ? "Read container attachment" : "List containers"}</p>
       <div class="actions">
         <button type="button" disabled={busy} onclick={() => void action("Checking Docker host…", async () => {
-          await vaultCall("checkDockerHost", [dockerReference(connection), await dockerHostSelection()]); notice = "Docker host checked.";
+          await vaultCall("checkDockerHost", [dockerReference(connection), await dockerHostSelection(connection.operation ?? dockerNativeOperationId)]); notice = "Docker host checked.";
         })}>{connection.connected ? "Check Docker host" : "Reconnect Docker host"}</button>
         {#if connection.connected}<button type="button" disabled={busy} onclick={() => void action("Disconnecting Docker host…", async () => {
           await vaultCall("disconnectDockerHost", [dockerReference(connection)]); notice = "Docker host disconnected.";

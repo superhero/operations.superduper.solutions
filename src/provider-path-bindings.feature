@@ -25,7 +25,7 @@ Feature: Qualified provider path bindings
     Then provider path recipes reject changed identities ambiguous inputs and destination collisions
 
   Scenario: Unreviewed bindings stay unavailable
-    Then unresolved JSM parameters stay guarded while the reviewed server override resolves
+    Then reviewed JSM parameters are executable while unrelated binding gaps remain guarded
 
   Scenario: Changed approved destinations cannot reuse previous credentials
     Then corrected provider bindings reject stale private destination approval

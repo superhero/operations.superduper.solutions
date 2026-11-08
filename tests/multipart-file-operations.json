@@ -1,0 +1,12 @@
+[
+  "anthropic:create_skill_v1_skills_post",
+  "anthropic:create_skill_version_v1_skills__skill_id__versions_post",
+  "cloudflare:workers-ai-post-to-markdown",
+  "elevenlabs:add_pvc_voice_samples",
+  "elevenlabs:add_voice",
+  "elevenlabs:create_finetune",
+  "elevenlabs:edit_voice",
+  "elevenlabs:request_pvc_manual_verification",
+  "elevenlabs:video_to_music",
+  "xai:handle_upload_skill_request"
+]

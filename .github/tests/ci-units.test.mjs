@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, unlinkSync, symlinkSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, unlinkSync, symlinkSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
@@ -18,6 +18,8 @@ import { validatePlan } from '../../tests/gherkin/ci-inputs.mjs';
 import { restoreUnit } from '../scripts/ci-unit-cache.mjs';
 import { command } from '../scripts/ci-browser.mjs';
 import { browserResources, browserResourcePolicy } from '../scripts/ci-browser-resources.mjs';
+import { nativeRuntimePin, nativeRuntimeSeccompPin, qualifiedNativeSeccompProfile, needsNativeRuntime,
+  prepareNativeRuntime, verifyNativeRuntimeFile } from '../scripts/ci-native-runtime.mjs';
 
 Then('the installed artifact SDK verifies a checkpoint with a {string} archive digest', async function (kind) {
   // A stored ZIP containing checkpoint.txt, served through the real SDK's REST
@@ -243,6 +245,8 @@ Then('the browser controller publishes completed evidence and closes its contain
   const { root, plan } = this.ci, calls = [], publications = [];
   const api = async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint);
   const summary = await runBatch({ root, batchId: 'application-1', node: process.execPath, api, note: () => {},
+    prepareNative: async () => assert.fail('Ordinary browser units must not acquire a native runtime.'),
+    prepareAppArmor: async () => assert.fail('Ordinary browser units must retain their default AppArmor policy.'),
     capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
     operation: async input => { publications.push(input); return { id: 123, digest: 'a'.repeat(64) }; },
@@ -258,6 +262,149 @@ Then('the browser controller publishes completed evidence and closes its contain
   assert.deepEqual(summary.resourceBudget, { cpus: 4, memoryBytes: 14 * 1024 ** 3, pids: 512, nodeHeapMiB: 1024 });
   assert.deepEqual(plan.shared.runtime, { ...browserResourcePolicy, timezone: 'UTC', locale: 'en-US', capture: 'full' });
   assert.ok(!start.some(argument => argument.includes('GH_TOKEN') || argument.includes('ACTIONS_RUNTIME_TOKEN')));
+  assert.ok(!start.some(argument => argument.includes('OPERATIONS_CODEX_QUALIFICATION_')));
+  assert.ok(!start.some(argument => argument.startsWith('PATH=')));
+});
+
+Then('native executable verification enforces the reviewed release pins and regular file bytes', async function () {
+  const evidence = readJSON(new URL('../../docs/evidence/codex-native-runtime-0.163.0.json', import.meta.url));
+  assert.equal(evidence.codexVersion, `codex-cli ${nativeRuntimePin.version}`);
+  assert.equal(evidence.binarySha256, nativeRuntimePin.executable.sha256);
+  const path = join(this.automation.root, 'owned-executable'), bytes = Buffer.from('Owned executable integrity fixture.');
+  const pin = { bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };
+  writeFileSync(path, bytes);
+  await verifyNativeRuntimeFile(path, pin);
+  await assert.rejects(verifyNativeRuntimeFile(path, { ...pin, sha256: '0'.repeat(64) }), /digest differs/);
+  await assert.rejects(verifyNativeRuntimeFile(path, { ...pin, bytes: pin.bytes + 1 }), /type or size/);
+  const link = path + '-link'; symlinkSync(path, link);
+  await assert.rejects(verifyNativeRuntimeFile(link, pin), /type or size/);
+  await assert.rejects(verifyNativeRuntimeFile(this.automation.root, pin), /type or size/);
+});
+
+Then('failed native release acquisition leaves no executable directory or runnable fixture', async function () {
+  for (const failure of ['download', 'extract', 'invalid executable']) {
+    let directory;
+    await assert.rejects(prepareNativeRuntime({ platform: 'linux', arch: 'x64', run: async (program, args, options) => {
+      assert.ok(options.timeoutMs <= 240_000);
+      if (program === 'curl') {
+        const archive = args[args.indexOf('--output') + 1]; directory = dirname(archive);
+        assert.equal(args.at(-1), `https://github.com/openai/codex/releases/download/rust-v${nativeRuntimePin.version}/${nativeRuntimePin.executable.member}.tar.gz`);
+        assert.ok(args.includes('=https')); assert.ok(args.includes('--max-filesize'));
+        if (failure === 'download') return { code: 22 };
+        writeFileSync(archive, 'Owned archive fixture.');
+      } else {
+        assert.equal(program, 'tar'); assert.equal(args.at(-1), nativeRuntimePin.executable.member);
+        assert.ok(args.includes('--no-same-owner')); assert.ok(args.includes('--no-same-permissions'));
+        if (failure === 'extract') return { code: 2 };
+        writeFileSync(join(directory, nativeRuntimePin.executable.member), 'Unqualified executable.');
+      }
+      return { code: 0 };
+    } }), /Cannot download|Cannot extract|invalid type or size/);
+    assert.ok(directory); assert.equal(existsSync(directory), false);
+  }
+  let commands = 0;
+  await assert.rejects(prepareNativeRuntime({ platform: 'darwin', arch: 'arm64', run: async () => { commands++; } }), /Linux x64/);
+  const cancellation = new AbortController(); cancellation.abort();
+  await assert.rejects(prepareNativeRuntime({ signal: cancellation.signal, platform: 'linux', arch: 'x64', run: async () => { commands++; } }), { name: 'AbortError' });
+  assert.equal(commands, 0);
+});
+
+Then('only outstanding real native browser units receive the readonly qualified runtime', { timeout: 30_000 }, async function () {
+  const { runBatch } = await import('../scripts/ci-browser.mjs');
+  const { root } = this.ci;
+  const feature = this.ci.plan.units.find(unit => this.ci.plan.batches.find(batch => batch.id === 'application-1').units.includes(unit.id)).feature;
+  assert.equal(needsNativeRuntime(this.ci.plan.units), false);
+  writeFileSync(join(root, feature), '@native-real-runtime\n' + readFileSync(join(root, feature), 'utf8'));
+  const collected = fixtureCommand(root, ['tests/gherkin/ci-discover.mjs', 'tmp/test/ci/bindings.json']);
+  assert.equal(collected.status, 0, collected.stdout + collected.stderr);
+  const plan = planFixture(root); writeJSON(join(root, 'tmp/test/ci/plan.json'), plan);
+  const unit = plan.units.find(item => item.feature === feature);
+  // Execute the changed authored fixture and seal its actual evidence under the
+  // new inputs. The controller mock below must never reuse its earlier receipt.
+  const executed = fixtureCommand(root, ['tests/gherkin/ci.mjs', 'unit', unit.id]);
+  assert.equal(executed.status, 0, executed.stdout + executed.stderr);
+  assert.equal(needsNativeRuntime(plan.units), true);
+  assert.equal(needsNativeRuntime(plan.units.filter(unit => unit.feature !== feature)), false);
+  const calls = [], lifecycle = [], directory = join(this.automation.root, 'qualified-release');
+  const apparmorMetadata = { name: 'owned-native-profile', state: 'enforcing', profilePath: join(directory, 'native-apparmor') };
+  const apparmor = cleanup => ({ name: apparmorMetadata.name, metadata: apparmorMetadata,
+    dockerArguments: ['--security-opt', `apparmor=${apparmorMetadata.name}`],
+    async cleanup(options) { assert.deepEqual(options, { containerAbsent: true }); await cleanup(); } });
+  let preparations = 0;
+  const summary = await runBatch({ root, batchId: 'application-1', node: process.execPath,
+    api: async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint), note: () => {},
+    environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
+    capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
+    prepareNative: async () => { preparations++; lifecycle.push('prepare'); return { directory, cleanup: async () => lifecycle.push('cleanup') }; },
+    prepareAppArmor: async () => { lifecycle.push('apparmor-prepare'); return apparmor(async () => lifecycle.push('apparmor-cleanup')); },
+    preflightNative: async () => { lifecycle.push('preflight'); return { passed: true, context: { apparmor: `${apparmorMetadata.name} (enforce)` } }; },
+    operation: async () => ({ id: 123, digest: 'a'.repeat(64) }),
+    run: async (program, args) => {
+      calls.push([program, args]); if (args[0] === 'run' || args[0] === 'rm') lifecycle.push(args[0]);
+      return { code: 0, output: args.includes('inspect') ? plan.shared.image : '' };
+    },
+  });
+  assert.equal(preparations, 1); assert.equal(summary.fresh, 1);
+  assert.deepEqual(lifecycle, ['prepare', 'apparmor-prepare', 'run', 'preflight', 'rm', 'apparmor-cleanup', 'cleanup']);
+  const start = calls.find(([, args]) => args[0] === 'run')[1];
+  assert.ok(start.includes(`type=bind,source=${directory},target=/opt/operations-ci-native,readonly`));
+  assert.ok(start.includes('OPERATIONS_CODEX_QUALIFICATION_BINARY=/opt/operations-ci-native/codex'));
+  assert.ok(start.includes('PATH=/opt/operations-ci-native/codex-resources:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'));
+  assert.ok(start.includes(`OPERATIONS_CODEX_QUALIFICATION_SHA256=${nativeRuntimePin.executable.sha256}`));
+  assert.ok(start.includes(`seccomp=${join(directory, 'native-seccomp.json')}`));
+  assert.ok(start.includes(`apparmor=${apparmorMetadata.name}`));
+  assert.ok(start.includes('--network=none')); assert.ok(start.includes('--read-only'));
+  assert.ok(start.includes('--cap-drop=ALL')); assert.ok(start.includes('--security-opt=no-new-privileges'));
+  const uid = spawnSync('id', ['-u'], { encoding: 'utf8' }).stdout.trim(), gid = spawnSync('id', ['-g'], { encoding: 'utf8' }).stdout.trim();
+  assert.ok(start.includes(`${uid}:${gid}`));
+  assert.ok(!start.some(argument => /unconfined|--privileged|--cap-add/.test(argument)));
+  assert.ok(!start.some(argument => argument.includes('GH_TOKEN') || argument.includes('ACTIONS_RUNTIME_TOKEN')));
+  assert.deepEqual(summary.nativeRuntime, { version: nativeRuntimePin.version, executableSha256: nativeRuntimePin.executable.sha256,
+    sandboxSha256: nativeRuntimePin.sandbox.sha256, seccompSha256: nativeRuntimeSeccompPin.profileSha256, apparmor: apparmorMetadata });
+  let blockedPublications = 0, cleaned = 0, unloaded = 0; const blockedCalls = [];
+  await assert.rejects(runBatch({ root, batchId: 'application-1', node: process.execPath,
+    api: async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint), note: () => {},
+    environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
+    capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
+    prepareNative: async () => ({ directory, cleanup: async () => { cleaned++; } }),
+    prepareAppArmor: async () => apparmor(async () => { unloaded++; }),
+    preflightNative: async () => ({ passed: false, failure: { code: 'NATIVE_NAMESPACE_DENIED' } }),
+    operation: async () => { blockedPublications++; },
+    run: async (program, args) => { blockedCalls.push(args); return { code: 0, output: args.includes('inspect') ? plan.shared.image : '' }; },
+  }), /sandbox preflight failed before browser execution/);
+  assert.equal(blockedPublications, 0); assert.equal(cleaned, 1); assert.equal(unloaded, 1);
+  assert.ok(!blockedCalls.some(args => args.includes('tests/gherkin/ci.mjs')));
+  assert.equal(readJSON(join(root, 'tmp/test/ci/batch-application-1.json')).nativePreflight.failure.code, 'NATIVE_NAMESPACE_DENIED');
+  await assert.rejects(runBatch({ root, batchId: 'application-1', node: process.execPath,
+    api: async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint), note: () => {},
+    environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
+    capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
+    prepareNative: async () => ({ directory, cleanup: async () => { cleaned++; } }),
+    prepareAppArmor: async () => apparmor(async () => { unloaded++; }),
+    preflightNative: async () => ({ passed: false, failure: { code: 'NATIVE_NAMESPACE_DENIED' } }),
+    operation: async () => { blockedPublications++; },
+    run: async (program, args) => ({ code: args[0] === 'rm' ? 1 : 0, output: args.includes('inspect') ? plan.shared.image : '' }),
+  }), /browser batch resources could not be removed/);
+  assert.equal(blockedPublications, 0); assert.equal(cleaned, 1); assert.equal(unloaded, 1);
+  const unremoved = readJSON(join(root, 'tmp/test/ci/batch-application-1.json'));
+  assert.equal(unremoved.cleanupFailure.code, 'BROWSER_BATCH_CLEANUP_FAILED');
+  assert.equal(unremoved.nativePreflight.failure.code, 'NATIVE_NAMESPACE_DENIED');
+  assert.deepEqual(unremoved.retainedRuntime, { directory, apparmor: apparmorMetadata });
+});
+
+Then('the qualified native seccomp profile retains every default rule and only six namespace exceptions', function () {
+  const source = readFileSync(new URL('../scripts/ci-native-seccomp-default.json', import.meta.url));
+  const before = JSON.parse(source), bytes = qualifiedNativeSeccompProfile(source), after = JSON.parse(bytes);
+  assert.equal(createHash('sha256').update(source).digest('hex'), nativeRuntimeSeccompPin.baseSha256);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), nativeRuntimeSeccompPin.profileSha256);
+  assert.equal(after.defaultAction, 'SCMP_ACT_ERRNO'); assert.equal(after.defaultErrnoRet, 1);
+  assert.deepEqual(after.syscalls.at(-1), { names: ['clone', 'unshare', 'mount', 'umount2', 'pivot_root', 'setns'], action: 'SCMP_ACT_ALLOW' });
+  after.syscalls.pop(); assert.deepEqual(after, before);
+  assert.ok(after.syscalls.some(rule => rule.names.includes('clone3') && rule.action === 'SCMP_ACT_ERRNO' && rule.errnoRet === 38));
+  assert.throws(() => qualifiedNativeSeccompProfile(Buffer.concat([source, Buffer.from('\n')])), /base seccomp profile differs/);
+  const provenance = readJSON(new URL('../scripts/ci-native-seccomp-default.source.json', import.meta.url));
+  assert.equal(provenance.sha256, nativeRuntimeSeccompPin.baseSha256);
+  assert.equal(provenance.qualifiedProfileSha256, nativeRuntimeSeccompPin.profileSha256);
 });
 
 Then('a {string} browser job on {int} CPUs and {int} GiB of RAM uses {int} CPUs and {int} GiB with a {int} MiB Node heap', (profile, cpus, ram, allocatedCpu, allocatedRam, nodeHeapMiB) => {

@@ -38,10 +38,10 @@ Feature: Explore operations from a local OpenAPI catalog
       | an optional path parameter    | path inputs must be required     |
       | an invalid required flag      | path inputs must be required     |
       | duplicate parameters          | duplicate parameter              |
-      | a missing path parameter      | path placeholders                |
-      | an unused path parameter      | path placeholders                |
+      | a missing path parameter      | missing path parameter declarations |
+      | an unused path parameter      | unused path parameter declarations  |
       | missing array items           | expected an object              |
-      | an unsupported constraint     | unsupported schema fields        |
+      | an invalid pattern            | pattern                          |
       | an invalid enum type          | enum values must match           |
       | an empty enum                 | enum values must match           |
       | a fractional integer enum     | enum values must match           |

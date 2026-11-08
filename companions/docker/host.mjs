@@ -4,12 +4,13 @@
 import { timingSafeEqual } from 'node:crypto';
 import { nativeObject } from '../../src/lib/native-runtime-contract.ts';
 import { dockerNativeProfile as profile, dockerNativeLimits as limits, dockerIdentity, dockerScope,
-  dockerReadParams, sameDockerIdentity } from '../../src/lib/docker-native-contract.ts';
+  dockerOperationParams, dockerReadOperations, sameDockerScope, sameDockerIdentity } from '../../src/lib/docker-native-contract.ts';
 import { DockerHostError } from './runtime.mjs';
 
 /** A separate origin/key authorizes one fixed Docker read, never a generic proxy. */
 export function createDockerCompanion(config, runtime) {
   const url = new URL(config.publicOrigin), allowed = config.allowedOrigins;
+  const operations = dockerReadOperations(config.operations);
   if (url.origin !== config.publicOrigin || url.protocol !== 'https:' || !/^[A-Za-z0-9_-]{43,256}$/.test(config.pairingKey)
     || !Array.isArray(allowed) || !allowed.length || allowed.length > 8 || allowed.some(value => {
       const origin = new URL(value); return origin.origin !== value || origin.protocol !== 'https:'
@@ -48,6 +49,7 @@ export function createDockerCompanion(config, runtime) {
         pairing ? ['profile', 'scope'] : ['profile', 'scope', 'identity', 'params']);
       if (input.profile !== profile) throw new DockerHostError('PERMISSION');
       const scope = dockerScope(input.scope);
+      if (!operations.includes(scope.operation)) throw new DockerHostError('PERMISSION');
       for (const [id, pair] of pairs) if (pair.expiresAt <= now()) pairs.delete(id);
       if (pairing) {
         if (pairs.size >= limits.pairings && !pairs.has(scope.connectionId)) throw new DockerHostError('LIMIT');
@@ -56,8 +58,8 @@ export function createDockerCompanion(config, runtime) {
         return answer(200, { profile, scope, identity, expiresAt });
       }
       const selected = pairs.get(scope.connectionId), identity = dockerIdentity(input.identity);
-      if (!selected || selected.origin !== origin || selected.scope.fingerprint !== scope.fingerprint || !sameDockerIdentity(selected.identity, identity)) throw new DockerHostError('DOCKER_AUTHORITY');
-      const response = await runtime.read(identity, dockerReadParams(input.params), signal);
+      if (!selected || selected.origin !== origin || !sameDockerScope(selected.scope, scope) || !sameDockerIdentity(selected.identity, identity)) throw new DockerHostError('DOCKER_AUTHORITY');
+      const response = await runtime.read(identity, dockerOperationParams(scope.operation, input.params), signal, scope.operation);
       if (signal.aborted || closed || now() >= selected.expiresAt) throw new DockerHostError('DOCKER_AUTHORITY');
       return answer(200, { profile, scope, identity, response });
     } catch (error) {

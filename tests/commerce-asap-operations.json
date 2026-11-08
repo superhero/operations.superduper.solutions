@@ -1,0 +1,8 @@
+[
+  "atlassian-commerce:GET /v2/invoices",
+  "atlassian-commerce:GET /v2/invoices/{id}",
+  "atlassian-commerce:GET /v2/invoice-groups/{id}",
+  "atlassian-commerce:GET /v2/invoice-groups",
+  "atlassian-commerce:GET /v2/credit-notes/{id}",
+  "atlassian-commerce:GET /v2/credit-notes/summary"
+]

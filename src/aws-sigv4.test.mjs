@@ -9,6 +9,7 @@ import { Then } from '@cucumber/cucumber';
 import { vi } from 'vitest';
 import { signAwsRequest } from './lib/secrets/aws-sigv4.ts';
 import { configureAwsSigning } from './lib/aws-signing.ts';
+import { operationInsertionBlockReason } from './lib/operation-capabilities.ts';
 
 Then('AWS signer bounds every supported byte input and rejects invalid key material before signing', async () => {
   const credentials = values;
@@ -107,19 +108,24 @@ Then('AWS rejects public signing overrides multipart bodies invalid clocks and i
   await assert.rejects(signAwsRequest('POST',endpoint+'/',new Headers(),new FormData(),values,context),refused);
   for(const now of [NaN,-1,Infinity,1.5])await assert.rejects(signAwsRequest('GET',endpoint+'/',new Headers(),undefined,values,{...context,now:()=>now}),refused);
 });
-Then('native AWS schemas retain source identities while only the selected Lambda REST request becomes executable',async()=>{
-  const raw=await readServiceSchemaUpstream('aws-lambda'),document=await readServiceSchema('aws-lambda');assert.deepEqual(document,raw);
+Then('native AWS schemas preserve legacy Lambda and S3 profiles alongside reviewed REST operations',async()=>{
+  const raw=await readServiceSchemaUpstream('aws-lambda'),document=await readServiceSchema('aws-lambda');
+  assert.deepEqual(document.paths['/2015-03-31/functions/'].get,raw.paths['/2015-03-31/functions/'].get);
   const descriptor=serviceSchemaDescriptors.find(item=>item.id==='aws-lambda');assert.equal(descriptor.version,'2015-03-31');
   assert.equal(digest(gunzipSync(await readFile('src/catalogs/services/aws-lambda.json.gz'))),descriptor.sha256);
   const models=inspectServiceSchema(document,'aws-lambda').operations;assert.equal(models.length,66);
-  const available=models.filter(item=>!item.unavailableReason);assert.deepEqual(available.map(item=>item.id),['aws-lambda:ListFunctions']);
+  const available=models.filter(item=>!item.awsRest&&!item.unavailableReason);assert.deepEqual(available.map(item=>item.id),['aws-lambda:ListFunctions']);
   assert.equal(available[0].fields.length,4);assert.ok(available[0].fields.every(item=>item.location==='query'));assert.deepEqual(available[0].security,[[scheme]]);
   await approvedOperation(available[0],endpoint);
   const s3=inspectServiceSchema(await readServiceSchema('aws-s3'),'aws-s3').operations;
-  assert.equal(s3.length,97);assert.deepEqual(s3.filter(item=>!item.unavailableReason).map(item=>item.id).sort(),['aws-s3:GetObject','aws-s3:PutObject']);
+  assert.equal(s3.length,97);assert.deepEqual(s3.filter(item=>!item.awsRest&&!item.unavailableReason).map(item=>item.id).sort(),['aws-s3:GetObject','aws-s3:PutObject']);
   assert.ok(s3.filter(item=>!item.unavailableReason).every(item=>item.security[0][0].kind==='aws-sigv4'));
   for(const id of ['aws-sts','aws-dynamodb']) {
-    const methods=inspectServiceSchema(await readServiceSchema(id),id).operations;assert.ok(methods.length>0);assert.deepEqual(methods.filter(item=>!item.unavailableReason).map(item=>item.id).sort(),id==='aws-sts'?['aws-sts:GET_GetCallerIdentity','aws-sts:POST_GetCallerIdentity']:['aws-dynamodb:BatchGetItem','aws-dynamodb:ListTables']);
+    const methods=inspectServiceSchema(await readServiceSchema(id),id).operations;assert.ok(methods.length>0);
+    for(const legacy of id==='aws-sts'?['aws-sts:GET_GetCallerIdentity','aws-sts:POST_GetCallerIdentity']:['aws-dynamodb:BatchGetItem','aws-dynamodb:ListTables'])assert.equal(methods.find(item=>item.id===legacy).unavailableReason,undefined);
+    for(const item of methods)assert.equal(operationInsertionBlockReason(item),undefined,item.id);
+    const unsigned=methods.filter(item=>!item.security?.some(option=>option.some(scheme=>scheme.kind==='aws-sigv4'))).map(item=>item.id).sort();
+    assert.deepEqual(unsigned,id==='aws-sts'?['AssumeRoleWithSAML','AssumeRoleWithWebIdentity'].flatMap(name=>['GET','POST'].map(method=>'aws-sts:'+method+'_'+name)).sort():[],'Only the reviewed STS bootstrap requests omit AWS signing.');
   }
   for(const marker of ['awsSigv4','awsS3'])assert.throws(()=>extractOperationSecurity({components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':marker}}},security:[{hmac:[]}]},{}),/Signature Version 4/);
   for(const marker of ['awsSigv4','awsS3']) {

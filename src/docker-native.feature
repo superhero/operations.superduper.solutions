@@ -71,3 +71,9 @@ Feature: Explicit Docker Unix-socket reads
   @coverage-gaps
   Scenario: Cancellation while encrypting a Docker pairing cannot publish its profile
     Then Docker pairing cancelled while encrypting its profile cannot replace encrypted storage
+
+  Scenario: Docker registry redaction preserves typed nested config boundaries
+    Then Docker registry redactions skip public headers and tolerate noncredential nested values
+
+  Scenario: Legacy Docker profiles retain default read authority
+    Then legacy Docker profiles retain their default container-list authority after encrypted reload

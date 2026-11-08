@@ -180,6 +180,19 @@ jobs:
       - name: Install dependencies
         if: needs.validation.outputs.reused != 'true'
         run: npm ci --no-audit --no-fund
+      - name: Qualify real native SDK sandbox
+        id: native-preflight
+        if: needs.validation.outputs.reused != 'true'
+        run: node .github/scripts/ci-native-preflight.mjs
+      - name: Retain native sandbox preflight diagnostic
+        if: always() && steps.native-preflight.outcome != 'skipped' && steps.native-preflight.outcome != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-native-preflight-attempt-${{ github.run_attempt }}
+          path: tmp/test/ci/native-preflight.json
+          if-no-files-found: warn
+          overwrite: true
+          retention-days: 7
       - name: Type check
         if: needs.validation.outputs.reused != 'true'
         run: npm --loglevel=error run typecheck

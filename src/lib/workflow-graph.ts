@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { operationDisplayDescription } from "./operation-display.ts";
 import type { Operation } from "./catalog.ts";
 import { nativeRpcOperation } from "./native-rpc.ts";
 import { fileValueType } from "./workflow-file.ts";
+import { maxWorkflowUploadBytes } from "./workflow-binary.ts";
 import { defaultProcessingData, type ProcessingKind } from "./workflow-processing.ts";
 import { defaultChartData } from "./workflow-chart.ts";
 import { placeUtilityNode, type WorkflowLayoutNode } from "./workflow-layout.ts";
@@ -157,7 +159,16 @@ function inputGroups(operation: Operation, source: Schema | undefined, pathItem:
   const titles: Record<string, string> = { path: "Path parameters", query: "Query parameters", header: "Headers", cookie: "Cookies" };
   const result = [...groups].map(([id, group]) => ({ id: `input:${id}`, label: titles[id]!,
     schema: { type: "object", properties: group.properties, required: group.required } as unknown }));
-  if (source?.requestBody !== undefined)
+  if (operation.gmailMessage || operation.googleMedia) {
+    const content = source?.requestBody === undefined ? undefined : resolve(source.requestBody, document).schema.content;
+    const resource = object(content) && object(content["application/json"]) ? content["application/json"].schema : operation.bodySchema?.properties?.$;
+    result.push({ id: "input:body", label: "Request body", schema: { type: "object", additionalProperties: false, properties: {
+      $: { ...(object(resource) ? resource : {}), title: operation.googleMedia ? "Metadata" : "Message resource" },
+      [operation.googleMedia ? "$media" : "$mime"]: { type: "string", format: "binary", ...(operation.gmailMessage ? { minLength: 1 } : {}),
+        maxLength: maxWorkflowUploadBytes, title: operation.googleMedia ? "Media file" : "MIME message" },
+    } } });
+  }
+  else if (source?.requestBody !== undefined)
   {
     const body = resolve(source.requestBody, document);
     const content = object(body.schema.content) ? body.schema.content : {};
@@ -234,7 +245,7 @@ export function createOperationGraph(operation: Operation, position: { x: number
   const raw = pathItem[operation.method.toLowerCase()];
   const source = object(raw) ? raw : undefined;
   const nodes: WorkflowDocumentNode[] = [{ id: ownerId, type: "operation", position: { ...position }, data: {
-    operationId: operation.id, name: operation.name, description: operation.description, method: operation.method, path: operation.path,
+    operationId: operation.id, name: operation.name, description: operationDisplayDescription(operation), method: operation.method, path: operation.path,
     ...(operation.protocol === "json-rpc" && operation.rpc ? { protocol: "json-rpc" as const,
       rpc: { version: operation.rpc.version, method: operation.rpc.method } } : {})
   } }];
@@ -248,6 +259,10 @@ export function createOperationGraph(operation: Operation, position: { x: number
     for (const [name, value] of [["result", operation.rpc.workflowResult ?? operation.rpc.result], ["error", operation.rpc.error]] as const)
       outputs.push({ id: `rpc:${name}`, label: name === "result" ? "Result" : "Error",
         schema: { type: "object", additionalProperties: false, properties: { [name]: value }, required: [name] } });
+    if (operation.rpc.workflowDispatched) outputs.push({ id: 'rpc:dispatched', label: 'Command dispatched',
+      schema: { type: 'object', additionalProperties: false, properties: { dispatched: operation.rpc.workflowDispatched }, required: ['dispatched'] } });
+    if (operation.rpc.workflowNotification) outputs.push({ id: 'rpc:notification', label: operation.rpc.method === 'command/exec' ? 'Command output' : 'Filesystem changes',
+      schema: { type: 'object', additionalProperties: false, properties: { notification: operation.rpc.workflowNotification }, required: ['notification'] } });
   }
   const responses = object(source?.responses) ? source.responses : {};
   for (const [status, raw] of Object.entries(responses))
@@ -270,7 +285,7 @@ export function createOperationGraph(operation: Operation, position: { x: number
     const groups = input ? inputs : outputs;
     const trees = groups.length ? groups.slice(0, 100).map(group => ({ id: group.id,
       tree: project(group.schema, schemaDocument, group.id, group.label, "", [], 0, budget, direction,
-        input && group.id === "input:body" && (!!operation.binaryMediaTypes || operation.bodyMediaType === "multipart/form-data")) })) : [{ id: direction,
+        input && group.id === "input:body" && (!!operation.binaryMediaTypes || operation.bodyMediaType === "multipart/form-data" || !!operation.gmailMessage || !!operation.googleMedia)) })) : [{ id: direction,
       tree: { label: input ? "Inputs" : "Outputs", fields: [], children: [], height: 98, span: 98,
         notice: input ? "No input fields documented" : "Response schema not documented" } as Tree }];
     let y = position.y - (trees.reduce((sum, item) => sum + item.tree.span, 0) + (trees.length - 1) * 32) / 2 + 40;
@@ -426,9 +441,9 @@ function objectPanel(nodes: WorkflowDocumentNode[], nodeId: string, document: Sc
     let rpc;
     try { rpc = nativeRpcOperation(document, owner.data.operationId).rpc!; } catch { return; }
     if (node.data.direction === "inputs" && group === "input:params") value = rpc.workflowParams ?? rpc.params;
-    else if (node.data.direction === "outputs" && (group === "rpc:result" || group === "rpc:error")) {
-      const name = group === "rpc:result" ? "result" : "error";
-      value = { type: "object", additionalProperties: false, properties: { [name]: name === "result" ? rpc.workflowResult ?? rpc.result : rpc.error }, required: [name] };
+    else if (node.data.direction === "outputs" && (group === "rpc:result" || group === "rpc:error" || group === 'rpc:notification' && rpc.workflowNotification)) {
+      const name = group === "rpc:result" ? "result" : group === 'rpc:notification' ? 'notification' : "error";
+      value = { type: "object", additionalProperties: false, properties: { [name]: name === "result" ? rpc.workflowResult ?? rpc.result : name === 'notification' ? rpc.workflowNotification : rpc.error }, required: [name] };
     } else return;
   } else {
     const paths = object(document.paths) ? document.paths : {};

@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { operationInsertionBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
 import { validateWorkflowDocument, type WorkflowDocument } from "../workflow-document.ts";
 import { createOperationGraph, insertFileBinaryCast, isWorkflowConnection } from "../workflow-graph.ts";
@@ -16,7 +17,7 @@ export function editAssistantWorkspace(document: WorkflowDocument, edit: Assista
   let nodes = document.nodes, edges = document.edges;
   let nodeId: string | undefined;
   if (edit.kind === "add_operation") {
-    if (!operation || operation.value.id !== edit.operationId || operation.value.unavailableReason) throw new Error("The operation is unavailable.");
+    if (!operation || operation.value.id !== edit.operationId || operationInsertionBlockReason(operation.value)) throw new Error("The operation is unavailable.");
     nodeId = crypto.randomUUID();
     const graph = createOperationGraph(operation.value, { x: edit.x, y: edit.y }, nodeId, operation.schema);
     nodes = [...nodes, ...graph.nodes]; edges = [...edges, ...graph.edges];

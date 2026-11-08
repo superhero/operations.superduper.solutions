@@ -1,14 +1,29 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { literalQueryRoute, validateLiteralQueryFields } from "../literal-query.ts";
+import { validGitlabJsonForm } from "../gitlab-form.ts";
+import { mistralVariantRoute } from "../mistral-variant.ts";
+import { githubAutomationWirePath } from '../github-automations.ts';
+import { isGithubArchive } from '../github-archive.ts';
+import { validGmailMessage } from "../gmail-message.ts";
+import { validUploadModel } from "../media-upload.ts";
+import { supportsCredentialResults, privateResultOriginAllowed } from "../credential-results.ts";
 import { operationBlockReason } from "../operation-capabilities.ts";
 import type { Operation } from "../catalog.ts";
 import { validAwsWireModel, awsWireEndpoint } from "../aws-wire.ts";
 import { validAwsSigningModel, lambdaSigningRegion } from "../aws-signing.ts";
+import { awsRestEndpoint, awsRestWirePath } from "../aws-rest.ts";
+import { awsJsonEndpoint, validAwsJsonModel } from "../aws-json.ts";
+import { awsQueryEndpoint, validAwsQueryModel } from "../aws-query.ts";
+import { validateMultipartParts } from "../multipart-parts.ts";
 import { validS3FilesModel, s3SigningEndpoint } from "../s3-files.ts";
 import { cloudflareOrigin, configureCloudflareUpload, cloudflareUploadProfile, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
-import { serverUrlHasPlaceholder, telegramBotOrigin, telegramPathSecurity } from "../server-url.ts";
+import { serverUrlHasPlaceholder, telegramBotOrigin, telegramPathSecurity, digitalOceanPathSecurity } from "../server-url.ts";
+import { digitalOceanStorageOrigin, validDigitalOceanUpload } from "../digitalocean-destinations.ts";
+import { connectJwtOriginAllowed, requiresConnectJwt } from "../atlassian-relative-servers.ts";
+import { dockerAttachOperationId } from "../docker-http.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
 const encoder = new TextEncoder();
@@ -80,17 +95,37 @@ export function normalizeCredentialOrigin(origin: string): string
 
 function validateOperation(operation: Operation): void
 {
-  if (operation && operationBlockReason(operation) || operation?.credentialResult !== undefined) throw new VaultError("PERMISSION");
+  if (operation.id === dockerAttachOperationId) throw new VaultError("PERMISSION");
+  if (operation && operationBlockReason(operation) || (operation?.credentialResult !== undefined || operation?.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new VaultError("PERMISSION");
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
-  if (operation.awsWire !== undefined) { if (!validAwsWireModel(operation)) throw new VaultError("PERMISSION"); }
-  else validateCredentialPath(operation.path, true);
+  isGithubArchive(operation);
+  if (operation.awsQuery !== undefined) { if (!validAwsQueryModel(operation)) throw new VaultError("PERMISSION"); }
+  else if (operation.awsJson !== undefined) { if (!validAwsJsonModel(operation)) throw new VaultError("PERMISSION"); }
+  else if (operation.awsWire !== undefined) { if (!validAwsWireModel(operation)) throw new VaultError("PERMISSION"); }
+  else {
+    try { validateLiteralQueryFields(operation.path, operation.fields); }
+    catch { throw new VaultError("PERMISSION"); }
+    try { validateCredentialPath(githubAutomationWirePath(operation) ?? awsRestWirePath(operation) ?? mistralVariantRoute(operation)?.path ?? literalQueryRoute(operation.path)?.path ?? operation.path, true); }
+    catch { throw new VaultError("PERMISSION"); }
+  }
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
+  if (operation.bodyEncoding !== undefined && !validGitlabJsonForm(operation)) throw new VaultError("PERMISSION");
+  if (operation.gmailMessage !== undefined && !validGmailMessage(operation)) throw new VaultError("PERMISSION");
+  if ((operation.googleMedia !== undefined || operation.rawUpload !== undefined) && !validUploadModel(operation)) throw new VaultError("PERMISSION");
+  if (operation.multipartParts !== undefined) {
+    if (operation.bodyMediaType !== "multipart/form-data" || !operation.bodySchema) throw new VaultError("PERMISSION");
+    try { validateMultipartParts(operation.multipartParts, operation.bodySchema); } catch { throw new VaultError("PERMISSION"); }
+  }
   if (operation.security?.some(alternative => !Array.isArray(alternative))) throw new VaultError("PERMISSION");
+  if (requiresConnectJwt(operation) && canonicalPolicyValue(operation.security) !== canonicalPolicyValue([[{
+    name: "ConnectJWT", kind: "apiKey", header: "Authorization" }]])) throw new VaultError("PERMISSION");
   if (operation.privatePath !== undefined) {
-    if (operation.privatePath !== "telegram-bot" || !/^(?:GET|POST)$/.test(operation.method)
-      || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path)
-      || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(telegramPathSecurity())) throw new VaultError("PERMISSION");
+    if (operation.privatePath === "digitalocean-upload") {
+      if (!validDigitalOceanUpload(operation) || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(digitalOceanPathSecurity())) throw new VaultError("PERMISSION");
+    } else if (operation.privatePath !== "telegram-bot" || !/^(?:GET|POST)$/.test(operation.method)
+        || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path)
+        || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(telegramPathSecurity())) throw new VaultError("PERMISSION");
   } else if (operation.security?.some(option => option.some(scheme => scheme.path !== undefined))) throw new VaultError("PERMISSION");
   if (operation.security !== undefined && !operation.privatePath)
   {
@@ -144,7 +179,7 @@ function validateOperation(operation: Operation): void
     }
   } else if (operation.security?.flat().some(scheme => scheme.kind === "cloudflare-upload")) throw new VaultError("PERMISSION");
   extractCredentialPermissions(operation.credentialPermissions, operation.security);
-  if (operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4") && !(operation.awsWire ? validAwsWireModel(operation) : operation.s3Files ? validS3FilesModel(operation) : validAwsSigningModel(operation))) throw new VaultError("PERMISSION");
+  if (operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4") && !(operation.awsQuery ? validAwsQueryModel(operation) : operation.awsJson ? validAwsJsonModel(operation) : operation.awsWire ? validAwsWireModel(operation) : operation.s3Files ? validS3FilesModel(operation) : validAwsSigningModel(operation))) throw new VaultError("PERMISSION");
   if (operation.s3Files !== undefined && !validS3FilesModel(operation)) throw new VaultError("PERMISSION");
 }
 
@@ -157,12 +192,18 @@ export async function approvedOperation(operation: Operation, origin: string): P
     const sanitized = JSON.parse(canonicalPolicyValue(operation)) as Operation;
     validateOperation(sanitized);
     const normalized = normalizeCredentialOrigin(origin);
+    if (isGithubArchive(sanitized) && normalized !== 'https://api.github.com') throw new VaultError('PERMISSION');
+    if (sanitized.awsQuery && !awsQueryEndpoint(normalized, sanitized)) throw new VaultError("PERMISSION");
+    if (sanitized.awsJson && !awsJsonEndpoint(normalized, sanitized)) throw new VaultError("PERMISSION");
+    if (sanitized.credentialResult && !privateResultOriginAllowed(sanitized, normalized)) throw new VaultError("PERMISSION");
     if (sanitized.security?.flat().some(scheme => scheme.kind === "aws-sigv4")
-      && !(sanitized.awsWire ? awsWireEndpoint(normalized, sanitized.awsWire) : sanitized.s3Files ? s3SigningEndpoint(normalized) : lambdaSigningRegion(normalized))) throw new VaultError("PERMISSION");
+      && !(sanitized.awsQuery ? awsQueryEndpoint(normalized, sanitized) : sanitized.awsJson ? awsJsonEndpoint(normalized, sanitized) : sanitized.awsRest ? awsRestEndpoint(normalized, sanitized) : sanitized.awsWire ? awsWireEndpoint(normalized, sanitized.awsWire) : sanitized.s3Files ? s3SigningEndpoint(normalized) : lambdaSigningRegion(normalized))) throw new VaultError("PERMISSION");
     if (sanitized.cloudflareUpload && normalized !== cloudflareOrigin) throw new VaultError("PERMISSION");
     if (sanitized.security?.some(option => option.some(scheme => scheme.kind === "oauth1"))
       && (normalized !== "https://api.x.com" || !sanitized.path.startsWith("/2/"))) throw new VaultError("PERMISSION");
-    if (sanitized.privatePath && normalized !== telegramBotOrigin) throw new VaultError("PERMISSION");
+    if (requiresConnectJwt(sanitized) && !connectJwtOriginAllowed(sanitized, normalized)) throw new VaultError("PERMISSION");
+    if (sanitized.privatePath === "digitalocean-upload") digitalOceanStorageOrigin(normalized);
+    else if (sanitized.privatePath && normalized !== telegramBotOrigin) throw new VaultError("PERMISSION");
     if (normalized === telegramBotOrigin && !sanitized.privatePath) throw new VaultError("PERMISSION");
     const bytes = encoder.encode(canonicalPolicyValue({ origin: normalized, operation: sanitized }));
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
