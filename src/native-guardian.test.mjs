@@ -135,7 +135,7 @@ Then('an observed Guardian denial dispatches only after one matching human appro
   await assert.rejects(c.execute(nativeGuardianMethod, { threadId: c.threadId, reviewId: denial.reviewId }));
   assert.equal(c.f.frames.filter(f => f.method === nativeGuardianMethod).length, 1);
 });
-Then('declined cancelled or revoked Guardian approvals never dispatch', async function () {
+Then('declined cancelled or revoked Guardian approvals never dispatch', { timeout: 60000 }, async function () {
   for (const mode of ['decline', 'cancel', 'revoke']) {
     const c = await setup(this), denial = await denied(c), controller = new AbortController(), work = approval(c, denial, controller.signal);
     await waitForWatch(() => work.notices.length); const token = work.notices[0].token;

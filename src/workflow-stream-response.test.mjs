@@ -204,9 +204,10 @@ Then('private stream progress contains counts only and the assembled result is s
 });
 
 Then('pinned OpenAI and Ollama operations select reviewed stream profiles while unrelated streams stay unavailable', async () => {
-  for (const [id, names] of [['openai', { createResponse: 'openai-responses' }], ['ollama', { chat: 'ollama-chat', generate: 'ollama-generate' }]]) {
+  for (const [id, names] of [['openai', { createResponse: 'openai-responses', beta_createResponse: 'openai-responses' }], ['ollama', { chat: 'ollama-chat', generate: 'ollama-generate' }]]) {
     const source = serviceSchemaDescriptors.find(item => item.id === id), raw = await readServiceSchemaUpstream(id), doc = await readServiceSchema(id);
-    assert.deepEqual(source.patches, [httpResponseStreaming]);
+    assert.deepEqual(source.patches, [httpResponseStreaming, ...(id === 'openai'
+      ? ['beta-route-contracts', 'multipart-part-contracts', 'form-field-contracts', 'structured-form-contracts'].map(id => ({ id, version: 1 })) : [])]);
     assert.equal(createHash('sha256').update(JSON.stringify(raw)).digest('hex'), source.sha256);
     assert.deepEqual(applySchemaPatches(doc, [httpResponseStreaming]), doc);
     const inspected = inspectServiceSchema(doc, id);
@@ -217,7 +218,8 @@ Then('pinned OpenAI and Ollama operations select reviewed stream profiles while 
       const result = await readWorkflowResponseBody(reply(profile, wire(profile), 7), op, 'POST', new AbortController().signal);
       assert.equal(result.mediaType, 'application/json'); assert.equal(result.transportMediaType, streamMediaType(profile));
     }
-    assert.equal(inspected.operations.filter(op => op.responseStream).length, Object.keys(names).length);
+    assert.equal(inspected.operations.filter(op => op.responseStream).length, Object.keys(names).length,
+      JSON.stringify(inspected.operations.filter(op => op.responseStream).map(op => [op.id, op.path, op.responseStream])));
     const changed = structuredClone(raw); changed.servers[0].url = 'https://unreviewed.example.test';
     assert.throws(() => applySchemaPatches(changed, [httpResponseStreaming]), /reviewed/);
   }

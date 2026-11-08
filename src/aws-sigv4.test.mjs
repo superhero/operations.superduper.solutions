@@ -9,6 +9,7 @@ import { Then } from '@cucumber/cucumber';
 import { vi } from 'vitest';
 import { signAwsRequest } from './lib/secrets/aws-sigv4.ts';
 import { configureAwsSigning } from './lib/aws-signing.ts';
+import { operationInsertionBlockReason } from './lib/operation-capabilities.ts';
 
 Then('AWS signer bounds every supported byte input and rejects invalid key material before signing', async () => {
   const credentials = values;
@@ -120,7 +121,11 @@ Then('native AWS schemas preserve legacy Lambda and S3 profiles alongside review
   assert.equal(s3.length,97);assert.deepEqual(s3.filter(item=>!item.awsRest&&!item.unavailableReason).map(item=>item.id).sort(),['aws-s3:GetObject','aws-s3:PutObject']);
   assert.ok(s3.filter(item=>!item.unavailableReason).every(item=>item.security[0][0].kind==='aws-sigv4'));
   for(const id of ['aws-sts','aws-dynamodb']) {
-    const methods=inspectServiceSchema(await readServiceSchema(id),id).operations;assert.ok(methods.length>0);assert.deepEqual(methods.filter(item=>!item.unavailableReason).map(item=>item.id).sort(),id==='aws-sts'?['aws-sts:GET_GetCallerIdentity','aws-sts:POST_GetCallerIdentity']:['aws-dynamodb:BatchGetItem','aws-dynamodb:ListTables']);
+    const methods=inspectServiceSchema(await readServiceSchema(id),id).operations;assert.ok(methods.length>0);
+    for(const legacy of id==='aws-sts'?['aws-sts:GET_GetCallerIdentity','aws-sts:POST_GetCallerIdentity']:['aws-dynamodb:BatchGetItem','aws-dynamodb:ListTables'])assert.equal(methods.find(item=>item.id===legacy).unavailableReason,undefined);
+    for(const item of methods)assert.equal(operationInsertionBlockReason(item),undefined,item.id);
+    const unsigned=methods.filter(item=>!item.security?.some(option=>option.some(scheme=>scheme.kind==='aws-sigv4'))).map(item=>item.id).sort();
+    assert.deepEqual(unsigned,id==='aws-sts'?['AssumeRoleWithSAML','AssumeRoleWithWebIdentity'].flatMap(name=>['GET','POST'].map(method=>'aws-sts:'+method+'_'+name)).sort():[],'Only the reviewed STS bootstrap requests omit AWS signing.');
   }
   for(const marker of ['awsSigv4','awsS3'])assert.throws(()=>extractOperationSecurity({components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':marker}}},security:[{hmac:[]}]},{}),/Signature Version 4/);
   for(const marker of ['awsSigv4','awsS3']) {

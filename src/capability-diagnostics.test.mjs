@@ -84,7 +84,7 @@ Then('supported authentication native and Docker operations describe their indep
   assert.deepEqual(operation.capabilities.requirements.map(value => value.code), ['native-host', 'native-account', 'native-workspace', 'native-method', 'native-terminal']);
   const old = structuredClone(native); old.info.version = old['x-codex-app-server'].version = '0.162.0';
   const incompatible = inspectServiceSchema(old, 'codex').operations.find(value => value.name === 'initialize');
-  assert.deepEqual(incompatible.capabilities.issues.map(value => value.code), ['unsupported-native-method', 'runtime-version']);
+  assert.deepEqual(incompatible.capabilities.issues.map(value => value.code), ['runtime-version']);
   const docker = inspectServiceSchema(await readServiceSchema('docker'), 'docker', new Set(['docker:ContainerList'])).operations[0];
   assert.equal(docker.capabilities.requirements[0].code, 'docker-destination'); assert.equal(operationBlockReason(docker), undefined);
 });
@@ -189,7 +189,7 @@ Then('malformed union branches and form encoding metadata fail with precise diag
   for (const encoding of [null, 42, []])
     assert.throws(() => validateFormBody(empty, false, encoding), /Form part encoding must be an object keyed by field name/);
   for (const settings of [null, 42, [], {}])
-    assert.throws(() => validateFormBody(empty, true, { file: settings }), /Form part "file": custom encoding is not supported/);
+    assert.throws(() => validateFormBody(empty, true, { file: settings }), /Form part "file": encoding must name a declared field/);
   assert.equal(parameterContext({}), 'unknown parameter "<unnamed>" (type=unknown, style="simple", explode=false)');
   assert.equal(parameterContext({ in: 42, name: null, style: {}, explode: [] }, 'array'),
     'unknown parameter "<unnamed>" (type=array, style=<invalid object>, explode=<invalid object>)');

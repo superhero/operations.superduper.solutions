@@ -126,7 +126,7 @@ const invalidCatalogs = {
   "a missing path parameter": () => ({ openapi: "3.1.0", paths: { "/items/{id}": { get: {} } } }),
   "an unused path parameter": () => document({ parameters: [parameter(undefined, { in: "path", required: true })] }),
   "missing array items": () => withInput({ type: "array" }),
-  "an unsupported constraint": () => withInput({ type: "string", pattern: "a+" }),
+  "an invalid pattern": () => withInput({ type: "string", pattern: 42 }),
   "an invalid enum type": () => withInput({ type: "string", enum: [1] }),
   "an empty enum": () => withInput({ type: "string", enum: [] }),
   "a fractional integer enum": () => withInput({ type: "integer", enum: [1.5] }),
@@ -404,9 +404,8 @@ Then("unsupported structures and serializations fail during catalog loading", fu
   for (const [schema, extra] of [
     [{ type: "array", items: { type: "object", properties: {} } }, {}],
     [{ type: "object", properties: { nested: { type: "array", items: { type: "string" } } } }, { style: "deepObject" }],
-    [{ type: "array", items: { type: "string" } }, { in: "header" }],
     [{ type: "string" }, { in: "header", name: "invalid name" }],
-    [{ type: "string" }, { in: "header", explode: true }]
+    [{ type: "string" }, { in: "header", explode: "true" }]
   ]) assert.throws(() => inputOperation(schema, extra), /serialization|header name/);
   assert.throws(() => extractOperations(document({ parameters: [parameter(undefined, { in: "header", name: "X-Key" }), parameter(undefined, { in: "header", name: "x-key" })] }), "fixture"), /duplicate parameter/);
   assert.throws(() => inputOperation({ type: "object", properties: {} }), /serialization/);
@@ -417,8 +416,8 @@ Then("unsupported structures and serializations fail during catalog loading", fu
         ? /Form body.*type=array/ : /Form field "file".*type=array/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "application/json": {}, "text/plain": {} } }), "fixture"), /choose one supported/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "multipart/form-data": {
-    schema: { type: "object", properties: { file: { type: "string" } } }, encoding: { file: { contentType: "application/json" } }
-  } } }), "fixture"), /Form part "file": custom encoding/);
+    schema: { type: "object", properties: { file: { type: "string" } } }, encoding: { file: { headers: { Authorization: { schema: { type: "string" } } } } }
+  } } }), "fixture"), /Form part "file".*headers/);
 });
 
 Then("nullable request inputs preserve explicit omission null and the text null", function ()

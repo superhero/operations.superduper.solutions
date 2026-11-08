@@ -98,7 +98,7 @@ Then('the pinned X recipe enables only reviewed OAuth1 choices without replacing
       for (let i = 0; i < model.security.length; i++) if (!model.security[i].some(s => s.kind === 'oauth1')) assert.deepEqual(model.security[i], old.security[i]);
     }
   }
-  assert.equal(affected, 101); assert.equal(usable, 51);
+  assert.equal(affected, 101); assert.equal(usable, 101);
   for (const change of [doc => { doc.info.version = 'future'; }, doc => { doc.servers[0].url = 'https://evil.example.test'; },
     doc => { doc.paths['/2/users/me'].get.servers = [{ url: endpoint+'/other' }]; }]) {
     const changed = structuredClone(raw); change(changed); assert.throws(() => applySchemaPatches(changed, [xOauth1Signing]), /reviewed/);

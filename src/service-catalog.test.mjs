@@ -10,6 +10,7 @@ import { operationServerUrl } from './lib/schema-documents.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { adaptFredSchema } from '../build/fred-schema.mjs';
+import { operationInsertionBlockReason } from './lib/operation-capabilities.ts';
 
 Then('anonymous service operations reject permission metadata without a security declaration', () => {
   const document = { openapi: '3.1.0', info: { title: 'Anonymous', version: '1' }, servers: [{ url: 'https://example.com' }],
@@ -65,7 +66,7 @@ Then('Google product catalogs retain these collections and prepare scoped Gmail 
     }
   }
   assert.equal(collection.reduce((count, source) => count + source.operations, 0), 655);
-  assert.equal(supported, 640, 'Unsupported binary uploads stay visible instead of losing their request bodies.');
+  assert.equal(supported, 655, 'Qualified uploads preserve all Google product operations.');
   for (const [id, operationId, values, expectedUrl, response] of [
     ['google-gmail', 'gmail.users.getProfile', { 'path:userId': 'me' }, 'https://gmail.googleapis.com/gmail/v1/users/me/profile', { emailAddress: 'test@example.com' }],
     ['google-drive', 'drive.about.get', { 'query:fields': 'user,storageQuota' }, 'https://www.googleapis.com/drive/v3/about?fields=user%2CstorageQuota', { storageQuota: { usage: '123' } }],
@@ -180,7 +181,7 @@ Then('{string} has {int} cloud schemas under {string} including {string}', async
   assert.equal(catalog.operations.length, collection.find(source => source.id === id).operations);
   assert.ok(catalog.operations.every(operation => operation.unavailableReason || operation.security?.some(option => option.length)),
     'Adding service descriptions must not turn authenticated requests into anonymous requests.');
-  if (provider === 'aws') assert.ok(catalog.operations.every(operation => operation.unavailableReason), 'AWS signing remains explicitly unsupported.');
+  if (provider === 'aws') assert.ok(catalog.operations.every(operation => !operation.unavailableReason && operation.security?.some(option => option.some(scheme => scheme.kind === 'aws-sigv4'))), 'Reviewed AWS query operations remain available only through their signing authority.');
 });
 
 Then('the Atlassian collection includes its published product APIs without changing established catalog identities', async () => {
@@ -201,13 +202,9 @@ Then('the Atlassian collection includes its published product APIs without chang
     const catalog = inspectServiceSchema(document, source.id);
     assert.equal(catalog.operations.length, source.operations, source.id);
     assert.equal(new Set(catalog.operations.map(operation => operation.id)).size, source.operations, source.id);
-    if (!['bitbucket', 'jira', 'confluence'].includes(source.id)) {
-      for (const operation of catalog.operations) assert.equal(operation.id, `${source.id}:${operation.method} ${operation.path}`);
-    } else {
-      for (const [path, item] of Object.entries(document.paths)) for (const method of ['get', 'post', 'put', 'patch', 'delete']) {
-        if (typeof item[method]?.operationId === 'string')
-          assert.ok(catalog.operations.some(operation => operation.id === `${source.id}:${item[method].operationId}` && operation.path === path));
-      }
+    for (const [path, item] of Object.entries(document.paths)) for (const method of ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']) {
+      if (typeof item[method]?.operationId === 'string')
+        assert.ok(catalog.operations.some(operation => operation.id === `${source.id}:${item[method].operationId}` && operation.path === path), `${source.id}: preserve the declared identity across reviewed wire-path corrections.`);
     }
     if (source.id === 'atlassian-automation') {
       for (const path of ['/rest/v1/rule/manual/search', '/rest/latest/rule/manual/search']) {
@@ -320,7 +317,7 @@ Then('Telegram templates remain non-secret and only reviewed private connections
   const configured = inspectServiceSchema(document, 'telegram');
   assert.match(configured.operations.find(operation => operation.path === '/getMe').unavailableReason, /reviewed Telegram HTTPS template/);
   const original = await readServiceSchemaUpstream('telegram');
-  assert.match(inspectServiceSchema(original, 'telegram').operations[0].unavailableReason, /placeholder/);
+  assert.match(inspectServiceSchema(original, 'telegram').operations[0].unavailableReason, /private bot token connection/);
   original.servers[0].variables.botToken.default = '123456:sample-token';
   assert.match(inspectServiceSchema(original, 'telegram').operations[0].unavailableReason, /private bot token connection/);
 });
@@ -336,14 +333,15 @@ Then('the default service index retains every packaged operation and reports exe
     assert.equal(new Set(catalog.operations.map(operation => operation.id)).size, descriptor.operations, descriptor.id);
     assert.equal(catalog.groups[0].children.reduce((total, group) => total + group.operationIds.length, 0), descriptor.operations);
     count += catalog.operations.length;
+    for (const operation of catalog.operations) assert.equal(operationInsertionBlockReason(operation), undefined, operation.id);
     runnable += catalog.operations.filter(operation => !operation.unavailableReason).length;
     if (descriptor.id === 'ollama') assert.ok(catalog.operations.some(operation => operation.path === '/api/generate' && !operation.unavailableReason));
     if (descriptor.id === 'frankfurter') assert.ok(catalog.operations.some(operation => !operation.unavailableReason));
   }
-  assert.equal(count, 27225);
+  assert.equal(count, 27216);
   assert.equal(serviceSchemaDescriptors.filter(source => source.protocol !== 'json-rpc')
-    .reduce((total, source) => total + source.operations, 0), 27120, 'Existing HTTP inventory remains unchanged.');
-  assert.ok(runnable > 0);
+    .reduce((total, source) => total + source.operations, 0), 27112, 'The active HTTP inventory excludes the six retired Classroom and two unavailable Forge routes.');
+  assert.equal(runnable, 26525, 'The remaining 691 operations need tenant or endpoint configuration, while every active operation remains insertable.');
 });
 Then('service inputs preserve standard validation and explicitly use server validation for complex JSON', () => {
   const document = { openapi: '3.1.0', info: { title: 'Example service', version: '1' }, servers: [{ url: 'https://example.com' }],
@@ -404,7 +402,7 @@ Then('service contract guards reject invalid operations without dropping their s
   for (const [patch, expected] of [
     [{ parameters: {} }, /must be an array/],
     [{ parameters: [{ in: 'cookie', name: 'token' }] }, /cookie parameter "token"/],
-    [{ requestBody: { content: { 'text/plain': { schema: { type: 'integer' } } } } }, /text body/],
+    [{ requestBody: { content: { 'text/plain': { schema: { type: 'integer' } } } } }, /text\/plain requires a string schema/],
     [{ parameters: [{ $ref: '#/missing/path' }] }, /Unresolved/],
     [{ parameters: [{ $ref: '#/info/title/missing' }] }, /Unresolved/]
   ]) {

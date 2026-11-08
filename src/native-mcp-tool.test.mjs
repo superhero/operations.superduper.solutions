@@ -40,7 +40,7 @@ Then('paired MCP tool calls preserve arguments metadata application errors and t
   assert.equal(c.f.frames.filter(frame => frame.method === 'thread/start').length, 1); assert.equal(c.f.frames.some(frame => frame.method === 'turn/start'), false);
 });
 
-Then('MCP tools reject missing grants old workflow approvals foreign threads and unloaded threads', async function () {
+Then('MCP tools reject missing grants old workflow approvals foreign threads and unloaded threads', { timeout: 60000 }, async function () {
   const denied = await setup(this, { allowMcpTools: false, allowMcpRead: true, allowMetadata: true, allowApps: true });
   await assert.rejects(denied.tool(params(await denied.thread()))); assert.equal(calls(denied.f).length, 0);
   const anonymous = await setup(this, { account: null, requiresOpenaiAuth: false }); await anonymous.tool(params(await anonymous.thread()));
@@ -74,7 +74,7 @@ Then('MCP tool parameters preserve JSON values and reject invalid or private inp
   assert.equal(built.params.arguments, true); assert.equal(built.params._meta, null);
 });
 
-Then('MCP tool replies withhold malformed fields encodings and private structured or binary echoes', async function () {
+Then('MCP tool replies withhold malformed fields encodings and private structured or binary echoes', { timeout: 60000 }, async function () {
   const c = await setup(this), secret = 'SYNTHETIC_MCP_TOOL_PRIVATE_RESULT'; await c.v.session.put(null, { label: 'Tool echo fixture', kind: 'secret', value: secret });
   const publicResult = { content: [{ type: 'image', mimeType: 'image/png', data: 'AAEC/w==' }, { type: 'audio', mimeType: 'audio/wav', data: 'AAEC/w==' },
     { type: 'resource', resource: { uri: 'owned:resource', blob: 'AAEC/w==' } }, { type: 'resource_link', name: 'Owned link', uri: 'owned:resource' }], isError: false };

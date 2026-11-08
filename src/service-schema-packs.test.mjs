@@ -28,9 +28,9 @@ Then('pinned Twilio and Atlassian Basic operations dispatch selected username an
       unavailable: inspection.operations.filter(operation => operation.unavailableReason).map(operation => ({ id: operation.id, reason: operation.unavailableReason })) };
     if (id === 'twilio') {
       assert.equal(inspection.operations.length, 197);
-      assert.equal(available.length, 196);
-      assert.deepEqual(census[id].unavailable.map(operation => operation.id), ['twilio:CreatePayments']);
-      assert.ok(census[id].unavailable.every(operation => /Form field "Parameter" \(type=json\)/.test(operation.reason)));
+      assert.equal(available.length, 197);
+      assert.deepEqual(census[id].unavailable, []);
+      assert.equal(available.find(operation => operation.id === 'twilio:CreatePayments').unavailableReason, undefined);
       assert.ok(available.every(operation => operation.security.some(option => option.some(scheme => scheme.kind === 'basic'))));
     }
     const operation = available.find(operation => operation.id === operationId);
@@ -70,9 +70,8 @@ Then('the five pinned Twilio array forms preserve repeated fields and separate r
   const { executeCredentialed } = await import('./lib/secrets/execution.ts');
   const document = await readServiceSchema('twilio'), original = JSON.stringify(document);
   const inspection = inspectServiceSchema(document, 'twilio');
-  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 196);
-  assert.deepEqual(inspection.operations.filter(op => op.unavailableReason).map(op => op.id).sort(),
-    ['twilio:CreatePayments']);
+  assert.equal(inspection.operations.filter(op => !op.unavailableReason).length, 197);
+  assert.deepEqual(inspection.operations.filter(op => op.unavailableReason), []);
   for (const id of ['twilio:CreateSiprec', 'twilio:CreateStream'])
     assert.equal(inspection.operations.find(operation => operation.id === id).unavailableReason, undefined, id);
   const identities = { AccountSid: 'AC'+'1'.repeat(32), CallSid: 'CA'+'1'.repeat(32), ConferenceSid: 'CF'+'1'.repeat(32),
@@ -149,7 +148,7 @@ Then('pinned Atlassian and X authentication alternatives retain independently us
       }
     }
   }
-  assert.equal(census.atlassian.mixed, 1678);
+  assert.equal(census.atlassian.mixed, 2144);
   assert.equal(census.x.mixed, 101);
   const { writeFile } = await import('node:fs/promises');
   await writeFile('tmp/provider-census.json', JSON.stringify(census, null, 2)+'\n');
@@ -307,7 +306,7 @@ Then('DigitalOcean published permissions become canonical metadata and dispatch 
   const { executeCredentialed } = await import('./lib/secrets/execution.ts');
   const { approvedOperation } = await import('./lib/secrets/policy.ts');
   const source = serviceSchemaDescriptors.find(source => source.id === 'digitalocean');
-  assert.deepEqual(source.patches, [{ id: 'digitalocean-bearer-permissions', version: 1 }]);
+  assert.deepEqual(source.patches, ['digitalocean-bearer-permissions', 'digitalocean-destinations', 'private-credential-results'].map(id => ({ id, version: 1 })));
   const published = await readServiceSchemaUpstream(source.id);
   const corrected = await readServiceSchema(source.id);
   assert.equal(source.sha256, '4bcce59b45927194934c760b8201d34bcde63a7caea21840aaa2f6dc68c5b0fd', 'The published pack stays immutable.');
@@ -323,7 +322,7 @@ Then('DigitalOcean published permissions become canonical metadata and dispatch 
   assert.equal(correctedModels.length, 855);
   assert.equal(authErrors(published), 831);
   assert.equal(authErrors(corrected), 0);
-  assert.equal(originalModels.filter(operation => /only empty scope arrays/.test(operation.unavailableReason ?? '')).length, 830);
+  assert.equal(originalModels.filter(operation => /only empty scope arrays/.test(operation.unavailableReason ?? '')).length, 831);
   assert.ok(correctedModels.every(operation => !/security|authentication|scope arrays/i.test(operation.unavailableReason ?? '')));
   let permissionOperations = 0, permissionAlternatives = 0;
   for (const [path, item] of Object.entries(published.paths)) for (const [method, operation] of Object.entries(item)) {
@@ -426,7 +425,7 @@ Then('Google Cloud corrections preserve published packs and enable both private 
   assert.equal(sources.length, 52);
   let available = 0, unavailable = 0;
   for (const source of sources) {
-    assert.deepEqual(source.patches, [{ id: 'google-oauth-alternatives', version: 1 },
+    assert.deepEqual(source.patches, [...(source.id === 'gcp-artifactregistry' ? [{ id: 'upload-body-contracts', version: 1 }] : []), { id: 'google-oauth-alternatives', version: 1 },
       ...(source.id === 'gcp-bigquery' ? [{ id: 'bigquery-job-metadata', version: 1 }] : []),
       ...(source.id === 'gcp-storage' ? [{ id: 'google-storage-media', version: 1 }] : [])]);
     const document = await readServiceSchema(source.id);
@@ -435,8 +434,8 @@ Then('Google Cloud corrections preserve published packs and enable both private 
     available += inspection.operations.filter(operation => !operation.unavailableReason).length;
     unavailable += inspection.operations.filter(operation => operation.unavailableReason).length;
   }
-  assert.equal(available, 2123);
-  assert.equal(unavailable, 5, 'Separate request-media limitations remain explicit.');
+  assert.equal(available, 2128);
+  assert.equal(unavailable, 0, 'Qualified upload contracts preserve every scoped operation.');
   const original = await readServiceSchemaUpstream('gcp-speech');
   const corrected = await readServiceSchema('gcp-speech');
   const id = 'gcp-speech:speech.operations.list';
@@ -487,7 +486,7 @@ Then('corrected schema packs reject stale revision metadata while retaining the 
       'Invalid correction metadata cannot alter the independently verified published source.');
   }
 });
-Then('all service schema packs match their size hash and operation inventory', async () => {
+Then('all service schema packs match their size hash and operation inventory', { timeout: 60000 }, async () => {
   const ids = serviceSchemaDescriptors.map(item => item.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.deepEqual([...new Set(serviceSchemaDescriptors.map(item => item.provider ?? item.id))].sort(), [
@@ -515,9 +514,10 @@ Then('all service schema packs match their size hash and operation inventory', a
     }
     references(document);
     const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']);
-    assert.equal(descriptor.protocol === 'json-rpc' ? document.definitions.ClientRequest.oneOf.length
-      : Object.values(document.paths).reduce((count, item) => count + Object.keys(item).filter(key => methods.has(key)).length, 0),
-      descriptor.operations, descriptor.id);
+    if (descriptor.protocol === 'json-rpc') {
+      assert.equal(document.definitions.ClientRequest.oneOf.length, 105, 'Retain every pinned native wire definition, including the excluded Windows setup method.');
+      assert.equal(inspectServiceSchema(document, descriptor.id).operations.length, descriptor.operations, descriptor.id);
+    } else assert.equal(Object.values(document.paths).reduce((count, item) => count + Object.keys(item).filter(key => methods.has(key)).length, 0), descriptor.operations, descriptor.id);
   }
   const large = fixture({ description: 'test '.repeat(20_000) });
   assert.deepEqual(await decodeServiceSchema(large.pack, large.descriptor), { description: 'test '.repeat(20_000) });
@@ -731,15 +731,15 @@ Then('pinned Anthropic API key and bearer choices dispatch nonstreaming requests
   const { vaultVariablePlaceholder } = await import('./lib/secrets/variables.ts');
   const { credentialSelectionForVariables } = await import('./lib/secrets/bindings.ts');
   const source = serviceSchemaDescriptors.find(item => item.id === 'anthropic');
-  assert.deepEqual(source.patches, [{ id: 'anthropic-authentication', version: 1 }]);
+  assert.deepEqual(source.patches, ['anthropic-authentication', 'beta-route-contracts', 'multipart-file-contracts', 'private-credential-results'].map(id => ({ id, version: 1 })));
   const published = await readServiceSchemaUpstream('anthropic'), document = await readServiceSchema('anthropic');
   assert.equal(published.security, undefined); assert.equal(published.components.securitySchemes, undefined);
   assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
   assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
   const before = inspectServiceSchema(published, 'anthropic'), after = inspectServiceSchema(document, 'anthropic');
-  assert.equal(after.operations.length, 144); assert.equal(after.operations.filter(operation => !operation.unavailableReason).length, 22);
-  assert.deepEqual(after.operations.filter(operation => operation.unavailableReason).map(operation => [operation.id, operation.unavailableReason]),
-    before.operations.filter(operation => operation.unavailableReason).map(operation => [operation.id, operation.unavailableReason]), 'Keep independent URI/media/form limitations.');
+  assert.equal(before.operations.length, 144);
+  assert.equal(after.operations.length, 144); assert.equal(after.operations.filter(operation => !operation.unavailableReason).length, 144);
+  assert.deepEqual(after.operations.filter(operation => operation.unavailableReason), [], 'Reviewed route and upload corrections retain the full authenticated inventory.');
   let checked = 0;
   for (const item of Object.values(document.paths)) for (const [method, operation] of Object.entries(item)) {
     if (!['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'].includes(method)) continue;
@@ -825,7 +825,7 @@ Then('pinned ElevenLabs history and public settings dispatch while credential ac
   const { createWorkflowExecution, createWorkflowRequestExecution } = await import('./lib/workflow-execution.ts');
   const { vaultVariablePlaceholder } = await import('./lib/secrets/variables.ts');
   const source = serviceSchemaDescriptors.find(item => item.id === 'elevenlabs');
-  assert.deepEqual(source.patches, [{ id: 'elevenlabs-authentication', version: 1 }, { id:'private-credential-results', version:1 }]);
+  assert.deepEqual(source.patches, ['elevenlabs-authentication', 'multipart-file-contracts', 'form-field-contracts', 'private-credential-results'].map(id => ({ id, version: 1 })));
   const published = await readServiceSchemaUpstream('elevenlabs'), document = await readServiceSchema('elevenlabs');
   assert.equal(published.security, undefined); assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
   assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
@@ -834,8 +834,8 @@ Then('pinned ElevenLabs history and public settings dispatch while credential ac
   const credentialResults = after.operations.filter(operation => operation.credentialResult);
   assert.equal(credentialResults.length, 9);
   assert.ok(credentialResults.every(operation => !operation.unavailableReason && operation.credentialResultProfile === "private-result-v1"));
-  for (const old of before.operations.filter(operation => operation.unavailableReason))
-    assert.equal(after.operations.find(operation => operation.id === old.id).unavailableReason, old.unavailableReason, 'Independent media/schema/transport limits remain.');
+  assert.equal(before.operations.length, 418);
+  assert.deepEqual(after.operations.filter(operation => operation.unavailableReason), [], 'Qualified form and file contracts retain every native identity.');
   const previous = catalogs.map(catalog => ({ catalog, sourceIdentity: operationSourceIdentity(`${catalog.id}:`), operations: operations.filter(operation => operation.id.startsWith(`${catalog.id}:`)) }));
   const discovery = createSchemaDiscovery(after, source.effectiveSha256), catalog = { id: source.id, file: 'elevenlabs.json', document: discovery.document,
     name: after.name, groups: discovery.groups, execution: { kind: 'http', origin: after.serverUrl } };

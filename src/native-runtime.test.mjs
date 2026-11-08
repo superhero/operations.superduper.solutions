@@ -503,12 +503,15 @@ Then('native broker limits concurrent owners and requests and revokes expired or
 });
 
 Then('native broker rejects malformed account results and converts socket failures without leaking details', async function () {
-  for (const result of [null, [], {}, { requiresOpenaiAuth: 'yes', account: null }, { requiresOpenaiAuth: true },
+  for (const result of [null, [], {}, { requiresOpenaiAuth: 'yes', account: null },
     { requiresOpenaiAuth: true, account: [] }, { requiresOpenaiAuth: true, account: { type: 'foreign' } }]) {
     const f = scriptedRuntime(this, { send(frame, socket) { if (frame.method !== 'account/read') return false;
       queueMicrotask(() => socket.receive({ id: frame.id, result })); return true; } });
     await assert.rejects(f.check(), { code: 'AUTHORIZATION' }); assert.equal(f.sockets[0].readyState, 3);
   }
+  const optional = scriptedRuntime(this, { send(frame, socket) { if (frame.method !== 'account/read') return false;
+    queueMicrotask(() => socket.receive({ id: frame.id, result: { requiresOpenaiAuth: true } })); return true; } });
+  await assert.doesNotReject(optional.check(), 'The pinned native account metadata may omit an absent account.');
   const rpcError = scriptedRuntime(this, { send(frame, socket) { if (frame.method !== 'thread/start') return false;
     queueMicrotask(() => socket.receive({ id: frame.id, error: { message: 'private upstream detail' } })); return true; } });
   const peer = await rpcError.agent(); await assert.rejects(peer.request('thread/start', {}), error => error.code === 'NATIVE_FAILED' && !error.message.includes('private upstream'));

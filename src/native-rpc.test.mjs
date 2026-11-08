@@ -29,7 +29,7 @@ import { isNativeWorkflowOperation } from './lib/native-account.ts';
 Then('native method result declarations resolve every pinned method without enabling execution', async () => {
   const document = await readServiceSchema('codex'); validateNativeMethodResults(document);
   assert.equal(Object.keys(nativeResults.results).length, 105);
-  let blocked = 0;
+  const blocked = [];
   for (const [method, ref] of Object.entries(nativeResults.results)) {
     assert.deepEqual(nativeMethodResult(document, method), { $ref: ref });
     const scoped = scopeNativeRpcSchema(document, method), operation = nativeRpcOperation(scoped, 'codex:' + method);
@@ -38,7 +38,7 @@ Then('native method result declarations resolve every pinned method without enab
       assert.equal(scoped['x-operations-native-method-result'], undefined);
       assert.equal(operation.rpc.methodResult, undefined); assert.equal(operation.unavailableReason, undefined);
     } else {
-      blocked++; assert.deepEqual(operation.rpc.methodResult, { $ref: ref });
+      blocked.push(method); assert.deepEqual(operation.rpc.methodResult, { $ref: ref });
       assert.equal(operation.unavailableReason, codexExecutionLimitation);
       let target = scoped;
       for (const part of ref.slice(2).split('/')) target = target[part];
@@ -47,7 +47,7 @@ Then('native method result declarations resolve every pinned method without enab
       assert.throws(() => prepareNativeRequest(operation, {}), /Unsupported native workflow method/);
     }
   }
-  assert.equal(blocked, 20);
+  assert.deepEqual(blocked, ['windowsSandbox/setupStart']);
 });
 
 Then('native account metadata exposes public and routing properties as connectable result ports', async () => {

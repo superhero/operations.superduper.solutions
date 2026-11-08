@@ -59,7 +59,7 @@ Then('parameter diagnostics name every unsupported field and its serialization m
   parameter(document).style = 'label';
   document.paths['/items/{ids}'].get.parameters.push(
     { name: 'channels', in: 'query', style: 'pipeDelimited', explode: false, schema: { type: 'array', items: { type: 'string' } } },
-    { name: 'X-Tags', in: 'header', schema: { type: 'array', items: { type: 'string' } } });
+    { name: 'X-Tags', in: 'header', schema: { type: 'array', items: { type: 'object', properties: {} } } });
   const message = inspect(document).capabilities.issues.map(issue => issue.message).join('\n');
   assert.match(message, /path parameter "ids" \(type=array, style="label", explode=false\)/);
   assert.match(message, /query parameter "channels" \(type=array, style="pipeDelimited", explode=false\)/);
@@ -78,8 +78,8 @@ Then('parameter diagnostics name every unsupported field and its serialization m
   }
   const content = source(); delete parameter(content).schema;
   parameter(content).content = { 'application/json': { schema: { type: 'string' } } };
-  assert.match(inspect(content).unavailableReason, /path parameter "ids".*Content-encoded parameters/);
-  assert.throws(() => extractOperations(content, 'path-fixture'), /path parameter "ids".*unsupported schema fields: content/);
+  assert.match(inspect(content).unavailableReason, /path parameter "ids".*JSON content parameters require/);
+  assert.throws(() => extractOperations(content, 'path-fixture'), /path parameter "ids".*JSON content parameters require/);
   const cookie = source(); parameter(cookie).in = 'cookie'; delete parameter(cookie).style;
   assert.match(inspect(cookie).unavailableReason, /cookie parameter "ids".*style="form", explode=true/);
   assert.throws(() => extractOperations(cookie, 'path-fixture'), /cookie parameter "ids".*style="form", explode=true/);

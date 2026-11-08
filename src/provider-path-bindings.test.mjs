@@ -62,7 +62,7 @@ Then('GitLab path corrections retain native IDs source bytes and peer methods', 
   assert.equal(moved.paths[scanOld], undefined); assert.equal(moved.paths[epicOld], undefined);
 });
 Then('the pinned JSM Ops correction declares missing cloud IDs without inventing other parameters', async () => {
-  const raw = await readServiceSchemaUpstream(jsm), corrected = await readServiceSchema(jsm), original = entries(raw), current = entries(corrected);
+  const raw = await readServiceSchemaUpstream(jsm), corrected = applySchemaPatches(raw, [providerPathBindings]), original = entries(raw), current = entries(corrected);
   assert.equal(createHash('sha256').update(JSON.stringify(raw)).digest('hex'), providerPathBindingSources[jsm]);
   assert.deepEqual(current.map(value => [value.path, value.method, value.operation.operationId]), original.map(value => [value.path, value.method, value.operation.operationId]));
   assert.equal(current.length, 240); let added = 0;
@@ -123,10 +123,10 @@ Then('provider path recipes reject changed identities ambiguous inputs and desti
   }
   assert.throws(() => applySchemaPatches({},[providerPathBindings]), /reviewed source contract/);
 });
-Then('unresolved JSM parameters stay guarded while the reviewed server override resolves', async () => {
+Then('reviewed JSM parameters are executable while unrelated binding gaps remain guarded', async () => {
   const source = await readServiceSchema(jsm);
   const missing = inspect(source,jsm,`${jsm}:GET /api/{cloudId}/v1/integrations/{integrationId}/actions`);
-  assert.ok(missing.unavailableReason); assert.ok(missing.fields.some(value => value.name === 'cloudId')); assert.ok(!missing.fields.some(value => value.name === 'integrationId'));
+  assert.equal(missing.unavailableReason, undefined); assert.ok(missing.fields.some(value => value.name === 'cloudId')); assert.ok(missing.fields.some(value => value.name === 'integrationId'));
   const server = inspect(source,jsm,`${jsm}:POST /stakeholder-comms/cloudId/{cloudId}/api/subscribers/delete`); assert.equal(server.unavailableReason, undefined);
   assert.equal(operationServerUrl(source, server), 'https://api.atlassian.com/jsm/ops');
   const document = { openapi:'3.1.0',info:{title:'Unrelated',version:'1'},servers:[{url:'https://other.example.test'}],paths:{'/items/{id}':{get:{operationId:'unbound',responses:{200:{description:'OK'}}}}} };

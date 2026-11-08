@@ -181,14 +181,17 @@ Then('the default workflow executor forwards native and Docker calls to their se
     const native = { id: 'codex:thread/start', method: 'RPC', path: 'thread/start', protocol: 'json-rpc' };
     const docker = { id: 'docker:ContainerList', method: 'GET', path: '/containers/json' };
     assert.equal(await executor.executeNative(native, values, nativeBinding, controller.signal, progress), nativeResult);
-    assert.deepEqual(nativeBridge.mock.calls, [[native, values, nativeBinding, controller.signal, progress]]);
+    assert.deepEqual(nativeBridge.mock.calls, [[native, values, nativeBinding, controller.signal, progress, undefined]]);
+    const onValue = () => {};
+    assert.equal(await executor.executeNative(native, values, nativeBinding, controller.signal, progress, onValue), nativeResult);
+    assert.deepEqual(nativeBridge.mock.calls.at(-1), [native, values, nativeBinding, controller.signal, progress, onValue]);
     assert.equal(await executor.executeDocker(docker, values, dockerBinding, controller.signal), dockerResult);
     assert.deepEqual(dockerBridge.mock.calls, [[docker, values, dockerBinding, controller.signal]]);
     const failure = new Error('The selected paired runtime is unavailable.');
     nativeBridge.mockRejectedValueOnce(failure); dockerBridge.mockRejectedValueOnce(failure);
     await assert.rejects(() => executor.executeNative(native, values, nativeBinding, controller.signal, progress), error => error === failure);
     await assert.rejects(() => executor.executeDocker(docker, values, dockerBinding, controller.signal), error => error === failure);
-    assert.equal(nativeBridge.mock.calls.length, 2); assert.equal(dockerBridge.mock.calls.length, 2);
+    assert.equal(nativeBridge.mock.calls.length, 3); assert.equal(dockerBridge.mock.calls.length, 2);
   } finally { nativeBridge.mockRestore(); dockerBridge.mockRestore(); }
 });
 
