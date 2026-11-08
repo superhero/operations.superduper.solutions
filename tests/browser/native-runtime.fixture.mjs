@@ -46,6 +46,27 @@ class MissingNativeQualificationPin extends Error {
   }
 }
 
+class NativeStoredThreadSetupFailure extends Error {
+  constructor(phase, cause, method) {
+    const detail = typeof cause?.message === 'string' ? cause.message : '';
+    const sandbox = /\bbwrap\b|\bbubblewrap\b|fs sandbox helper failed/i.test(detail);
+    const denied = /no permissions|permission denied|operation not permitted|access denied/i.test(detail);
+    const namespace = /namespace|userns|uid map|gid map/i.test(detail);
+    const code = !sandbox ? 'NATIVE_STORED_THREAD_SETUP_FAILED' : denied && namespace ? 'NATIVE_SANDBOX_NAMESPACE_DENIED'
+      : denied ? 'NATIVE_SANDBOX_PERMISSION_DENIED' : 'NATIVE_SANDBOX_SETUP_FAILED';
+    const message = {
+      NATIVE_STORED_THREAD_SETUP_FAILED: 'The pinned Codex SDK could not prepare the owned stored-thread fixture.',
+      NATIVE_SANDBOX_NAMESPACE_DENIED: 'The pinned Codex SDK could not create its filesystem sandbox namespace.',
+      NATIVE_SANDBOX_PERMISSION_DENIED: 'The pinned Codex SDK filesystem sandbox setup was denied permission.',
+      NATIVE_SANDBOX_SETUP_FAILED: 'The pinned Codex SDK filesystem sandbox setup failed.',
+    }[code];
+    super(message);
+    const methods = ['initialize', 'thread/start', 'thread/goal/set', 'thread/inject_items', 'thread/attachment/add', 'thread/shellCommand', 'thread/archive'];
+    this.diagnostic = { message, phase, code, ...(methods.includes(method) ? { method } : {}),
+      ...([-32700, -32600, -32601, -32602, -32603].includes(cause?.code) ? { sdkCode: cause.code } : {}) };
+  }
+}
+
 /** Test control stays on the isolated harness origin. HTTPS, CORS, WSS and the
  * companion handler are real; only the default stdio peer is synthetic. */
 export function createNativeBrowserEndpoint() {
@@ -111,8 +132,13 @@ export function createNativeBrowserEndpoint() {
         if (input.mcpRead === true) await seedNativeMcpRead(home);
         if (input.mcpTools === true) provider = await seedNativeMcpTool(home);
         if (input.threadsRead === true || input.threadsWrite === true) {
-          const seed = await nativeStoredThreadSdkFixture({ home, workspace });
-          try { storedSeed = await seed.seed(); if (input.lifecycleMethod === 'thread/unarchive') await seed.call('thread/archive', { threadId: storedSeed.threadId }); } finally { await seed.close(); }
+          let seed, phase = 'stored-thread.initialize';
+          try {
+            seed = await nativeStoredThreadSdkFixture({ home, workspace }); phase = 'stored-thread.seed';
+            storedSeed = await seed.seed();
+            if (input.lifecycleMethod === 'thread/unarchive') { phase = 'stored-thread.archive'; await seed.call('thread/archive', { threadId: storedSeed.threadId }); }
+          } catch (cause) { throw new NativeStoredThreadSetupFailure(phase, cause, seed?.calls.at(-1)?.method); }
+          finally { await seed?.close(); }
           provider = await seedNativeShellProvider(home); await appendFile(join(home, 'config.toml'), '\n[features]\ngoals=true\n');
         }
         if (input.turnControls === true || input.turnWork === true || input.guardian === true) provider = await seedNativeTurnProvider(home);
@@ -278,7 +304,8 @@ export function createNativeBrowserEndpoint() {
     const match = /^\/native-companion-fixture\/([a-f0-9-]{36})\/(create|observations|seed-migration-history|change-account|authorize-mcp|finish-mcp|finish-login|finish-gateway|finish-response|guardian-tool|guardian-deny|touch-watch|remove-watch|cut|close)$/.exec(new URL(request.url, 'http://localhost').pathname);
     if (!match) return false;
     void handle(request, response, match).catch(cause => {
-      const diagnostic = cause instanceof MissingNativeQualificationPin ? { message: cause.message, missing: cause.missing } : {};
+      const diagnostic = cause instanceof MissingNativeQualificationPin ? { message: cause.message, missing: cause.missing }
+        : cause instanceof NativeStoredThreadSetupFailure ? cause.diagnostic : {};
       response.writeHead(500, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ error: 'native_fixture_unavailable', ...diagnostic }));
     });

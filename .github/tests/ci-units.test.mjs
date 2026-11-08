@@ -330,6 +330,7 @@ Then('only outstanding real native browser units receive the readonly qualified 
     environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
     capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     prepareNative: async () => { preparations++; lifecycle.push('prepare'); return { directory, cleanup: async () => lifecycle.push('cleanup') }; },
+    preflightNative: async () => { lifecycle.push('preflight'); return { passed: true }; },
     operation: async () => ({ id: 123, digest: 'a'.repeat(64) }),
     run: async (program, args) => {
       calls.push([program, args]); if (args[0] === 'run' || args[0] === 'rm') lifecycle.push(args[0]);
@@ -337,7 +338,7 @@ Then('only outstanding real native browser units receive the readonly qualified 
     },
   });
   assert.equal(preparations, 1); assert.equal(summary.fresh, 1);
-  assert.deepEqual(lifecycle, ['prepare', 'run', 'rm', 'cleanup']);
+  assert.deepEqual(lifecycle, ['prepare', 'run', 'preflight', 'rm', 'cleanup']);
   const start = calls.find(([, args]) => args[0] === 'run')[1];
   assert.ok(start.includes(`type=bind,source=${directory},target=/opt/operations-ci-native,readonly`));
   assert.ok(start.includes('OPERATIONS_CODEX_QUALIFICATION_BINARY=/opt/operations-ci-native/codex'));
@@ -351,6 +352,32 @@ Then('only outstanding real native browser units receive the readonly qualified 
   assert.ok(!start.some(argument => argument.includes('GH_TOKEN') || argument.includes('ACTIONS_RUNTIME_TOKEN')));
   assert.deepEqual(summary.nativeRuntime, { version: nativeRuntimePin.version, executableSha256: nativeRuntimePin.executable.sha256,
     sandboxSha256: nativeRuntimePin.sandbox.sha256, seccompSha256: nativeRuntimeSeccompPin.profileSha256 });
+  let blockedPublications = 0, cleaned = 0; const blockedCalls = [];
+  await assert.rejects(runBatch({ root, batchId: 'application-1', node: process.execPath,
+    api: async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint), note: () => {},
+    environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
+    capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
+    prepareNative: async () => ({ directory, cleanup: async () => { cleaned++; } }),
+    preflightNative: async () => ({ passed: false, failure: { code: 'NATIVE_NAMESPACE_DENIED' } }),
+    operation: async () => { blockedPublications++; },
+    run: async (program, args) => { blockedCalls.push(args); return { code: 0, output: args.includes('inspect') ? plan.shared.image : '' }; },
+  }), /sandbox preflight failed before browser execution/);
+  assert.equal(blockedPublications, 0); assert.equal(cleaned, 1);
+  assert.ok(!blockedCalls.some(args => args.includes('tests/gherkin/ci.mjs')));
+  assert.equal(readJSON(join(root, 'tmp/test/ci/batch-application-1.json')).nativePreflight.failure.code, 'NATIVE_NAMESPACE_DENIED');
+  await assert.rejects(runBatch({ root, batchId: 'application-1', node: process.execPath,
+    api: async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint), note: () => {},
+    environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
+    capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
+    prepareNative: async () => ({ directory, cleanup: async () => { cleaned++; } }),
+    preflightNative: async () => ({ passed: false, failure: { code: 'NATIVE_NAMESPACE_DENIED' } }),
+    operation: async () => { blockedPublications++; },
+    run: async (program, args) => ({ code: args[0] === 'rm' ? 1 : 0, output: args.includes('inspect') ? plan.shared.image : '' }),
+  }), /browser batch resources could not be removed/);
+  assert.equal(blockedPublications, 0); assert.equal(cleaned, 2);
+  const unremoved = readJSON(join(root, 'tmp/test/ci/batch-application-1.json'));
+  assert.equal(unremoved.cleanupFailure.code, 'BROWSER_BATCH_CLEANUP_FAILED');
+  assert.equal(unremoved.nativePreflight.failure.code, 'NATIVE_NAMESPACE_DENIED');
 });
 
 Then('the qualified native seccomp profile retains every default rule and only six namespace exceptions', function () {

@@ -10,6 +10,7 @@ import { readJSON, writeJSON, unitDirectory, verifyReceipt } from '../../tests/g
 import { artifactOperation, discoverUnitArtifacts, githubRead, publishUnit, restoreUnit, restoreFailureDiagnostic } from './ci-unit-cache.mjs';
 import { browserResources } from './ci-browser-resources.mjs';
 import { needsNativeRuntime, prepareNativeRuntime, nativeRuntimeDockerArguments, nativeRuntimePin, nativeRuntimeSeccompPin } from './ci-native-runtime.mjs';
+import { runContainerNativePreflight } from './ci-native-probe.mjs';
 
 export async function command(program, args, { cwd = process.cwd(), quiet = false, timeoutMs = 60_000, env = process.env } = {}) {
   return new Promise((resolveDone, reject) => {
@@ -45,14 +46,14 @@ export function orderedMisses(units, artifacts) {
 }
 
 export async function runBatch({ root = process.cwd(), batchId, node, api = githubRead,
-  run = command, operation = artifactOperation, prepareNative = prepareNativeRuntime,
+  run = command, operation = artifactOperation, prepareNative = prepareNativeRuntime, preflightNative = runContainerNativePreflight,
   environment = process.env, capacity, signal, note = console.log } = {}) {
   const started = Date.now(), plan = validatePlan(readJSON(resolve(root, 'tmp/test/ci/plan.json')));
   const batch = plan.batches.find(item => item.id === batchId);
   if (!batch || !['library', 'application-1', 'application-2', 'application-3'].includes(batchId)) throw new Error('Unknown browser batch.');
   if (execFileSync(node, ['--version'], { encoding: 'utf8' }).trim() !== plan.shared.toolchain.node) throw new Error('CI batch must use the pinned project Node.');
   const ownName = `operations-ci-${plan.runId}-${environment.GITHUB_RUN_ATTEMPT}-${batchId}-${randomUUID().slice(0, 8)}`;
-  const summary = { schemaVersion: 1, batch: batchId, testedSha: plan.testedSha, startedAt: new Date().toISOString(),
+  const summary = { schemaVersion: 1, batch: batchId, container: ownName, testedSha: plan.testedSha, startedAt: new Date().toISOString(),
     fresh: 0, reused: 0, failed: 0, unfinished: 0, units: [], lookupMilliseconds: 0 };
   let container = false, launchAttempted = false, stale = false, stopping = signal?.aborted === true, checking, timer, forceTimer, nativeRuntime;
   const active = new Set();
@@ -156,6 +157,10 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
         plan.shared.image, 'node', '-e', 'setInterval(() => {}, 60000)'], { cwd: root, quiet: true, timeoutMs: 60_000 });
       if (result.code !== 0) throw new Error('Cannot start the bounded browser batch.');
       container = true;
+      if (nativeRuntime) {
+        summary.nativePreflight = await preflightNative({ run, container: ownName, root, note });
+        if (!summary.nativePreflight.passed) throw new Error('The real native SDK sandbox preflight failed before browser execution.');
+      }
       if (stopping) await stopOwnedWork();
       timer = setInterval(() => { void checkHead(); }, 30_000);
       await Promise.all(Array.from({ length: batch.workers }, work));
@@ -166,20 +171,28 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
     if (checking) await checking;
     clearTimeout(forceTimer);
     signal?.removeEventListener('abort', cancel);
+    let cleanupFailed = false;
     try {
       if (launchAttempted) {
-        const counters = await run('docker', ['exec', ownName, 'node', '-e',
-          "const fs=require('node:fs');for(const name of ['memory.max','memory.peak','memory.events','cpu.stat'])try{console.log(name+':'+fs.readFileSync('/sys/fs/cgroup/'+name,'utf8'))}catch{}"],
-        { cwd: root, quiet: true, timeoutMs: 5000 });
-        summary.resourceCounters = counters.output;
-        await run('docker', ['rm', '-f', ownName], { cwd: root, quiet: true, timeoutMs: 15_000 });
+        try {
+          const counters = await run('docker', ['exec', ownName, 'node', '-e',
+            "const fs=require('node:fs');for(const name of ['memory.max','memory.peak','memory.events','cpu.stat'])try{console.log(name+':'+fs.readFileSync('/sys/fs/cgroup/'+name,'utf8'))}catch{}"],
+          { cwd: root, quiet: true, timeoutMs: 5000 });
+          summary.resourceCounters = counters.output;
+        } finally {
+          const removed = await run('docker', ['rm', '-f', ownName], { cwd: root, quiet: true, timeoutMs: 15_000 });
+          if (removed.code !== 0) cleanupFailed = true;
+        }
       }
-    } finally { await nativeRuntime?.cleanup(); }
+    } catch { cleanupFailed = true; }
+    try { await nativeRuntime?.cleanup(); } catch { cleanupFailed = true; }
+    if (cleanupFailed) summary.cleanupFailure = { code: 'BROWSER_BATCH_CLEANUP_FAILED' };
     summary.unfinished = queue.length; summary.obsolete = stale; summary.finishedAt = new Date().toISOString();
     summary.wallMilliseconds = Date.now() - started;
     writeJSON(resolve(root, `tmp/test/ci/batch-${batchId}.json`), summary);
     if (environment.GITHUB_STEP_SUMMARY) appendFileSync(environment.GITHUB_STEP_SUMMARY,
       `\n### Browser ${batchId}\n\nFresh: ${summary.fresh}; reused: ${summary.reused}; failed: ${summary.failed}; unfinished: ${summary.unfinished}.\n`);
+    if (cleanupFailed) throw new Error('Owned browser batch resources could not be removed.');
   }
   if (stale || stopping || summary.failed || summary.unfinished) throw new Error(`Browser ${batchId} did not complete current validation.`);
   return summary;
