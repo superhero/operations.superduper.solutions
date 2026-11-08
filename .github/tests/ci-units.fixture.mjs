@@ -42,7 +42,8 @@ function buildTemplate({ report = false } = {}) {
   cpSync(join(repository, 'tests/gherkin'), join(root, 'tests/gherkin'), { recursive: true, filter });
   cpSync(join(repository, 'tests/source-profile.json'), join(root, 'tests/source-profile.json'));
   mkdirSync(join(root, '.github/scripts'), { recursive: true });
-  for (const name of ['test-results.mjs', 'ci-unit-cache.mjs', 'ci-artifact.mjs', 'ci-browser-resources.mjs', 'test-browser.sh', 'generate-test-report.mjs',
+  for (const name of ['test-results.mjs', 'ci-unit-cache.mjs', 'ci-artifact.mjs', 'ci-browser-resources.mjs', 'ci-native-runtime.mjs',
+    'ci-native-seccomp-default.json', 'ci-native-seccomp-default.source.json', 'test-browser.sh', 'generate-test-report.mjs',
     'generate-incremental-report.mjs', 'ci-report-evidence.mjs', 'validation-artifacts.mjs', 'bundle-contract.mjs', 'assistant-extension-files.json', 'changelog.mjs'])
     cpSync(join(repository, '.github/scripts', name), join(root, '.github/scripts', name));
   for (const name of ['package.json', 'package-lock.json', '.node-version', 'coverage.config.json', 'vitest.config.mjs', 'vite.config.mjs'])

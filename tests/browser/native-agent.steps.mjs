@@ -82,6 +82,7 @@ Then('the workflow selects and confirms its observed Guardian denial before nati
   await run.getByRole('button', { name: 'Next operation', exact: true }).click(); await select();
   await run.getByLabel('Input', { exact: true }).fill('[{"type":"text","text":"Report the owned approved action without running tools."}]');
   await run.getByRole('button', { name: 'Run operation', exact: true }).click();
+  await expect(run.getByRole('region', { name: 'Running native turn', exact: true })).toBeVisible();
   if (this.nativeReal) {
     await expect.poll(async () => (await observations(this)).providerResponseCount).toBe(4);
     const requests = (await observations(this)).providerRequests, input = requests.findLast(request => request.method === 'POST').body.input;
@@ -96,6 +97,7 @@ Then('the workflow selects and confirms its observed Guardian denial before nati
 });
 
 Then('the owned workflow review and compaction finish after their native turns', { timeout: 120000 }, async function () {
+  this.nativeReal = true;
   const page = this.page; await prepare(this); await pair(this);
   await expect(article(page).getByText('Connected', { exact: true })).toBeVisible();
   await article(page).getByRole('button', { name: 'Enable workflows', exact: true }).click();

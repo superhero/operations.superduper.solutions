@@ -9,6 +9,7 @@ import { validatePlan, filesBelow, digest, same } from '../../tests/gherkin/ci-i
 import { readJSON, writeJSON, unitDirectory, verifyReceipt } from '../../tests/gherkin/ci-units.mjs';
 import { artifactOperation, discoverUnitArtifacts, githubRead, publishUnit, restoreUnit, restoreFailureDiagnostic } from './ci-unit-cache.mjs';
 import { browserResources } from './ci-browser-resources.mjs';
+import { needsNativeRuntime, prepareNativeRuntime, nativeRuntimeDockerArguments, nativeRuntimePin, nativeRuntimeSeccompPin } from './ci-native-runtime.mjs';
 
 export async function command(program, args, { cwd = process.cwd(), quiet = false, timeoutMs = 60_000, env = process.env } = {}) {
   return new Promise((resolveDone, reject) => {
@@ -44,7 +45,8 @@ export function orderedMisses(units, artifacts) {
 }
 
 export async function runBatch({ root = process.cwd(), batchId, node, api = githubRead,
-  run = command, operation = artifactOperation, environment = process.env, capacity, signal, note = console.log } = {}) {
+  run = command, operation = artifactOperation, prepareNative = prepareNativeRuntime,
+  environment = process.env, capacity, signal, note = console.log } = {}) {
   const started = Date.now(), plan = validatePlan(readJSON(resolve(root, 'tmp/test/ci/plan.json')));
   const batch = plan.batches.find(item => item.id === batchId);
   if (!batch || !['library', 'application-1', 'application-2', 'application-3'].includes(batchId)) throw new Error('Unknown browser batch.');
@@ -52,7 +54,7 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
   const ownName = `operations-ci-${plan.runId}-${environment.GITHUB_RUN_ATTEMPT}-${batchId}-${randomUUID().slice(0, 8)}`;
   const summary = { schemaVersion: 1, batch: batchId, testedSha: plan.testedSha, startedAt: new Date().toISOString(),
     fresh: 0, reused: 0, failed: 0, unfinished: 0, units: [], lookupMilliseconds: 0 };
-  let container = false, launchAttempted = false, stale = false, stopping = signal?.aborted === true, checking, timer, forceTimer;
+  let container = false, launchAttempted = false, stale = false, stopping = signal?.aborted === true, checking, timer, forceTimer, nativeRuntime;
   const active = new Set();
   const deadline = Date.now() + 120_000;
   const artifacts = await discoverUnitArtifacts(plan, { api, deadline, currentOnly: true, note });
@@ -126,6 +128,12 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
       const pull = await run('docker', ['pull', plan.shared.imageReference], { cwd: root, quiet: true, timeoutMs: 300_000 });
       const inspected = await run('docker', ['image', 'inspect', plan.shared.imageReference, '--format', '{{.Id}}'], { cwd: root, quiet: true });
       if (pull.code !== 0 || inspected.code !== 0 || inspected.output !== plan.shared.image) throw new Error('Browser image differs from the prepared runtime.');
+      if (needsNativeRuntime(queue)) {
+        note(`Preparing the qualified Codex ${nativeRuntimePin.version} browser fixture.`);
+        nativeRuntime = await prepareNative({ run, signal });
+        summary.nativeRuntime = { version: nativeRuntimePin.version, executableSha256: nativeRuntimePin.executable.sha256,
+          sandboxSha256: nativeRuntimePin.sandbox.sha256, seccompSha256: nativeRuntimeSeccompPin.profileSha256 };
+      }
       await checkHead();
       if (stale || stopping) throw new Error('Browser validation inputs became obsolete or execution was cancelled.');
       const uid = execFileSync('id', ['-u'], { encoding: 'utf8' }).trim(), gid = execFileSync('id', ['-g'], { encoding: 'utf8' }).trim();
@@ -143,6 +151,7 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
         '--env', `BROWSER_TEST_IMAGE=${plan.shared.image}`, '--tmpfs', '/tmp:rw,nosuid,nodev,size=512m',
         '--mount', `type=bind,source=${root},target=/workspace,readonly`,
         '--mount', `type=bind,source=${root}/tmp/test,target=/workspace/tmp/test`,
+        ...(nativeRuntime ? nativeRuntimeDockerArguments(nativeRuntime.directory) : []),
         '--mount', `type=bind,source=${node},target=/usr/local/bin/node,readonly`, '--workdir', '/workspace',
         plan.shared.image, 'node', '-e', 'setInterval(() => {}, 60000)'], { cwd: root, quiet: true, timeoutMs: 60_000 });
       if (result.code !== 0) throw new Error('Cannot start the bounded browser batch.');
@@ -157,13 +166,15 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
     if (checking) await checking;
     clearTimeout(forceTimer);
     signal?.removeEventListener('abort', cancel);
-    if (launchAttempted) {
-      const counters = await run('docker', ['exec', ownName, 'node', '-e',
-        "const fs=require('node:fs');for(const name of ['memory.max','memory.peak','memory.events','cpu.stat'])try{console.log(name+':'+fs.readFileSync('/sys/fs/cgroup/'+name,'utf8'))}catch{}"],
-      { cwd: root, quiet: true, timeoutMs: 5000 });
-      summary.resourceCounters = counters.output;
-      await run('docker', ['rm', '-f', ownName], { cwd: root, quiet: true, timeoutMs: 15_000 });
-    }
+    try {
+      if (launchAttempted) {
+        const counters = await run('docker', ['exec', ownName, 'node', '-e',
+          "const fs=require('node:fs');for(const name of ['memory.max','memory.peak','memory.events','cpu.stat'])try{console.log(name+':'+fs.readFileSync('/sys/fs/cgroup/'+name,'utf8'))}catch{}"],
+        { cwd: root, quiet: true, timeoutMs: 5000 });
+        summary.resourceCounters = counters.output;
+        await run('docker', ['rm', '-f', ownName], { cwd: root, quiet: true, timeoutMs: 15_000 });
+      }
+    } finally { await nativeRuntime?.cleanup(); }
     summary.unfinished = queue.length; summary.obsolete = stale; summary.finishedAt = new Date().toISOString();
     summary.wallMilliseconds = Date.now() - started;
     writeJSON(resolve(root, `tmp/test/ci/batch-${batchId}.json`), summary);

@@ -39,6 +39,13 @@ import { nativeFilesystemWriteFixture, seedNativeFilesystemWrites, nativeFilesys
 import { nativeStandaloneMethods } from '../../src/lib/native-runtime-contract.ts';
 import { openCodexRuntime } from '../../companions/codex/runtime.mjs';
 
+class MissingNativeQualificationPin extends Error {
+  constructor(missing) {
+    super('Real native browser fixtures require the pinned Codex binary and SHA-256. Missing: ' + missing.join(', '));
+    this.missing = missing;
+  }
+}
+
 /** Test control stays on the isolated harness origin. HTTPS, CORS, WSS and the
  * companion handler are real; only the default stdio peer is synthetic. */
 export function createNativeBrowserEndpoint() {
@@ -60,7 +67,8 @@ export function createNativeBrowserEndpoint() {
         // Real feedback tests may only exercise a configuration-denied upload.
         // Positive delivery stays on the owned synthetic stdio peer.
         if (input.feedback === true && input.denyFeedback !== true) throw new Error();
-        if (!process.env.OPERATIONS_CODEX_QUALIFICATION_BINARY || !process.env.OPERATIONS_CODEX_QUALIFICATION_SHA256) throw new Error();
+        const missing = ['OPERATIONS_CODEX_QUALIFICATION_BINARY', 'OPERATIONS_CODEX_QUALIFICATION_SHA256'].filter(name => !process.env[name]);
+        if (missing.length) throw new MissingNativeQualificationPin(missing);
         directory = await mkdtemp(join(tmpdir(), 'operations-native-browser-'));
         const home = input.migration === true ? join(directory, 'private', 'codex') : join(directory, 'home'), workspace = join(directory, 'workspace');
         if (input.migration === true) await mkdir(dirname(home), { mode: 0o700 });
@@ -269,7 +277,11 @@ export function createNativeBrowserEndpoint() {
   return { handle(request, response) {
     const match = /^\/native-companion-fixture\/([a-f0-9-]{36})\/(create|observations|seed-migration-history|change-account|authorize-mcp|finish-mcp|finish-login|finish-gateway|finish-response|guardian-tool|guardian-deny|touch-watch|remove-watch|cut|close)$/.exec(new URL(request.url, 'http://localhost').pathname);
     if (!match) return false;
-    void handle(request, response, match).catch(() => { response.writeHead(500, { 'Content-Type': 'application/json' }); response.end('{"error":"native_fixture_unavailable"}'); });
+    void handle(request, response, match).catch(cause => {
+      const diagnostic = cause instanceof MissingNativeQualificationPin ? { message: cause.message, missing: cause.missing } : {};
+      response.writeHead(500, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({ error: 'native_fixture_unavailable', ...diagnostic }));
+    });
     return true;
   }, async close() { for (const entry of entries.values()) await remove(entry); entries.clear(); } };
 }
