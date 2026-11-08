@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import '../tests/native-configuration-inspection.steps.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Before, After, Then } from '@cucumber/cucumber';

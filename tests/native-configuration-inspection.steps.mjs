@@ -8,11 +8,11 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Before, After, Then } from '@cucumber/cucumber';
 import { openCodexRuntime } from '../companions/codex/runtime.mjs';
-import { seedNativeConfigurationRead, configurationSdkSecret } from '../tests/native-configuration-read.fixture.mjs';
-import { waitForWatch } from '../tests/native-watch-transport.fixture.mjs';
-import { nativeInitializeParams } from './lib/native-initialize.ts';
-import { nativeConfigurationWriteFixture, nativeConfigurationWriteSocket } from '../tests/native-configuration-write.fixture.mjs';
-import { nativeConfigurationTransition, nativeConfigurationWriteParams, nativeConfigurationWriteHash } from './lib/native-configuration-write.ts';
+import { seedNativeConfigurationRead, configurationSdkSecret } from './native-configuration-read.fixture.mjs';
+import { waitForWatch } from './native-watch-transport.fixture.mjs';
+import { nativeInitializeParams } from '../src/lib/native-initialize.ts';
+import { nativeConfigurationWriteFixture, nativeConfigurationWriteSocket } from './native-configuration-write.fixture.mjs';
+import { nativeConfigurationTransition, nativeConfigurationWriteParams, nativeConfigurationWriteHash } from '../src/lib/native-configuration-write.ts';
 import { reviewNativeConfigurationWrite } from '../companions/codex/configuration-write.mjs';
 
 Before({ tags: '@native-configuration-inspection' }, function () { this.inspectionFixtures = []; this.inspectionTransports = []; });
