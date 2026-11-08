@@ -7,6 +7,8 @@ import { operationDisplayName } from "./operation-display.ts";
 import { configureGitlabJsonForm } from "./gitlab-form.ts";
 import { configureMistralVariant, mistralVariantRoute } from "./mistral-variant.ts";
 import { configureGmailMessage } from "./gmail-message.ts";
+import { configureGithubAutomation } from './github-automations.ts';
+import { configureGithubArchive } from './github-archive.ts';
 import { configureMediaUpload } from "./media-upload.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
@@ -445,6 +447,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         if (operation.credentialResultProfile) inspect("response", "invalid-contract", () => { credentialResultProfile(operation); });
         if (operation.credentialResult && !supportsCredentialResults(operation)) issues.push({ area: "response", code: "unsupported-contract", message: "This operation returns credentials. Its private result adoption contract has not been qualified." });
       }
+      inspect("endpoint", "invalid-contract", () => configureGithubAutomation(operation, source));
+      inspect("response", "invalid-contract", () => configureGithubArchive(operation, source));
       withOperationCapabilities(operation, issues);
       operations.push(operation);
       if (!groups.has(group)) groups.set(group, { id: `${id}:tag:${encodeURIComponent(group)}`, name: group, description: "", operationIds: [] });

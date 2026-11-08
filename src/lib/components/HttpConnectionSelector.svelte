@@ -14,6 +14,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelect from "./FieldSelect.svelte";
   import { vaultCall } from "../secrets/client.ts";
   import { awsGetBodyEligible } from "../secrets/aws-get-body.ts";
+  import { githubArchiveEligible } from '../secrets/github-archive.ts';
   import { validateHttpConnectionReference } from "../secrets/bindings.ts";
   import { httpConnectionMatches, httpConnectionReference, httpTokenFormats } from "../secrets/http-connections.ts";
   import { createConnectionAuthorization, type ConnectionAuthorizationState } from "../secrets/connection-lifecycle.ts";
@@ -82,7 +83,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     busy = true; error = "";
     try {
       const connection = await vaultCall("putConnection", [{ label, account, format,
-        ...(awsGetBodyEligible(descriptor) && (relayHost.trim() || relayKeyId) ? { relay: { host: relayHost.trim(), pairingKeyId: relayKeyId } } : {}),
+        ...((awsGetBodyEligible(descriptor) || githubArchiveEligible(descriptor)) && (relayHost.trim() || relayKeyId) ? { relay: { host: relayHost.trim(), pairingKeyId: relayKeyId } } : {}),
         ...(current && reference ? { reference } : {}), ...(current?.expiresAt === undefined ? {} : { expiresAt: current.expiresAt }) }, descriptor, binding]);
       if (!mounted) return;
       entries = [...entries.filter(item => item.id !== connection.id), connection];
@@ -155,13 +156,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <label for={`${id}-account`}>Account label</label>
         <input id={`${id}-account`} bind:value={account} maxlength="120" disabled={disabled || busy} autocomplete="off" />
         <p>Use a name for this account. The saved connection uses this operation's configured endpoint.</p>
-        {#if awsGetBodyEligible(descriptor)}
-          <label for={id + "-relay"}>EFS companion HTTPS origin (optional)</label>
-          <input id={id + "-relay"} type="url" bind:value={relayHost} disabled={disabled || busy} autocomplete="off" placeholder="https://efs-companion.example.com" />
+        {#if awsGetBodyEligible(descriptor) || githubArchiveEligible(descriptor)}
+          <label for={id + "-relay"}>{githubArchiveEligible(descriptor) ? 'GitHub archive companion HTTPS origin' : 'EFS companion HTTPS origin (optional)'}</label>
+          <input id={id + "-relay"} type="url" bind:value={relayHost} disabled={disabled || busy} autocomplete="off" placeholder="https://companion.example.com" />
           <FieldSelect id={id + "-relay-key"} label="Companion pairing key" value={relayKeyId} {portalZIndex}
             disabled={disabled || busy} options={credentials.filter(item => item.kind === "secret").map(item => ({ value: item.id, label: item.label }))}
             onValueChange={value => { relayKeyId = value; }} />
-          <p>Required when supplying MaxResults or NextToken. Leave both empty to send bodyless requests directly.</p>
+          <p>{githubArchiveEligible(descriptor) ? 'Required to resolve the private download redirect. The companion downloads up to 500 kB without forwarding your GitHub token to storage.' : 'Required when supplying MaxResults or NextToken. Leave both empty to send bodyless requests directly.'}</p>
         {/if}
         {#if formats.length > 1}
           <FieldSelect id={`${id}-format`} label="Token format" value={format} includePlaceholder={false} {portalZIndex}

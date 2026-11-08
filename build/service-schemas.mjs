@@ -13,7 +13,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { awsQueryActions, gmailMessageContracts, mistralVariantContracts, structuredFormContracts, formFieldContracts, multipartRootContracts, atlassianFileParts, multipartPartContracts, awsJsonTargets, betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { awsQueryActions, gmailMessageContracts, mistralVariantContracts, structuredFormContracts, formFieldContracts, multipartRootContracts, atlassianFileParts, multipartPartContracts, awsJsonTargets, betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, githubClassroomRetirement, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
 import { betaRouteSources } from '../src/lib/literal-query.ts';
 import { multipartFileSources } from '../src/lib/multipart-file-contracts.ts';
 import { multipartPartSources } from '../src/lib/multipart-part-contracts.ts';
@@ -225,7 +225,7 @@ for (const source of sources) {
     : source.profile === 'azure-eventgrid-auth' ? [azureEventGridManagementAuth]
     : source.profile === 'anthropic-auth' ? [anthropicAuthentication]
     : source.profile === 'elevenlabs-auth' ? [elevenLabsAuthentication]
-    : source.profile === 'github-auth' ? [githubAuthentication]
+    : source.profile === 'github-auth' ? [githubAuthentication, githubClassroomRetirement]
     : source.profile === 'http-streaming' ? [httpResponseStreaming]
     : source.profile === 'telegram-private-path' ? [telegramPrivatePath]
     : source.profile === 'x-oauth1' ? [xOauth1Signing]

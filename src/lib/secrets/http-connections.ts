@@ -6,6 +6,7 @@ import { jiraOAuthAlternative, validateJiraMetadata } from "./jira-config.ts";
 import { gitlabOAuthAlternative, validateGitlabMetadata } from "./gitlab-config.ts";
 import { awsWireSigningProfiles } from "../aws-wire.ts";
 import { awsGetBodyEligible, validateAwsGetBodyRelay, awsGetBodyKeyHash, resolveAwsGetBodyKey } from "./aws-get-body.ts";
+import { githubArchiveEligible } from './github-archive.ts';
 import { canonicalPolicyValue, validateApprovedOperation } from "./policy.ts";
 import { credentialObject, credentialReferenceIds, isBasicCredentialReference, isOAuth1CredentialReference, isAwsCredentialReference, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
@@ -72,8 +73,10 @@ export function validateHttpConnection(value: unknown): HttpConnection {
     if (item.endpoint + "/" !== (item.oauth as AtprotoOAuthMetadata).pds) throw new VaultError("INVALID");
   } else if (item.oauth !== undefined) throw new VaultError("INVALID");
   if (item.relay !== undefined) {
-    if (item.provider !== "aws-elasticfilesystem" || item.format !== "schema" || security.length !== 1 || security[0]!.kind !== "aws-sigv4"
-      || security[0]!.profile !== "aws-rest-v1") throw new VaultError("INVALID");
+    const efs = item.provider === 'aws-elasticfilesystem' && security.length === 1 && security[0]!.kind === 'aws-sigv4' && security[0]!.profile === 'aws-rest-v1';
+    const archive = item.provider === 'github' && item.endpoint === 'https://api.github.com' && security.length === 1
+      && security[0]!.name === 'GitHubClassicUserToken' && security[0]!.kind === 'bearer' && security[0]!.header === 'Authorization';
+    if (item.format !== 'schema' || !efs && !archive) throw new VaultError('INVALID');
     item.relay = validateAwsGetBodyRelay(item.relay);
   }
   return { ...item, security, credentials: binding.credentials } as HttpConnection;
@@ -97,7 +100,7 @@ export function httpConnectionMatches(connection: HttpConnection, descriptor: Ap
   return schemaId(descriptor) === connection.provider && descriptor.origin === connection.endpoint
     && supportedSecurityAlternative(security) && security.length > 0
     && canonicalPolicyValue(security) === canonicalPolicyValue(connection.security)
-    && (!connection.relay || awsGetBodyEligible(descriptor))
+    && (!connection.relay || awsGetBodyEligible(descriptor) || githubArchiveEligible(descriptor))
     && (connection.format === "gitlab-oauth" ? gitlabOAuthAlternative(descriptor) === connection.alternative && !!connection.oauth
       : connection.format === "jira-companion" ? jiraOAuthAlternative(descriptor) === connection.alternative && connection.oauth?.profile === "atlassian-jira-3lo-v1" && connection.oauth.siteUrl === descriptor.origin
       : connection.format === "atproto-oauth" ? atprotoOAuthAlternative(descriptor) === connection.alternative && !!connection.oauth
@@ -146,11 +149,12 @@ export async function createHttpConnection(input: HttpConnectionInput, descripto
   if (!previous && all.length >= httpConnectionLimit || previous?.revision === Number.MAX_SAFE_INTEGER) throw new VaultError("LIMIT");
   let relay: HttpConnection["relay"];
   if (input.relay !== undefined) {
-    if (!awsGetBodyEligible(approved) || input.format !== "schema") throw new VaultError("PERMISSION");
+    if ((!awsGetBodyEligible(approved) && !githubArchiveEligible(approved)) || input.format !== "schema") throw new VaultError("PERMISSION");
     const selected = validateAwsGetBodyRelay(input.relay, false), key = records.find(record => record.id === selected.pairingKeyId);
     if (!key || key.kind !== "secret" || key.oauthState) throw new VaultError("PERMISSION");
     relay = { host: selected.host, pairingKeyId: selected.pairingKeyId, keyHash: await awsGetBodyKeyHash(key.value) };
   }
+  if (githubArchiveEligible(approved) && !relay) throw new VaultError('GITHUB_ARCHIVE_TRANSPORT');
   const config: Omit<HttpConnection, "fingerprint"> = { id: previous?.id ?? crypto.randomUUID(), revision: (previous?.revision ?? 0) + 1,
     label: input.label, account: input.account, provider: schemaId(approved), endpoint: approved.origin, runtime: "browser-http",
     alternative: binding.alternative, security: structuredClone(security), credentials: binding.credentials, format: input.format,

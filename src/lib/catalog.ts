@@ -8,6 +8,8 @@ import { operationDisplayName } from "./operation-display.ts";
 import { configureGitlabJsonForm } from "./gitlab-form.ts";
 import { configureMistralVariant } from "./mistral-variant.ts";
 import { configureGmailMessage, requireGmailMessageRoute } from "./gmail-message.ts";
+import { configureGithubAutomation, requireGithubAutomationSource } from './github-automations.ts';
+import { configureGithubArchive } from './github-archive.ts';
 import { configureMediaUpload } from "./media-upload.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
@@ -103,6 +105,8 @@ export type Operation = {
   bodyEncoding?: "gitlab-json-or-multipart-v1";
   mistralVariant?: "mistral-fragments-v1";
   gmailMessage?: "gmail-message-v1";
+  githubAutomation?: 'github-automations-v1';
+  githubArchive?: 'github-migration-archive-v1';
   googleMedia?: "google-media-v1";
   rawUpload?: "raw-upload-v1";
   multipartParts?: MultipartParts;
@@ -446,6 +450,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
           if (mistralJson) configureMistralVariant({ id, method: method.toUpperCase(), path }, operation["x-operations-mistral-variant"], operation["x-operations-response-stream"]);
           const gmailJson = !form && operation["x-operations-gmail-message"] !== undefined;
           if (gmailJson) requireGmailMessageRoute({ id, method: method.toUpperCase(), path }, operation["x-operations-gmail-message"]);
+          const githubJson = !form && requireGithubAutomationSource({ id, method: method.toUpperCase(), path }, operation);
           supported(media, ["schema", "example", "examples", ...(form ? ["encoding"] : [])], id);
           const shape = resolve(media.schema, document, id);
           const encodedForm = bodyMediaType === "multipart/form-data" && (media.encoding !== undefined
@@ -453,7 +458,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
           const compiled = encodedForm ? multipartBodySchema(shape, raw => resolve(raw, document, id), raw => serviceInputSchema(raw, document, true)) : undefined;
           // Reviewed native Mistral JSON uses the same explicit server-validation
           // fallback as service hydration for its heterogeneous conversation unions.
-          const schema = compiled?.schema ?? (mistralJson || gmailJson ? serviceInputSchema(shape, document, false) : inputSchema(shape, document, id));
+          const schema = compiled?.schema ?? (mistralJson || gmailJson || githubJson ? serviceInputSchema(shape, document, false) : inputSchema(shape, document, id));
           bodySchema = schema;
           if (binary) {
             if (schema.nullable) throw new Error(`${id}: nullable raw-file bodies have no qualified wire encoding.`);
@@ -479,7 +484,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
           else if (schema.type === "object" && !schema.nullable)
             for (const [name, property] of Object.entries(compiled?.properties ?? (shape.properties ?? {}) as RecordValue)) {
               if (encodedForm && !Object.hasOwn(schema.properties ?? {}, name)) continue;
-              fields.push(field(property, document, "body", name, schema.required!.includes(name), encodedForm || mistralJson ? schema.properties?.[name] : undefined));
+              fields.push(field(property, document, "body", name, schema.required!.includes(name), encodedForm || mistralJson || githubJson ? schema.properties?.[name] : undefined));
             }
           else
           {
@@ -507,6 +512,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (multipartParts) extracted.multipartParts = multipartParts;
       configureGitlabJsonForm(extracted, operation["x-operations-gitlab-form"]);
       configureGmailMessage(extracted, operation["x-operations-gmail-message"]);
+      configureGithubAutomation(extracted, operation);
       configureMediaUpload(extracted, operation["x-operations-google-media"], operation["x-operations-raw-upload"]);
       const stream = responseStreamProfile(operation["x-operations-response-stream"]);
       if (stream) extracted.responseStream = stream;
@@ -519,6 +525,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (operation["x-operations-private-result"] === privateResultVersion) extracted.credentialResultProfile = privateResultVersion;
       const security = extracted.gmailMessage || extracted.googleMedia ? serviceOperationSecurity(document, operation, extracted) : inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
+      configureGithubArchive(extracted, operation);
       if (security?.flat().some(scheme => scheme.kind === "aws-sigv4")) {
         configureAwsSigning(extracted);
         if (!validAwsSigningModel(extracted)) throw new Error(`${id}: this AWS operation requires a supported REST request and response profile.`);

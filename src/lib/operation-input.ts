@@ -5,6 +5,7 @@
 import { supportsCredentialResults } from "./credential-results.ts";
 import { useGitlabJsonBody } from "./gitlab-form.ts";
 import { mistralVariantRoute, mistralVariantInputs } from "./mistral-variant.ts";
+import { githubAutomationWirePath } from './github-automations.ts';
 import { gmailMessageMode, prepareGmailMessage, gmailMimeInputKey } from "./gmail-message.ts";
 import { mediaUploadMode, prepareMediaUpload, mediaUploadInputKey } from "./media-upload.ts";
 import { validDigitalOceanUpload, prepareDigitalOceanAgent } from "./digitalocean-destinations.ts";
@@ -225,7 +226,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   catch (cause) { throw new InputValidationError("body:stream", (cause as Error).message); }
   try { validateLiteralQueryFields(operation.path, operation.fields); }
   catch (cause) { throw new InputValidationError("query:beta", (cause as Error).message); }
-  const request: PreparedRequest = { method: operation.method, path: variant?.path ?? route?.path ?? operation.path, query: { ...route?.query } };
+  const request: PreparedRequest = { method: operation.method, path: githubAutomationWirePath(operation) ?? variant?.path ?? route?.path ?? operation.path, query: { ...route?.query } };
   let media: ReturnType<typeof mediaUploadMode>;
   try { media = mediaUploadMode(operation, values); }
   catch (cause) { throw new InputValidationError(mediaUploadInputKey, (cause as Error).message); }

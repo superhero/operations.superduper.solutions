@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "ba7afe85596917f8e4dfe69e016db86c846a45dffdfffb9e9a80e38fbbda7b8c",
+  "adapterRevision": "00fa564e79bf3d4320114c6b1780fa92616f5cb231cf3b5ebf855a873beb380a",
   "indexes": [
     {
       "id": "anthropic",
@@ -1597,16 +1597,16 @@
     },
     {
       "id": "github",
-      "sourceRevision": "37d0c4e3db6d0fbfd166bc8beea07560cd039a95d445daf689d7dc9c7784946e",
-      "bytes": 565760,
-      "compressedBytes": 36823,
-      "sha256": "807923b4c6bf3bb5e412d0c67a927b0534c5013d621cf88965c696e93f5daccf",
+      "sourceRevision": "520011c61d83c4ef656283e04ed2ff6544a6e45109e61710e8d8030f9c42a12c",
+      "bytes": 550646,
+      "compressedBytes": 35955,
+      "sha256": "e1aad244ccba6d66c130aabcdda14bb9caedf3700f775bf189ceaf9aa63f52fe",
       "summary": {
         "name": "GitHub v3 REST API",
         "serverUrl": "https://api.github.com",
         "description": "GitHub's v3 REST API.",
-        "operationCount": 1242,
-        "unavailableCount": 80
+        "operationCount": 1236,
+        "unavailableCount": 0
       }
     },
     {

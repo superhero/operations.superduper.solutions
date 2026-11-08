@@ -78,7 +78,7 @@ export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
   | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION" | "NATIVE_FAILED" | "NATIVE_UNKNOWN" | "NATIVE_QUERY" | "NATIVE_CONTRACT" | "NATIVE_FEEDBACK" | "NATIVE_FILESYSTEM" | "NATIVE_SECTIONS" | "NATIVE_MCP_READ" | "NATIVE_MCP_TOOL" | "NATIVE_MCP_OAUTH" | "NATIVE_COMMAND"
-  | "NATIVE_MIGRATION" | "S3_INTEGRITY" | "WRITE_UNCONFIRMED" | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX" | "AWS_GET_BODY_TRANSPORT";
+  | "NATIVE_MIGRATION" | "S3_INTEGRITY" | "WRITE_UNCONFIRMED" | "DOCKER_UNAVAILABLE" | "DOCKER_VERSION" | "DOCKER_AUTHORITY" | "DOCKER_DUPLEX" | "AWS_GET_BODY_TRANSPORT" | "GITHUB_ARCHIVE_TRANSPORT";
 const messages: Record<VaultErrorCode, string> = {
   NATIVE_MIGRATION: "The native migration could not be verified. Check its host permission, source files and import history. Applied changes are not retried.",
   NATIVE_MCP_OAUTH: "MCP sign-in did not complete. Check its separate host opt-in, configured OAuth server and callback. An accepted credential change cannot be rolled back.",
@@ -90,6 +90,7 @@ const messages: Record<VaultErrorCode, string> = {
   NATIVE_FEEDBACK: "Feedback delivery was not verified. Check companion permissions and delivery before retrying; a dispatched report may already have been accepted.",
   NATIVE_CONTRACT: "The native runtime returned metadata outside its approved schema. Check the pinned runtime and source versions.",
   AWS_GET_BODY_TRANSPORT: "EFS pagination requires a GET request body. Select a saved HTTP connection with an EFS companion, or leave the optional pagination fields empty.",
+  GITHUB_ARCHIVE_TRANSPORT: 'Migration archives require a saved HTTP connection with your GitHub archive companion and pairing key. The companion privately resolves the download redirect; files are limited to 500 kB.',
   DOCKER_UNAVAILABLE: "The paired Docker host could not complete its read. Check the companion and configured daemon socket.",
   DOCKER_VERSION: "The Docker daemon does not support the paired API version 1.57.",
   DOCKER_AUTHORITY: "The Docker host, daemon, socket or approved source changed. Pair the selected host again.",

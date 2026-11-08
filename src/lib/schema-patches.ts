@@ -6,6 +6,7 @@ import { awsSigningRegions } from "./aws-signing.ts";
 export { awsWireSources } from "./aws-wire.ts";
 import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
+import { excludeRetiredGithubClassroom } from "./github-classroom-retirement.ts";
 import { telegramBotTemplate } from "./server-url.ts";
 import { bindBetaRoutes } from "./literal-query.ts";
 import { bindMultipartFiles, bindCloudflareLogo } from "./multipart-file-contracts.ts";
@@ -38,7 +39,7 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "docker-http-contracts" | "atlassian-relative-servers" | "digitalocean-destinations" | "upload-body-contracts" | "cloudflare-logo-upload" | "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters" | "forge-llm-exclusion"; version: 1 };
+export type SchemaPatch = { id: "docker-http-contracts" | "atlassian-relative-servers" | "digitalocean-destinations" | "upload-body-contracts" | "cloudflare-logo-upload" | "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters" | "forge-llm-exclusion" | "github-classroom-retirement"; version: 1 };
 export const forgeLlmExclusion: SchemaPatch = { id: "forge-llm-exclusion", version: 1 };
 export const forgeContainersSourceSha256 = "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1";
 export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
@@ -83,6 +84,7 @@ export const azureEventGridManagementAuth: SchemaPatch = { id: "azure-eventgrid-
 export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authentication", version: 1 };
 export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
 export const githubAuthentication: SchemaPatch = { id: "github-authentication", version: 1 };
+export const githubClassroomRetirement: SchemaPatch = { id: "github-classroom-retirement", version: 1 };
 export const httpResponseStreaming: SchemaPatch = { id: "http-response-streaming", version: 1 };
 export const cloudflarePrivateUpload: SchemaPatch = { id: "cloudflare-private-upload", version: 1 };
 export const cloudflarePrivateUploadSourceSha256 = "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778";
@@ -95,7 +97,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "forge-llm-exclusion" ? "Forge LLM operations awaiting runtime support"
+  return patch.id === "github-classroom-retirement" ? "Retired GitHub Classroom endpoints"
+    : patch.id === "forge-llm-exclusion" ? "Forge LLM operations awaiting runtime support"
     : patch.id === "gmail-message-contracts" ? "Gmail JSON resources and MIME uploads"
     : patch.id === "mistral-variant-contracts" ? "Mistral fragment variants and finite streams"
     : patch.id === "structured-form-contracts" ? "Reviewed structured form encodings"
@@ -702,10 +705,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["docker-http-contracts", "atlassian-relative-servers", "digitalocean-destinations", "upload-body-contracts", "cloudflare-logo-upload", "atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters", "forge-llm-exclusion"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["docker-http-contracts", "atlassian-relative-servers", "digitalocean-destinations", "upload-body-contracts", "cloudflare-logo-upload", "atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters", "forge-llm-exclusion", "github-classroom-retirement"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "forge-llm-exclusion") excludeForgeLlm(document);
+    if (patch.id === "github-classroom-retirement") excludeRetiredGithubClassroom(document);
+    else if (patch.id === "forge-llm-exclusion") excludeForgeLlm(document);
     else if (patch.id === "gmail-message-contracts") bindGmailMessages(document);
     else if (patch.id === "mistral-variant-contracts") bindMistralVariants(document);
     else if (patch.id === "structured-form-contracts") bindStructuredForms(document);

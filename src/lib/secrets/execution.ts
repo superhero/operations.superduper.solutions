@@ -9,6 +9,7 @@ import { requestBody } from "../request-body.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
 import { credentialSelectionForVariables, isBasicCredentialReference, isOAuth1CredentialReference, oauth1CredentialParts } from "./bindings.ts";
 import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
+import { githubAutomationRequestIssue } from '../github-automations.ts';
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
 import { resolvePrivateExpression } from "./processing.ts";
@@ -34,6 +35,7 @@ import { awsRestEndpoint, awsRestUsesS3Keys, awsRestTransportAccept } from "../a
 import { awsRestRequestTarget } from "../aws-rest-codec.ts";
 import { awsRestChecksums } from "../aws-rest-checksum.ts";
 import { fetchAwsGetBody } from "./aws-get-body.ts";
+import { fetchGithubArchive, githubArchiveEligible } from './github-archive.ts';
 import { awsWireEndpoint } from "../aws-wire.ts";
 import { awsJsonEndpoint } from "../aws-json.ts";
 import { awsQueryEndpoint, awsQueryTarget } from "../aws-query.ts";
@@ -133,6 +135,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const savedConnection = !!bindingSnapshot.connection;
     if (approved.operation.privatePath === "telegram-bot" && !savedConnection) throw new VaultError("PERMISSION");
     const connection = await resolveHttpConnection(approved, bindingSnapshot, credentialSnapshot);
+    const githubArchive = githubArchiveEligible(approved);
+    if (githubArchive && !connection.relay) throw new VaultError('GITHUB_ARCHIVE_TRANSPORT');
     bindingSnapshot = connection.binding;
     const variables = options.variables === undefined ? [] : validateVaultVariableInputs(options.variables);
     const alternative = approved.operation.security?.length ? approved.operation.security[bindingSnapshot.alternative]
@@ -258,6 +262,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     secrets = [...new Set(secrets.flatMap(value => [value, JSON.stringify(value).slice(1, -1)]).flatMap(value => [value, encodeURIComponent(value), encodeQueryComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
     let publicRequest = prepareRequest(approved.operation, inputSnapshot, fields);
+    const automationIssue = githubAutomationRequestIssue(approved.operation, approved.origin, publicRequest, inputSnapshot, alternative.map(scheme => scheme.name));
+    if (automationIssue) throw new InputValidationError(automationIssue.key, automationIssue.message);
     let request = publicRequest;
     const dockerSecrets = dockerHttpRedactions(approved.operation, request);
     if (dockerSecrets.length) {
@@ -332,7 +338,9 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     };
     const nativeGetBody = !!approved.operation.awsRest && request.method === "GET" && body !== null;
     if (nativeGetBody && !connection.relay) throw new VaultError("AWS_GET_BODY_TRANSPORT");
-    const response = nativeGetBody
+    const response = githubArchive
+      ? await fetchGithubArchive(approved, connection.relay!, credentialSnapshot, url.href, init, options.fetchRequest ?? globalThis.fetch, options.assertCurrent)
+      : nativeGetBody
       ? await fetchAwsGetBody(approved, connection.relay!, credentialSnapshot, url.href, init, options.fetchRequest ?? globalThis.fetch, options.assertCurrent)
       : await (options.fetchRequest ?? globalThis.fetch)(url.href, init);
     responseStatus = response.status;

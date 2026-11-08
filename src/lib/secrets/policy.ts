@@ -4,6 +4,8 @@
 import { literalQueryRoute, validateLiteralQueryFields } from "../literal-query.ts";
 import { validGitlabJsonForm } from "../gitlab-form.ts";
 import { mistralVariantRoute } from "../mistral-variant.ts";
+import { githubAutomationWirePath } from '../github-automations.ts';
+import { isGithubArchive } from '../github-archive.ts';
 import { validGmailMessage } from "../gmail-message.ts";
 import { validUploadModel } from "../media-upload.ts";
 import { supportsCredentialResults, privateResultOriginAllowed } from "../credential-results.ts";
@@ -97,13 +99,14 @@ function validateOperation(operation: Operation): void
   if (operation && operationBlockReason(operation) || (operation?.credentialResult !== undefined || operation?.credentialResultProfile !== undefined) && !supportsCredentialResults(operation)) throw new VaultError("PERMISSION");
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
+  isGithubArchive(operation);
   if (operation.awsQuery !== undefined) { if (!validAwsQueryModel(operation)) throw new VaultError("PERMISSION"); }
   else if (operation.awsJson !== undefined) { if (!validAwsJsonModel(operation)) throw new VaultError("PERMISSION"); }
   else if (operation.awsWire !== undefined) { if (!validAwsWireModel(operation)) throw new VaultError("PERMISSION"); }
   else {
     try { validateLiteralQueryFields(operation.path, operation.fields); }
     catch { throw new VaultError("PERMISSION"); }
-    try { validateCredentialPath(awsRestWirePath(operation) ?? mistralVariantRoute(operation)?.path ?? literalQueryRoute(operation.path)?.path ?? operation.path, true); }
+    try { validateCredentialPath(githubAutomationWirePath(operation) ?? awsRestWirePath(operation) ?? mistralVariantRoute(operation)?.path ?? literalQueryRoute(operation.path)?.path ?? operation.path, true); }
     catch { throw new VaultError("PERMISSION"); }
   }
   if (operation.security !== undefined && !Array.isArray(operation.security)) throw new VaultError("PERMISSION");
@@ -189,6 +192,7 @@ export async function approvedOperation(operation: Operation, origin: string): P
     const sanitized = JSON.parse(canonicalPolicyValue(operation)) as Operation;
     validateOperation(sanitized);
     const normalized = normalizeCredentialOrigin(origin);
+    if (isGithubArchive(sanitized) && normalized !== 'https://api.github.com') throw new VaultError('PERMISSION');
     if (sanitized.awsQuery && !awsQueryEndpoint(normalized, sanitized)) throw new VaultError("PERMISSION");
     if (sanitized.awsJson && !awsJsonEndpoint(normalized, sanitized)) throw new VaultError("PERMISSION");
     if (sanitized.credentialResult && !privateResultOriginAllowed(sanitized, normalized)) throw new VaultError("PERMISSION");

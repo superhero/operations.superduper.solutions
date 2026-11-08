@@ -2855,7 +2855,7 @@
     "profile": "github-auth",
     "version": "1.1.4",
     "openapi": "3.1.0",
-    "operations": 1242,
+    "operations": 1236,
     "license": {
       "name": "MIT",
       "url": "https://spdx.org/licenses/MIT"
@@ -2870,12 +2870,16 @@
         "version": 1
       },
       {
+        "id": "github-classroom-retirement",
+        "version": 1
+      },
+      {
         "id": "private-credential-results",
         "version": 1
       }
     ],
-    "effectiveSha256": "37d0c4e3db6d0fbfd166bc8beea07560cd039a95d445daf689d7dc9c7784946e",
-    "effectiveBytes": 7492305
+    "effectiveSha256": "520011c61d83c4ef656283e04ed2ff6544a6e45109e61710e8d8030f9c42a12c",
+    "effectiveBytes": 7902687
   },
   {
     "id": "gitlab",

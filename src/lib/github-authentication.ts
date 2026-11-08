@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { readGithubAuthenticationContracts } from "./github-authentication-data.ts";
+import { adaptGithubAutomations } from './github-automations.ts';
+import { adaptGithubArchives } from './github-archive.ts';
 
 type Profile = "personal" | "app-user" | "installation" | "app-jwt" | "oauth-basic" | "classic-user" | "classic-personal" | "unreviewed";
 type Contract = { method: string; path: string; serverUrl: string; profiles: Profile[]; anonymous: boolean;
@@ -39,6 +41,8 @@ export function adaptGithubAuthentication(document: Record<string, any>): void {
   }
   // An explicit upstream root requirement owns its authentication semantics.
   if (document.security !== undefined) return;
+  adaptGithubAutomations(document);
+  adaptGithubArchives(document);
   const schemes = document.components.securitySchemes ?? {};
   if (!object(schemes) || Object.keys(definitions).some(name => Object.hasOwn(schemes, name)))
     throw new Error("GitHub authentication adaptation cannot overwrite security definitions.");
