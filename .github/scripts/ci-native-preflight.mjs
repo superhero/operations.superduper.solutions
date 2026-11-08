@@ -10,11 +10,13 @@ import { browserResources } from './ci-browser-resources.mjs';
 import { resolvePinnedBrowserImage } from './ci-browser-image.mjs';
 import { prepareNativeRuntime, nativeRuntimeDockerArguments, nativeRuntimePin, nativeRuntimeSeccompPin } from './ci-native-runtime.mjs';
 import { runContainerNativePreflight } from './ci-native-probe.mjs';
+import { prepareNativeAppArmor } from './ci-native-apparmor.mjs';
 
 export async function runNativePreflightGate({ root = process.cwd(), run = command, resolveImage = resolvePinnedBrowserImage,
-  prepareNative = prepareNativeRuntime, probe = runContainerNativePreflight, capacity, note = console.log } = {}) {
+  prepareNative = prepareNativeRuntime, prepareAppArmor = prepareNativeAppArmor,
+  probe = runContainerNativePreflight, capacity, note = console.log } = {}) {
   const container = `operations-native-preflight-${randomUUID()}`, node = await realpath(process.execPath);
-  let native, launchAttempted = false, evidence = { passed: false, phase: 'host-prepare', container };
+  let native, apparmor, retainedAppArmor, launchAttempted = false, evidence = { passed: false, phase: 'host-prepare', container };
   const output = resolve(root, 'tmp/test/ci/native-preflight.json');
   await mkdir(resolve(root, 'tmp/test/ci'), { recursive: true });
   const save = () => writeFile(output, JSON.stringify(evidence, null, 2) + '\n');
@@ -26,6 +28,12 @@ export async function runNativePreflightGate({ root = process.cwd(), run = comma
     evidence = { ...evidence, image, resources, runtime: { version: nativeRuntimePin.version,
       executableSha256: nativeRuntimePin.executable.sha256, sandboxSha256: nativeRuntimePin.sandbox.sha256,
       seccompSha256: nativeRuntimeSeccompPin.profileSha256 } };
+    try { apparmor = await prepareAppArmor({ directory: native.directory, run }); }
+    catch (error) {
+      if (error.nativeAppArmor) { retainedAppArmor = error.nativeAppArmor; evidence.runtime.apparmor = retainedAppArmor; }
+      throw error;
+    }
+    evidence.runtime.apparmor = apparmor.metadata;
     launchAttempted = true;
     const started = await run('docker', ['run', '--detach', '--init', '--name', container, '--network=none', '--read-only', '--shm-size=1g',
       `--cpus=${resources.cpus}`, `--memory=${resources.memoryBytes}`, `--memory-swap=${resources.memoryBytes}`, `--pids-limit=${resources.pids}`,
@@ -35,9 +43,13 @@ export async function runNativePreflightGate({ root = process.cwd(), run = comma
       '--mount', `type=bind,source=${root},target=/workspace,readonly`,
       '--mount', `type=bind,source=${root}/tmp/test,target=/workspace/tmp/test`,
       '--mount', `type=bind,source=${node},target=/usr/local/bin/node,readonly`, ...nativeRuntimeDockerArguments(native.directory),
+      ...apparmor.dockerArguments,
       '--workdir', '/workspace', image.image, 'node', '-e', 'setInterval(() => {}, 60000)'], { cwd: root, quiet: true, timeoutMs: 60_000 });
     if (started.code !== 0) throw new Error('Cannot start the isolated native preflight container.');
     evidence = { ...evidence, ...await probe({ run, container, root, note }) };
+    if (apparmor.dockerArguments.length && evidence.context?.apparmor !== `${apparmor.name} (enforce)`) {
+      evidence.passed = false; evidence.failure ??= { code: 'NATIVE_PREFLIGHT_APPARMOR_MISMATCH' };
+    }
     if (!evidence.passed) throw new Error('The real native SDK sandbox preflight failed.');
     return evidence;
   } catch (error) {
@@ -45,14 +57,23 @@ export async function runNativePreflightGate({ root = process.cwd(), run = comma
     evidence.failure ??= { code: 'NATIVE_PREFLIGHT_SETUP_FAILED' };
     throw error;
   } finally {
-    let cleanupFailed = false;
+    let cleanupFailed = false, containerAbsent = !launchAttempted;
     try {
       if (launchAttempted) {
         const removed = await run('docker', ['rm', '-f', container], { cwd: root, quiet: true, timeoutMs: 15_000 });
-        if (removed.code !== 0) cleanupFailed = true;
+        containerAbsent = removed.code === 0;
+        if (!containerAbsent) cleanupFailed = true;
       }
     } catch { cleanupFailed = true; }
-    try { await native?.cleanup(); } catch { cleanupFailed = true; }
+    let profileAbsent = !apparmor && !retainedAppArmor;
+    if (containerAbsent && !retainedAppArmor) {
+      try { await apparmor?.cleanup({ containerAbsent: true }); profileAbsent = true; } catch { cleanupFailed = true; }
+      if (profileAbsent) try { await native?.cleanup(); } catch { cleanupFailed = true; }
+    }
+    if (!containerAbsent || !profileAbsent) {
+      cleanupFailed = true;
+      evidence.retainedRuntime = { directory: native?.directory, apparmor: apparmor?.metadata ?? retainedAppArmor };
+    }
     if (cleanupFailed) {
       evidence.passed = false;
       evidence.cleanupFailure = { code: 'NATIVE_PREFLIGHT_CLEANUP_FAILED' };

@@ -15,6 +15,10 @@ const image = `sha256:${'a'.repeat(64)}`, imageReference = `mcr.microsoft.com/pl
 const status = 'Uid:\t1000\t1000\t1000\t1000\nGid:\t1000\t1000\t1000\t1000\nCapEff:\t0000000000000000\nCapPrm:\t0000000000000000\nCapBnd:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\n';
 const readContext = async path => path.endsWith('/status') ? status : path.endsWith('/current') ? 'docker-default (enforce)\n' : '1\n';
 const marker = 'OPERATIONS_NATIVE_PREFLIGHT ';
+const apparmorMetadata = { name: 'owned-native-profile', state: 'enforcing', profilePath: '/owned/qualified-runtime/native-apparmor' };
+const apparmorFixture = (cleanup = async () => {}) => ({ name: apparmorMetadata.name, metadata: apparmorMetadata,
+  dockerArguments: ['--security-opt', `apparmor=${apparmorMetadata.name}`],
+  async cleanup(options) { assert.deepEqual(options, { containerAbsent: true }); await cleanup(); } });
 
 Then('the native preflight verifies persisted command output and redacts failure context', async function () {
   const lifecycle = [], records = [];
@@ -33,6 +37,8 @@ Then('the native preflight verifies persisted command output and redacts failure
   const error = new Error(`Owned SDK request rejected: bwrap: No permissions to create a new namespace ${fixture.home} Bearer ${privateValue}`);
   const failure = classifyNativeSandboxFailure(error, fixture);
   assert.equal(failure.code, 'NATIVE_NAMESPACE_DENIED'); assert.match(failure.detail, /No permissions to create a new namespace/);
+  for (const message of ['bwrap: Failed to make / slave: Permission denied', 'bwrap: rslave propagation failed', 'bwrap: pivot_root: Operation not permitted'])
+    assert.equal(classifyNativeSandboxFailure(new Error(message)).code, 'NATIVE_MOUNT_DENIED');
   assert.ok(!JSON.stringify(failure).includes(fixture.home)); assert.ok(!JSON.stringify(failure).includes(privateValue));
   assert.deepEqual(classifyNativeSandboxFailure(new Error(privateValue)), { code: 'NATIVE_SDK_SEED_FAILED' });
   let closed = 0;
@@ -89,16 +95,19 @@ Then('a failed native sandbox gate retains evidence and cleans its isolated runt
   await assert.rejects(runNativePreflightGate({ root, note: () => {}, capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     resolveImage: async options => { assert.equal(options.pull, true); return { image, imageReference }; },
     prepareNative: async () => ({ directory: '/owned/qualified-runtime', cleanup: async () => lifecycle.push('cleanup') }),
+    prepareAppArmor: async () => apparmorFixture(async () => lifecycle.push('apparmor-cleanup')),
     probe: async () => { lifecycle.push('probe'); return { passed: false, phase: 'sdk-store-seed', failure: { code: 'NATIVE_NAMESPACE_DENIED' } }; },
     run: async (program, args) => { calls.push([program, args]); lifecycle.push(args[0]); return { code: 0 }; },
   }), /sandbox preflight failed/);
-  assert.deepEqual(lifecycle, ['run', 'probe', 'rm', 'cleanup']);
+  assert.deepEqual(lifecycle, ['run', 'probe', 'rm', 'apparmor-cleanup', 'cleanup']);
   const start = calls[0][1];
   for (const arg of ['--network=none', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--pids-limit=512',
-    image, 'type=bind,source=/owned/qualified-runtime,target=/opt/operations-ci-native,readonly']) assert.ok(start.includes(arg), arg);
+    'PATH=/opt/operations-ci-native/codex-resources:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    image, `apparmor=${apparmorMetadata.name}`, 'type=bind,source=/owned/qualified-runtime,target=/opt/operations-ci-native,readonly']) assert.ok(start.includes(arg), arg);
   assert.ok(!start.some(arg => /GH_TOKEN|ACTIONS_RUNTIME_TOKEN|privileged|unconfined|cap-add/.test(arg)));
   const evidence = JSON.parse(readFileSync(join(root, 'tmp/test/ci/native-preflight.json'), 'utf8'));
   assert.equal(evidence.passed, false); assert.equal(evidence.failure.code, 'NATIVE_NAMESPACE_DENIED');
+  assert.deepEqual(evidence.runtime.apparmor, apparmorMetadata);
 });
 
 Then('all validation preparation jobs gate expensive checks on the real native sandbox', function () {
@@ -123,22 +132,56 @@ Then('native preflight cleanup failures fail the gate and preserve its diagnosti
   const root = this.automation.root;
   writeFileSync(join(root, 'package.json'), JSON.stringify({ engines: { node: process.versions.node } }));
   for (const failure of ['container status', 'container transport', 'native files']) {
-    let cleanupCalls = 0, removalCalls = 0;
+    let cleanupCalls = 0, removalCalls = 0, profileCleanupCalls = 0;
     await assert.rejects(runNativePreflightGate({ root, note: () => {}, capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
       resolveImage: async () => ({ image, imageReference }),
       prepareNative: async () => ({ directory: '/owned/qualified-runtime', cleanup: async () => {
         cleanupCalls++; if (failure === 'native files') throw new Error('Owned cleanup failure.');
       } }),
-      probe: async () => ({ passed: true, phase: 'sdk-store-seed' }),
+      prepareAppArmor: async () => apparmorFixture(async () => { profileCleanupCalls++; }),
+      probe: async () => ({ passed: true, phase: 'sdk-store-seed', context: { apparmor: `${apparmorMetadata.name} (enforce)` } }),
       run: async (program, args) => {
         if (args[0] === 'rm') { removalCalls++; if (failure === 'container transport') throw new Error('Owned Docker transport failure.');
           return { code: failure === 'container status' ? 1 : 0 }; }
         return { code: 0 };
       },
     }), /resources could not be removed/);
-    assert.equal(cleanupCalls, 1); assert.equal(removalCalls, 1);
+    const removed = failure === 'native files';
+    assert.equal(cleanupCalls, removed ? 1 : 0); assert.equal(profileCleanupCalls, removed ? 1 : 0); assert.equal(removalCalls, 1);
     const evidence = JSON.parse(readFileSync(join(root, 'tmp/test/ci/native-preflight.json'), 'utf8'));
     assert.equal(evidence.passed, false); assert.equal(evidence.failure.code, 'NATIVE_PREFLIGHT_CLEANUP_FAILED');
     assert.equal(evidence.cleanupFailure.code, 'NATIVE_PREFLIGHT_CLEANUP_FAILED');
+    if (!removed) assert.deepEqual(evidence.retainedRuntime, { directory: '/owned/qualified-runtime', apparmor: apparmorMetadata });
+  }
+});
+
+Then('native AppArmor load and unload uncertainty retains its owned profile files', async function () {
+  const root = this.automation.root;
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ engines: { node: process.versions.node } }));
+  for (const failure of ['unknown load', 'failed unload', 'wrong active profile']) {
+    let assetsRemoved = 0, unloads = 0, launches = 0;
+    const loadMetadata = { ...apparmorMetadata, state: 'load-failed', retained: true };
+    await assert.rejects(runNativePreflightGate({ root, note: () => {}, capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
+      resolveImage: async () => ({ image, imageReference }),
+      prepareNative: async () => ({ directory: '/owned/qualified-runtime', cleanup: async () => { assetsRemoved++; } }),
+      prepareAppArmor: async () => {
+        if (failure === 'unknown load') throw Object.assign(new Error('Owned profile load outcome unknown.'), { nativeAppArmor: loadMetadata });
+        return apparmorFixture(async () => { unloads++; if (failure === 'failed unload') throw new Error('Owned profile unload failed.'); });
+      },
+      probe: async () => ({ passed: true, phase: 'sdk-store-seed', context: {
+        apparmor: failure === 'wrong active profile' ? 'docker-default (enforce)' : `${apparmorMetadata.name} (enforce)` } }),
+      run: async (program, args) => { if (args[0] === 'run') launches++; return { code: 0 }; },
+    }), /resources could not be removed|sandbox preflight failed/);
+    const evidence = JSON.parse(readFileSync(join(root, 'tmp/test/ci/native-preflight.json'), 'utf8'));
+    assert.equal(evidence.passed, false);
+    if (failure === 'wrong active profile') {
+      assert.equal(evidence.failure.code, 'NATIVE_PREFLIGHT_APPARMOR_MISMATCH');
+      assert.equal(assetsRemoved, 1); assert.equal(unloads, 1); assert.equal(evidence.retainedRuntime, undefined);
+    } else {
+      assert.equal(assetsRemoved, 0); assert.equal(launches, failure === 'unknown load' ? 0 : 1);
+      assert.equal(unloads, failure === 'unknown load' ? 0 : 1);
+      assert.deepEqual(evidence.retainedRuntime, { directory: '/owned/qualified-runtime',
+        apparmor: failure === 'unknown load' ? loadMetadata : apparmorMetadata });
+    }
   }
 });

@@ -49,6 +49,7 @@ export async function verifyNativeRuntimeFile(path, pin) {
 export function nativeRuntimeDockerArguments(directory) {
   return ['--security-opt', `seccomp=${join(directory, 'native-seccomp.json')}`,
     '--mount', `type=bind,source=${directory},target=${containerDirectory},readonly`,
+    '--env', `PATH=${containerDirectory}/codex-resources:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
     '--env', `OPERATIONS_CODEX_QUALIFICATION_BINARY=${containerDirectory}/codex`,
     '--env', `OPERATIONS_CODEX_QUALIFICATION_SHA256=${nativeRuntimePin.executable.sha256}`];
 }

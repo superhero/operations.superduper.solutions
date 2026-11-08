@@ -38,7 +38,7 @@ export function classifyNativeSandboxFailure(error, fixture) {
       .replace(/\b(?:bearer|token|password|secret|api[_-]?key|authorization)\s*[:= ]\s*[^\s;,]+/gi, '<redacted>')
       .replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 700);
     return { code: /namespace|uid map|gid map/i.test(bwrap) ? 'NATIVE_NAMESPACE_DENIED'
-      : /mount|pivot_root/i.test(bwrap) ? 'NATIVE_MOUNT_DENIED' : 'NATIVE_SANDBOX_FAILED', detail };
+      : /mount|pivot_root|rslave|failed to make.*\bslave\b/i.test(bwrap) ? 'NATIVE_MOUNT_DENIED' : 'NATIVE_SANDBOX_FAILED', detail };
   }
   return { code: /timed out|deadline/i.test(message) ? 'NATIVE_PREFLIGHT_DEADLINE'
     : /binary|digest|pin|executable|version/i.test(message) ? 'NATIVE_RUNTIME_IDENTITY_FAILED' : 'NATIVE_SDK_SEED_FAILED' };

@@ -11,6 +11,7 @@ import { artifactOperation, discoverUnitArtifacts, githubRead, publishUnit, rest
 import { browserResources } from './ci-browser-resources.mjs';
 import { needsNativeRuntime, prepareNativeRuntime, nativeRuntimeDockerArguments, nativeRuntimePin, nativeRuntimeSeccompPin } from './ci-native-runtime.mjs';
 import { runContainerNativePreflight } from './ci-native-probe.mjs';
+import { prepareNativeAppArmor } from './ci-native-apparmor.mjs';
 
 export async function command(program, args, { cwd = process.cwd(), quiet = false, timeoutMs = 60_000, env = process.env } = {}) {
   return new Promise((resolveDone, reject) => {
@@ -46,7 +47,8 @@ export function orderedMisses(units, artifacts) {
 }
 
 export async function runBatch({ root = process.cwd(), batchId, node, api = githubRead,
-  run = command, operation = artifactOperation, prepareNative = prepareNativeRuntime, preflightNative = runContainerNativePreflight,
+  run = command, operation = artifactOperation, prepareNative = prepareNativeRuntime, prepareAppArmor = prepareNativeAppArmor,
+  preflightNative = runContainerNativePreflight,
   environment = process.env, capacity, signal, note = console.log } = {}) {
   const started = Date.now(), plan = validatePlan(readJSON(resolve(root, 'tmp/test/ci/plan.json')));
   const batch = plan.batches.find(item => item.id === batchId);
@@ -55,7 +57,8 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
   const ownName = `operations-ci-${plan.runId}-${environment.GITHUB_RUN_ATTEMPT}-${batchId}-${randomUUID().slice(0, 8)}`;
   const summary = { schemaVersion: 1, batch: batchId, container: ownName, testedSha: plan.testedSha, startedAt: new Date().toISOString(),
     fresh: 0, reused: 0, failed: 0, unfinished: 0, units: [], lookupMilliseconds: 0 };
-  let container = false, launchAttempted = false, stale = false, stopping = signal?.aborted === true, checking, timer, forceTimer, nativeRuntime;
+  let container = false, launchAttempted = false, stale = false, stopping = signal?.aborted === true, checking, timer, forceTimer,
+    nativeRuntime, nativeAppArmor, retainedAppArmor;
   const active = new Set();
   const deadline = Date.now() + 120_000;
   const artifacts = await discoverUnitArtifacts(plan, { api, deadline, currentOnly: true, note });
@@ -134,6 +137,12 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
         nativeRuntime = await prepareNative({ run, signal });
         summary.nativeRuntime = { version: nativeRuntimePin.version, executableSha256: nativeRuntimePin.executable.sha256,
           sandboxSha256: nativeRuntimePin.sandbox.sha256, seccompSha256: nativeRuntimeSeccompPin.profileSha256 };
+        try { nativeAppArmor = await prepareAppArmor({ directory: nativeRuntime.directory, run }); }
+        catch (error) {
+          if (error.nativeAppArmor) { retainedAppArmor = error.nativeAppArmor; summary.nativeRuntime.apparmor = retainedAppArmor; }
+          throw error;
+        }
+        summary.nativeRuntime.apparmor = nativeAppArmor.metadata;
       }
       await checkHead();
       if (stale || stopping) throw new Error('Browser validation inputs became obsolete or execution was cancelled.');
@@ -153,12 +162,17 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
         '--mount', `type=bind,source=${root},target=/workspace,readonly`,
         '--mount', `type=bind,source=${root}/tmp/test,target=/workspace/tmp/test`,
         ...(nativeRuntime ? nativeRuntimeDockerArguments(nativeRuntime.directory) : []),
+        ...(nativeAppArmor?.dockerArguments ?? []),
         '--mount', `type=bind,source=${node},target=/usr/local/bin/node,readonly`, '--workdir', '/workspace',
         plan.shared.image, 'node', '-e', 'setInterval(() => {}, 60000)'], { cwd: root, quiet: true, timeoutMs: 60_000 });
       if (result.code !== 0) throw new Error('Cannot start the bounded browser batch.');
       container = true;
       if (nativeRuntime) {
         summary.nativePreflight = await preflightNative({ run, container: ownName, root, note });
+        if (nativeAppArmor.dockerArguments.length && summary.nativePreflight.context?.apparmor !== `${nativeAppArmor.name} (enforce)`) {
+          summary.nativePreflight.passed = false;
+          summary.nativePreflight.failure ??= { code: 'NATIVE_PREFLIGHT_APPARMOR_MISMATCH' };
+        }
         if (!summary.nativePreflight.passed) throw new Error('The real native SDK sandbox preflight failed before browser execution.');
       }
       if (stopping) await stopOwnedWork();
@@ -171,7 +185,7 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
     if (checking) await checking;
     clearTimeout(forceTimer);
     signal?.removeEventListener('abort', cancel);
-    let cleanupFailed = false;
+    let cleanupFailed = false, containerAbsent = !launchAttempted;
     try {
       if (launchAttempted) {
         try {
@@ -181,11 +195,20 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
           summary.resourceCounters = counters.output;
         } finally {
           const removed = await run('docker', ['rm', '-f', ownName], { cwd: root, quiet: true, timeoutMs: 15_000 });
-          if (removed.code !== 0) cleanupFailed = true;
+          containerAbsent = removed.code === 0;
+          if (!containerAbsent) cleanupFailed = true;
         }
       }
     } catch { cleanupFailed = true; }
-    try { await nativeRuntime?.cleanup(); } catch { cleanupFailed = true; }
+    let profileAbsent = !nativeAppArmor && !retainedAppArmor;
+    if (containerAbsent && !retainedAppArmor) {
+      try { await nativeAppArmor?.cleanup({ containerAbsent: true }); profileAbsent = true; } catch { cleanupFailed = true; }
+      if (profileAbsent) try { await nativeRuntime?.cleanup(); } catch { cleanupFailed = true; }
+    }
+    if (!containerAbsent || !profileAbsent) {
+      cleanupFailed = true;
+      summary.retainedRuntime = { directory: nativeRuntime?.directory, apparmor: nativeAppArmor?.metadata ?? retainedAppArmor };
+    }
     if (cleanupFailed) summary.cleanupFailure = { code: 'BROWSER_BATCH_CLEANUP_FAILED' };
     summary.unfinished = queue.length; summary.obsolete = stale; summary.finishedAt = new Date().toISOString();
     summary.wallMilliseconds = Date.now() - started;

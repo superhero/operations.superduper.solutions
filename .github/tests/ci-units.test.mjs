@@ -246,6 +246,7 @@ Then('the browser controller publishes completed evidence and closes its contain
   const api = async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint);
   const summary = await runBatch({ root, batchId: 'application-1', node: process.execPath, api, note: () => {},
     prepareNative: async () => assert.fail('Ordinary browser units must not acquire a native runtime.'),
+    prepareAppArmor: async () => assert.fail('Ordinary browser units must retain their default AppArmor policy.'),
     capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
     operation: async input => { publications.push(input); return { id: 123, digest: 'a'.repeat(64) }; },
@@ -262,6 +263,7 @@ Then('the browser controller publishes completed evidence and closes its contain
   assert.deepEqual(plan.shared.runtime, { ...browserResourcePolicy, timezone: 'UTC', locale: 'en-US', capture: 'full' });
   assert.ok(!start.some(argument => argument.includes('GH_TOKEN') || argument.includes('ACTIONS_RUNTIME_TOKEN')));
   assert.ok(!start.some(argument => argument.includes('OPERATIONS_CODEX_QUALIFICATION_')));
+  assert.ok(!start.some(argument => argument.startsWith('PATH=')));
 });
 
 Then('native executable verification enforces the reviewed release pins and regular file bytes', async function () {
@@ -324,13 +326,18 @@ Then('only outstanding real native browser units receive the readonly qualified 
   assert.equal(needsNativeRuntime(plan.units), true);
   assert.equal(needsNativeRuntime(plan.units.filter(unit => unit.feature !== feature)), false);
   const calls = [], lifecycle = [], directory = join(this.automation.root, 'qualified-release');
+  const apparmorMetadata = { name: 'owned-native-profile', state: 'enforcing', profilePath: join(directory, 'native-apparmor') };
+  const apparmor = cleanup => ({ name: apparmorMetadata.name, metadata: apparmorMetadata,
+    dockerArguments: ['--security-opt', `apparmor=${apparmorMetadata.name}`],
+    async cleanup(options) { assert.deepEqual(options, { containerAbsent: true }); await cleanup(); } });
   let preparations = 0;
   const summary = await runBatch({ root, batchId: 'application-1', node: process.execPath,
     api: async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint), note: () => {},
     environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
     capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     prepareNative: async () => { preparations++; lifecycle.push('prepare'); return { directory, cleanup: async () => lifecycle.push('cleanup') }; },
-    preflightNative: async () => { lifecycle.push('preflight'); return { passed: true }; },
+    prepareAppArmor: async () => { lifecycle.push('apparmor-prepare'); return apparmor(async () => lifecycle.push('apparmor-cleanup')); },
+    preflightNative: async () => { lifecycle.push('preflight'); return { passed: true, context: { apparmor: `${apparmorMetadata.name} (enforce)` } }; },
     operation: async () => ({ id: 123, digest: 'a'.repeat(64) }),
     run: async (program, args) => {
       calls.push([program, args]); if (args[0] === 'run' || args[0] === 'rm') lifecycle.push(args[0]);
@@ -338,12 +345,14 @@ Then('only outstanding real native browser units receive the readonly qualified 
     },
   });
   assert.equal(preparations, 1); assert.equal(summary.fresh, 1);
-  assert.deepEqual(lifecycle, ['prepare', 'run', 'preflight', 'rm', 'cleanup']);
+  assert.deepEqual(lifecycle, ['prepare', 'apparmor-prepare', 'run', 'preflight', 'rm', 'apparmor-cleanup', 'cleanup']);
   const start = calls.find(([, args]) => args[0] === 'run')[1];
   assert.ok(start.includes(`type=bind,source=${directory},target=/opt/operations-ci-native,readonly`));
   assert.ok(start.includes('OPERATIONS_CODEX_QUALIFICATION_BINARY=/opt/operations-ci-native/codex'));
+  assert.ok(start.includes('PATH=/opt/operations-ci-native/codex-resources:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'));
   assert.ok(start.includes(`OPERATIONS_CODEX_QUALIFICATION_SHA256=${nativeRuntimePin.executable.sha256}`));
   assert.ok(start.includes(`seccomp=${join(directory, 'native-seccomp.json')}`));
+  assert.ok(start.includes(`apparmor=${apparmorMetadata.name}`));
   assert.ok(start.includes('--network=none')); assert.ok(start.includes('--read-only'));
   assert.ok(start.includes('--cap-drop=ALL')); assert.ok(start.includes('--security-opt=no-new-privileges'));
   const uid = spawnSync('id', ['-u'], { encoding: 'utf8' }).stdout.trim(), gid = spawnSync('id', ['-g'], { encoding: 'utf8' }).stdout.trim();
@@ -351,18 +360,19 @@ Then('only outstanding real native browser units receive the readonly qualified 
   assert.ok(!start.some(argument => /unconfined|--privileged|--cap-add/.test(argument)));
   assert.ok(!start.some(argument => argument.includes('GH_TOKEN') || argument.includes('ACTIONS_RUNTIME_TOKEN')));
   assert.deepEqual(summary.nativeRuntime, { version: nativeRuntimePin.version, executableSha256: nativeRuntimePin.executable.sha256,
-    sandboxSha256: nativeRuntimePin.sandbox.sha256, seccompSha256: nativeRuntimeSeccompPin.profileSha256 });
-  let blockedPublications = 0, cleaned = 0; const blockedCalls = [];
+    sandboxSha256: nativeRuntimePin.sandbox.sha256, seccompSha256: nativeRuntimeSeccompPin.profileSha256, apparmor: apparmorMetadata });
+  let blockedPublications = 0, cleaned = 0, unloaded = 0; const blockedCalls = [];
   await assert.rejects(runBatch({ root, batchId: 'application-1', node: process.execPath,
     api: async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint), note: () => {},
     environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
     capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     prepareNative: async () => ({ directory, cleanup: async () => { cleaned++; } }),
+    prepareAppArmor: async () => apparmor(async () => { unloaded++; }),
     preflightNative: async () => ({ passed: false, failure: { code: 'NATIVE_NAMESPACE_DENIED' } }),
     operation: async () => { blockedPublications++; },
     run: async (program, args) => { blockedCalls.push(args); return { code: 0, output: args.includes('inspect') ? plan.shared.image : '' }; },
   }), /sandbox preflight failed before browser execution/);
-  assert.equal(blockedPublications, 0); assert.equal(cleaned, 1);
+  assert.equal(blockedPublications, 0); assert.equal(cleaned, 1); assert.equal(unloaded, 1);
   assert.ok(!blockedCalls.some(args => args.includes('tests/gherkin/ci.mjs')));
   assert.equal(readJSON(join(root, 'tmp/test/ci/batch-application-1.json')).nativePreflight.failure.code, 'NATIVE_NAMESPACE_DENIED');
   await assert.rejects(runBatch({ root, batchId: 'application-1', node: process.execPath,
@@ -370,14 +380,16 @@ Then('only outstanding real native browser units receive the readonly qualified 
     environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
     capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     prepareNative: async () => ({ directory, cleanup: async () => { cleaned++; } }),
+    prepareAppArmor: async () => apparmor(async () => { unloaded++; }),
     preflightNative: async () => ({ passed: false, failure: { code: 'NATIVE_NAMESPACE_DENIED' } }),
     operation: async () => { blockedPublications++; },
     run: async (program, args) => ({ code: args[0] === 'rm' ? 1 : 0, output: args.includes('inspect') ? plan.shared.image : '' }),
   }), /browser batch resources could not be removed/);
-  assert.equal(blockedPublications, 0); assert.equal(cleaned, 2);
+  assert.equal(blockedPublications, 0); assert.equal(cleaned, 1); assert.equal(unloaded, 1);
   const unremoved = readJSON(join(root, 'tmp/test/ci/batch-application-1.json'));
   assert.equal(unremoved.cleanupFailure.code, 'BROWSER_BATCH_CLEANUP_FAILED');
   assert.equal(unremoved.nativePreflight.failure.code, 'NATIVE_NAMESPACE_DENIED');
+  assert.deepEqual(unremoved.retainedRuntime, { directory, apparmor: apparmorMetadata });
 });
 
 Then('the qualified native seccomp profile retains every default rule and only six namespace exceptions', function () {

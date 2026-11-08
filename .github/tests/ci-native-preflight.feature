@@ -15,5 +15,8 @@ Feature: Real native SDK sandbox qualification fails before expensive CI work
   Scenario: Native qualification cleanup failures cannot certify success
     Then native preflight cleanup failures fail the gate and preserve its diagnostic
 
+  Scenario: Uncertain AppArmor profile state retains its recovery source
+    Then native AppArmor load and unload uncertainty retains its owned profile files
+
   Scenario: Native SDK qualification precedes source coverage in every validation workflow
     Then all validation preparation jobs gate expensive checks on the real native sandbox
