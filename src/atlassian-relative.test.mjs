@@ -17,7 +17,7 @@ import {prepareRequest,additionalBodyField} from './lib/operation-input.ts';
 import {appendRequestQuery} from './lib/query-serialization.ts';
 import {approvedOperation} from './lib/secrets/policy.ts';
 import {executeCredentialed,CredentialResponseError} from './lib/secrets/execution.ts';
-import {createHttpConnection,httpConnectionReference} from './lib/secrets/http-connections.ts';
+import {createHttpConnection,httpConnectionReference,connectionCredentialIds} from './lib/secrets/http-connections.ts';
 import {credentialResultProfile} from './lib/credential-results.ts';
 import {encodeWorkflowBinary} from './lib/workflow-binary.ts';
 import {createWorkflowRequestExecution} from './lib/workflow-execution.ts';
@@ -48,7 +48,7 @@ async function authorize(f,kind,values={},saved=false){
   const scheme=f.operation.security[alternative][0],jwt=rawJwt(target(f,values),f.operation.method);
   const records=kind==='basic'?[record('fixture@example.test'),record('SYNTHETIC_API_TOKEN_85317')]:[record(kind==='apiKey'?'JWT '+jwt:'SYNTHETIC_OAUTH_TOKEN_85317')];
   const descriptor=await approvedOperation(f.operation,f.origin),binding={fingerprint:descriptor.fingerprint,alternative,credentials:{[scheme.name]:kind==='basic'?{username:records[0].id,password:records[1].id}:records[0].id}};
-  if(saved){const connection=await createHttpConnection({label:'Relative fixture',account:'Fixture account',format:'schema'},descriptor,binding,records);records[0].connections=[connection];return {...f,descriptor,records,jwt,binding:{fingerprint:descriptor.fingerprint,alternative,credentials:{},connection:httpConnectionReference(connection)}};}
+  if(saved){const connection=await createHttpConnection({label:'Relative fixture',account:'Fixture account',format:'schema'},descriptor,binding,records);const owner=records.find(r=>r.id===connectionCredentialIds(connection)[0]);assert.ok(owner);owner.connections=[connection];return {...f,descriptor,records,jwt,binding:{fingerprint:descriptor.fingerprint,alternative,credentials:{},connection:httpConnectionReference(connection)}};}
   return {...f,descriptor,records,binding,jwt};
 }
 async function invoke(f,values,fetchRequest,extra={}){
