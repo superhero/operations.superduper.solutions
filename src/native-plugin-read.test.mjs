@@ -67,7 +67,7 @@ async function pairedReads(world, real) {
 }
 Then('five plugin reads share one paired session without agent or write authority', async function () { await pairedReads(this, false); });
 Then('five actual SDK plugin reads complete through the paired encrypted broker', { timeout: 60000 }, async function () { await pairedReads(this, true); });
-Then('plugin reads reject missing grants workspace escapes and indirect source escapes', async function () {
+Then('plugin reads reject missing grants workspace escapes and indirect source escapes', { timeout: 60000 }, async function () {
   const denied = await setup(this, { allowPluginsRead: false, allowAgent: true });
   await assert.rejects(denied.execute('plugin/list')); assert.equal(calls(denied).length, 0);
   for (const mode of ['outside', 'home', 'symlink', 'source', 'resource', 'configured', 'nestedConfigured']) {

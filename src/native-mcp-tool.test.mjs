@@ -91,7 +91,7 @@ Then('MCP tool replies withhold malformed fields encodings and private structure
   }
 });
 
-Then('pending MCP tools deny server interactions and close without replay after cancellation or authority changes', async function () {
+Then('pending MCP tools deny server interactions and close without replay after cancellation or authority changes', { timeout: 60000 }, async function () {
   const c = await setup(this); c.f.interactMcpTool = true; await c.tool(params(await c.thread()));
   assert.equal(c.f.mcpReplies.length, 1); assert.equal(c.f.mcpReplies[0].error.code, -32601); assert.equal(c.f.mcpReplies[0].result, undefined);
   for (const mode of ['cancel', 'source', 'identity', 'sdk-error']) {

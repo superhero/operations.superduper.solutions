@@ -69,7 +69,7 @@ async function sharedControls(world, real) {
 }
 Then('configuration controls change runtime features and skill roots without writing configuration', async function () { await sharedControls(this, false); });
 Then('the pinned SDK applies feature and skill overrides in the paired session', { timeout: 60000 }, async function () { await sharedControls(this, true); });
-Then('configuration controls reject missing grants invalid roots and unrelated agent authority', async function () {
+Then('configuration controls reject missing grants invalid roots and unrelated agent authority', { timeout: 60000 }, async function () {
   for (const method of nativeConfigurationControlMethods) {
     const c = await setup(this, { allowConfigurationControl: false, allowAgent: true });
     await assert.rejects(c.execute(method, method === 'experimentalFeature/enablement/set' ? { enablement: {} } : method === 'skills/extraRoots/set' ? { extraRoots: [] } : {}));

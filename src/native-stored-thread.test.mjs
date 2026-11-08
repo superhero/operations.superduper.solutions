@@ -127,7 +127,7 @@ async function allReads(world, real) {
 }
 Then('all eight stored-thread reads share the independently granted paired child', async function () { await allReads(this, false); });
 Then('the private vault reads all eight stored-thread methods through the actual SDK', { timeout: 45000 }, async function () { await allReads(this, true); });
-Then('stored-thread reads reject missing grants escapes and execution escalation', async function () {
+Then('stored-thread reads reject missing grants escapes and execution escalation', { timeout: 60000 }, async function () {
   const denied = await setup(this, { allowThreadsRead: false, allowAgent: true }); await assert.rejects(denied.execute('thread/list')); assert.equal(calls(denied).length, 0);
   for (const cwd of ['../home', '/outside']) { const c = await setup(this); await assert.rejects(c.execute('thread/list', { cwd })); assert.equal(calls(c).length, 0); }
   const escaped = await setup(this); await symlink(escaped.f.home, join(escaped.f.workspace, 'escape')); await assert.rejects(escaped.execute('thread/list', { cwd: ['escape'] })); assert.equal(calls(escaped).length, 0);

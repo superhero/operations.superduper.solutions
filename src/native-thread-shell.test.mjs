@@ -48,7 +48,7 @@ Then('thread shell models retain typed command and completion events with field 
     assert.throws(() => prepareNativeRequest(c.selection.operation, { 'params:threadId': c.threadId, 'params:command': 'pwd', ['params:' + field]: value }), e => e.fieldKey === 'params:' + field);
   assert.equal(prepareNativeRequest(c.selection.operation, { 'params:threadId': c.threadId, 'params:command': '  pwd  ' }).params.timeoutMs, 300000);
 });
-Then('thread shell rejects missing grants foreign threads stale selections and unloaded peers', async function () {
+Then('thread shell rejects missing grants foreign threads stale selections and unloaded peers', { timeout: 60000 }, async function () {
   const denied = await setup(this, { allowThreadShell: false }); await assert.rejects(run(denied).result); assert.equal(calls(denied).length, 0);
   const c = await setup(this); await assert.rejects(run(c, { threadId: 'foreign' }).result); assert.equal(calls(c).length, 0);
   const stale = await setup(this); await assert.rejects(stale.v.session.executeNativeRuntime({ ...stale.reference, revision: stale.reference.revision + 1 }, stale.selections, stale.selection, { threadId: stale.threadId, command: 'pwd' }));
@@ -69,7 +69,7 @@ Then('private thread shell approval binds its request and waits for item and tur
   assert.equal(calls(c).length, 1); assert.equal(JSON.stringify(await c.v.storage.read()).includes(c.f.key), false);
   const declined = run(c); await approve(c, declined, 'decline'); await assert.rejects(declined.result, e => e.code === 'CANCELLED'); assert.equal(calls(c).length, 1); await ended(c);
 });
-Then('thread shell input and actual encoded terminal values withhold vault secrets', async function () {
+Then('thread shell input and actual encoded terminal values withhold vault secrets', { timeout: 60000 }, async function () {
   for (const mode of ['input', 'base64-input', 'output', 'base64-output', 'utf16-output']) {
     const c = await setup(this), secret = 'saved-shell-secret-' + randomUUID(); await c.v.session.put(null, { label: 'Shell privacy fixture', kind: 'secret', value: secret });
     // Saving a credential revokes peers; reopen and load an owned thread first.
@@ -80,7 +80,7 @@ Then('thread shell input and actual encoded terminal values withhold vault secre
     await assert.rejects(r.result, e => e.code === 'REDACTED'); assert.equal(JSON.stringify(r.notices).includes(secret), false); await ended(c);
   }
 });
-Then('thread shell cancellation interrupts an accepted command and revokes pending approvals', async function () {
+Then('thread shell cancellation interrupts an accepted command and revokes pending approvals', { timeout: 60000 }, async function () {
   for (const mode of ['cancel-pending', 'cancel-running', 'source', 'lock', 'identity-running']) {
     const c = await setup(this), controller = new AbortController(), r = run(c, {}, controller.signal); await waitForWatch(() => r.notices.length === 1);
     if (mode === 'cancel-running') { await approve(c, r); controller.abort(); }

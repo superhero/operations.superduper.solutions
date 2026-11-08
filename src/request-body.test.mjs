@@ -89,11 +89,18 @@ Then('form arrays retain item constraints and reject unqualified structures befo
   for (const media of ['application/x-www-form-urlencoded', 'multipart/form-data']) {
     const invalid = [{ type: 'object', properties: {} }, array(array(text)), array({ type: 'object', properties: {} }),
       array({}), array({ type: 'null' }), array({ ...text, nullable: true }), { ...array(text), nullable: true },
-      array({ type: 'string', format: 'binary' })];
+      ...(media === 'application/x-www-form-urlencoded' ? [array({ type: 'string', format: 'binary' })] : [])];
     for (const field of invalid) {
       const source = document(media, { type: 'object', properties: { field } });
-      assert.throws(() => extractOperations(source, 'forms'));
+      assert.throws(() => extractOperations(source, 'forms'), undefined, JSON.stringify({ media, field }));
       assert.ok(inspectServiceSchema(source, 'forms').operations[0].unavailableReason);
+    }
+    if (media === 'multipart/form-data') {
+      const files = document(media, { type: 'object', properties: { field: array({ type: 'string', format: 'binary' }) } });
+      const operation = extractOperations(files, 'forms')[0];
+      const file = encodeWorkflowBinary('proof.bin', Uint8Array.of(0, 255));
+      const parts = requestBody(prepareRequest(operation, { 'body:field': JSON.stringify([file, file]) })).getAll('field');
+      assert.equal(parts.length, 2); assert.ok(parts.every(part => part.name === 'proof.bin' && part.size === 2));
     }
     for (const encoding of [{ field: { style: 'form', explode: false } }, { '*': { contentType: '*/*' } }]) {
       const source = document(media, { type: 'object', properties: { field: array(text) } });

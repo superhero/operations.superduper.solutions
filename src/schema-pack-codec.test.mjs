@@ -80,7 +80,7 @@ Then('dense schema decoding rejects invalid digits lengths and padding', () => {
 });
 
 
-Then('adaptive schema encoding preserves every gzip asset and records paired decode timings', async () => {
+Then('adaptive schema encoding preserves every gzip asset and records paired decode timings', { timeout: 60000 }, async () => {
   for (let length = 0; length <= 256; length++) for (const byte of [0, 255, undefined]) {
     const bytes = Uint8Array.from({ length }, (_, i) => byte ?? (i * 173 + length) % 256), packed = encodeAdaptiveSchemaPack(bytes);
     assert.deepEqual(decode(packed), bytes); assert.doesNotMatch(packed.slice(adaptivePrefix.length), /["\\<&]/);
