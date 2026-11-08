@@ -10,6 +10,7 @@ import { waitForWatch } from '../tests/native-watch-transport.fixture.mjs';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { nativeRpcOperation, scopeNativeRpcSchema } from './lib/native-rpc.ts';
 import { nativeMcpOAuthMethod, nativeMcpOAuthParams, nativeMcpAuthorizationUrl } from './lib/native-mcp-oauth.ts';
+import { NativeMcpOAuthFlow } from './lib/secrets/native-mcp-oauth.ts';
 import { nativeReference } from './lib/secrets/native-runtime-config.ts';
 import { prepareNativeRequest } from './lib/native-operation-input.ts';
 import { createOperationGraph } from './lib/workflow-graph.ts';
@@ -154,4 +155,21 @@ Then('the real MCP OAuth SDK signs in its loaded thread and retains it for tool 
   assert.equal((await result).response.result.threadId, threadId); assert.equal(c.f.starts, starts);
   const tool = await c.workflow('mcpServer/tool/call', { threadId, server: 'oauth_fixture', tool: 'owned_echo', arguments: {} });
   assert.equal(tool.response.result.content[0].text, 'Owned authenticated tool.'); assert.equal(c.f.starts, starts); c.v.session.lock(); await stopped(c.f);
+});
+
+Then('private MCP login flow retains early completion and cancellation after the final guard', async () => {
+  const params = { name: 'owned', timeoutSecs: 1 }, completion = { name: 'owned', success: true, loginId: 'owned_login', threadId: null, error: null };
+  for (const mode of ['early', 'already-aborted', 'late-abort', 'closed']) {
+    const flow = new NativeMcpOAuthFlow(params), controller = new AbortController(), notices = [];
+    assert.equal(flow.frame({ method: 'unrelated/nativeHint', params: {} }), false);
+    const peer = { socket: { readyState: 1 }, request: async () => ({ authorizationUrl: 'https://owned.example.test/authorize', loginId: 'owned_login' }) };
+    if (mode === 'already-aborted') controller.abort();
+    else assert.equal(flow.frame({ method: 'mcpServer/oauthLogin/completed', params: completion }), true);
+    let guards = 0;
+    const work = flow.execute(peer, params, async () => {
+      if (++guards === 2) { if (mode === 'late-abort') controller.abort(); if (mode === 'closed') peer.socket.readyState = 3; }
+    }, controller.signal, notice => notices.push(notice));
+    if (mode === 'early') { assert.deepEqual(await work, completion); assert.deepEqual(notices, []); }
+    else await assert.rejects(work, { code: mode === 'closed' ? 'NATIVE_UNKNOWN' : 'CANCELLED' });
+  }
 });

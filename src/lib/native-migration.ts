@@ -12,12 +12,13 @@ export const nativeMigrationProgress = 'externalAgentConfig/import/progress';
 export const nativeMigrationCompleted = 'externalAgentConfig/import/completed';
 export const isNativeMigrationMethod = (value: unknown): value is NativeMigrationMethod => nativeMigrationMethods.includes(value as NativeMigrationMethod);
 
-type Schema = { type: string | string[]; properties?: Record<string, Schema>; required?: string[]; additionalProperties?: false; items?: Schema;
+type SchemaType = 'object' | 'array' | 'string' | 'boolean' | 'integer' | 'null';
+type Schema = { type: SchemaType | SchemaType[]; properties?: Record<string, Schema>; required?: string[]; additionalProperties?: false; items?: Schema;
   enum?: readonly string[]; minLength?: number; maxLength?: number; pattern?: string; maxItems?: number; minimum?: number; maximum?: number; title?: string; description?: string };
 const string = (maxLength = 4096, nullable = false, minLength = 0, multiline = false): Schema => ({ type: nullable ? ['string', 'null'] : 'string', minLength, maxLength,
   pattern: multiline ? '^[^\\u0000]*$' : '^[^\\u0000-\\u001f\\u007f]*$' });
 const array = (items: Schema, maxItems = 128): Schema => ({ type: 'array', items, maxItems });
-const object = (properties: Record<string, Schema>, required: string[] = []) => ({ type: 'object', additionalProperties: false as const, properties, required });
+const object = (properties: Record<string, Schema>, required: string[] = []) => ({ type: 'object' as const, additionalProperties: false as const, properties, required });
 const itemType = (): Schema => ({ type: 'string', enum: [...nativeMigrationItemTypes] });
 const named = () => object({ name: string(192, false, 1) }, ['name']);
 const details = () => object({
@@ -66,7 +67,7 @@ function validate(value: unknown, schema: Schema, path = ''): void {
       if (!Object.hasOwn(schema.properties!, key)) invalid(next, 'This parameter is not supported.');
       validate(item[key], schema.properties![key]!, next);
     }
-    for (const key of schema.required ?? []) if (!Object.hasOwn(item, key)) invalid(path ? path + '.' + key : key, 'This field is required.');
+    for (const key of schema.required!) if (!Object.hasOwn(item, key)) invalid(path ? path + '.' + key : key, 'This field is required.');
   } else if (type === 'array') {
     if (!Array.isArray(value) || value.length > schema.maxItems!) return invalid(path, 'Use an array with at most ' + schema.maxItems + ' entries.');
     if (Object.getPrototypeOf(value) !== Array.prototype || Reflect.ownKeys(value).length !== value.length + 1
@@ -80,9 +81,9 @@ function validate(value: unknown, schema: Schema, path = ''): void {
       || schema.pattern && !new RegExp(schema.pattern, 'u').test(value) || schema.enum && !schema.enum.includes(value)) invalid(path, 'Use text matching the declared length, characters and choices.');
   } else if (type === 'boolean') {
     if (typeof value !== 'boolean') invalid(path, 'Use a boolean value.');
-  } else if (type === 'integer') {
+  } else {
     if (!Number.isSafeInteger(value) || Number(value) < schema.minimum! || Number(value) > schema.maximum!) invalid(path, 'Use an integer within the declared limits.');
-  } else invalid(path, 'Unsupported migration value.');
+  }
 }
 function consistentResults(results: Record<string, unknown>[], field: string): void {
   results.forEach((result, index) => {

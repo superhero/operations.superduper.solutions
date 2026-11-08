@@ -17,6 +17,16 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 
 const png=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jK1cAAAAASUVORK5CYII='),x=>x.charCodeAt(0));
+
+Then('Atlassian file corrections reject predeclared authentication queries while retaining ordinary query fields',async()=>{
+ const source=await readServiceSchemaUpstream('bamboo'),contract=Object.values(data.operations).find(contract=>contract.catalog==='bamboo');
+ const operation=document=>document.paths[contract.path][contract.method.toLowerCase()];
+ const blocked=structuredClone(source);operation(blocked).parameters=[...(operation(blocked).parameters??[]),{in:'query',name:'os_authType',schema:{type:'string'}}];
+ const before=JSON.stringify(blocked);assert.throws(()=>bindAtlassianFiles(blocked),/authentication query/);assert.equal(JSON.stringify(blocked),before);
+ const ordinary={in:'query',name:'owned_mode',schema:{type:'boolean'}};operation(source).parameters=[...(operation(source).parameters??[]),ordinary];bindAtlassianFiles(source);
+ assert.deepEqual(operation(source).parameters.find(field=>field.name==='owned_mode'),ordinary);
+ assert.equal(operation(source).parameters.filter(field=>field.name==='os_authType').length,1);
+});
 const xml=new TextEncoder().encode('<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://saml.example.test"/>');
 const selected=new Set(ids),verbs=new Set(['get','post','put','patch','delete','head','options','trace']);
 const originalOperation=(document,contract)=>document.paths[contract.path][contract.method.toLowerCase()];

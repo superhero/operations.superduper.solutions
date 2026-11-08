@@ -11,11 +11,11 @@ import selectorIds from '../tests/aws-rest-selectors.json' with {type:'json'};
 import xmlRequestIds from '../tests/aws-xml-request-operations.json' with {type:'json'};
 import { awsRestContracts, awsRestEndpoint, awsRestSigningProfile, awsRestPrivateResultPaths, validAwsRestModel } from './lib/aws-rest.ts';
 import { awsRestDataSha256 } from './lib/aws-rest-data.ts';
-import { decodeAwsRestResponse, prepareAwsRestRequest, awsRestRequestTarget, awsEventCrc32 } from './lib/aws-rest-codec.ts';
+import { decodeAwsRestResponse, prepareAwsRestRequest, awsRestRequestTarget, awsRestRequestUrl, awsEventCrc32, decodeAwsXmlShape, parseAwsXmlDocument } from './lib/aws-rest-codec.ts';
 import { signAwsRequest } from './lib/secrets/aws-sigv4.ts';
 import { awsSyntheticValues, verifyAwsSignature } from '../tests/aws-sigv4.fixture.mjs';
 import { awsRestChecksums } from './lib/aws-rest-checksum.ts';
-import { encodeWorkflowBinary } from './lib/workflow-binary.ts';
+import { encodeWorkflowBinary, maxWorkflowUploadBytes } from './lib/workflow-binary.ts';
 import { requestBody } from './lib/request-body.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
@@ -187,9 +187,10 @@ Then('AWS REST payloads remain bounded binary files through both wire directions
   assert.throws(()=>decode('aws-runtime-sagemaker:InvokeEndpoint',new Uint8Array(500001),'application/octet-stream'),error=>error.code==='LIMIT');
 });
 
-function event(name,payload) {
+function event(name,payload,extra=[],omit=[]) {
   const entries=Object.entries({':message-type':'event',':event-type':name,':content-type':name==='PayloadChunk'?'application/octet-stream':'application/json'});
-  const parts=entries.map(([name,value])=>{const key=bytes(name),data=bytes(value),result=new Uint8Array(1+key.length+3+data.length);result[0]=key.length;result.set(key,1);result[1+key.length]=7;new DataView(result.buffer).setUint16(2+key.length,data.length);result.set(data,4+key.length);return result;});
+  const parts=entries.filter(([name])=>!omit.includes(name)).map(([name,value])=>{const key=bytes(name),data=bytes(value),result=new Uint8Array(1+key.length+3+data.length);result[0]=key.length;result.set(key,1);result[1+key.length]=7;new DataView(result.buffer).setUint16(2+key.length,data.length);result.set(data,4+key.length);return result;});
+  parts.push(...extra);
   const headerLength=parts.reduce((sum,part)=>sum+part.length,0),data=typeof payload==='string'?bytes(payload):payload;
   const frame=new Uint8Array(16+headerLength+data.length),view=new DataView(frame.buffer);view.setUint32(0,frame.length);view.setUint32(4,headerLength);view.setUint32(8,crc32(frame.subarray(0,8)));
   let offset=12;for(const part of parts){frame.set(part,offset);offset+=part.length;}frame.set(data,offset);view.setUint32(frame.length-4,crc32(frame.subarray(0,-4)));return frame;
@@ -216,4 +217,102 @@ Then('AWS REST wire codecs reject unknown inputs wrong media and invalid model d
   assert.throws(()=>decode(operation.id,'{}','text/plain'),error=>error.code==='MEDIA');
   assert.throws(()=>decode(operation.id,'{"name":42}'),bad);
   assert.throws(()=>decode('aws-backup:DescribeBackupVault','{"CreationDate":"not-a-time"}'),bad);
+});
+
+Then('AWS XML values preserve typed collections and reject corrupt shapes or namespace aliases',()=>{
+  const source={shapes:{}},read=(shape,value)=>decodeAwsXmlShape(source,shape,value),string={type:'string'};
+  assert.deepEqual(read({type:'structure'},''),{});
+  assert.deepEqual(read({type:'structure',members:{Name:{...string,xmlAttribute:true},Hidden:{...string,location:'header'}}},{'@Name':'λ',Hidden:'ignored'}),{Name:'λ'});
+  for(const value of [null,[],1])assert.throws(()=>read({type:'structure'},value),bad);
+  assert.deepEqual(read({type:'list',member:string},''),[]);
+  assert.deepEqual(read({type:'list',member:string},{}),[]);
+  assert.deepEqual(read({type:'list',member:string},{member:['one','two']}),['one','two']);
+  assert.deepEqual(read({type:'list',member:{...string,locationName:'Item'}},{Item:'one'}),['one']);
+  assert.deepEqual(read({type:'list',member:string,flattened:true},'one'),['one']);
+  for(const [shape,value]of [[{type:'list'},{}],[{type:'list',member:string},1],[{type:'map'},{}],[{type:'map',value:string},[]],
+    [{type:'map',value:string},{entry:1}],[{type:'map',value:string},{entry:{key:1,value:'one'}}],
+    [{type:'map',value:string},{entry:{key:'one'}}]])assert.throws(()=>read(shape,value),bad);
+  for(const value of ['',{}])assert.deepEqual(read({type:'map',value:string},value),{});
+  assert.deepEqual(read({type:'map',value:string},{entry:{key:'one',value:'first'}}),{one:'first'});
+  assert.deepEqual(read({type:'map',key:{...string,locationName:'Name'},value:{...string,locationName:'Value'}},
+    {entry:[{Name:'one',Value:'first'},{Name:'two',Value:'second'}]}),{one:'first',two:'second'});
+  assert.equal(read({type:'float'},'1.25'),1.25);assert.equal(read({type:'boolean'},'false'),false);
+  assert.equal(read({type:'timestamp'},0),'1970-01-01T00:00:00.000Z');
+  for(const [shape,value]of [[{type:'integer'},1],[{type:'integer'},'1.5'],[{type:'double'},'1e999'],[{type:'boolean'},'yes'],
+    [{type:'timestamp'},{}],[{type:'timestamp'},'invalid']])assert.throws(()=>read(shape,value),bad);
+  assert.deepEqual(parseAwsXmlDocument(bytes('<Root/>'),'urn:fixture',false),['Root','']);
+  const valid='<x:Root xmlns:x="urn:fixture"><x:Name>value</x:Name></x:Root>';
+  assert.equal(parseAwsXmlDocument(bytes(valid),'urn:fixture',true)[1].Name,'value');
+  for(const xml of ['<Root>','<Root/>','<Root xmlns="urn:other"/>',
+    '<Root xmlns="urn:fixture" xmlns:a="urn:fixture" xmlns:b="urn:fixture"><a:Name>one</a:Name><b:Name>two</b:Name></Root>',
+    '<Root xmlns="urn:fixture" xmlns:a="urn:other"><a:Name>one</a:Name></Root>',
+    '<Root xmlns="urn:fixture">'+'<Child>'.repeat(50)+'value'+'</Child>'.repeat(50)+'</Root>'])
+    assert.throws(()=>parseAwsXmlDocument(bytes(xml),'urn:fixture',true),bad);
+  assert.throws(()=>parseAwsXmlDocument(Uint8Array.of(255),'urn:fixture',true),bad);
+});
+
+Then('AWS REST codec boundaries retain exact payloads and reject malformed headers queries and replies',()=>{
+  const prepared=(id,extra={})=>{const operation=model(id);return prepareAwsRestRequest(operation,{method:operation.method,
+    path:operation.path.replace(/\{([^{}]+)\}/g,(_,name)=>name==='Bucket'?'example-bucket':'fixture'),query:{},...extra});};
+  const objectId='aws-runtime-sagemaker:InvokeEndpoint',jsonId='aws-apigatewayv2:CreateApi',policyId='aws-s3:PutBucketPolicy';
+  const stale={...model(objectId),awsRestRevision:'changed'};
+  assert.throws(()=>prepareAwsRestRequest(stale,{method:'GET',path:'/example-bucket/key',query:{}}),bad);
+  assert.throws(()=>decodeAwsRestResponse(stale,new Uint8Array(),new Headers(),200),bad);
+  assert.throws(()=>decode(objectId,new Uint8Array(8*1024*1024+1)),error=>error.code==='LIMIT');
+  assert.equal(decode(jsonId,'','application/json',400),null);
+  assert.deepEqual(decode(jsonId,'{"Error":{"Code":"Denied","Message":"no","Extra":"omitted"}}','application/json',400),{Error:{Code:'Denied',Message:'no'}});
+  for(const body of ['{','[]','null','1'])assert.throws(()=>decode(jsonId,body,'application/json',400),bad);
+  assert.throws(()=>decode('aws-s3:ListBuckets','<Other/>','application/xml',403),bad);
+  assert.deepEqual(decode('aws-s3:ListBuckets','<Error><Code>Denied</Code><Message>no</Message></Error>','application/xml',403),{Error:{Code:'Denied',Message:'no'}});
+  assert.equal(decode('aws-s3:DeleteBucket','','application/xml'),null);
+  assert.throws(()=>decode('aws-s3:DeleteBucket','<Unexpected/>','application/xml'),bad);
+  assert.throws(()=>decode(jsonId,'','application/json'),bad);
+  assert.throws(()=>decode(jsonId,'{','application/json'),bad);
+  assert.deepEqual(decode('aws-s3:PutObjectAcl','','application/xml'),{});
+  assert.deepEqual(decode('aws-s3:GetBucketPolicy','{"Version":"fixture"}'),{Policy:'{"Version":"fixture"}'});
+  const binary=decode(objectId,Uint8Array.of(1),'');assert.equal(binary.Body.mediaType,'application/octet-stream');
+  assert.throws(()=>decode(objectId,new Uint8Array(maxWorkflowUploadBytes+1),'application/octet-stream'),error=>error.code==='LIMIT');
+  assert.equal(prepared(policyId,{body:{Policy:'{"Version":"fixture"}'}}).body,'{"Version":"fixture"}');
+  for(const body of [{Policy:1},false])assert.throws(()=>prepared(policyId,{body}),bad);
+  const exportId='aws-apigateway:GetExport';
+  for(const query of [{parameters:1},{parameters:'{'},{parameters:'[]'},{parameters:'{"key":1}'},{parameters:'{"key":"one"}',key:'collision'}])
+    assert.throws(()=>prepared(exportId,{query}),bad);
+  assert.deepEqual(prepared(exportId,{query:{parameters:'{"extensions":"integrations"}'}}).query,{extensions:'integrations'});
+  for(const map of ['{','[]',JSON.stringify(Object.fromEntries(Array.from({length:1001},(_,i)=>['key'+i,'one']))),
+    '{"":"one"}','{"bad key":"one"}','{"key":1}','{"key":"line\\nnext"}'])
+    assert.throws(()=>prepared('aws-s3:CopyObject',{headers:{'x-amz-meta-':map}}),bad);
+  assert.throws(()=>prepared('aws-s3:CopyObject',{headers:{'x-amz-meta-':'{"key":"one"}','X-Amz-Meta-Key':'collision'}}),bad);
+  assert.throws(()=>prepared('aws-s3:HeadObject',{headers:{'If-Modified-Since':'not a date'}}),bad);
+  const file=encodeWorkflowBinary('payload.bin',Uint8Array.of(1));
+  for(const media of ['invalid','a/'.padEnd(256,'b')])assert.throws(()=>prepared('aws-s3:UploadPart',{body:file,headers:{'Content-Type':media}}),bad);
+  const origin='https://s3.us-east-1.amazonaws.com';
+  assert.equal(awsRestRequestUrl(model('aws-s3:UploadPart'),origin,'/example-bucket/key').href,origin+'/example-bucket/key');
+  for(const path of ['/example-bucket','/Invalid/key','/example-bucket/%ZZ','/example-bucket/a%2Fb'])
+    assert.throws(()=>awsRestRequestTarget(model('aws-s3:UploadPart'),origin,{method:'PUT',path,query:{}}),bad);
+  assert.throws(()=>awsRestRequestTarget(model('aws-s3:DeleteBucket'),origin,{method:'DELETE',path:'/bad/bucket',query:{}}),bad);
+});
+
+Then('AWS event streams reject malformed typed headers and preserve Lambda and S3 payloads',()=>{
+  const header=(name,type,data=new Uint8Array())=>{const key=bytes(name),result=new Uint8Array(2+key.length+data.length);result[0]=key.length;result.set(key,1);result[1+key.length]=type;result.set(data,2+key.length);return result;};
+  const stringHeader=(name,value)=>{const data=bytes(value),length=new Uint8Array(2+data.length);new DataView(length.buffer).setUint16(0,data.length);length.set(data,2);return header(name,7,length);};
+  const id='aws-lambda:InvokeWithResponseStream',done=event('InvokeComplete','{}');
+  const sizes=[0,0,1,2,4,8,2,2,8,16],extras=sizes.map((size,type)=>header('extra-'+type,type,new Uint8Array(size)));
+  const chunk=event('PayloadChunk',bytes('payload'),extras,[':content-type']);
+  const valid=decode(id,concatenate(chunk,done),'application/vnd.amazon.eventstream');
+  assert.equal(valid.EventStream[0].PayloadChunk.Payload.mediaType,'application/octet-stream');
+  const malformed=[Uint8Array.of(0),Uint8Array.of(255,0),header('short',7),header('short',7,Uint8Array.of(0,4,1)),
+    header('unknown',255),header('short',9,Uint8Array.of(1)),header(':reserved',0),
+    stringHeader(':event-type','PayloadChunk'),Uint8Array.of(1,255,0)];
+  for(const part of malformed)assert.throws(()=>decode(id,concatenate(event('PayloadChunk',bytes('payload'),[part]),done),'application/vnd.amazon.eventstream'),bad);
+  assert.throws(()=>decode(id,event('InvokeComplete','{'),'application/vnd.amazon.eventstream'),bad);
+  assert.throws(()=>decode(id,concatenate(event('PayloadChunk',new Uint8Array(maxWorkflowUploadBytes+1)),done),'application/vnd.amazon.eventstream'),error=>error.code==='LIMIT');
+  const xmlEvent=(name,payload,media='application/xml')=>event(name,payload,[stringHeader(':content-type',media)],[':content-type']);
+  // https://docs.aws.amazon.com/AmazonS3/latest/developerguide/RESTSelectObjectAppendix.html
+  const stats='<Stats><BytesScanned>1</BytesScanned><BytesProcessed>2</BytesProcessed><BytesReturned>3</BytesReturned></Stats>';
+  const s3='aws-s3:SelectObjectContent',end=event('End',''),records=event('Records',bytes('row'),[],[':content-type']);
+  const result=decode(s3,concatenate(records,xmlEvent('Stats',stats),event('Cont',''),end),'application/vnd.amazon.eventstream');
+  assert.equal(result.Payload[0].Records.Payload.base64,Buffer.from('row').toString('base64'));
+  assert.equal(result.Payload[1].Stats.Details.BytesScanned,1);assert.deepEqual(result.Payload[2],{Cont:{}});assert.deepEqual(result.Payload[3],{End:{}});
+  assert.throws(()=>decode(s3,concatenate(xmlEvent('Stats',stats,'application/json'),end),'application/vnd.amazon.eventstream'),bad);
+  assert.throws(()=>decode(s3,event('End','unexpected'),'application/vnd.amazon.eventstream'),bad);
 });

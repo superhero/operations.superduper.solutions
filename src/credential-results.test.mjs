@@ -6,12 +6,13 @@ import { createHash } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
 import operations from '../tests/credential-result-operations.json' with {type:'json'};
 import { resultModels,requestFixture,responseFixture,noSecrets,privateVault } from '../tests/credential-results/fixture.mjs';
-import { credentialResultProfile,privateResultVersion,readCredentialResultContracts,supportsCredentialResults } from './lib/credential-results.ts';
+import { credentialResultProfile,privateResultVersion,readCredentialResultContracts,supportsCredentialResults,privateResultOriginAllowed,bindCredentialResults } from './lib/credential-results.ts';
 import { prepareCredentialResults } from './lib/secrets/credential-results.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed,CredentialResponseError } from './lib/secrets/execution.ts';
 import { prepareRequest } from './lib/operation-input.ts';
 import { VaultError,vaultLimits } from './lib/secrets/types.ts';
+import { VaultSession } from './lib/secrets/session.ts';
 import { applySchemaPatches,privateCredentialResults } from './lib/schema-patches.ts';
 import { readServiceSchemaUpstream,serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { createWorkflowExecution,createWorkflowRequestExecution } from './lib/workflow-execution.ts';
@@ -171,4 +172,63 @@ Then('multiple returned credentials commit together or leave the vault unchanged
     const result=await vault.session.execute(f.descriptor,f.values,f.binding);assert.equal(calls,2);assert.equal(vault.storage.state.snapshot.records.length,3);noSecrets(result,values);
     for(const [index,row]of result.response.body.entries()){assert.equal(row.number,index+1);assert.equal(await vault.session.copyCredential(row.secret.credentialId),values[index]);}
   }finally{globalThis.fetch=previous;vault.session.lock();}
+});
+
+Then('private result boundaries reject invalid destinations response parents and adoption references',()=>{
+  const {profiles}=readCredentialResultContracts(),model=id=>({id,method:profiles[id].method,path:profiles[id].path,fields:[],credentialResult:true,credentialResultProfile:privateResultVersion});
+  const assets=model('atlassian-assets:POST /importsource/{importSourceId}/token');
+  assert.equal(privateResultOriginAllowed({id:'owned:public',method:'GET',path:'/',fields:[]},'https://api.atlassian.com'),false);
+  assert.equal(privateResultOriginAllowed(assets,'https://api.atlassian.com/ex/jira/owned-cloud/jsm/assets/workspace/owned-workspace/v1'),true);
+  for(const origin of ['not a URL','https://other.example.test/ex/jira/cloud/jsm/assets/workspace/workspace/v1','https://api.atlassian.com/wrong'])assert.equal(privateResultOriginAllowed(assets,origin),false);
+  const webhook=profiles['github:apps/get-webhook-config-for-app'],nested=profiles['elevenlabs:get_agent_link_route'];
+  assert.throws(()=>prepareCredentialResults(webhook,503,{}),VaultError);
+  for(const body of [null,false,1,'value'])assert.throws(()=>prepareCredentialResults(webhook,200,body),VaultError);
+  assert.throws(()=>prepareCredentialResults(nested,200,{token:1}),VaultError);
+  assert.throws(()=>prepareCredentialResults(nested,200,{token:{conversation_token:null}}),VaultError);
+  const unclassified=structuredClone(nested);unclassified.responses[0].parentFields[0]=null;
+  assert.throws(()=>prepareCredentialResults(unclassified,200,{token:{conversation_token:'owned-private-value'}}),VaultError);
+  const acquired=prepareCredentialResults(webhook,200,{secret:'owned-private-value'}),reference={credentialId:'11111111-1111-4111-8111-111111111111',label:'Owned'};
+  for(const references of [[],[null],[{}],[{...reference,credentialId:'invalid'}],[{...reference,label:1}],[{...reference,extra:true}]])assert.throws(()=>acquired.complete(references),VaultError);
+  assert.deepEqual(acquired.complete([reference]),{secret:reference});
+});
+
+Then('private result projections preserve nullable oneOf resource wrappers',async()=>{
+  const native=await readServiceSchemaUpstream('elevenlabs'),descriptor=serviceSchemaDescriptors.find(source=>source.id==='elevenlabs');
+  const source=applySchemaPatches(native,descriptor.patches.filter(patch=>patch.id!==privateCredentialResults.id));
+  const contract=readCredentialResultContracts().profiles['elevenlabs:get_agent_link_route'],operation=source.paths[contract.path][contract.method.toLowerCase()];
+  const resolve=node=>node.$ref?node.$ref.slice(2).split('/').reduce((value,key)=>value[key],source):node;
+  const root=resolve(operation.responses['200'].content['application/json'].schema),token=root.properties.token;
+  root.properties.token={oneOf:[token,{type:'null'}]};const components=structuredClone(source.components);
+  bindCredentialResults(source);assert.deepEqual(source.components,components);
+  const projected=operation.responses['200'].content['application/json'].schema.properties.token;
+  assert.equal(projected.oneOf.length,2);assert.deepEqual(projected.oneOf[1],{type:'null'});
+  assert.ok(JSON.stringify(projected.oneOf[0]).includes('credentialId'));assert.equal(operation['x-operations-private-result'],privateResultVersion);
+});
+
+Then('private acquisitions withhold unconfirmed transport and cancelled post-response results',async()=>{
+  const {models}=await resultModels(),operation=models.get('elevenlabs:public_get_media_info'),f=await requestFixture(operation),reply=responseFixture(credentialResultProfile(operation),'owned-new-private-value');
+  for(const mode of ['network','cancelled']){
+    const controller=new AbortController();let checks=0,fetches=0,adoptions=0;
+    await assert.rejects(executeCredentialed(f.descriptor,f.values,f.binding,f.credentials,{signal:controller.signal,
+      assertCurrent(){if(++checks===2&&mode==='cancelled')controller.abort();},
+      adoptPrivateResults:async()=>{adoptions++;assert.fail('Unconfirmed result must not be adopted');},
+      fetchRequest:async()=>{fetches++;if(mode==='network')throw new Error('Owned private transport failure');return Response.json(reply.body,{status:reply.status});}}),error=>{
+        assert.ok(error instanceof CredentialResponseError);assert.equal(error.response.status,mode==='network'?0:reply.status);assert.equal(error.response.body,null);assert.deepEqual(error.response.headers,{});
+        noSecrets([error.message,error.response],reply.values);return true;
+      });
+    assert.equal(fetches,1);assert.equal(adoptions,0);assert.equal(checks,mode==='network'?1:2);
+  }
+});
+
+Then('private result adoption cancelled during its final schema check cannot persist acquired credentials',async()=>{
+  const {models}=await resultModels(),operation=models.get('elevenlabs:public_get_media_info'),f=await requestFixture(operation),vault=await privateVault();
+  vault.session.lock();const controller=new AbortController(),secret='owned-unpersisted-private-result-70419',previous=globalThis.fetch;
+  let dispatched=false,afterResponseChecks=0,fetches=0;
+  const session=new VaultSession(vault.storage,undefined,async()=>{if(dispatched&&++afterResponseChecks===2)controller.abort();});
+  await session.unlock(vault.proof);const before=structuredClone(vault.storage.state);
+  globalThis.fetch=async()=>{fetches++;dispatched=true;return Response.json({signed_url:secret});};
+  try{
+    await assert.rejects(session.execute(f.descriptor,f.values,f.binding,controller.signal,undefined,()=>assert.fail('Private acquisition progress escaped'),()=>assert.fail('Private acquisition sample escaped')),withheld([secret]));
+    assert.equal(fetches,1);assert.equal(afterResponseChecks,2);assert.deepEqual(vault.storage.state,before);assert.deepEqual(await session.list(),[]);
+  }finally{globalThis.fetch=previous;session.lock();}
 });

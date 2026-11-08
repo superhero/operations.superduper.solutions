@@ -230,11 +230,12 @@ export function appendMultipartPart(form: FormData, name: string, value: JsonVal
  * cannot express that combination. This bounded encoder preserves other files
  * as Blob bytes and supplies its own random boundary through the Blob type. */
 export function multipartBody(form: FormData, parts: MultipartParts | undefined): FormData | Blob {
-  if (!Object.values(parts ?? {}).some(part => part.kind === "json-text" && part.contentTypes)) return form;
+  const declarations = parts ?? {};
+  if (!Object.values(declarations).some(part => part.kind === "json-text" && part.contentTypes)) return form;
   const boundary = "operations-" + crypto.randomUUID(), chunks: BlobPart[] = [];
-  const quoted = (value: string) => value.replace(/["\r\n]/g, character => "%" + character.charCodeAt(0).toString(16).toUpperCase());
+  const quoted = (value: string) => value.replace(/["\r\n]/g, character => "%" + character.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
   for (const [name, value] of form) {
-    const part = Object.hasOwn(parts ?? {}, name) ? parts![name] : undefined;
+    const part = Object.hasOwn(declarations, name) ? declarations[name] : undefined;
     let headers = `--${boundary}\r\nContent-Disposition: form-data; name="${quoted(name)}"`;
     if (typeof value !== "string") headers += `; filename="${quoted(value.name)}"\r\nContent-Type: ${value.type || "application/octet-stream"}`;
     else if (part?.kind === "json-text" && part.contentTypes) headers += `\r\nContent-Type: ${part.contentTypes[0]}`;

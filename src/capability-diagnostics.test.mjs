@@ -5,10 +5,10 @@ import assert from 'node:assert/strict';
 import { Before, After, Then } from '@cucumber/cucumber';
 import { capabilityDocument } from '../tests/capability-diagnostics.fixture.mjs';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
-import { operationBlockReason, operationCapabilityHint, readOperationCapabilities, summarizeOperationCapabilities,
+import { operationBlockReason, operationCapabilityHint, readOperationCapabilities, summarizeOperationCapabilities,withOperationCapabilities,
   validateCapabilitySummary } from './lib/operation-capabilities.ts';
 import { createSchemaDiscovery, validateSchemaDiscovery, schemaIndexVersion } from './lib/schema-index.ts';
-import { prepareRequest } from './lib/operation-input.ts';
+import { prepareRequest,validateInputValue,InputValidationError } from './lib/operation-input.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { catalogs } from './lib/catalog-registry.ts';
@@ -195,4 +195,32 @@ Then('malformed union branches and form encoding metadata fail with precise diag
     'unknown parameter "<unnamed>" (type=array, style=<invalid object>, explode=<invalid object>)');
   assert.equal(parameterContext({ in: 'query', name: 'key', style: null, explode: null }),
     'query parameter "key" (type=unknown, style=null, explode=null)');
+});
+
+Then('runtime request validation refuses malformed unions exclusive fields and forged serialization',async()=>{
+  const input=schema=>({key:'body:value',name:'value',label:'Value',description:'',location:'body',required:false,type:schema.type,schema});
+  const nullable={type:'json',nullable:true,anyOf:[{type:'string'},{type:'integer'}]};
+  assert.doesNotThrow(()=>validateInputValue(input(nullable),null));
+  assert.throws(()=>validateInputValue(input({...nullable,enum:['allowed']}),null),/allowed schema alternative/);
+  for(const schema of [{type:'json',anyOf:[{type:'string'}],oneOf:[{type:'string'},{type:'integer'}]},
+    {type:'json',anyOf:{}},{type:'json',oneOf:[]},{type:'json',anyOf:Array.from({length:33},()=>({type:'string'}))}])
+    assert.throws(()=>validateInputValue(input(schema),'value'),/invalid schema union/);
+  const failure=new Error('Owned schema access failure'),broken={get type(){throw failure;}};
+  assert.throws(()=>validateInputValue(input({type:'json',anyOf:[{type:'string'},broken]}),'value'),error=>error===failure);
+  const properties={left:{type:'string'},right:{type:'string'}};
+  for(const requiredOneOf of [null,[],Array.from({length:17},()=>['left']),[[],['right']],[['left','left'],['right']],[[1],['right']],[['unknown'],['right']]])
+    assert.throws(()=>validateInputValue(input({type:'object',properties,requiredOneOf}),{}),/invalid exclusive required-field contract/);
+  assert.throws(()=>validateInputValue(input({type:'object',requiredOneOf:[['left'],['right']]}),{}),/invalid exclusive required-field contract/);
+  const operation=inspect(supported());
+  for(const changes of [{bodyMediaType:'application/json'}, {bodyMediaType:'multipart/form-data'}])
+    assert.throws(()=>prepareRequest({...operation,...changes,multipartParts:{}},{}),error=>error instanceof InputValidationError&&error.fieldKey==='body:$');
+  for(const settings of [{location:'header',parameterContentType:'text/plain'}, {location:'header',parameterContentType:'application/json'},
+    {location:'query',parameterContentType:'application/json',querySerialization:'form-csv',type:'array',schema:{type:'array',items:{type:'string'}}}]){
+    const field={...input({type:'string'}),...settings,key:settings.location+':value'};
+    assert.throws(()=>prepareRequest({...operation,fields:[field]},{[field.key]:field.type==='array'?'["value"]':'value'}),/content parameter serialization is not supported/);
+  }
+  await assert.rejects(approvedOperation({...operation,security:[{}]},'https://example.test'),error=>error.code==='PERMISSION');
+  await assert.rejects(approvedOperation({...operation,security:[[{name:'GitHubPersonalAccessToken',kind:'bearer',header:'Authorization'}],{}]},'https://example.test'),error=>error.code==='PERMISSION');
+  const native=withOperationCapabilities({...operation,method:'RPC',path:undefined});
+  assert.ok(native.capabilities.requirements.some(requirement=>requirement.code==='native-account'));
 });

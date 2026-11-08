@@ -47,10 +47,10 @@ export function bindAwsJson(document: Record<string, any>): void {
     requireContract(declaration?.in === "header" && declaration.required === true && JSON.stringify(declaration.schema?.enum) === JSON.stringify([contract.target]), id + ": target");
     requireContract(parameters.every((raw: unknown) => raw === target || parameter(raw, document).in === "query"
       && ["Pagination limit", "Pagination token"].includes(parameter(raw, document).description)), id + ": pagination");
-    return { id, contract, path, item, operation };
+    return { id, contract, path, item, operation, parameters };
   });
-  for (const { id, contract, path, item, operation } of plans) {
-    operation["x-upstream-aws-json-contract"] = { path, parameters: structuredClone(operation.parameters ?? []),
+  for (const { id, contract, path, item, operation, parameters } of plans) {
+    operation["x-upstream-aws-json-contract"] = { path, parameters: structuredClone(parameters),
       pathParameters: structuredClone(item.parameters ?? []), requestBody: structuredClone(operation.requestBody ?? null),
       responses: structuredClone(operation.responses), servers: structuredClone(document.servers), security: structuredClone(document.security) };
     item.parameters = []; operation.parameters = []; operation.servers = awsJsonEndpoints(contract);

@@ -34,3 +34,12 @@ Feature: Reviewed AWS REST wire contracts
 
   Scenario: XML workflow descriptions fit saved metadata limits
     Then the three XML workflow synopses preserve their complete canonical documentation
+
+  Scenario: AWS XML shape decoding rejects corrupt structures and namespace ambiguity
+    Then AWS XML values preserve typed collections and reject corrupt shapes or namespace aliases
+
+  Scenario: AWS REST codec boundaries reject malformed prepared requests and response envelopes
+    Then AWS REST codec boundaries retain exact payloads and reject malformed headers queries and replies
+
+  Scenario: AWS event frames preserve typed headers and enforce payload boundaries
+    Then AWS event streams reject malformed typed headers and preserve Lambda and S3 payloads

@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { nativeBoundedThreadParams, nativeStoredThreadMetadataSchema } from './native-stored-thread.ts';
 import { NativeCommandInputError } from './native-command.ts';
+import { assertNativeJsonByteBudget } from './native-input-budget.ts';
 export const nativeThreadLifecycleMethods = ['thread/archive', 'thread/delete', 'thread/fork', 'thread/unarchive',
   'thread/unsubscribe', 'thread/metadata/update', 'thread/name/set', 'thread/section/move'] as const;
 export type NativeThreadLifecycleMethod = typeof nativeThreadLifecycleMethods[number];
@@ -51,7 +52,7 @@ export function nativeThreadLifecycleParams(method: NativeThreadLifecycleMethod,
       if (!valid) return invalid('gitInfo', 'gitInfo.originUrl requires a Git remote without passwords, HTTP userinfo, query strings or fragments.');
     }
   }
-  if (new TextEncoder().encode(JSON.stringify(params)).byteLength > 16384) return invalid('params', 'Thread lifecycle parameters must fit 16 KiB.');
+  assertNativeJsonByteBudget(params, 16384, NativeCommandInputError, 'params', 'Thread lifecycle parameters must fit 16 KiB.');
   return params;
 }
 export function nativeThreadLifecycleResultSchema(method: NativeThreadLifecycleMethod, document: Record<string, unknown>) {

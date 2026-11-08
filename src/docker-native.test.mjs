@@ -22,9 +22,18 @@ import { approvedDockerOperation } from './lib/secrets/docker-policy.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { dockerVaultFixture } from '../tests/docker-vault.fixture.mjs';
 import { dockerReference, validateDockerBinding, validateDockerConnection, storedDockerConnections } from './lib/secrets/docker-config.ts';
+import { dockerHttpRedactions } from './lib/secrets/docker-http.ts';
+import { nativeHash } from './lib/secrets/native-runtime-config.ts';
 import { catalogs } from './lib/catalog-registry.ts';
 import { createSchemaDiscovery } from './lib/schema-index.ts';
 import { publishPreparedCatalogs, installOperationModel, updateCatalogs } from './lib/catalog.ts';
+
+Then('Docker registry redactions skip public headers and tolerate noncredential nested values',()=>{
+  const operation={id:'docker:SwarmInit',method:'POST',path:'/swarm/init',fields:[]},encode=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
+  const noSeparator=Buffer.from('owned-without-basic-separator').toString('base64');
+  const values=dockerHttpRedactions(operation,{headers:{'X-Public':'ordinary-header','X-Registry-Auth':encode({auth:noSeparator,empty:{},entries:[null,false,42],nested:{auth:'!'}})}});
+  assert.ok(values.includes(noSeparator));assert.ok(values.includes('!'));assert.ok(!values.includes('ordinary-header'));assert.ok(!values.includes('owned-without-basic-separator'));
+});
 import { createOperationGraph } from './lib/workflow-graph.ts';
 import { createWorkflowRunner } from './lib/workflow-runner.ts';
 import { portableWorkflowDocument } from './lib/workflow-document.ts';
@@ -373,6 +382,21 @@ async function rewriteDockerRecord(v, snapshot, mutate) {
   v.storage.state.revision++; v.storage.state.lockEpoch++;
   v.session = v.newSession(); await v.session.unlock(v.proof); return values;
 }
+
+Then('legacy Docker profiles retain their default container-list authority after encrypted reload',async function(){
+  const value=await privateHost(this),v=value.vault,snapshot=structuredClone(v.storage.state.snapshot);
+  const records=await rewriteDockerRecord(v,snapshot,async records=>{
+    const connection=records.find(record=>record.id===v.keyId).dockerConnections[0];delete connection.operation;
+    const {fingerprint,...config}=connection;connection.fingerprint=await nativeHash(config);
+  });
+  const connection=records.find(record=>record.id===v.keyId).dockerConnections[0],reference=dockerReference(connection);
+  assert.equal(Object.hasOwn(connection,'operation'),false);
+  const checked=await v.session.checkDockerHost(reference,v.selection);assert.equal(checked.connected,true);
+  const descriptor=await approvedDockerOperation(v.selection.operation,v.selection.document);
+  const result=await v.session.executeDockerRead({host:reference,fingerprint:descriptor.fingerprint},v.selection,{});
+  assert.equal(result.response.status,200);assert.equal(result.response.body[0].Id,'synthetic-container');
+  assert.equal(JSON.stringify(v.storage.state).includes(value.f.key),false);
+});
 
 Then('Docker encrypted records reject malformed collections altered fingerprints and excessive saved authority', async function () {
   const value = await privateHost(this), v = value.vault, snapshot = structuredClone(v.storage.state.snapshot);

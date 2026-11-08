@@ -92,6 +92,13 @@ Then('relative Atlassian corrections reject changed routes authentication bodies
   const native=await readServiceSchemaUpstream(confluence),changed=structuredClone(native);changed.paths['/wiki/rest/api/content/{id}/child/attachment'].put.requestBody.content['multipart/form-data'].schema.properties.file.type='number';const before=JSON.stringify(changed);assert.throws(()=>bindAtlassianRelativeServers(changed));assert.equal(JSON.stringify(changed),before);
 });
 
+Then('relative Atlassian corrections preserve non-operation path metadata',async()=>{
+  for(const catalog of Object.keys(contracts.sources)){
+    const source=await readServiceSchemaUpstream(catalog),item=Object.values(source.paths)[0];item.summary='Owned path metadata';
+    bindAtlassianRelativeServers(source);assert.equal(item.summary,'Owned path metadata');
+  }
+});
+
 Then('Confluence Focus and App Migration use their documented site cloud and product bases without duplicated paths',async()=>{
   for(const [catalog,id,kind,expected]of[
     [confluence,confluence+':GET /wiki/rest/api/audit','basic',[`https://${site}.atlassian.net/wiki/rest/api/audit`,`https://api.atlassian.com/ex/confluence/${cloudId}/wiki/rest/api/audit`]],

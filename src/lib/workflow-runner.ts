@@ -858,7 +858,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         if (command?.stage === 'completed') {
           commandFinished = true;
           const source = nativeSources.get(completed.visit.id)!;
-          if (!source.pendingGroups.delete('rpc:result')) throw new VaultError('NATIVE_CONTRACT');
+          source.pendingGroups.delete('rpc:result');
           outputs(completed.frame, completed.node, command, undefined, false, 'rpc:result');
           outputs(completed.frame, completed.node, command, undefined, false, 'rpc:error');
           wakeNativeStreams(); publishStreams();

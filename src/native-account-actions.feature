@@ -20,3 +20,15 @@ Feature: Explicitly approved native account actions
     Then account action models preserve typed wire declarations and named fields
   Scenario: General workflow access cannot bypass separately scoped account controls
     Then the general agent scope cannot dispatch gateway or billing actions
+
+  Scenario: Private account approval frames retain their exact active owner
+    Then private account approvals bind their exact method input identity and active request
+
+  Scenario: Private account replies retain signal and post-guard authority
+    Then private account reply capabilities retain signal identity and post-guard cancellation
+
+  Scenario: Unapproved or closed account results cannot publish public success
+    Then private account results require an approved live owner even without a progress subscriber
+
+  Scenario: A superseded account response preserves the current approval owner
+    Then a superseded account action response cannot clear the current approval owner

@@ -9,11 +9,11 @@ import { Then } from '@cucumber/cucumber';
 import { readServiceSchema, readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { extractOperations } from './lib/catalog.ts';
-import { adaptGithubArchives, githubArchiveProfile, githubArchiveContracts, isGithubArchive } from './lib/github-archive.ts';
+import { adaptGithubArchives, githubArchiveProfile, githubArchiveContracts, isGithubArchive, githubArchiveLimit } from './lib/github-archive.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed, CredentialResponseError } from './lib/secrets/execution.ts';
 import { fetchGithubArchive } from './lib/secrets/github-archive.ts';
-import { createHttpConnection, connectionCredentialIds, httpConnectionMatches, httpConnectionReference } from './lib/secrets/http-connections.ts';
+import { createHttpConnection, connectionCredentialIds, httpConnectionMatches, httpConnectionReference,validateHttpConnection } from './lib/secrets/http-connections.ts';
 import { encodeWorkflowBinary } from './lib/workflow-binary.ts';
 import { VaultSession } from './lib/secrets/session.ts';
 import { privateVault, noSecrets } from '../tests/credential-results/fixture.mjs';
@@ -219,4 +219,55 @@ Then('malformed archive replies changed guards and permission failures expose no
     calls++; return Response.json({ ...valid, status: 403, body: null });
   } }), error => error instanceof CredentialResponseError && error.response.status === 403 && !JSON.stringify(error.response).includes(token));
   assert.equal(calls, 1);
+});
+
+Then('private archive transport rejects invalid replies cancellation and oversized envelopes without publishing bytes',async()=>{
+  const f=await fixture(),file=encodeWorkflowBinary('migration.tar.gz',archive,'application/gzip');
+  const valid={profile:githubArchiveProfile,fingerprint:f.descriptor.fingerprint,status:200,body:file};
+  const init={method:'GET',headers:{Authorization:'Bearer '+token},body:null};
+  const noFetch=async()=>assert.fail('Rejected archive transport must not dispatch');
+  const run=(fetchRequest,extra={},guard=()=>{})=>fetchGithubArchive(f.descriptor,f.connection.relay,f.records,userAddress,{...init,...extra},fetchRequest,guard);
+  for(const extra of [{method:'POST'},{body:'forbidden'},{headers:{}},{headers:{Authorization:'Bearer '+token,Cookie:'blocked'}}])
+    await assert.rejects(run(noFetch,extra),{code:'PERMISSION'});
+  await assert.rejects(fetchGithubArchive({...f.descriptor,origin:'https://foreign.example.test'},f.connection.relay,f.records,userAddress,init,noFetch,()=>{}),{code:'PERMISSION'});
+  const redirected=Response.json(valid);Object.defineProperty(redirected,'redirected',{value:true});
+  for(const response of [new Response(null,{status:503}),new Response('bad',{headers:{'Content-Type':'text/plain'}}),redirected,
+    new Response(null,{headers:{'Content-Type':'application/json'}})])await assert.rejects(run(async()=>response),{code:'NETWORK'});
+  for(const checkpoint of [1,2,3]){
+    const controller=new AbortController();let calls=0;
+    await assert.rejects(run(async()=>Response.json(valid),{signal:controller.signal},()=>{if(++calls===checkpoint)controller.abort();}),{code:'CANCELLED'});
+  }
+  const queued=new AbortController();
+  const pull=new ReadableStream({pull(){queued.abort();}},{highWaterMark:0});
+  await assert.rejects(run(async()=>new Response(pull,{headers:{'Content-Type':'application/json'}}),{signal:queued.signal}),{code:'CANCELLED'});
+  const preRead=new AbortController(),data=new TextEncoder().encode(JSON.stringify(valid));let offset=0;
+  const reader={async read(){return offset++?{done:true}:{done:false,value:data};},async cancel(){throw new Error('Owned reader cleanup rejection');},releaseLock(){}};
+  const response=()=>({status:200,redirected:false,headers:new Headers({'Content-Type':'application/json'}),body:{getReader(){return reader;}}});
+  const cleaned=await run(async()=>response());assert.deepEqual(new Uint8Array(await cleaned.arrayBuffer()),new Uint8Array(archive));
+  await assert.rejects(run(async()=>({...response(),body:{getReader(){preRead.abort();return reader;}}}),{signal:preRead.signal}),{code:'CANCELLED'});
+  const oversized='x'.repeat(Math.ceil(githubArchiveLimit/3)*4+4097);
+  await assert.rejects(run(async()=>new Response(oversized,{headers:{'Content-Type':'application/json'}})),{code:'LIMIT'});
+  for(const magic of [Uint8Array.of(0,0x8b),Uint8Array.of(0x1f,0)])
+    await assert.rejects(run(async()=>Response.json({...valid,body:encodeWorkflowBinary('migration.tar.gz',magic,'application/gzip')})),{code:'NETWORK'});
+});
+
+Then('archive connections require their eligible transport and an ordinary private pairing key',async()=>{
+  const f=await fixture(),input={label:'Owned archive transport',account:'Owned account',format:'schema',relay:{host,pairingKeyId:f.records[1].id}};
+  const denied=error=>error.code==='PERMISSION';
+  await assert.rejects(createHttpConnection({...input,relay:undefined},f.descriptor,f.manual,f.records),error=>error.code==='GITHUB_ARCHIVE_TRANSPORT');
+  for(const records of [f.records.slice(0,1),[f.records[0],{...f.records[1],oauthState:{}}],[f.records[0],{...f.records[1],kind:'derived'}]])
+    await assert.rejects(createHttpConnection(input,f.descriptor,f.manual,records),denied);
+  for(const changes of [{provider:'owned-provider'},{format:'discord-bot'}])assert.throws(()=>validateHttpConnection({...f.connection,...changes}),error=>error.code==='INVALID');
+});
+
+Then('archive private execution uses its current global transport when no override is supplied',async()=>{
+  const f=await fixture(),previous=globalThis.fetch;let fetches=0;
+  globalThis.fetch=async(address,init)=>{
+    fetches++;assert.equal(address,host+'/v1/github/migration-archive');assert.equal(new Headers(init.headers).get('Authorization'),'Bearer '+pairing);
+    return Response.json({profile:githubArchiveProfile,fingerprint:f.descriptor.fingerprint,status:200,body:encodeWorkflowBinary('migration.tar.gz',archive,'application/gzip')});
+  };
+  try{
+    const result=await executeCredentialed(f.descriptor,f.values,f.binding,f.records,{assertCurrent(){}});
+    assert.equal(fetches,1);assert.equal(result.response.bodyType,'binary');assert.deepEqual(Buffer.from(result.response.body.base64,'base64'),archive);noSecrets(result,[token,pairing,signed]);
+  }finally{globalThis.fetch=previous;}
 });

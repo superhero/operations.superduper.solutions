@@ -17,3 +17,12 @@ Feature: Private GitHub migration archives
 
   Scenario: GitHub archive relay replies cannot expose private download locations
     Then malformed archive replies changed guards and permission failures expose no private response material
+
+  Scenario: Archive transport rejection always cleans up its private reader
+    Then private archive transport rejects invalid replies cancellation and oversized envelopes without publishing bytes
+
+  Scenario: Archive connection transport requires a private pairing credential
+    Then archive connections require their eligible transport and an ordinary private pairing key
+
+  Scenario: Archive execution can use the current default private transport
+    Then archive private execution uses its current global transport when no override is supplied

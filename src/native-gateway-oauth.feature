@@ -20,3 +20,15 @@ Feature: Owned native gateway OAuth contracts
 
   Scenario: Gateway models retain native acknowledgements confirmation and notification schemas
     Then gateway operation models preserve their scoped native wire contracts
+
+  Scenario: Private gateway handoffs and receipts retain one active owner
+    Then private gateway handoffs and authority receipts retain one exact active owner
+
+  Scenario: Gateway success requires a live matching final receipt
+    Then private gateway success requires a live matching receipt after the final guard
+
+  Scenario: Gateway cancellation retains exclusive transport and login ownership
+    Then private gateway cancellation cannot borrow another exclusive transport or race its own owner
+
+  Scenario: A superseded gateway response preserves the current handoff owner
+    Then a superseded gateway login response cannot clear the current handoff owner

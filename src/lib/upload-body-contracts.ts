@@ -9,6 +9,8 @@ export const uploadBodySources = source.sources as Record<string, Value>;
 export const uploadBodyContracts = source.operations as Record<string, Value>;
 export const googleMediaProfile = "google-media-v1";
 export const rawUploadProfile = "raw-upload-v1";
+const nativeMediaTypes = new Map([["json", "application/json"], ["text", "text/plain"],
+  ["multipart", "multipart/form-data"], ["form", "application/x-www-form-urlencoded"]]);
 const object = (value: unknown): value is Value => !!value && typeof value === "object" && !Array.isArray(value);
 function requireContract(value: unknown, context = "source identity"): asserts value {
   if (!value) throw new Error(`Upload request bodies require their reviewed native declaration and provider wire contract: ${context}.`);
@@ -85,8 +87,7 @@ export function bindUploadBodies(document: Value): void {
         ];
       }
     } else {
-      const media = contract.kind === "json" ? "application/json" : contract.kind === "text" ? "text/plain"
-        : contract.kind === "multipart" ? "multipart/form-data" : contract.kind === "form" ? "application/x-www-form-urlencoded" : undefined;
+      const media = nativeMediaTypes.get(contract.kind);
       requireContract(media);
       operation.requestBody = { ...operation.requestBody, content: { [media]: { ...structuredClone(declaration),
         ...(contract.kind === "multipart" ? { encoding: { content: { contentType: "text/plain" } } } : {}) } } };

@@ -24,6 +24,7 @@ import { redactor } from './lib/secrets/execution.ts';
 import { nativeCommandReview } from './lib/secrets/native-command.ts';
 import { nativeVaultFixture } from '../tests/native-vault.fixture.mjs';
 import { nativeReference } from './lib/secrets/native-runtime-config.ts';
+import { NativeReferenceContinuations } from './lib/secrets/native-reference-continuations.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { scopeNativeRpcSchema, nativeRpcOperation } from './lib/native-rpc.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
@@ -33,7 +34,7 @@ import { prepareNativeRequest } from './lib/native-operation-input.ts';
 import { isNativePairedOperation } from './lib/native-account.ts';
 import { waitForWatch } from '../tests/native-watch-transport.fixture.mjs';
 import { nativeMigrationMethods, nativeMigrationItemTypes, nativeMigrationParams as params, nativeMigrationInputSchema,
-  NativeMigrationCorrelation, nativeMigrationProgress as progress, nativeMigrationCompleted as completed, nativeMigrationTransition } from './lib/native-migration.ts';
+  nativeMigrationResult as migrationResult, NativeMigrationCorrelation, nativeMigrationProgress as progress, nativeMigrationCompleted as completed, nativeMigrationTransition } from './lib/native-migration.ts';
 
 const kinds = ['AGENTS_MD', 'CONFIG', 'SKILLS', 'PLUGINS', 'MCP_SERVER_CONFIG', 'SUBAGENTS', 'HOOKS', 'COMMANDS', 'MEMORY', 'SESSIONS'];
 const item = itemType => ({ itemType, description: 'Owned ' + itemType, cwd: null,
@@ -108,6 +109,35 @@ Then('imported private values keep bounded ownership and distinguish metadata fr
     assert.throws(() => validateNativePrivateValues(bad, [{ id }]));
   let invoked = false; const accessor = {}; Object.defineProperty(accessor, id, { enumerable: true, get() { invoked = true; return ['private']; } });
   assert.throws(() => validateNativePrivateValues(accessor, [{ id }])); assert.equal(invoked, false);
+});
+
+Then('native migration metadata rejects malformed nested collections missing fields and oversized public results', () => {
+  for (const input of [null, [], 1]) assert.throws(() => params('externalAgentConfig/import', input), /Use an object/);
+  for (const migrationItems of [null, {}, Array(17).fill(item('CONFIG'))])
+    assert.throws(() => params('externalAgentConfig/import', { migrationItems }), /Use an array/);
+  assert.throws(() => params('externalAgentConfig/import', { migrationItems: [{}] }), /migrationItems\[0\].itemType: This field is required/);
+  const sparse = new Array(1); sparse.extra = 'A field cannot replace a missing array position.';
+  assert.throws(() => params('externalAgentConfig/detect', { cwds: sparse }), /cwds\[0\]/);
+  assert.throws(() => params('unowned/migration', {}), error => error.field === 'method');
+  assert.throws(() => migrationResult('unowned/migration', {}), error => error.field === 'method');
+  assert.deepEqual(migrationResult('externalAgentConfig/import/recordHistory', { importId: 'owned_history' }), { importId: 'owned_history' });
+  assert.throws(() => migrationResult('externalAgentConfig/import', { importId: 'unowned/import' }), error => error.field === 'importId');
+  const oversized = { items: Array.from({ length: 40 }, () => ({ itemType: 'CONFIG', description: 'x'.repeat(2048) })) };
+  assert.ok(Buffer.byteLength(JSON.stringify(oversized)) > nativeRuntimeLimits.frame);
+  assert.throws(() => migrationResult('externalAgentConfig/detect', oversized), error => error.field === 'result');
+  for (const acknowledgement of [null, {}, { importId: 'owned', extra: true }])
+    assert.throws(() => new NativeMigrationCorrelation(request('CONFIG')).acknowledge(acknowledgement), /migration lifecycle/);
+});
+
+Then('imported credential and reference continuation owners stay within their independent capacity limits', () => {
+  const connections = Array.from({ length: 33 }, () => ({ id: randomUUID() }));
+  const values = Object.fromEntries(connections.map(({ id }) => [id, []]));
+  assert.throws(() => validateNativePrivateValues(values, connections), { code: 'INVALID' });
+  const continuations = new NativeReferenceContinuations(), references = connections.map(({ id }) => ({ id, revision: 1, fingerprint: 'a'.repeat(64) }));
+  for (const before of references) continuations.accept(before, { before, after: { ...before, revision: 2, fingerprint: 'b'.repeat(64) } });
+  assert.deepEqual(continuations.resolve(references[0]), references[0], 'The oldest owner is removed when the cache exceeds 32 connections.');
+  assert.deepEqual(continuations.resolve(references[1]), { ...references[1], revision: 2, fingerprint: 'b'.repeat(64) });
+  assert.deepEqual(continuations.resolve(references.at(-1)), { ...references.at(-1), revision: 2, fingerprint: 'b'.repeat(64) });
 });
 Then('the private vault adopts imported values with fresh records and hides them across relock and removal', { timeout: 60000 }, async function () {
   let c;

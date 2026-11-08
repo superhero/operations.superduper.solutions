@@ -24,9 +24,16 @@ import { VaultError } from './lib/secrets/types.ts';
 import { encodeWorkflowBinary, maxWorkflowUploadBytes } from './lib/workflow-binary.ts';
 import { privateVault, noSecrets } from '../tests/credential-results/fixture.mjs';
 import { githubAutomationCases, githubAutomationRequest } from '../tests/github-automation.fixture.mjs';
-import { readGithubAutomationContracts, githubAutomationWirePath } from './lib/github-automations.ts';
+import { readGithubAutomationContracts, githubAutomationWirePath,githubAutomationRequestIssue } from './lib/github-automations.ts';
 
 let pending;
+
+Then('GitHub automation ownership query aliases cannot silently change account scope',async()=>{
+  const {models}=await fixture(),test=githubAutomationCases[0],operation=models.get(test.id),request=githubAutomationRequest(test,'personal',operation);
+  const issue=githubAutomationRequestIssue(operation,'https://api.github.com',prepareRequest(operation,request.values),{...request.values,'query:owner_type':'personal'},['GitHubPersonalAccessToken']);
+  assert.equal(issue.key,'query:owner_type');assert.match(issue.message,/replaced by type/);
+});
+
 function fixture() {
   return pending ??= (async () => {
     const source = serviceSchemaDescriptors.find(source => source.id === 'github');

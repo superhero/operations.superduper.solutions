@@ -4,14 +4,17 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {Then} from '@cucumber/cucumber';
-import {uploadBodyContracts,uploadBodySources,bindUploadBodies} from './lib/upload-body-contracts.ts';
+import {vi} from 'vitest';
+import {uploadBodyContracts,uploadBodySources,bindUploadBodies,googleMediaProfile,rawUploadProfile} from './lib/upload-body-contracts.ts';
 import {applySchemaPatches,uploadBodyContractsPatch} from './lib/schema-patches.ts';
 import {readServiceSchema,readServiceSchemaUpstream} from './lib/service-schema-packs.ts';
 import {inspectServiceSchema,serviceInputSchema} from './lib/service-catalog.ts';
 import {prepareRequest} from './lib/operation-input.ts';
 import {requestBody} from './lib/request-body.ts';
 import {encodeWorkflowBinary,maxWorkflowUploadBytes} from './lib/workflow-binary.ts';
-import {validUploadModel} from './lib/media-upload.ts';
+import {validUploadModel,configureMediaUpload,mediaUploadMode,prepareMediaUpload,googleRelatedBody} from './lib/media-upload.ts';
+import {configureGmailMessage,gmailMessageProfile,gmailMessageMode,prepareGmailMessage,gmailRelatedBody,validGmailMessage} from './lib/gmail-message.ts';
+import {createOperationGraph} from './lib/workflow-graph.ts';
 import {operationServerUrl} from './lib/schema-documents.ts';
 import {approvedOperation} from './lib/secrets/policy.ts';
 import {executeCredentialed} from './lib/secrets/execution.ts';
@@ -154,4 +157,81 @@ Then('video uploads target the video service with the account DID filename and d
       assert.equal(init.headers.get('Authorization'),`Bearer ${record.value}`);assert.equal(init.headers.get('Content-Type'),'video/mp4');assert.deepEqual(new Uint8Array(await init.body.arrayBuffer()),bytes);return Response.json({jobStatus:{jobId:'fixture-job'}});
     }catch(error){fetchError=error;throw error;}
   }}).catch(error=>{throw fetchError??error;});assert.equal(result.response.body.jobStatus.jobId,'fixture-job');assert.ok(!JSON.stringify(result).includes(record.value));
+});
+
+Then('media helpers preserve model identity metadata limits and collision-free related envelopes',()=>{
+  const googleId='google-youtube:youtube.videos.insert',rawId='jira:createIssueTypeAvatar';
+  const bare=id=>({id,method:uploadBodyContracts[id].method,path:uploadBodyContracts[id].path,fields:[],bodyRequired:false,
+    bodyMediaType:'application/json',bodySchema:{type:'object',properties:{title:{type:'string'}}}});
+  const makeGoogle=()=>{const operation=bare(googleId);configureMediaUpload(operation,googleMediaProfile,undefined);return operation;};
+  const googleModel=makeGoogle();assert.equal(validUploadModel(googleModel),true);assert.equal(validUploadModel(bare(googleId)),false);
+  for(const change of [{id:'unreviewed'}, {method:'DELETE'}, {path:'/foreign'}])
+    assert.throws(()=>configureMediaUpload({...bare(googleId),...change},googleMediaProfile,undefined),/reviewed native/);
+  for(const change of [{bodyMediaType:'text/plain'},{bodySchema:{type:'string'}},{binaryMediaTypes:[]},{multipartParts:{}}])
+    assert.throws(()=>configureMediaUpload({...bare(googleId),...change},googleMediaProfile,undefined),/complete JSON metadata/);
+  const raw={...bare(rawId),bodyMediaType:'application/octet-stream',bodyValue:true,
+    bodySchema:{type:'string',format:'binary',maxLength:maxWorkflowUploadBytes},binaryMediaTypes:['application/octet-stream']};
+  configureMediaUpload(raw,undefined,rawUploadProfile);assert.equal(validUploadModel(raw),true);
+  for(const change of [{bodyMediaType:'text/plain'},{bodySchema:{type:'string'}}])
+    assert.throws(()=>configureMediaUpload({...raw,...change},undefined,rawUploadProfile),/reviewed file/);
+  assert.equal(validUploadModel({...raw,id:'unreviewed'}),false);assert.equal(validUploadModel({...googleModel,id:'unreviewed'}),false);
+  assert.throws(()=>prepareMediaUpload({...raw,bodyValue:false},{body:{}},undefined),/reviewed file model/);
+  const missingProperties=structuredClone(googleModel);delete missingProperties.bodySchema.properties;assert.equal(validUploadModel(missingProperties),false);
+  assert.throws(()=>mediaUploadMode(googleModel,{}),/Provide the native JSON metadata/);
+  assert.throws(()=>mediaUploadMode(googleModel,{'body:$':'{}','query:uploadType':null}),/uploadType supports/);
+  const metadataMode=mediaUploadMode(googleModel,{'body:$':'{}'});
+  assert.throws(()=>prepareMediaUpload(googleModel,{method:'POST',path:googleModel.path,query:{}},metadataMode),/metadata is missing/);
+  const file=encodeWorkflowBinary('fixture.bin',Uint8Array.of(1),'application/x-fixture');
+  const multipart=mediaUploadMode(googleModel,{'body:$media':JSON.stringify(file),'query:uploadType':'multipart'});
+  const prepared=prepareMediaUpload(googleModel,{method:'POST',path:googleModel.path,query:{},body:{$media:file}},multipart);
+  assert.deepEqual(prepared.body.metadata,{});assert.equal(prepared.body.file.mediaType,'application/octet-stream');
+  const restricted=structuredClone(multipart);restricted.profile.discovery.mediaUpload.accept=['video/mp4'];
+  assert.throws(()=>prepareMediaUpload(googleModel,{method:'POST',path:googleModel.path,query:{},body:{$media:file}},restricted),/Content-Type is not accepted/);
+  for(const value of [null,[],{}, {metadata:null,file},{metadata:[],file}])assert.throws(()=>googleRelatedBody(value),/JSON metadata and a binary file/);
+  assert.throws(()=>googleRelatedBody({metadata:{text:'x'.repeat(maxWorkflowUploadBytes)},file}),/metadata exceeds/);
+  const gmail={id:'google-gmail:gmail.users.messages.send',method:'POST',path:'/gmail/v1/users/{userId}/messages/send',fields:[],
+    bodyMediaType:'application/json',bodySchema:{type:'object',properties:{labelIds:{type:'array',items:{type:'string'}}}}};
+  for(const change of [{bodyMediaType:'text/plain'},{bodySchema:{type:'array'}},{binaryMediaTypes:[]},{multipartParts:{}}])
+    assert.throws(()=>configureGmailMessage({...gmail,...change},gmailMessageProfile),/native JSON resource/);
+  configureGmailMessage(gmail,gmailMessageProfile);
+  assert.throws(()=>gmailMessageMode({...gmail,bodyValue:true},{'body:$':'{}'}),/reviewed contract/);
+  assert.throws(()=>prepareGmailMessage({path:gmail.path,query:{},body:{}},{}),/resource is missing/);
+  const mime=encodeWorkflowBinary('message.eml',Uint8Array.of(65),'message/rfc822');
+  for(const metadata of [null,[],1])assert.throws(()=>prepareGmailMessage({path:gmail.path,query:{},body:{$:metadata}},{file:mime}),/JSON resource object/);
+  for(const value of [null,[],{}, {metadata:null,file:mime},{metadata:[],file:mime}])assert.throws(()=>gmailRelatedBody(value),/metadata and a MIME file/);
+  for(const invalid of [encodeWorkflowBinary('empty.eml',new Uint8Array(),'message/rfc822'),file])
+    assert.throws(()=>gmailRelatedBody({metadata:{},file:invalid}),/invalid message bytes/);
+  assert.throws(()=>gmailRelatedBody({metadata:{text:'x'.repeat(maxWorkflowUploadBytes)},file:mime}),/metadata budget/);
+  const id='11111111-1111-4111-8111-111111111111',nonce=vi.spyOn(crypto,'randomUUID').mockReturnValue(id);
+  try {
+    const metadata={collision:'operations-'+id};
+    assert.throws(()=>googleRelatedBody({metadata,file}),/collision-free Google/);
+    assert.throws(()=>gmailRelatedBody({metadata,file:mime}),/collision-free Gmail/);
+    assert.equal(nonce.mock.calls.length,6);
+  } finally {nonce.mockRestore();}
+});
+
+Then('media workflow graphs preserve resource fields with or without native request declarations',async()=>{
+  const id=google[0][0],{operation:upload}=await model(id),c=uploadBodyContracts[id],file=mediaFile(c);
+  assert.throws(()=>mediaUploadMode(upload,{...parameters(upload),'body:$':'{}','body:$media':JSON.stringify(file),'query:uploadType':'media'}),/does not match/);
+  assert.equal(mediaUploadMode(upload,{...parameters(upload),'body:$media':JSON.stringify(file),'query:uploadType':'media'}).multipart,false);
+  const gmail={id:'google-gmail:gmail.users.messages.send',method:'POST',path:'/gmail/v1/users/{userId}/messages/send',name:'Send',description:'',fields:[],
+    bodyMediaType:'application/json',bodySchema:{type:'object',properties:{labelIds:{type:'array',items:{type:'string'}}}}};
+  configureGmailMessage(gmail,gmailMessageProfile);
+  const invalid=structuredClone(gmail);delete invalid.bodySchema.properties;assert.equal(validGmailMessage(invalid),false);
+  for(const operation of [upload,gmail]){
+    const expected=operation.googleMedia?['Metadata','Media file']:['Message resource','MIME message'];
+    const fallback=operation.bodySchema.properties.$;
+    const source=resource=>({paths:{[operation.path]:{[operation.method.toLowerCase()]:{requestBody:{content:resource}}}}});
+    for(const document of [{},source({}),source({'application/json':{schema:fallback}})]){
+      const graph=createOperationGraph(operation,{x:0,y:0},'owned-media',document),fields=graph.nodes.filter(node=>node.type==='data'&&node.data.direction==='inputs').flatMap(node=>node.data.fields);
+      for(const name of expected)assert.ok(fields.some(field=>field.label===name),name);
+      for(const name of Object.keys(fallback.properties??{}))assert.ok(fields.some(field=>field.label===name||field.label===fallback.properties[name].title),name);
+    }
+    const unavailable=structuredClone(operation);delete unavailable.bodySchema;
+    const graph=createOperationGraph(unavailable,{x:0,y:0},'owned-missing-resource'),fields=graph.nodes.find(node=>node.type==='data'&&node.data.direction==='inputs'&&node.data.label==='Request body').data.fields;
+    assert.deepEqual(fields.map(field=>field.label),expected);
+  }
+  await assert.rejects(approvedOperation({...upload,bodyValue:true},'https://upload.example.test'),error=>error.code==='PERMISSION');
+  await assert.rejects(approvedOperation({...gmail,gmailMessage:undefined,multipartParts:{field:{kind:'text'}}},'https://upload.example.test'),error=>error.code==='PERMISSION');
 });

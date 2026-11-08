@@ -9,7 +9,7 @@ import { bindStructuredForms } from './lib/structured-form-contracts.ts';
 import { readServiceSchema,readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { extractOperations } from './lib/catalog.ts';
-import { gitlabJsonFormProfile } from './lib/gitlab-form.ts';
+import { gitlabJsonFormProfile,configureGitlabJsonForm,useGitlabJsonBody } from './lib/gitlab-form.ts';
 import { encodeWorkflowBinary,maxWorkflowUploadBytes } from './lib/workflow-binary.ts';
 import { prepareRequest,InputValidationError } from './lib/operation-input.ts';
 import { requestBody } from './lib/request-body.ts';
@@ -100,4 +100,17 @@ Then('a private source token can populate a GitLab bulk import JSON field withou
 Then('changed GitLab form profiles and nested file paths invalidate private authority',async()=>{
  const operation=(await nativeModels()).find(o=>o.id==='gitlab:postApiV4ProjectsImport'),a=await authority(operation),changed=structuredClone(operation);delete changed.bodyEncoding;const descriptor=await approvedOperation(changed,a.descriptor.origin);assert.notEqual(descriptor.fingerprint,a.descriptor.fingerprint);let calls=0;await assert.rejects(()=>executeCredentialed(descriptor,values(operation),a.binding,a.records,{assertCurrent(){},async fetchRequest(){calls++;return Response.json({});}}),e=>e.code==='PERMISSION');assert.equal(calls,0);
  const forged=structuredClone(operation);forged.multipartParts.override_params.binaryPaths=[['description']];await assert.rejects(()=>approvedOperation(forged,a.descriptor.origin),e=>e.code==='PERMISSION');const route=structuredClone(operation);route.path='/api/v4/unreviewed';await assert.rejects(()=>approvedOperation(route,a.descriptor.origin),e=>e.code==='PERMISSION');
+});
+
+Then('GitLab form selection validates its profile and preserves field schema fallbacks',()=>{
+ const field={key:'body:resource',name:'resource',label:'Resource',description:'',location:'body',required:false,type:'object',schema:{type:'object',properties:{attachment:{type:'string',format:'binary'}}}};
+ const operation={id:'gitlab:postApiV4Projects',method:'POST',path:'/api/v4/projects',fields:[field],bodyMediaType:'multipart/form-data',bodySchema:{type:'object'}};
+ assert.throws(()=>configureGitlabJsonForm({...operation},'future-profile'),/Unknown GitLab request body encoding/);
+ assert.throws(()=>configureGitlabJsonForm({...operation,path:'/other'},gitlabJsonFormProfile),/reviewed native route/);
+ configureGitlabJsonForm(operation,gitlabJsonFormProfile);
+ assert.throws(()=>useGitlabJsonBody({...operation,path:'/other'},{}),/reviewed contract/);
+ assert.equal(useGitlabJsonBody(operation,{'body:resource':JSON.stringify({attachment:file})}),false);
+ const missingSchema={...operation,fields:[{...field,schema:undefined}]};
+ assert.equal(useGitlabJsonBody(missingSchema,{'body:resource':'{"ordinary":"value"}'}),true);
+ assert.equal(useGitlabJsonBody(operation,{'body:resource':'{"ordinary":"value"}'}),true);
 });

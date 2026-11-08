@@ -13,7 +13,7 @@ export function bindMistralVariants(document: Value): void {
   requireContract(document.openapi === data.source.openapi && sameSchemaValue(document.info, data.source.info)
     && sameSchemaValue(document.servers, data.source.servers) && sameSchemaValue(document.security, data.source.security));
   for (const [name, schema] of Object.entries(data.schemas)) requireContract(sameSchemaValue(document.components?.schemas?.[name], schema));
-  const resolve = (schema: Value): Value => schema.$ref ? document.components.schemas[schema.$ref.split("/").at(-1)] : schema;
+  const resolve = (schema: Value): Value => document.components.schemas[schema.$ref.split("/").at(-1)];
   // Validate every member before applying any operation-local adaptation.
   const plans = Object.values(data.operations).map(contract => {
     const operation = document.paths?.[contract.path]?.[contract.method.toLowerCase()];

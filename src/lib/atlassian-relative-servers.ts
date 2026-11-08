@@ -115,7 +115,7 @@ export function bindAtlassianRelativeServers(document: Value): void {
       schema.properties.comment = { ...schema.properties.comment }; delete schema.properties.comment.format;
       schema.properties.minorEdit = { type: "boolean", default: false, description: schema.properties.minorEdit.description };
       form.encoding = { comment: { contentType: "text/plain; charset=utf-8" } };
-      operation.parameters = [...(operation.parameters ?? []), { in: "header", name: "X-Atlassian-Token", required: true,
+      operation.parameters = [...operation.parameters, { in: "header", name: "X-Atlassian-Token", required: true,
         schema: { type: "string", enum: ["nocheck"], default: "nocheck" }, description: "Required native XSRF exemption for this attachment upload." }];
     }
     if (operation.requestBody?.content?.["*/*"]) operation.requestBody.content = { "application/json": operation.requestBody.content["*/*"] };

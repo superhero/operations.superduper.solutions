@@ -31,3 +31,9 @@ Feature: DigitalOcean agent and private signed upload destinations
 
   Scenario: Finite chat streams require complete choices and their terminal marker
     Then DigitalOcean chat streaming assembles split text tool arguments and usage and rejects truncated or inconsistent frames
+
+  Scenario: Private upload envelopes retain provider expiry and reference boundaries
+    Then private upload envelopes reject malformed signed dates expiry metadata and adoption references
+
+  Scenario: DigitalOcean destination contracts expire safely before dispatch
+    Then DigitalOcean destinations reject stale signed media and malformed agent requests before dispatch

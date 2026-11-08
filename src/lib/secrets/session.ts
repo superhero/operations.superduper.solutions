@@ -59,6 +59,7 @@ import { nativeCredentialSecrets, nativeCredentialTokens, validateNativePrivateV
 import { nativeReadFileBytes } from "../native-filesystem-read.ts";
 import { NativeFilesystemWatchBroker } from "./native-filesystem-watch.ts";
 import { NativeCommandBroker, nativeCommandReview } from './native-command.ts';
+import { reviewNativeValueStrings } from './native-value-review.ts';
 import { NativeCommandInputError, nativeCommandMethods, nativeCommandParams, type NativeCommandMethod, type NativeCommandCallback } from '../native-command.ts';
 import { nativeThreadShellMethod } from '../native-thread-shell.ts';
 import { isNativeMarketplaceMethod } from '../native-marketplace.ts';
@@ -650,7 +651,7 @@ export class VaultSession {
       const secrets = nativeCredentialSecrets(authority.records), tokens = nativeCredentialTokens(authority.records), scrub = redactor(secrets, tokens); scrub.value(params); if (scrub.changed) throw new VaultError('REDACTED');
       const descriptor = authority.descriptors[0]!;
       const sanitize = async (sample: NativeFilesystemWatchValue): Promise<NativeFilesystemWatchValue> => {
-        validateNativeQueryResult(sample.result, descriptor.operation.rpc!.workflowResult ?? descriptor.operation.rpc!.methodResult, descriptor.document);
+        validateNativeQueryResult(sample.result, descriptor.operation.rpc!.workflowResult, descriptor.document);
         const filter = redactor(secrets, tokens), safe = filter.value(sample); if (filter.changed) throw new VaultError('REDACTED');
         await authority.guard(); return safe as NativeFilesystemWatchValue;
       };
@@ -671,7 +672,7 @@ export class VaultSession {
       const params = nativeFilesystemWatchParams('fs/unwatch', input), authority = await this.nativeWatchAuthority(value, pairing, selections);
       const scrub = redactor(nativeCredentialSecrets(authority.records), nativeCredentialTokens(authority.records)); scrub.value(params); if (scrub.changed) throw new VaultError('REDACTED');
       const result = await this.nativeWatches.unwatch(authority, params, signal), descriptor = authority.descriptors[1]!;
-      validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult ?? descriptor.operation.rpc!.methodResult, descriptor.document);
+      validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult, descriptor.document);
       await authority.guard(); if (signal?.aborted) throw new VaultError('CANCELLED');
       return { request: { protocol: 'json-rpc' as const, method: 'fs/unwatch' as const, params }, response: { protocol: 'json-rpc' as const, result } };
     } catch (error) {
@@ -718,10 +719,10 @@ export class VaultSession {
       const review = nativeCommandReview(nativeCredentialSecrets(authority.records), nativeCredentialTokens(authority.records));
       const descriptor = authority.descriptors[0]!;
       const result = await this.nativeCommands.execute(authority, params, review, notice => progress?.(notice), sample => {
-        if (sample.stage === 'completed') validateNativeQueryResult(sample.result, descriptor.operation.rpc!.workflowResult ?? descriptor.operation.rpc!.methodResult, descriptor.document);
+        if (sample.stage === 'completed') validateNativeQueryResult(sample.result, descriptor.operation.rpc!.workflowResult, descriptor.document);
         onValue?.(sample);
       }, signal);
-      validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult ?? descriptor.operation.rpc!.methodResult, descriptor.document);
+      validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult, descriptor.document);
       await authority.guard();
       return { request: { protocol: 'json-rpc' as const, method: 'command/exec' as const, params }, response: { protocol: 'json-rpc' as const, result } };
     } catch (error) {
@@ -738,7 +739,7 @@ export class VaultSession {
       const params = nativeCommandParams(method, input), authority = await this.nativeCommandAuthority(value, pairing, selections);
       const result = await this.nativeCommands.control(authority, method, params, nativeCommandReview(nativeCredentialSecrets(authority.records), nativeCredentialTokens(authority.records)), signal);
       const descriptor = authority.descriptors[nativeCommandMethods.indexOf(method)]!;
-      validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult ?? descriptor.operation.rpc!.methodResult, descriptor.document);
+      validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult, descriptor.document);
       await authority.guard();
       return { request: { protocol: 'json-rpc' as const, method, params }, response: { protocol: 'json-rpc' as const, result } };
     } catch (error) {
@@ -904,17 +905,11 @@ export class VaultSession {
           if (receipt.reason === 'migration') {
             const previous = owner.nativePrivateValues?.[current.id] ?? [], values = [...new Set([...previous, ...receipt.privateValues])];
             privateChanged = JSON.stringify(previous) !== JSON.stringify(values);
-            if (privateChanged) owner.nativePrivateValues = validateNativePrivateValues({ ...owner.nativePrivateValues, [current.id]: values }, owner.nativeConnections ?? []);
+            if (privateChanged) owner.nativePrivateValues = validateNativePrivateValues({ ...owner.nativePrivateValues, [current.id]: values }, owner.nativeConnections!);
           }
           validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult, descriptor.document, true);
-          const review = nativeCommandReview(nativeCredentialSecrets(records), nativeCredentialTokens(records), []), scrub = redactor(nativeCredentialSecrets(records), nativeCredentialTokens(records));
-          const inspect = (item: unknown, depth = 0): void => {
-            if (depth > 32) throw new VaultError('LIMIT');
-            if (typeof item === 'string') review.bytes(new TextEncoder().encode(item));
-            else if (item && typeof item === 'object') for (const child of Object.values(item)) inspect(child, depth + 1);
-          };
-          for (const item of [params, result]) { review.value(item); inspect(item); scrub.value(item); }
-          if (scrub.changed) throw new VaultError('REDACTED');
+          const review = nativeCommandReview(nativeCredentialSecrets(records), nativeCredentialTokens(records), []);
+          for (const item of [params, result]) { review.value(item); reviewNativeValueStrings(item, review.bytes); }
           if (signal?.aborted) throw new VaultError('CANCELLED');
           if (this.state !== expected) throw new VaultError('CONFLICT');
           if (sameNativeIdentity(current.identity, receipt.identity) && !privateChanged) { adopted = nativeReference(current); return; }
@@ -929,12 +924,7 @@ export class VaultSession {
       if (method === nativeMcpOAuthMethod || method === nativeThreadShellMethod || configuration || isNativeThreadContentMethod(method) || isNativeThreadLifecycleMethod(method)) validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult, descriptor.document, configuration || isNativeThreadContentMethod(method) || isNativeThreadLifecycleMethod(method));
       if (commandReview) {
         commandReview.value(result);
-        const review = (value: unknown, depth = 0): void => {
-          if (depth > 32) throw new VaultError('LIMIT');
-          if (typeof value === 'string') commandReview.bytes(new TextEncoder().encode(value));
-          else if (value && typeof value === 'object') for (const item of Object.values(value)) review(item, depth + 1);
-        };
-        review(result);
+        reviewNativeValueStrings(result, commandReview.bytes);
       }
       if (method === nativeMcpToolMethod) {
         validateNativeQueryResult(result, descriptor.operation.rpc!.workflowResult, descriptor.document, true);

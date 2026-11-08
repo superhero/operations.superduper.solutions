@@ -31,3 +31,6 @@ Feature: Independent operation capabilities
 
   Scenario: Malformed source shapes retain useful parameter and form diagnostics
     Then malformed union branches and form encoding metadata fail with precise diagnostics
+
+  Scenario: Runtime request guards reject forged serialization contracts
+    Then runtime request validation refuses malformed unions exclusive fields and forged serialization

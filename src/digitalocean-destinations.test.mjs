@@ -4,8 +4,9 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {Then} from '@cucumber/cucumber';
+import {vi} from 'vitest';
 import contracts from './lib/digitalocean-destinations.json' with {type:'json'};
-import {bindDigitalOceanDestinations,digitalOceanUploadPath,digitalOceanUploadId} from './lib/digitalocean-destinations.ts';
+import {bindDigitalOceanDestinations,digitalOceanUploadPath,digitalOceanUploadId,validateDigitalOceanUploadSource,digitalOceanStorageOrigin,prepareDigitalOceanAgent} from './lib/digitalocean-destinations.ts';
 import {applySchemaPatches,digitalOceanDestinations} from './lib/schema-patches.ts';
 import {readServiceSchema,readServiceSchemaUpstream} from './lib/service-schema-packs.ts';
 import {inspectServiceSchema} from './lib/service-catalog.ts';
@@ -17,7 +18,7 @@ import {prepareRequest} from './lib/operation-input.ts';
 import {encodeWorkflowBinary} from './lib/workflow-binary.ts';
 import {credentialResultProfile} from './lib/credential-results.ts';
 import {prepareCredentialResults} from './lib/secrets/credential-results.ts';
-import {parseDigitalOceanUploadUrl,digitalOceanUploadUrl} from './lib/secrets/digitalocean-upload.ts';
+import {parseDigitalOceanUploadUrl,digitalOceanUploadUrl,prepareDigitalOceanUploadResult} from './lib/secrets/digitalocean-upload.ts';
 import {updateCatalogs} from './lib/catalog.ts';
 import {catalogs} from './lib/catalog-registry.ts';
 import {createWorkflowRequestExecution} from './lib/workflow-execution.ts';
@@ -161,4 +162,45 @@ Then('DigitalOcean chat streaming assembles split text tool arguments and usage 
   for(const bad of[text.replace('data: [DONE]\r\n\r\n',''), 'data: '+JSON.stringify(chunks[0])+'\n\ndata: [DONE]\n\n',
     'data: '+JSON.stringify(chunks[0])+'\n\ndata: '+JSON.stringify({...chunks[1],id:'different'})+'\n\ndata: [DONE]\n\n',
     'data: '+JSON.stringify({...base,choices:'invalid'})+'\n\ndata: [DONE]\n\n'])await assert.rejects(readResponseStream(new Response(bad),'openai-chat',new AbortController().signal));
+});
+
+Then('private upload envelopes reject malformed signed dates expiry metadata and adoption references',async()=>{
+  const url=signedURL(),reference={credentialId:'11111111-1111-4111-8111-111111111111',label:'Owned private upload'};
+  const denied=error=>error.code==='PERMISSION',invalid=error=>error.code==='INVALID';
+  for(const value of [null,1,'not-a-url','https://storage.example.test/\t','{','{}',
+    JSON.stringify({kind:'other',version:1,url,expiresAt:Date.now()+100000}),
+    JSON.stringify({kind:'digitalocean-upload',version:2,url,expiresAt:Date.now()+100000}),
+    JSON.stringify({kind:'digitalocean-upload',version:1,url:1,expiresAt:Date.now()+100000}),
+    JSON.stringify({kind:'digitalocean-upload',version:1,url,expiresAt:null}),
+    JSON.stringify({kind:'digitalocean-upload',version:1,url,expiresAt:Date.now()+100000,extra:true})])
+    assert.throws(()=>parseDigitalOceanUploadUrl(value),denied);
+  const date=new URL(url);date.searchParams.set('X-Amz-Date','20260231T120000Z');assert.throws(()=>parseDigitalOceanUploadUrl(date.href),denied);
+  const credential=new URL(url);credential.searchParams.set('X-Amz-Credential','FIXTUREACCESS/20000101/nyc3/s3/aws4_request');assert.throws(()=>parseDigitalOceanUploadUrl(credential.href),denied);
+  const {operation}=await model(digitalOceanUploadId),descriptor={operation,origin};
+  assert.throws(()=>digitalOceanUploadUrl({...descriptor,operation:{...operation,id:'other'}},operation.path,url),denied);
+  assert.throws(()=>digitalOceanUploadUrl(descriptor,operation.path+'/foreign',url),denied);
+  for(const [status,input]of [[400,{}],[201,null],[201,[]]])assert.throws(()=>prepareDigitalOceanUploadResult(status,input),invalid);
+  assert.throws(()=>prepareDigitalOceanUploadResult(201,{upload_url:url,file_id:fileId,expires_at:'9999-99-99T99:99:99Z'}),invalid);
+  assert.throws(()=>prepareDigitalOceanUploadResult(201,{upload_url:url,file_id:fileId,expires_at:new Date(Date.now()-1000).toISOString()}),denied);
+  const prepared=prepareDigitalOceanUploadResult(201,{upload_url:url,file_id:fileId});
+  for(const references of [[],[reference,reference],[null],[{credentialId:1,label:'invalid'}],[{credentialId:reference.credentialId,label:1}],
+    [{...reference,extra:true}]])assert.throws(()=>prepared.complete(references),invalid);
+  const result=prepared.complete([reference]);assert.deepEqual(result,{file_id:fileId,upload_origin:origin,upload_url:reference});
+  reference.label='changed';assert.equal(result.upload_url.label,'Owned private upload');
+  assert.equal(JSON.stringify(result).includes(signature),false);
+});
+
+Then('DigitalOcean destinations reject stale signed media and malformed agent requests before dispatch',async()=>{
+  assert.doesNotThrow(()=>validateDigitalOceanUploadSource({},{}));
+  assert.throws(()=>digitalOceanStorageOrigin('https://owned.s3.amazonaws.com:443/'),/storage origin/);
+  const {operation:chat}=await model(agent);
+  for(const body of [undefined,null,[],1])assert.throws(()=>prepareDigitalOceanAgent(chat,{body}),/reviewed JSON\/stream contract/);
+  for(const change of [{method:'GET'},{path:'/other'},{responseStream:undefined}])assert.throws(()=>prepareDigitalOceanAgent({...chat,...change},{body:{}}),/reviewed JSON\/stream contract/);
+  const {operation:upload}=await model(digitalOceanUploadId),permissive={...upload,fields:upload.fields.map(field=>field.location==='header'?{...field,pattern:undefined,schema:{type:'string'}}:field)};
+  assert.throws(()=>prepareRequest(permissive,uploadValues('invalid media')),error=>error.fieldKey==='header:Content-Type'&&/exact valid media type/.test(error.message));
+  for(const change of [{security:[[]]},{bodyValue:false}])await assert.rejects(approvedOperation({...upload,...change},origin),error=>error.code==='PERMISSION');
+  const url=signedURL(),expiry=parseDigitalOceanUploadUrl(url).expiresAt,f=await authorize(digitalOceanUploadId,record(url),false);
+  let clock=Date.now(),checks=0,fetches=0;const timer=vi.spyOn(Date,'now').mockImplementation(()=>clock);
+  try{await assert.rejects(invoke(f,uploadValues(),async()=>{fetches++;return new Response('');},{assertCurrent(){checks++;clock=expiry;}}));assert.equal(checks,1);assert.equal(fetches,0);}
+  finally{timer.mockRestore();}
 });

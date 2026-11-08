@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { nativeObject } from './native-runtime-contract.ts';
 import { NativeCommandInputError } from './native-command.ts';
+import { assertNativeJsonByteBudget } from './native-input-budget.ts';
 
 /** Finite owner-granted plugin management contracts for the paired runtime. */
 export const nativePluginInstallMethods = ['plugin/install', 'plugin/uninstall', 'plugin/reconcile'] as const;
@@ -35,6 +36,6 @@ export function nativePluginInstallParams(method: NativePluginInstallMethod, val
   }
   if (method === 'plugin/install' && Number(p.marketplacePath != null) + Number(p.remoteMarketplaceName != null) !== 1)
     bad('marketplacePath', 'Choose exactly one local marketplace file or remote marketplace name.');
-  if (new TextEncoder().encode(JSON.stringify(p)).byteLength > 16384) bad('params', 'Plugin parameters must fit 16 KiB.');
+  assertNativeJsonByteBudget(p, 16384, NativeCommandInputError, 'params', 'Plugin parameters must fit 16 KiB.');
   return structuredClone(p);
 }

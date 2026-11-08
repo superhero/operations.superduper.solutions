@@ -43,11 +43,11 @@ export function nativeStoredThreadReadInputSchema(method: NativeStoredThreadRead
     required: method === 'thread/list' || method === 'thread/loaded/list' ? [] : method === 'thread/attachmentOwner/list' ? ['attachmentType', 'identityKey'] : ['threadId'] };
 }
 export function nativeBoundedThreadParams(schema: Property, value: unknown): Record<string, unknown> {
-  function check(value: unknown, spec: Property, field: string, depth = 0): void {
-    if (depth > 8) return invalid(field, 'Input nesting exceeds eight levels.');
+  function check(value: unknown, spec: Property, field: string, depth = 0, alternatives = 0): void {
+    if (depth > 8 || alternatives > 8) return invalid(field, 'Input nesting exceeds eight levels.');
     if (Array.isArray(spec.anyOf)) {
       for (const branch of spec.anyOf) {
-        try { check(value, branch, field, depth + 1); return; }
+        try { check(value, branch, field, depth, alternatives + 1); return; }
         catch (error) { if (!(error instanceof NativeCommandInputError)) throw error; }
       }
       return invalid(field, 'Use the declared JSON shape and limits.');

@@ -183,7 +183,7 @@ export class NativeRuntimeBroker {
       await peer.request("initialize", nativeInitializeParams(), signal);
       peer.notify(); await guard();
       this.peers.set(id, { peer, key, fingerprint }); return peer;
-    } catch (error) { peer?.close(); this.peers.delete(id); throw error; }
+    } catch (error) { peer?.close(); if (this.peers.get(id)?.peer === peer) this.peers.delete(id); throw error; }
     finally { if (this.opening.get(id) === opening) this.opening.delete(id); }
   }
 
@@ -214,7 +214,7 @@ export class NativeRuntimeBroker {
       await guard();
       this.peers.set(id, { peer, key, fingerprint });
       return { identity: peer.identity, accountType: type, requiresOpenaiAuth: (result as { requiresOpenaiAuth: boolean }).requiresOpenaiAuth, result };
-    } catch (error) { peer?.close(); this.peers.delete(id); throw error instanceof VaultError ? error : new VaultError("NETWORK"); }
+    } catch (error) { peer?.close(); if (this.peers.get(id)?.peer === peer) this.peers.delete(id); throw error instanceof VaultError ? error : new VaultError("NETWORK"); }
     finally { if (this.opening.get(id) === opening) this.opening.delete(id); }
   }
   async check(id: string, host: string, key: string, fingerprint: string, expected: NativeRuntimeIdentity | undefined,
@@ -273,7 +273,7 @@ export class NativeRuntimeBroker {
       const result = await peer.request(method, params, cancellation); await guard();
       this.peers.set(id, { peer, key, fingerprint }); return result;
     } catch (error) {
-      peer?.close(); this.peers.delete(id);
+      peer?.close(); if (this.peers.get(id)?.peer === peer) this.peers.delete(id);
       if (error instanceof VaultError && !['AUTHORIZATION', 'NETWORK'].includes(error.code)) throw error;
       throw new VaultError(cancellation.aborted ? 'CANCELLED' : isNativeMcpReadMethod(method) ? 'NATIVE_MCP_READ' : isNativeSectionMethod(method) ? 'NATIVE_SECTIONS' : isNativeFilesystemMethod(method) ? 'NATIVE_FILESYSTEM' : 'NATIVE_QUERY');
     } finally { if (this.opening.get(id) === opening) this.opening.delete(id); }
@@ -321,7 +321,7 @@ export class NativeRuntimeBroker {
       const result = await peer.request(method, params, cancellation); await guard(); return result;
     } catch (error) {
       if (error instanceof VaultError && !['AUTHORIZATION', 'NETWORK'].includes(error.code)) throw error;
-      throw new VaultError(cancellation.aborted ? 'CANCELLED' : isNativeMcpReadMethod(method) ? 'NATIVE_MCP_READ' : isNativeSectionMethod(method) ? 'NATIVE_SECTIONS' : method === nativeFeedbackMethod ? 'NATIVE_FEEDBACK' : 'NATIVE_FILESYSTEM');
+      throw new VaultError(cancellation.aborted ? 'CANCELLED' : isNativeSectionMethod(method) ? 'NATIVE_SECTIONS' : method === nativeFeedbackMethod ? 'NATIVE_FEEDBACK' : 'NATIVE_FILESYSTEM');
     } finally { peer?.close(); if (this.opening.get(id) === opening) this.opening.delete(id); }
   }
 

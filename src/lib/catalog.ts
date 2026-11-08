@@ -483,7 +483,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
           if (gmailJson) bodyValue = true; // Named JSON/file choices are configured after parsing the resource.
           else if (schema.type === "object" && !schema.nullable)
             for (const [name, property] of Object.entries(compiled?.properties ?? (shape.properties ?? {}) as RecordValue)) {
-              if (encodedForm && !Object.hasOwn(schema.properties ?? {}, name)) continue;
+              if (encodedForm && !Object.hasOwn(schema.properties!, name)) continue;
               fields.push(field(property, document, "body", name, schema.required!.includes(name), encodedForm || mistralJson || githubJson ? schema.properties?.[name] : undefined));
             }
           else

@@ -25,3 +25,6 @@ Feature: Qualified Mistral fragment variants
 
   Scenario: Mistral saved connections preserve private credentials
     Then a saved Mistral connection preserves its variant and scrubs credential echoes from events
+
+  Scenario: Mistral streams require named selectors and native reference declarations
+    Then Mistral stream selectors require their named Boolean field and pinned schema references

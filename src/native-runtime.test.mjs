@@ -23,6 +23,7 @@ import { prepareNativeRequest } from './lib/native-operation-input.ts';
 import { nativeInitializeParams, publicNativeInitializeResult } from './lib/native-initialize.ts';
 import { readServiceSchema } from './lib/service-schema-packs.ts';
 import { nativeRpcOperation, scopeNativeRpcSchema } from './lib/native-rpc.ts';
+import { validateNativeQueryResult } from './lib/secrets/native-query-result.ts';
 
 Before({ tags: '@native-runtime' }, function () { this.nativeFixtures = []; this.nativeBrokers = []; });
 After({ tags: '@native-runtime' }, async function () {
@@ -668,4 +669,161 @@ Then('native handshake expiry closes an unacknowledged socket before the overall
   const f = scriptedRuntime(this, { send: frame => frame.type === 'pair' }); f.runtime.requestMs = 10000;
   await assert.rejects(f.check(), { code: 'NETWORK' }); assert.equal(f.sockets[0].readyState, 3);
   assert.equal(f.frames.some(frame => frame.method === 'initialize'), false);
+});
+
+Then('native query results enforce declared scalar collection and reference constraints without coercion', function () {
+  const valid = [
+    [1.25, { type: 'number', minimum: 1, maximum: 2 }],
+    [true, { type: ['string', 'boolean'] }],
+    ['λ', { type: 'string', minLength: 1, maxLength: 1, enum: ['λ'], const: 'λ' }],
+    [[1], { type: 'array', items: { type: 'integer' }, minItems: 1, maxItems: 1 }],
+    [{ first: 'owned' }, { type: 'object', minProperties: 1, maxProperties: 1, additionalProperties: { type: 'string' } }],
+  ];
+  for (const [value, schema] of valid) assert.deepEqual(validateNativeQueryResult(value, schema, {}), value);
+  const invalid = [
+    [1, { type: 'string' }], [true, { type: 'number' }], [Infinity, { type: 'number' }],
+    ['λ', { type: 'string', minLength: 2 }], ['λλ', { type: 'string', maxLength: 1 }], ['\ud800', { type: 'string' }],
+    [0, { type: 'number', minimum: 1 }], [2, { type: 'number', maximum: 1 }],
+    [1.5, { type: 'number', format: 'int64' }], [-1, { type: 'number', format: 'uint64' }], [0x100000000, { type: 'number', format: 'uint32' }],
+    ['unlisted', { type: 'string', enum: ['owned'] }], ['owned', { type: 'string', enum: 'owned' }],
+    ['other', { const: 'owned' }], [[], { enum: [] }],
+    [[], { type: 'array', items: { type: 'integer' }, minItems: 1 }],
+    [[1, 2], { type: 'array', items: { type: 'integer' }, maxItems: 1 }], [[1], { type: 'array' }],
+    [{}, { type: 'object', minProperties: 1 }], [{ a: 1 }, { type: 'object', maxProperties: 0 }],
+    [1, {}], [1, { anyOf: [] }], [1, { oneOf: true }], [1, { allOf: Array(33).fill({ type: 'integer' }) }],
+    [1, { allOf: [{ type: 'integer' }, { type: 'string' }] }],
+    [1, { $ref: 1 }], [1, { $ref: 'https://untrusted.test/schema' }], [1, { $ref: '#/definitions/a~2b' }],
+  ];
+  for (const [value, schema] of invalid) assert.throws(() => validateNativeQueryResult(value, schema, {}), { code: 'NATIVE_CONTRACT' });
+  const document = { definitions: { 'a/b': { 't~n': { type: 'integer' } }, scalar: false } };
+  assert.equal(validateNativeQueryResult(7, { $ref: '#/definitions/a~1b/t~0n' }, document), 7);
+  for (const ref of ['#/definitions/missing', '#/definitions/scalar/child'])
+    assert.throws(() => validateNativeQueryResult(7, { $ref: ref }, document), { code: 'NATIVE_CONTRACT' });
+});
+
+Then('native query JSON allowances retain UTF-8 shape node and nesting limits', function () {
+  const source = { text: 'λ', list: [null, true, 1.25], nested: { value: 'owned' } };
+  for (const schema of [true, {}]) {
+    const cloned = validateNativeQueryResult(source, schema, {}, true);
+    assert.deepEqual(cloned, source); assert.notEqual(cloned, source); assert.notEqual(cloned.nested, source.nested);
+    for (const value of [{ '\ud800': 'invalid key' }, { bad: undefined }, { bad: '\ud800' }])
+      assert.throws(() => validateNativeQueryResult(value, schema, {}, true), { code: 'NATIVE_CONTRACT' });
+  }
+  assert.throws(() => validateNativeQueryResult('x'.repeat(nativeRuntimeLimits.frame), { type: 'string' }, {}), { code: 'LIMIT' });
+  let deep = null;
+  for (let level = 0; level < 49; level++) deep = [deep];
+  assert.throws(() => validateNativeQueryResult(deep, true, {}, true), { code: 'LIMIT' });
+  assert.throws(() => validateNativeQueryResult(Array(16_384).fill(0), true, {}, true), { code: 'LIMIT' });
+  assert.throws(() => validateNativeQueryResult(Array(16_384).fill(0), { type: 'array', items: { type: 'integer' } }, {}), { code: 'LIMIT' });
+  const recursive = { definitions: { loop: { $ref: '#/definitions/loop' } } };
+  assert.throws(() => validateNativeQueryResult(0, recursive.definitions.loop, recursive), { code: 'LIMIT' });
+  assert.throws(() => validateNativeQueryResult(0, { anyOf: [recursive.definitions.loop, { type: 'integer' }] }, recursive), { code: 'LIMIT' });
+});
+
+Then('native query metadata faults are reduced to the public contract error', function () {
+  const malformed = { definitions: {} };
+  Object.defineProperty(malformed.definitions, 'broken', { get() { throw new Error('private metadata details'); } });
+  for (const schema of [{ $ref: '#/definitions/broken' }, { anyOf: [{ $ref: '#/definitions/broken' }] }])
+    assert.throws(() => validateNativeQueryResult(1, schema, malformed), error => error.code === 'NATIVE_CONTRACT' && !error.message.includes('private metadata'));
+  const declared = [1, 2];
+  assert.deepEqual(validateNativeQueryResult(declared, { enum: [declared] }, {}), declared);
+});
+
+function scopedRuntimeCall(f, kind, id, guard = async () => {}, signal, key = f.key, fingerprint = 'c'.repeat(64), expected = f.identity) {
+  const args = [id, f.host, key, fingerprint, expected], events = { frame: () => true, closed() {} };
+  if (kind === 'initialize') return f.broker.initialize(...args, nativeInitializeParams(), guard, signal);
+  if (kind === 'query') return f.broker.query(...args, 'model/list', {}, guard, signal);
+  if (kind === 'mcp') return f.broker.mcpOAuth(...args, { name: 'owned' }, guard, signal);
+  if (kind === 'feedback') return f.broker.feedback(...args, {}, guard, signal);
+  return f.broker[kind === 'watch' ? 'watchChannel' : 'commandChannel'](...args, guard, events);
+}
+
+Then('native scoped transports retain concurrent opening ownership and the shared four owner cap', async function () {
+  const held = scriptedRuntime(this, { fetch: (_f, init) => new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('closed controlled ticket')), { once: true })) });
+  held.runtime.requestMs = 5000;
+  const owner = randomUUID(), pending = held.check(owner), rejected = assert.rejects(pending, { code: 'CANCELLED' }); await wait(() => held.calls === 1);
+  for (const kind of ['initialize', 'query', 'mcp', 'feedback', 'watch', 'command']) await assert.rejects(scopedRuntimeCall(held, kind, owner), { code: 'CONFLICT' }, kind);
+  held.broker.clear(); await rejected;
+  const full = scriptedRuntime(this);
+  for (let index = 0; index < 4; index++) await full.check();
+  for (const kind of ['initialize', 'query', 'mcp', 'feedback', 'watch', 'command']) await assert.rejects(scopedRuntimeCall(full, kind, randomUUID()), { code: 'LIMIT' }, kind);
+  assert.equal(full.calls, 4, 'Rejected owners cannot request extra tickets.');
+});
+
+Then('native command and watch channels reuse only exact current authority and preserve owner conflicts', async function () {
+  for (const kind of ['watch', 'command']) for (const mode of ['same', 'key', 'fingerprint', 'expired', 'identity']) {
+    const f = scriptedRuntime(this), owner = randomUUID(), peer = await scopedRuntimeCall(f, kind, owner);
+    if (mode === 'expired') f.now = peer.expiresAt;
+    const call = scopedRuntimeCall(f, kind, owner, async () => {}, undefined, mode === 'key' ? 'J'.repeat(43) : f.key,
+      mode === 'fingerprint' ? 'd'.repeat(64) : 'c'.repeat(64), mode === 'identity' ? { ...f.identity, workspace: 'e'.repeat(64) } : f.identity);
+    if (mode === 'identity') await assert.rejects(call, { code: kind === 'watch' ? 'NATIVE_FILESYSTEM' : 'NATIVE_COMMAND' });
+    else { const next = await call; assert.equal(next === peer, mode === 'same'); }
+    assert.equal(f.calls, mode === 'same' ? 1 : 2);
+  }
+  const busy = scriptedRuntime(this), owner = randomUUID(); await busy.agent(owner);
+  await assert.rejects(scopedRuntimeCall(busy, 'watch', owner), { code: 'CONFLICT' });
+  await assert.rejects(scopedRuntimeCall(busy, 'command', owner), { code: 'CONFLICT' });
+  for (const kind of ['watch', 'command']) {
+    const f = scriptedRuntime(this); await assert.rejects(scopedRuntimeCall(f, kind, randomUUID(), async () => { throw new VaultError('LIMIT'); }), { code: 'LIMIT' });
+    assert.deepEqual(f.sockets, []);
+  }
+});
+
+Then('native peer request identities remain unique and specialized deadlines retain their defaults', async function () {
+  const f = scriptedRuntime(this, { send: frame => frame.method === 'thread/start' }), peer = await f.agent();
+  await assert.rejects(peer.request('thread/start', {}, undefined, 'invalid/id'), { code: 'INVALID' });
+  const pending = peer.request('thread/start', {}, undefined, 'owned'), rejected = assert.rejects(pending, { code: 'NETWORK' });
+  await wait(() => f.frames.some(frame => frame.id === 'owned'));
+  await assert.rejects(peer.request('thread/start', {}, undefined, 'owned'), { code: 'INVALID' }); peer.close(); await rejected;
+  const defaults = scriptedRuntime(this), current = await defaults.agent(); delete defaults.runtime.requestMs;
+  for (const method of ['account/rateLimitResetCredit/consume', 'command/exec', 'thread/shellCommand', 'account/gatewayOAuth/login',
+    'externalAgentConfig/import', 'mcpServer/oauth/login', 'mcpServer/tool/call', 'feedback/upload', 'model/list'])
+    await current.request(method, {});
+  const failedImport = scriptedRuntime(this, { send(frame, socket) {
+    if (frame.method !== 'externalAgentConfig/import') return false;
+    queueMicrotask(() => socket.receive({ id: frame.id, error: { message: 'private native failure' } })); return true;
+  } });
+  const importing = await failedImport.agent(); await assert.rejects(importing.request('externalAgentConfig/import', {}), { code: 'NATIVE_MIGRATION' });
+});
+
+Then('native scoped error mapping retains cancellation when a transport guard fails during abort', async function () {
+  for (const kind of ['query', 'mcp', 'feedback']) {
+    const f = scriptedRuntime(this), controller = new AbortController();
+    await assert.rejects(scopedRuntimeCall(f, kind, randomUUID(), async () => { controller.abort(); throw new VaultError('NETWORK'); }, controller.signal), { code: 'CANCELLED' });
+    assert.deepEqual(f.sockets, []);
+  }
+  for (const [method, code] of [['threadSection/create', 'NATIVE_SECTIONS'], ['fs/writeFile', 'NATIVE_FILESYSTEM']]) {
+    const f = scriptedRuntime(this);
+    await assert.rejects(f.broker.query(randomUUID(), f.host, f.key, 'c'.repeat(64), f.identity, method, {}, async () => { throw new VaultError('NETWORK'); }), { code });
+  }
+});
+
+Then('late native opening failures cannot remove a newer paired owner or its transport', async function () {
+  for (const kind of ['agent', 'account', 'initialize', 'query', 'mcp', 'watch', 'command']) {
+    let release, entered = false;
+    const gate = new Promise(resolve => { release = resolve; }), f = scriptedRuntime(this), owner = randomUUID();
+    const guard = async () => { entered = true; await gate; throw new VaultError('LIMIT'); };
+    const opening = kind === 'agent' ? f.agent(owner, undefined, guard) : kind === 'account' ? f.check(owner, undefined, guard) : scopedRuntimeCall(f, kind, owner, guard);
+    const rejected = assert.rejects(opening, { code: 'LIMIT' }); await wait(() => entered);
+    f.broker.close(owner); assert.equal((await f.check(owner)).accountType, 'none');
+    release(); await rejected;
+    assert.equal(f.broker.connected(owner), true, kind + ' discarded the replacement owner.');
+    assert.equal(f.sockets[0].readyState, 1); assert.equal((await f.check(owner)).accountType, 'none'); assert.equal(f.calls, 1);
+  }
+});
+
+Then('native scoped failures retain MCP login and feedback diagnostic codes', async function () {
+  const oauth = scriptedRuntime(this, { send(frame, socket) {
+    if (frame.method !== 'mcpServer/oauth/login') return false;
+    queueMicrotask(() => socket.receive({ id: frame.id, error: { message: 'private sign-in failure' } })); return true;
+  } });
+  const peer = await oauth.agent(); await assert.rejects(peer.request('mcpServer/oauth/login', {}), { code: 'NATIVE_MCP_OAUTH' });
+  const feedback = scriptedRuntime(this);
+  await assert.rejects(scopedRuntimeCall(feedback, 'feedback', randomUUID(), async () => { throw new VaultError('NETWORK'); }), { code: 'NATIVE_FEEDBACK' });
+});
+
+Then('a rejected native agent ticket leaves no owned peer or initialized socket', async function () {
+  const f = scriptedRuntime(this, { fetch: () => new Response(null, { status: 403 }) }), owner = randomUUID();
+  await assert.rejects(f.agent(owner), { code: 'AUTHORIZATION' });
+  assert.equal(f.broker.connected(owner), false); assert.deepEqual(f.sockets, []); assert.deepEqual(f.frames, []); assert.equal(f.calls, 1);
 });

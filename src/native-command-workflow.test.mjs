@@ -13,7 +13,7 @@ import { catalogs } from './lib/catalog-registry.ts';
 import { updateCatalogs, publishPreparedCatalogs, installOperationModel } from './lib/catalog.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { createSchemaDiscovery } from './lib/schema-index.ts';
-import { createOperationGraph, isWorkflowConnection } from './lib/workflow-graph.ts';
+import { createOperationGraph, isWorkflowConnection, getAdditionalPropertyTypes } from './lib/workflow-graph.ts';
 import { createWorkflowRunner } from './lib/workflow-runner.ts';
 import { parseWorkflowDocument, portableWorkflowDocument } from './lib/workflow-document.ts';
 import { approvedNativeOperation } from './lib/secrets/native-rpc-policy.ts';
@@ -132,4 +132,51 @@ Then('command workflows reject foreign out of order duplicate and incomplete lif
     else await assert.rejects(result, error => error.code === 'NATIVE_CONTRACT');
     assert.equal(c.runner.streams[0].state, 'error');
   }
+});
+
+Then('command workflow completion supports anonymous processes and rejects further terminal callbacks', async function () {
+  for (const mode of ['without-id', 'after-completion']) {
+    const c = await setup(this); c.runner.end();
+    const processId = mode === 'without-id' ? null : 'owned', terminal = { exitCode: 0, stdout: '', stderr: '' };
+    c.runner = createWorkflowRunner(c.graph, 'exec', { ...c.executor, async executeNative(_op, _values, _binding, signal, _progress, onValue) {
+      onValue({ protocol: 'json-rpc', stage: 'dispatched', processId });
+      onValue({ protocol: 'json-rpc', stage: 'completed', processId, result: terminal });
+      if (mode === 'after-completion') onValue({ protocol: 'json-rpc', stage: 'completed', processId, result: terminal });
+      if (signal.aborted) throw new VaultError('CANCELLED');
+      return { request: { protocol: 'json-rpc', method: 'command/exec', params: { command: ['owned'] } }, response: { protocol: 'json-rpc', result: terminal } };
+    } });
+    c.runner.next();
+    const pending = c.runner.submit({ 'params:command': '["owned"]', ...(processId ? { 'params:processId': processId } : {}) }, undefined, undefined, c.bindings['command/exec']);
+    assert.equal((await pending).kind, 'stream');
+    await waitForWatch(() => c.runner.streams[0].state === (mode === 'without-id' ? 'complete' : 'error'));
+    if (mode === 'without-id') assert.deepEqual(c.runner.streams[0].result.response.result, terminal);
+    else assert.equal(c.runner.streams[0].result, undefined);
+    assert.equal(c.f.frames.filter(frame => frame.method === 'command/exec').length, 0);
+  }
+});
+
+Then('command dispatch routing errors terminate their stream without making the command retryable', async function () {
+  const c = await setup(this); c.runner.end();
+  const from = fieldAt(c.graph.nodes, 'exec', 'rpc:dispatched', '/dispatched/processId'), to = fieldAt(c.graph.nodes, 'exec', 'input:params', '/processId');
+  c.graph.edges.push({ id: 'dispatch-cycle', kind: 'mapping', source: from.panel.id, sourceHandle: from.field.id, target: to.panel.id, targetHandle: to.field.id });
+  c.runner = createWorkflowRunner(c.graph, 'exec', c.executor); c.runner.next();
+  const pending = c.runner.submit({ 'params:command': '["owned"]', 'params:processId': 'cycle' }, undefined, undefined, c.bindings['command/exec'], p => c.notices.push(p));
+  const rejected = assert.rejects(pending, /loops back to a completed operation/);
+  await waitForWatch(() => c.notices.length === 1);
+  await c.v.session.replyNativeCommand(c.paired.id, c.notices[0].token, 'accept'); await rejected;
+  assert.equal(c.runner.streams[0].state, 'error');
+  assert.equal(c.f.frames.filter(frame => frame.method === 'command/exec').length, 1); await ended(c);
+});
+
+Then('native notification property editors use only the method declared notification schema', async function () {
+  const c = await setup(this);
+  const command = c.selections.find(selected => selected.operation.rpc.method === 'command/exec');
+  const output = c.graph.nodes.filter(node => node.type === 'data' && node.data.ownerId === 'exec' && node.data.direction === 'outputs');
+  const notifications = output.filter(node => JSON.parse(decodeURIComponent(node.id.slice('exec:'.length)))[0] === 'rpc:notification');
+  assert.ok(notifications.length > 0);
+  for (const panel of notifications) assert.deepEqual(getAdditionalPropertyTypes(c.graph.nodes, panel.id, command.document), []);
+  const control = c.selections.find(selected => selected.operation.rpc.method === 'command/exec/resize');
+  const root = { ...structuredClone(notifications[0]), id: 'resize:' + encodeURIComponent(JSON.stringify(['rpc:notification', ''])), data: { ...structuredClone(notifications[0].data), ownerId: 'resize' } };
+  assert.equal(control.operation.rpc.workflowNotification, undefined);
+  assert.deepEqual(getAdditionalPropertyTypes([...c.graph.nodes, root], root.id, control.document), []);
 });

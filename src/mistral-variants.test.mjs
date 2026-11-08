@@ -6,7 +6,7 @@ import { Then } from '@cucumber/cucumber';
 import data from './lib/mistral-variant-contracts.json' with { type: 'json' };
 import ids from '../tests/mistral-variant-operations.json' with { type: 'json' };
 import { bindMistralVariants } from './lib/mistral-variant-contracts.ts';
-import { mistralVariantProfile } from './lib/mistral-variant.ts';
+import { mistralVariantProfile,mistralVariantInputs } from './lib/mistral-variant.ts';
 import { readServiceSchema, readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { extractOperations } from './lib/catalog.ts';
@@ -156,4 +156,16 @@ Then('a saved Mistral connection preserves its variant and scrubs credential ech
   const operation = (await nativeModels()).service.find(operation => operation.responseStream === 'mistral-conversation'), a = await authority(operation,true); let calls = 0;
   const result = await executeCredentialed(a.descriptor,values(operation),a.binding,[a.record],{assertCurrent(){},async fetchRequest(url,init){calls++;assert.equal(new Headers(init.headers).get('Authorization'),'Bearer '+a.record.value);return streamResponse(conversationEvents('echo '+a.record.value),17).response;}});
   assert.equal(calls,1); assert.equal(JSON.stringify(result).includes(a.record.value),false); assert.equal(result.response.redacted,true);
+});
+
+Then('Mistral stream selectors require their named Boolean field and pinned schema references',async()=>{
+  for(const operation of (await nativeModels()).service.filter(operation=>operation.responseStream)){
+    assert.throws(()=>mistralVariantInputs({...operation,fields:operation.fields.filter(field=>field.key!=='body:stream')},{}),/named Boolean stream input/);
+    assert.throws(()=>mistralVariantInputs({...operation,bodyValue:true},{}),/named Boolean stream input/);
+    const input={'body:stream':' true '};assert.equal(mistralVariantInputs(operation,input),input);
+  }
+  const source=await readServiceSchemaUpstream('mistral'),contract=Object.values(data.operations).find(contract=>contract.stream==='mistral-conversation');
+  const body=native(source,contract).requestBody.content['application/json'];
+  body.schema=structuredClone(source.components.schemas[body.schema.$ref.split('/').at(-1)]);
+  const before=JSON.stringify(source);assert.throws(()=>bindMistralVariants(source),/reviewed native source contract/);assert.equal(JSON.stringify(source),before);
 });

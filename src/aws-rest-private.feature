@@ -28,3 +28,6 @@ Feature: Private AWS REST wire execution
 
   Scenario: SDK file envelopes preserve the private binary response boundary
     Then REST file envelopes and event chunks with known secrets are withheld without corrupting clean bytes
+
+  Scenario: Saved EFS relays use the default private fetch transport
+    Then the default private fetch forwards only the approved signed EFS relay envelope

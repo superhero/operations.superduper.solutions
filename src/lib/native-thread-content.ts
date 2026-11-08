@@ -5,6 +5,7 @@ import { nativeObject } from './native-runtime-contract.ts';
 import { nativeBoundedThreadParams, nativeStoredThreadMetadataSchema } from './native-stored-thread.ts';
 import { NativeCommandInputError } from './native-command.ts';
 import { nativeJsonTypes } from './native-mcp-tool.ts';
+import { assertNativeJsonByteBudget } from './native-input-budget.ts';
 
 export const nativeThreadContentMethods = ['thread/attachment/add', 'thread/attachment/remove', 'thread/goal/set',
   'thread/goal/clear', 'thread/inject_items', 'thread/revert'] as const;
@@ -78,7 +79,7 @@ export function nativeThreadContentParams(method: NativeThreadContentMethod, val
     if (opaque === 'items' && (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 16)) return bad(opaque, 'Supply one to sixteen native history items.');
     json(input[opaque], opaque); params[opaque] = structuredClone(input[opaque]);
   }
-  if (new TextEncoder().encode(JSON.stringify(params)).byteLength > 32768) return bad(opaque ?? 'params', 'Thread content parameters must fit 32 KiB.');
+  assertNativeJsonByteBudget(params, 32768, NativeCommandInputError, opaque ?? 'params', 'Thread content parameters must fit 32 KiB.');
   return params;
 }
 export function nativeThreadContentResultSchema(method: NativeThreadContentMethod, document: Record<string, unknown>) {

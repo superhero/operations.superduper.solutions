@@ -22,7 +22,7 @@ export function dockerNativeReadOperation(document: ObjectValue, base: Pick<Oper
     for (const status of ["101", "200"]) if (!sameSchemaValue(object(object(source.responses)[status]).content,
       { "application/octet-stream": { schema: { type: "string", format: "binary" } } })) return;
     const fields = dockerAttachParameters().map(parameter => ({ key: parameter.in + ":" + parameter.name, name: parameter.name,
-      label: parameter.name, description: parameter.description ?? "", location: parameter.in, required: parameter.required === true,
+      label: parameter.name, description: parameter.description, location: parameter.in, required: parameter.required === true,
       type: parameter.schema.type, schema: structuredClone(parameter.schema),
       ...(parameter.schema.default !== undefined ? { defaultValue: JSON.stringify(parameter.schema.default) } : {}) })) as InputField[];
     return withOperationCapabilities({ id: base.id, method: "GET", path: base.path, group: "Container", name: String(source.summary ?? "Read container attachment"),

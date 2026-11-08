@@ -189,6 +189,29 @@ Then("the saved EFS companion connection forwards an actual signed GET body with
   } finally { companion.close(); await close(server); await close(upstream); }
 });
 
+Then("the default private fetch forwards only the approved signed EFS relay envelope", async () => {
+  const f = await nativeFixture("aws-elasticfilesystem:DescribeAccountPreferences"), pairingKey = "owned_efs_relay_fixture_".repeat(3);
+  const pairingKeyId = crypto.randomUUID(); f.records.push({ id: pairingKeyId, label: "Owned EFS pairing", kind: "secret", value: pairingKey, grants: [] });
+  const connection = await createHttpConnection({ label: "EFS", account: "Fixture", format: "schema", relay: { host: "https://efs-companion.example.test", pairingKeyId } },
+    f.descriptor, f.binding, f.records);
+  f.records.find(record => record.id === connectionCredentialIds(connection)[0]).connections = [connection];
+  const binding = { alternative: 0, fingerprint: f.descriptor.fingerprint, credentials: {}, connection: httpConnectionReference(connection) };
+  const previous = globalThis.fetch; let calls = 0;
+  try {
+    globalThis.fetch = async (address, init) => {
+      calls++; assert.equal(address, connection.relay.host + "/v1/efs/account-preferences");
+      assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + pairingKey);
+      const envelope = JSON.parse(init.body); assert.equal(envelope.profile, awsGetBodyProfile); assert.equal(envelope.fingerprint, f.descriptor.fingerprint);
+      verifyAwsSignature(envelope.address, { method: "GET", headers: envelope.headers, body: envelope.body }, awsSyntheticValues, "elasticfilesystem", "us-east-1");
+      assert.deepEqual(JSON.parse(envelope.body), { MaxResults: 2 });
+      return Response.json({ profile: awsGetBodyProfile, fingerprint: f.descriptor.fingerprint, status: 200, statusText: "OK",
+        headers: { "content-type": "application/json" }, body: '{"NextToken":"next-page"}' });
+    };
+    const result = await executeCredentialed(f.descriptor, { "body:MaxResults": "2" }, binding, f.records, { assertCurrent() {} });
+    assert.equal(calls, 1); assert.equal(result.response.body.NextToken, "next-page"); privateResult(result, [pairingKey]);
+  } finally { globalThis.fetch = previous; }
+});
+
 Then("the EFS relay rejects changed signed requests unsafe responses and stale private guards", async () => {
   const f = await nativeFixture("aws-elasticfilesystem:DescribeAccountPreferences"), address = f.descriptor.origin + f.descriptor.operation.path;
   const signed = await signAwsRequest("GET", address, new Headers({ Accept: "application/json", "Content-Type": "application/json" }),

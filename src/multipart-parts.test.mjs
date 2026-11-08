@@ -22,6 +22,18 @@ const text={type:'string'},binary={type:'string',format:'binary'},bytes=Uint8Arr
 const file=encodeWorkflowBinary('module.wasm',bytes,'application/wasm');
 const nested='--inner-boundary\r\nContent-Disposition: form-data; name="module.wasm"; filename="module.wasm"\r\nContent-Type: application/wasm\r\n\r\nmodule-bytes\r\n--inner-boundary--\r\n';
 const bundle=encodeWorkflowBinary('worker.bundle',new TextEncoder().encode(nested),'multipart/form-data');
+
+Then('both multipart parsers omit read-only body properties without changing the source contract',()=>{
+ const schema={type:'object',required:['editable','serverOnly'],additionalProperties:false,properties:{editable:{type:'string'},serverOnly:{type:'string',readOnly:true}}};
+ const document={openapi:'3.1.0',info:{title:'Read-only multipart boundary',version:'1'},servers:[{url:'https://parts.example.test'}],paths:{'/parts':{post:{operationId:'parts',requestBody:{content:{'multipart/form-data':{schema,encoding:{}}}},responses:{200:{description:'ok'}}}}}};
+ const before=structuredClone(document);
+ for(const operation of [extractOperations(document,'owned-parts')[0],inspectServiceSchema(document,'owned-parts').operations[0]]){
+  assert.equal(operation.unavailableReason,undefined);assert.deepEqual(operation.fields.map(field=>field.key),['body:editable']);assert.deepEqual(operation.bodySchema.required,['editable']);
+  const form=requestBody(prepareRequest(operation,{'body:editable':'owned value'}));assert.deepEqual([...form],[['editable','owned value']]);
+ }
+ assert.deepEqual(document,before);
+});
+
 function fixture(authenticated=false) {
  const schema={type:'object',required:['metadata'],additionalProperties:false,properties:{
   metadata:{type:'object',nullable:true,required:['count'],additionalProperties:false,properties:{count:{type:'integer',minimum:1},label:text}},

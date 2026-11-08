@@ -99,7 +99,7 @@ export function bindDockerHttp(document: Value): void {
   for (const { id, operation } of plans) {
     if ((data.special as Value)[id]) operation["x-upstream-docker-http"] = structuredClone((data.special as Value)[id]);
     if (id === "ImageCreate") operation.requestBody.content = { "application/octet-stream": { schema: { type: "string", format: "binary" } } };
-    if (data.registryHeaderAdditions.includes(id)) operation.parameters = [...operation.parameters ?? [], { name: "X-Registry-Auth", in: "header", required: false,
+    if (data.registryHeaderAdditions.includes(id)) operation.parameters = [...operation.parameters, { name: "X-Registry-Auth", in: "header", required: false,
       description: "Base64url-encoded registry AuthConfig, supplied privately through Secrets.", schema: { type: "string" } }];
     if (["SystemAuth", "SwarmInspect", "SwarmUnlockkey"].includes(id)) {
       operation["x-operations-credential-result"] = true;

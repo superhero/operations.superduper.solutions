@@ -82,6 +82,7 @@ export async function nativeHostFixture(options = {}) {
         if (f.hold && frame.method === 'account/read') f.release.push(reply); else queueMicrotask(reply);
       }, async close() { if (!stopped) { stopped = true; f.stops++; options.onClose?.(f); exited(); } } };
     } };
+  await options.configureRuntime?.(runtime, f);
   const server = createServer({ key: tls.key, cert: tls.cert }, (req, res) => {
     f.requests.push({ path: req.url, method: req.method, origin: req.headers.origin, authorization: !!req.headers.authorization,
       cookie: !!req.headers.cookie, requestedHeaders: req.headers['access-control-request-headers'] ?? '' });

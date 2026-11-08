@@ -69,3 +69,6 @@ Feature: GitHub operation authentication
   @coverage-gaps
   Scenario: GitHub corrections retain provenance and reject changed contracts
     Then GitHub corrections are isolated idempotent and bounded to their reviewed routes and origins
+
+  Scenario: GitHub automation query aliases preserve ownership semantics
+    Then GitHub automation ownership query aliases cannot silently change account scope

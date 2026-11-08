@@ -77,10 +77,10 @@ export class NativeFilesystemWatchBroker {
     const params = nativeFilesystemWatchParams('fs/watch', input); if (signal?.aborted) throw new VaultError('CANCELLED');
     await authority.guard(); const state = this.state(authority);
     if (state.sinks.has(params.watchId) || state.sinks.size >= nativeFilesystemWatchLimits.watches) throw new VaultError('CONFLICT');
-    const sink: Sink = { id: params.watchId, registered: deferred(), completion: deferred(), publish, sanitize, cancelled: false, cleanup: () => {}, ...(signal ? { signal } : {}) };
+    const sink: Sink = { id: params.watchId, registered: deferred(), completion: deferred(), publish, sanitize, cancelled: false, cleanup: () => signal?.removeEventListener('abort', cancel), ...(signal ? { signal } : {}) };
     state.sinks.set(sink.id, sink);
     const cancel = () => { sink.cancelled = true; void this.stop(state, sink).catch(error => this.fail(state, error)); };
-    sink.cleanup = () => signal?.removeEventListener('abort', cancel); signal?.addEventListener('abort', cancel, { once: true });
+    signal?.addEventListener('abort', cancel, { once: true });
     try {
       const peer = await state.ready; await authority.guard();
       if (state.closed) throw new VaultError('NATIVE_FILESYSTEM');

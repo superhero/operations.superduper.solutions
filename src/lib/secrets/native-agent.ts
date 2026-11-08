@@ -213,7 +213,7 @@ export class NativeAgentBroker {
     const cancel = () => {
       const shell = active.shell;
       if (!shell?.approved) { stop(new VaultError('CANCELLED')); return; }
-      if (shell.cancelled) return; shell.cancelled = true;
+      shell.cancelled = true;
       void (async () => {
         await shell.started.promise; await active.guard();
         if (active.finished || state.closed) return;
@@ -249,7 +249,6 @@ export class NativeAgentBroker {
           nativeObject(result, ["type", "loginId", "authUrl"]);
           notice = { kind: "login", login: "chatgpt", loginId: login.id, authUrl: loginUrl(result.authUrl) };
         } else {
-          if (login.kind !== 'chatgptDeviceCode') throw new VaultError('AUTHORIZATION');
           nativeObject(result, ["type", "loginId", "userCode", "verificationUrl"]);
           if (typeof result.userCode !== "string" || !result.userCode.trim() || result.userCode.length > 128) throw new VaultError("AUTHORIZATION");
           notice = { kind: "login", login: "chatgptDeviceCode", loginId: login.id, userCode: result.userCode, verificationUrl: loginUrl(result.verificationUrl) };

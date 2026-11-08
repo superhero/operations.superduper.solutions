@@ -13,3 +13,6 @@ Feature: Reviewed Atlassian multipart file declarations
 
   Scenario: Java object fields and invalid file values cannot dispatch
     Then Atlassian file uploads reject missing malformed oversized and obsolete Java field inputs before dispatch
+
+  Scenario: Atlassian upload authentication queries require their reviewed source
+    Then Atlassian file corrections reject predeclared authentication queries while retaining ordinary query fields

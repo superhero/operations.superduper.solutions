@@ -34,7 +34,7 @@ export function bindDigitalOceanDestinations(document: Value): void {
     return { id, operation };
   });
   for (const { id, operation } of plans) {
-    operation["x-upstream-digitalocean-destination"] = { servers: structuredClone(operation.servers ?? null), parameters: structuredClone(operation.parameters ?? null),
+    operation["x-upstream-digitalocean-destination"] = { servers: structuredClone(operation.servers), parameters: structuredClone(operation.parameters ?? null),
       privatePath: operation["x-operations-private-path"] ?? null, credentialResult: operation["x-operations-credential-result"] ?? null };
     if (id === "inference_upload_batch_file") {
       operation["x-operations-private-path"] = digitalOceanUploadProfile;
@@ -42,8 +42,7 @@ export function bindDigitalOceanDestinations(document: Value): void {
       operation.parameters = [structuredClone(signedType)];
     } else if (id === "inference_create_batch_file") operation["x-operations-credential-result"] = true;
     else {
-      operation.parameters = operation.parameters.map((parameter: Value) => parameter.name === "agent"
-        ? { ...parameter, schema: { ...parameter.schema, enum: [true] } } : parameter);
+      operation.parameters = operation.parameters.map((parameter: Value) => ({ ...parameter, schema: { ...parameter.schema, enum: [true] } }));
       operation["x-operations-response-stream"] = "openai-chat";
     }
   }

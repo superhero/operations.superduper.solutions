@@ -11,6 +11,9 @@ Feature: Literal beta query routes
   Scenario: All native beta routes retain their source identity
     Then all 127 beta operations have qualified canonical routes and unchanged source identities
 
+  Scenario: Beta native corrections preserve path metadata and require reviewed sources
+    Then beta native corrections preserve path metadata and reject unrelated source identities
+
   Scenario: Beta skill uploads use the documented multipart names
     Then both native beta skill requests send files array parts and retain the beta selector
 

@@ -31,7 +31,8 @@ function decoded(value: string): string {
 }
 /** Docker may echo the decoded AuthConfig, including its nested Basic auth value. */
 export function dockerHttpRedactions(operation: Operation, request: PreparedRequest): string[] {
-  if (!dockerHttpOperation(operation)) return [];
+  const id = dockerHttpOperation(operation);
+  if (!id) return [];
   const values: string[] = [];
   for (const [name, raw] of Object.entries(request.headers ?? {})) if (["x-registry-auth", "x-registry-config"].includes(name.toLowerCase())) {
     if (raw.length > vaultLimits.secretBytes) throw new VaultError("LIMIT");
@@ -59,7 +60,7 @@ export function dockerHttpRedactions(operation: Operation, request: PreparedRequ
       values.push(value); try { values.push(decoded(value)); } catch { /* A raw key is already included. */ }
     }
   }
-  if (["SecretCreate", "SecretUpdate"].includes(dockerHttpOperation(operation) ?? "") && typeof body?.Data === "string")
+  if (["SecretCreate", "SecretUpdate"].includes(id) && typeof body?.Data === "string")
     try { values.push(decoded(body.Data)); } catch { /* A binary secret has no UTF-8 reflection. Its encoded value stays private. */ }
   return values.filter(Boolean);
 }

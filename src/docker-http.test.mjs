@@ -7,10 +7,14 @@ import { Then } from '@cucumber/cucumber';
 import { applySchemaPatches, dockerHttpContracts } from './lib/schema-patches.ts';
 import { readServiceSchema, readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
+import { catalogs } from './lib/catalog-registry.ts';
+import { operations,operationSourceIdentity,publishPreparedCatalogs } from './lib/catalog.ts';
+import { dockerNativeReadOperation } from './lib/docker-native-model.ts';
+import { createWorkflowRequestExecution } from './lib/workflow-execution.ts';
 import { operationServerUrl } from './lib/schema-documents.ts';
 import { operationInsertionBlockReason } from './lib/operation-capabilities.ts';
-import { bindDockerHttp, dockerHttpEndpoint, dockerHttpSourceSha256, dockerProgressIds } from './lib/docker-http.ts';
-import { dockerReadOperations, dockerNativeOperationId, dockerNativeAttachOperationId, dockerAttachParams, dockerReadOperationIds } from './lib/docker-native-contract.ts';
+import { bindDockerHttp, dockerHttpEndpoint, dockerHttpSourceSha256, dockerProgressIds, dockerHttpOperation, hasDockerNestedPrivateInput, validateDockerHttpServer, dockerHttpProfile } from './lib/docker-http.ts';
+import { dockerReadOperations, dockerNativeOperationId, dockerNativeAttachOperationId, dockerAttachParams, dockerReadOperationIds, dockerOperationParams, dockerAttachReadPath } from './lib/docker-native-contract.ts';
 import { prepareDockerReadRequest } from './lib/docker-operation-input.ts';
 import { prepareRequest } from './lib/operation-input.ts';
 import { readWorkflowResponseBody } from './lib/workflow-response-body.ts';
@@ -19,13 +23,15 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { approvedDockerOperation } from './lib/secrets/docker-policy.ts';
 import { credentialResultProfile, privateResultInputKeys } from './lib/credential-results.ts';
 import { prepareCredentialResults } from './lib/secrets/credential-results.ts';
-import { assertDockerPrivateBindings } from './lib/secrets/docker-http.ts';
+import { assertDockerPrivateBindings, dockerHttpRedactions, prepareDockerAuthResult } from './lib/secrets/docker-http.ts';
+import { vaultLimits } from './lib/secrets/types.ts';
+import dockerContracts from './lib/docker-http-contracts.json' with {type:'json'};
 import { vaultVariablePlaceholder } from './lib/secrets/variables.ts';
 import { scopeOperationSchema } from './lib/operation-report.ts';
 import { DockerCompanionBroker } from './lib/secrets/docker-companion.ts';
 import { dockerNativeFixture } from '../tests/docker-native.fixture.mjs';
 import { dockerVaultFixture } from '../tests/docker-vault.fixture.mjs';
-import { dockerReference } from './lib/secrets/docker-config.ts';
+import { dockerReference,validateDockerConnection } from './lib/secrets/docker-config.ts';
 import { privateVault, noSecrets } from '../tests/credential-results/fixture.mjs';
 import { encodeWorkflowBinary } from './lib/workflow-binary.ts';
 import { readFile } from 'node:fs/promises';
@@ -240,4 +246,105 @@ Then('Docker read only attachment uses encrypted profiles and withholds binary c
     v.f.attachment = [Buffer.from('safe')]; vault.enabled = false;
     await assert.rejects(vault.session.executeDockerRead(input, vault.selection, { 'path:id': 'synthetic' }), denied);
   } finally { vault.session.lock(); await v.close(); }
+});
+
+Then('Docker attachment results cannot publish other vault secrets as raw or encoded bytes',async()=>{
+  const value=await attachmentFixture(),vault=await dockerVaultFixture(value.f);
+  try{
+    const connection=await vault.session.pairDockerHost(vault.input,vault.selection),descriptor=await approvedDockerOperation(vault.selection.operation,vault.selection.document);
+    const binding={host:dockerReference(connection),fingerprint:descriptor.fingerprint};
+    for(const [secret,bytes] of [['owned-private-Docker-output-70419',Buffer.from('owned-private-Docker-output-70419')],['YWJj',Buffer.from('abc')]]){
+      await vault.session.put(null,{label:secret==='YWJj'?'Encoded private Docker output':'Raw private Docker output',kind:'secret',value:secret});value.f.attachment=[bytes];
+      if(secret==='YWJj'){assert.equal(bytes.includes(Buffer.from(secret)),false);assert.equal(bytes.toString('base64'),secret);}
+      await assert.rejects(vault.session.executeDockerRead(binding,vault.selection,{'path:id':'synthetic'}),error=>error.code==='REDACTED'&&!error.message.includes(secret));
+    }
+  }finally{vault.session.lock();await value.close();}
+});
+
+Then('Docker private helpers preserve nested-key redaction empty auth results and native read limits',async()=>{
+  const operation=id=>({id:'docker:'+id,...dockerContracts.routes[id],fields:[]});
+  const init=operation('SwarmInit'),secret=operation('SecretCreate'),reference={credentialId:'11111111-1111-4111-8111-111111111111',label:'Owned fixture'};
+  assert.equal(dockerHttpOperation({id:'docker:Unknown',method:'GET',path:'/'}),undefined);
+  assert.equal(dockerHttpOperation({...init,path:'/foreign'}),undefined);
+  for(const value of [undefined,'{','null','0',JSON.stringify({CAConfig:null}),JSON.stringify({CAConfig:{SigningCAKey:''}})]){
+    assert.equal(hasDockerNestedPrivateInput(init,{'body:Spec':value}),false);
+    assert.doesNotThrow(()=>assertDockerPrivateBindings(init,{'body:Spec':value},[]));
+  }
+  const nested=JSON.stringify({CAConfig:{SigningCAKey:'OWNED_SIGNING_PRIVATE_VALUE_85217'}});
+  assert.equal(hasDockerNestedPrivateInput(init,{'body:Spec':nested}),true);
+  assert.throws(()=>assertDockerPrivateBindings(init,{'body:Spec':nested},[]),denied);
+  assert.doesNotThrow(()=>assertDockerPrivateBindings(init,{'body:Spec':vaultVariablePlaceholder},[{key:'body:Spec',path:[],credentialId:reference.credentialId}]));
+  const placeholder=JSON.stringify({CAConfig:{SigningCAKey:vaultVariablePlaceholder}});
+  assert.doesNotThrow(()=>assertDockerPrivateBindings(init,{'body:Spec':placeholder},[{key:'body:Spec',path:['CAConfig','SigningCAKey'],credentialId:reference.credentialId}]));
+  const key=Buffer.from('OWNED_PRIVATE_KEY_85217').toString('base64');
+  assert.ok(dockerHttpRedactions(init,{body:{Spec:{CAConfig:{SigningCAKey:key}}}}).includes('OWNED_PRIVATE_KEY_85217'));
+  assert.ok(dockerHttpRedactions(init,{body:{Spec:{CAConfig:{SigningCAKey:'!'}}}}).includes('!'));
+  assert.deepEqual(dockerHttpRedactions(init,{body:{Spec:1}}),[]);
+  assert.ok(dockerHttpRedactions(secret,{body:{Data:key}}).includes('OWNED_PRIVATE_KEY_85217'));
+  assert.doesNotThrow(()=>dockerHttpRedactions(secret,{body:{Data:Buffer.from(Uint8Array.of(255)).toString('base64')}}));
+  const encoded=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
+  assert.throws(()=>dockerHttpRedactions(init,{headers:{'X-Registry-Auth':'x'.repeat(vaultLimits.secretBytes+1)}}),error=>error.code==='LIMIT');
+  for(const value of [Buffer.from('{').toString('base64url'),encoded(null),encoded([])])
+    assert.throws(()=>dockerHttpRedactions(init,{headers:{'X-Registry-Auth':value}}),error=>error.code==='INVALID');
+  assert.deepEqual(dockerHttpRedactions({id:'other',method:'GET',path:'/',fields:[]},{headers:{'X-Registry-Auth':'unparsed'}}),[]);
+  const empty=prepareDockerAuthResult(204,null);assert.equal(empty.complete([]),null);assert.throws(()=>empty.complete([reference]),error=>error.code==='INVALID');
+  assert.deepEqual(prepareDockerAuthResult(200,{Status:'OK'}).complete([]),{Status:'OK'});
+  assert.deepEqual(prepareDockerAuthResult(200,{Status:'OK',IdentityToken:''}).complete([]),{Status:'OK',IdentityToken:null});
+  assert.throws(()=>prepareDockerAuthResult(200,{Status:'OK',IdentityToken:'x'.repeat(vaultLimits.secretBytes+1)}),error=>error.code==='LIMIT');
+  const token=prepareDockerAuthResult(200,{Status:'OK',IdentityToken:'OWNED_REGISTRY_TOKEN_85217'});
+  assert.throws(()=>token.complete([]),error=>error.code==='INVALID');assert.deepEqual(token.complete([reference]),{Status:'OK',IdentityToken:reference});
+  const server=value=>({'x-operations-docker-server':dockerHttpProfile,url:'{docker_endpoint}',variables:{docker_endpoint:value}});
+  assert.doesNotThrow(()=>validateDockerHttpServer(server({default:origin,enum:[origin]})));
+  for(const value of [{default:origin,enum:'bad'},{default:origin,enum:[]},{default:42,enum:[42]}])assert.throws(()=>validateDockerHttpServer(server(value)));
+  for(const value of [null,[],1])assert.throws(()=>dockerAttachParams(value),/attachment parameters/);
+  for(const detachKeys of [1,'x'.repeat(257),'bad\n'])assert.throws(()=>dockerAttachParams({id:'owned',detachKeys}),/attachment parameters/);
+  assert.throws(()=>dockerOperationParams('docker:Unknown',{}),/Unsupported Docker/);
+  assert.equal(dockerAttachReadPath({id:'owned',logs:undefined,stdout:undefined,stderr:undefined,stdin:undefined}),'/v1.57/containers/owned/attach/ws');
+  const list=await model('ContainerList'),header={key:'header:X-Fixture',name:'X-Fixture',label:'Fixture',description:'',location:'header',type:'string',required:false,schema:{type:'string'}};
+  assert.throws(()=>prepareDockerReadRequest({...list.operation,fields:[...list.operation.fields,header]},{'header:X-Fixture':'blocked'}),/does not accept a body or custom headers/);
+});
+
+Then('Docker secret decoders and public executors reject malformed frames and private routes',async()=>{
+  for(const id of ['SecretList','SecretInspect']){
+    const {operation}=await model(id),wrap=value=>id==='SecretList'?[value]:value;
+    for(const body of id==='SecretList'?[{},null,1]:[[],null,1])await assert.rejects(decode(operation,JSON.stringify(body)),error=>error.code==='FRAME');
+    for(const row of [null,[],1,{Spec:null},{Spec:[]},{Spec:'bad'}])await assert.rejects(decode(operation,JSON.stringify(wrap(row))),error=>error.code==='FRAME');
+  }
+  const {document,operations:docker}=await models(),attach=docker.find(operation=>operation.id===dockerNativeAttachOperationId),init=docker.find(operation=>operation.id==='docker:SwarmInit');
+  const previous=catalogs.map(catalog=>({catalog,operations:operations.filter(operation=>operation.id.startsWith(catalog.id+':')),sourceIdentity:operationSourceIdentity(catalog.id+':')??'docker-original-source'}));
+  publishPreparedCatalogs([...previous.filter(entry=>entry.catalog.id!=='docker'),{catalog:{id:'docker',name:'Docker transport boundary',file:'docker.json',document,groups:[],execution:{kind:'http',origin}},operations:docker,sourceIdentity:'docker-private-transport-boundary'}]);
+  try{
+    let fetches=0;const execution=createWorkflowRequestExecution(async()=>{fetches++;return Response.json({});});
+    await assert.rejects(execution.execute(attach,{'path:id':'owned'}),denied);
+    await assert.rejects(execution.execute(init,{'body:Spec':JSON.stringify({CAConfig:{SigningCAKey:'OWNED_PRIVATE_KEY_83641'}})}),denied);
+    assert.equal(fetches,0);
+  }finally{publishPreparedCatalogs(previous);}
+  assert.throws(()=>prepareDockerReadRequest(attach,{'path:id':'../owned'}),error=>error.fieldKey==='path:id'&&/Stdin is not authorized/.test(error.message));
+  assert.deepEqual(dockerHttpRedactions(docker.find(operation=>operation.id==='docker:SecretCreate'),{body:{Data:42}}),[]);
+});
+
+Then('Docker attachment models and companion replies retain exact read authority',async()=>{
+  const {document,operation}=await model('ContainerAttachWebsocket'),base={id:operation.id,method:operation.method,path:operation.path};
+  const minimal={info:structuredClone(document.info),paths:{[operation.path]:structuredClone(document.paths[operation.path])}};
+  delete minimal.paths[operation.path].get.summary;
+  assert.equal(dockerNativeReadOperation(minimal,base).name,'Read container attachment');
+  for(const mutate of [d=>{d.security={};},d=>{d.paths[operation.path].security=[{}];},d=>{d.paths[operation.path].get.parameters=[];},
+    d=>{delete d.paths[operation.path].get.responses['101'].content;},d=>{d.paths[operation.path].get['x-operations-credential-result']=true;}]){
+    const changed=structuredClone(minimal);mutate(changed);assert.equal(dockerNativeReadOperation(changed,base),undefined);
+  }
+  assert.equal(dockerNativeReadOperation(minimal,{...base,method:'POST'}),undefined);
+  const raw=await readServiceSchemaUpstream('docker'),addition=dockerContracts.registryHeaderAdditions[0],route=dockerContracts.routes[addition],item=raw.paths[route.path],target=item[route.method.toLowerCase()];
+  const valid=structuredClone(raw);valid.paths[route.path].summary='Owned Docker path metadata';bindDockerHttp(valid);
+  assert.equal(valid.paths[route.path].summary,'Owned Docker path metadata');assert.ok(valid.paths[route.path][route.method.toLowerCase()].parameters.some(field=>field.name==='X-Registry-Auth'));
+  item.parameters=target.parameters;delete target.parameters;const before=JSON.stringify(raw);
+  assert.throws(()=>bindDockerHttp(raw),/PluginPush parameters/);assert.equal(JSON.stringify(raw),before);
+  const uuid='11111111-1111-4111-8111-111111111111',identity={hostId:uuid,generation:uuid,configuration:'a'.repeat(64),socket:'b'.repeat(64),daemonId:'owned-daemon-83641',apiVersion:'1.57'},host='https://127.0.0.1:7643',now=1700000000000;
+  const stored={id:uuid,revision:1,fingerprint:'c'.repeat(64),label:'Owned Docker',host,pairingKeyId:uuid,profile:'docker-unix-read-v1',keyHash:'d'.repeat(64),modelFingerprint:'e'.repeat(64),identity};
+  assert.deepEqual(validateDockerConnection(stored),stored);
+  const broker=new DockerCompanionBroker({now:()=>now,fetchRequest:async(url,init)=>{
+    const {profile,scope}=JSON.parse(init.body);
+    return Response.json(url.endsWith('/pair')?{profile,scope,identity,expiresAt:now+1000}:{profile,scope,identity,response:{status:101,statusText:'Switching Protocols',headers:{},mediaType:'application/octet-stream',bodyType:'text',body:encodeWorkflowBinary('owned.bin',Uint8Array.of(1))}});
+  }});
+  try{await assert.rejects(broker.read(uuid,host,'k'.repeat(43),'f'.repeat(64),identity,{id:'owned'},async()=>{},undefined,dockerNativeAttachOperationId),error=>error.code==='DOCKER_UNAVAILABLE');assert.equal(broker.connected(uuid),false);}
+  finally{broker.clear();}
 });

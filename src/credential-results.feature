@@ -29,3 +29,15 @@ Feature: Private adoption of returned credentials
 
   Scenario: Batches of acquired secrets commit atomically
     Then multiple returned credentials commit together or leave the vault unchanged
+
+  Scenario: Private result metadata cannot authorize unsafe origins or unclassified values
+    Then private result boundaries reject invalid destinations response parents and adoption references
+
+  Scenario: Private result projections preserve nullable oneOf wrappers
+    Then private result projections preserve nullable oneOf resource wrappers
+
+  Scenario: Unconfirmed private acquisitions cannot publish response values
+    Then private acquisitions withhold unconfirmed transport and cancelled post-response results
+
+  Scenario: Acquisition cancellation during final schema validation cannot publish secrets
+    Then private result adoption cancelled during its final schema check cannot persist acquired credentials

@@ -7,6 +7,7 @@ import { isNativeMarketplaceMethod, type NativeMarketplaceMethod } from './nativ
 import { nativeObject, nativeIdentity, sameNativeIdentity, type NativeRuntimeIdentity } from './native-runtime-contract.ts';
 import { NativeCommandInputError } from './native-command.ts';
 import { nativeJsonTypes } from './native-mcp-tool.ts';
+import { assertNativeJsonByteBudget } from './native-input-budget.ts';
 
 export const nativeConfigurationWriteMethods = ['config/value/write', 'config/batchWrite', 'skills/config/write'] as const;
 export type NativeConfigurationWriteMethod = typeof nativeConfigurationWriteMethods[number];
@@ -70,7 +71,7 @@ export function nativeConfigurationWriteParams(method: NativeConfigurationWriteM
     result = { ...(method === 'config/value/write' ? checkedEdit({ keyPath: p.keyPath, value: p.value, mergeStrategy: p.mergeStrategy }) : { edits: (p.edits as unknown[]).map((edit, index) => { try { return checkedEdit(edit); } catch (error) { if (error instanceof NativeCommandInputError) throw new NativeCommandInputError('edits', `edits[${index}]${error.field === 'edits' ? '' : '.' + error.field}: ${error.message}`); throw error; } }), reloadUserConfig: p.reloadUserConfig ?? false }),
       ...(p.filePath != null ? { filePath: p.filePath } : {}), ...(p.expectedVersion != null ? { expectedVersion: p.expectedVersion } : {}) };
   }
-  if (new TextEncoder().encode(JSON.stringify(result)).byteLength > 16384) throw new NativeCommandInputError('params', 'Configuration writes must fit 16 KiB.');
+  assertNativeJsonByteBudget(result, 16384, NativeCommandInputError, 'params', 'Configuration writes must fit 16 KiB.');
   return result;
 }
 export type NativeConfigurationMutationMethod = NativeConfigurationWriteMethod | NativeMarketplaceMethod | NativePluginInstallMethod | NativePluginShareMethod;

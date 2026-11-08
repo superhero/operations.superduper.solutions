@@ -180,7 +180,19 @@
     "src/native-marketplace.test.mjs",
     "src/native-plugin-install.test.mjs",
     "src/native-plugin-share.test.mjs",
-    "src/native-windows-sandbox.test.mjs"
+    "src/native-windows-sandbox.test.mjs",
+    "src/catalog-guard-coverage.test.mjs",
+    "src/native-contract-coverage.test.mjs",
+    "src/native-vault-boundaries.test.mjs",
+    "src/aws-guard-coverage.test.mjs",
+    "src/aws-codec-guard-coverage.test.mjs",
+    "src/aws-relay-guard-coverage.test.mjs",
+    "src/aws-binding-guard-coverage.test.mjs",
+    "src/aws-private-guard-coverage.test.mjs",
+    "src/aws-rest-model-guard-coverage.test.mjs",
+    "src/aws-protocol-residual-coverage.test.mjs",
+    "src/aws-rest-helper-residual-coverage.test.mjs",
+    "src/aws-native-binding-residual-coverage.test.mjs"
   ],
   "paths": [
     "src/application.feature",
@@ -363,6 +375,18 @@
     "src/workflow-table.feature",
     "src/workflow-utilities.feature",
     "src/x-oauth1.feature",
-    "src/yaml-request-body.feature"
+    "src/yaml-request-body.feature",
+    "src/catalog-guard-coverage.feature",
+    "src/native-contract-coverage.feature",
+    "src/native-vault-boundaries.feature",
+    "src/aws-guard-coverage.feature",
+    "src/aws-codec-guard-coverage.feature",
+    "src/aws-relay-guard-coverage.feature",
+    "src/aws-binding-guard-coverage.feature",
+    "src/aws-private-guard-coverage.feature",
+    "src/aws-rest-model-guard-coverage.feature",
+    "src/aws-protocol-residual-coverage.feature",
+    "src/aws-rest-helper-residual-coverage.feature",
+    "src/aws-native-binding-residual-coverage.feature"
   ]
 }

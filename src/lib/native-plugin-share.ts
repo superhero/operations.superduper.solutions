@@ -4,6 +4,7 @@
 import { nativeObject } from './native-runtime-contract.ts';
 import { NativeCommandInputError } from './native-command.ts';
 import { isNativePluginRemoteId } from './native-plugin-id.ts';
+import { assertNativeJsonByteBudget } from './native-input-budget.ts';
 
 /** Finite owner-granted sharing contracts with native policy restrictions. */
 export const nativePluginShareMethods = ['plugin/share/save', 'plugin/share/updateTargets', 'plugin/share/checkout', 'plugin/share/delete'] as const;
@@ -60,6 +61,6 @@ export function nativePluginShareParams(method: NativePluginShareMethod, input: 
       if (!['reader', 'editor'].includes(target.role as string)) fail('shareTargets', field + '.role must be reader or editor.');
     }
   }
-  if (new TextEncoder().encode(JSON.stringify(params)).byteLength > 32768) fail('params', 'Plugin-sharing parameters must fit 32 KiB.');
+  assertNativeJsonByteBudget(params, 32768, NativeCommandInputError, 'params', 'Plugin-sharing parameters must fit 32 KiB.');
   return structuredClone(params);
 }

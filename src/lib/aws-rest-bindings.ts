@@ -100,7 +100,7 @@ export function bindAwsRest(document: Record<string, any>): void {
       requireContract(parameters.some((raw: unknown) => { const parameter = resolve(raw, document);
         return parameter.in === "header" && parameter.name.toLowerCase() === "x-amz-outpost-id"; }), id);
       operation["x-upstream-aws-rest-parameters"] ??= structuredClone(parameters);
-      operation.parameters = (operation.parameters ?? parameters).map((raw: unknown) => {
+      operation.parameters = operation.parameters.map((raw: unknown) => {
         const parameter = resolve(raw, document);
         return parameter.in === "header" && parameter.name.toLowerCase() === "x-amz-outpost-id"
           ? { ...structuredClone(parameter), required: true } : raw;

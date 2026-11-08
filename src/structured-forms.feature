@@ -25,3 +25,6 @@ Feature: Qualified structured request forms
 
   Scenario: Structured form choices are part of private approval
     Then changed GitLab form profiles and nested file paths invalidate private authority
+
+  Scenario: GitLab form profile and fallback schemas remain explicit
+    Then GitLab form selection validates its profile and preserves field schema fallbacks

@@ -9,6 +9,10 @@ Feature: Bounded native migration contracts and owned completion
     Then migration models preserve all four native contracts graph persistence and named JSON fields
   Scenario: Imported native values retain private bounded matching
     Then imported private values keep bounded ownership and distinguish metadata from content bytes
+  Scenario: Migration metadata retains nested shapes and public result budgets
+    Then native migration metadata rejects malformed nested collections missing fields and oversized public results
+  Scenario: Imported credential and continuation owners retain independent capacity limits
+    Then imported credential and reference continuation owners stay within their independent capacity limits
   Scenario: Migration inputs retain all four methods and ten item types
     Then migration contracts preserve sources attribution details and all native item kinds
   Scenario: Invalid migration inputs name their offending nested field

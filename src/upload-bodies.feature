@@ -25,3 +25,9 @@ Feature: Qualified catalog upload request bodies
 
   Scenario: Bluesky video uploads use a separate delegated service token
     Then video uploads target the video service with the account DID filename and delegated authorization
+
+  Scenario: Serialized media helpers reject incompatible models and MIME envelopes
+    Then media helpers preserve model identity metadata limits and collision-free related envelopes
+
+  Scenario: Media workflow graphs retain resources without invented declarations
+    Then media workflow graphs preserve resource fields with or without native request declarations

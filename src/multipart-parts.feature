@@ -19,3 +19,6 @@ Feature: Declared multipart part encodings
 
   Scenario: Multipart encoding changes invalidate private authority
     Then changed multipart part media cannot reuse an approved credential binding
+
+  Scenario: Read-only multipart properties remain outside editable inputs
+    Then both multipart parsers omit read-only body properties without changing the source contract

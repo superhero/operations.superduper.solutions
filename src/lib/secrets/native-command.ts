@@ -134,11 +134,11 @@ export class NativeCommandBroker {
     const params = nativeCommandParams('command/exec', input); review.value(params); if (signal?.aborted) throw new VaultError('CANCELLED');
     await authority.guard(); const state = this.state(authority), pid = params.processId as string | null | undefined;
     if (state.entries.size >= nativeCommandLimits.processes || pid != null && state.processes.has(pid)) throw new VaultError('CONFLICT');
-    const entry: Entry = { id: 'cmd_' + crypto.randomUUID(), input: params, phase: 'request', cancelled: false, cleanup: () => {}, ready: deferred(), dispatched: deferred(), finished: deferred(), completion: deferred(), progress, publish, review,
+    const entry: Entry = { id: 'cmd_' + crypto.randomUUID(), input: params, phase: 'request', cancelled: false, cleanup: () => signal?.removeEventListener('abort', cancel), ready: deferred(), dispatched: deferred(), finished: deferred(), completion: deferred(), progress, publish, review,
       streams: { stdout: { bytes: new Uint8Array(), pending: [] }, stderr: { bytes: new Uint8Array(), pending: [] } }, ...(signal ? { signal } : {}) };
     state.entries.set(entry.id, entry); if (pid != null) state.processes.set(pid, entry);
     const cancel = () => { entry.cancelled = true; void this.cancel(state, entry).catch(error => this.fail(state, error)); };
-    entry.cleanup = () => signal?.removeEventListener('abort', cancel); signal?.addEventListener('abort', cancel, { once: true }); if (signal?.aborted) cancel();
+    signal?.addEventListener('abort', cancel, { once: true }); if (signal?.aborted) cancel();
     void (async () => {
       try {
         const peer = await state.ready; await authority.guard(); if (state.closed) throw new VaultError('NATIVE_COMMAND');

@@ -29,3 +29,15 @@ Feature: Qualified Docker HTTP and read-only attachment contracts
 
   Scenario: Docker WebSocket results retain vault and source authority
     Then Docker read only attachment uses encrypted profiles and withholds binary credential echoes
+
+  Scenario: Docker attachment bytes cannot expose other saved vault secrets
+    Then Docker attachment results cannot publish other vault secrets as raw or encoded bytes
+
+  Scenario: Docker private helpers reject malformed auth and incomplete nested bindings
+    Then Docker private helpers preserve nested-key redaction empty auth results and native read limits
+
+  Scenario: Docker frames and public transport enforce private request boundaries
+    Then Docker secret decoders and public executors reject malformed frames and private routes
+
+  Scenario: Docker attachment authority rejects changed models and malformed binary replies
+    Then Docker attachment models and companion replies retain exact read authority

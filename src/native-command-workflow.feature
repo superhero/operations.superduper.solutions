@@ -19,3 +19,12 @@ Feature: Owned commands in workflows
 
   Scenario: Unowned or reordered command samples cannot promote a workflow
     Then command workflows reject foreign out of order duplicate and incomplete lifecycle samples
+
+  Scenario: Anonymous command completion and repeated terminal callbacks retain their lifecycle
+    Then command workflow completion supports anonymous processes and rejects further terminal callbacks
+
+  Scenario: Cyclic dispatch mappings terminate commands without enabling replay
+    Then command dispatch routing errors terminate their stream without making the command retryable
+
+  Scenario: Notification property editors retain the selected method contract
+    Then native notification property editors use only the method declared notification schema

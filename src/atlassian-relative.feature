@@ -8,6 +8,9 @@ Feature: Qualified relative Atlassian service destinations
   Scenario: Relative destination corrections reject source drift atomically
     Then relative Atlassian corrections reject changed routes authentication bodies and server declarations before mutation
 
+  Scenario: Relative destination corrections preserve path metadata
+    Then relative Atlassian corrections preserve non-operation path metadata
+
   Scenario: Both documented product destinations dispatch with their actual authentication
     Then Confluence Focus and App Migration use their documented site cloud and product bases without duplicated paths
 

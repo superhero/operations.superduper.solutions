@@ -26,3 +26,6 @@ Feature: Owned MCP OAuth completion
 
   Scenario: MCP login models expose terminal status and preserve the wire acknowledgement
     Then MCP sign-in models roundtrip their options and expose typed terminal fields with the original response
+
+  Scenario: Private MCP flow retains early completion and final cancellation authority
+    Then private MCP login flow retains early completion and cancellation after the final guard

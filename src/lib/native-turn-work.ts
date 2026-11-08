@@ -32,8 +32,6 @@ export function nativeTurnWorkParams(method: NativeTurnWorkMethod, input: unknow
     const fields = target.type === 'uncommittedChanges' ? ['type'] : target.type === 'baseBranch' ? ['type', 'branch'] : target.type === 'commit' ? ['type', 'sha', ...(Object.hasOwn(target, 'title') ? ['title'] : [])] : ['type', 'instructions'];
     const offending = Object.keys(target).find(key => !fields.includes(key)) ?? fields.find(key => !Object.hasOwn(target, key));
     if (offending) throw new NativeCommandInputError('target.' + offending, 'Use the fields belonging to the selected review target.');
-    for (const key of ['branch', 'sha', 'instructions']) if (Object.hasOwn(target, key) && (typeof target[key] !== 'string' || !(target[key] as string).trim()))
-      throw new NativeCommandInputError('target.' + key, 'A nonempty review target value is required.');
     for (const key of ['branch', 'sha']) if (Object.hasOwn(target, key) && /^(?:-|\s)|[\s\u0000-\u001f\u007f]/.test(target[key] as string))
       throw new NativeCommandInputError('target.' + key, 'Use a revision or branch without options, whitespace or control characters.');
     if (new TextEncoder().encode(JSON.stringify(params)).byteLength > 32768) throw new NativeCommandInputError('target', 'The review request must fit within 32 KiB.');

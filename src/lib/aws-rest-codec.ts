@@ -241,7 +241,7 @@ export function prepareAwsRestRequest(operation: Operation, request: PreparedReq
     ? { ...request, body: {}, contentType: "application/json" } : request;
   if (payload && awsRestShape(source, payload).type === "blob") {
     const file = validateWorkflowBinary(request.body);
-    const headers = { ...request.headers }; let media = file.mediaType || "application/octet-stream";
+    const headers = { ...request.headers }; let media = file.mediaType;
     for (const [name, value] of Object.entries(headers)) if (name.toLowerCase() === "content-type") { media = value; delete headers[name]; }
     if (!/^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+(?:;[\x20-\x7e]+)?$/.test(media) || media.length > 255) invalid();
     return { ...request, headers, bodyFormat: "binary", contentType: media as `${string}/${string}` };

@@ -8,7 +8,7 @@ import { extractOperations, updateCatalogs } from './lib/catalog.ts';
 import { catalogs } from './lib/catalog-registry.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { validateSchemaDocument, operationServerUrl } from './lib/schema-documents.ts';
-import { literalQueryRoute, betaWorkPrivateIds } from './lib/literal-query.ts';
+import { literalQueryRoute, betaWorkPrivateIds,bindBetaRoutes } from './lib/literal-query.ts';
 import { prepareRequest, InputValidationError } from './lib/operation-input.ts';
 import { createWorkflowRequestExecution } from './lib/workflow-execution.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
@@ -88,6 +88,12 @@ Then('all 127 beta operations have qualified canonical routes and unchanged sour
     }
   }
   assert.deepEqual(found,new Set(ids));
+});
+
+Then('beta native corrections preserve path metadata and reject unrelated source identities',async()=>{
+  const source=await readServiceSchemaUpstream('anthropic'),item=source.paths['/v1/skills?beta=true'];item.summary='Owned beta path metadata';
+  bindBetaRoutes(source);assert.equal(item.summary,'Owned beta path metadata');
+  const unrelated=fixture(),before=JSON.stringify(unrelated);assert.throws(()=>bindBetaRoutes(unrelated),/reviewed native source contract/);assert.equal(JSON.stringify(unrelated),before);
 });
 Then('both native beta skill requests send files array parts and retain the beta selector',async()=>{
   const selected=new Set(ids.filter(id=>id==='anthropic:beta_create_skill_v1_skills_post'||id==='anthropic:beta_create_skill_version_v1_skills__skill_id__versions_post'));
