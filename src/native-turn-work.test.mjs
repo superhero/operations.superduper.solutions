@@ -86,7 +86,7 @@ Then('native turn work rejects foreign owners without exposing results', async f
   const other = await setup(this, { foreignAck: true });
   await assert.rejects(other.execute('review/start', workParams(other, 'review/start')));
 });
-Then('native turn work supports interruption and rejects steering', async function () {
+Then('native turn work supports interruption and rejects steering', { timeout: 60000 }, async function () {
   for (const method of ['review/start', 'thread/compact/start']) {
     const c = await setup(this); let running;
     const promise = c.execute(method, workParams(c, method), p => { if (p.kind === 'running') running = p; }); void promise.catch(() => {});

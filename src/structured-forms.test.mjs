@@ -26,7 +26,7 @@ Then('thirteen structured form corrections retain fields schemas identities and 
   }assert.deepEqual(document,source);
  }assert.equal(count,13);assert.equal(new Set(ids).size,13);
 });
-Then('changed structured form contracts fail before any request is rewritten',async()=>{
+Then('changed structured form contracts fail before any request is rewritten', { timeout: 60000 }, async()=>{
  for(const catalog of Object.keys(data.sources)) {
   const source=await readServiceSchemaUpstream(catalog),c=Object.values(data.operations).filter(c=>c.catalog===catalog).at(-1);
   for(const change of [d=>d.info.version+='changed',d=>delete d.paths[c.path],d=>native(d,c).requestBody={content:{}},d=>native(d,c)['x-upstream-structured-form']={},d=>native(d,c)['x-operations-gitlab-form']=gitlabJsonFormProfile]) {

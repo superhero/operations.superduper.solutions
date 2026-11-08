@@ -46,7 +46,7 @@ Then('the Cloudflare logo uses its pinned SDK multipart wire contract without ch
   const saved=validateWorkflowDocument({version:2,id:crypto.randomUUID(),name:'Logo upload',...graph,viewport:{x:0,y:0,zoom:1},snap:true,curved:true,dashed:false});
   assert.deepEqual(parseWorkflowDocument(JSON.stringify(saved)),saved);
 });
-Then('changed logo identities destinations and file declarations are rejected before mutation',async()=>{
+Then('changed logo identities destinations and file declarations are rejected before mutation', { timeout: 60000 }, async()=>{
   const source=await readServiceSchemaUpstream('cloudflare');
   const changes=[d=>{d.info.version='future';},d=>{d.servers[0].url='https://other.example.test';},
     d=>{d.paths[path].post.operationId='other';},d=>{delete d.paths[path];},

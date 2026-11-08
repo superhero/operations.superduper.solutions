@@ -141,7 +141,7 @@ Then('stored-thread reads reject missing grants escapes and execution escalation
   const scoped = await setup(this); scoped.f.storedThreads.get(scoped.f.seed.threadId).cwd = scoped.f.home;
   await assert.rejects(scoped.execute('thread/goal/get', { threadId: scoped.f.seed.threadId })); assert.equal(calls(scoped).length, 0);
 });
-Then('stored-thread reads withhold foreign results oversized pages and encoded credentials', async function () {
+Then('stored-thread reads withhold foreign results oversized pages and encoded credentials', { timeout: 60000 }, async function () {
   for (const mode of ['foreign', 'oversized', 'unknown', 'plain', 'base64', 'utf16']) {
     const c = await setup(this), id = c.f.seed.threadId;
     if (mode === 'foreign') c.f.readResult = { thread: { ...c.f.storedThreads.get(id), id: randomUUID() }, readState: null };

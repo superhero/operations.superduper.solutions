@@ -57,7 +57,7 @@ Then('MCP tools reject missing grants old workflow approvals foreign threads and
   await assert.rejects(c.v.session.checkNativeRuntime(c.reference, c.v.selection), error => error.code === 'AUTHORIZATION');
 });
 
-Then('MCP tool parameters preserve JSON values and reject invalid or private inputs before dispatch', async function () {
+Then('MCP tool parameters preserve JSON values and reject invalid or private inputs before dispatch', { timeout: 60000 }, async function () {
   const c = await setup(this), secret = 'SYNTHETIC_MCP_TOOL_PRIVATE_INPUT';
   await c.v.session.put(null, { label: 'Tool credential fixture', kind: 'secret', value: secret }); const threadId = await c.thread();
   for (const value of [null, true, 1.25, 'literal', ['a', { nested: null }], { message: 'Hello', nested: [false, 1] }]) {

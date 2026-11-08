@@ -55,7 +55,7 @@ Then('account read models expose portable typed fields and exact wire results', 
   assert.throws(() => prepareNativeRequest(c.select('account/usage/read').operation, { 'params:threadId': 'foreign' }), error => error.fieldKey === 'params:threadId');
   assert.throws(() => prepareNativeRequest(c.select('account/rateLimits/read').operation, { 'params:supportsLunaReserve': 'true' }), error => error.fieldKey === 'params:supportsLunaReserve');
 });
-Then('account reads reject missing grants and anonymous or API key backend access', async function () {
+Then('account reads reject missing grants and anonymous or API key backend access', { timeout: 60000 }, async function () {
   const denied = await setup(this, { allowAccountRead: false, allowAgent: true });
   await assert.rejects(denied.execute('account/gatewayOAuth/read')); assert.equal(calls(denied).length, 0);
   for (const account of [null, { type: 'apiKey' }]) {

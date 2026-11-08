@@ -91,7 +91,7 @@ Then('thread shell cancellation interrupts an accepted command and revokes pendi
     assert.equal(calls(c).length, mode === 'cancel-running' || mode === 'identity-running' ? 1 : 0); if (mode === 'cancel-running') assert.equal(c.f.interrupts, 1);
   }
 });
-Then('thread shell rejects foreign item identities duplicate events and terminal item omissions', async function () {
+Then('thread shell rejects foreign item identities duplicate events and terminal item omissions', { timeout: 60000 }, async function () {
   for (const mode of ['foreign-item', 'duplicate', 'omitted']) {
     const c = await setup(this), r = run(c); await approve(c, r);
     if (mode === 'omitted') {

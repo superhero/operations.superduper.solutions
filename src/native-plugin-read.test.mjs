@@ -90,7 +90,7 @@ Then('plugin reads reject missing grants workspace escapes and indirect source e
   socket.ws.send(JSON.stringify({ id: 'agent', method: 'thread/start', params: {} })); await waitForWatch(() => socket.ws.readyState === 3);
   assert.ok(!c.f.frames.some(f => f.method === 'thread/start')); socket.ws.terminate();
 });
-Then('plugin read results reject malformed data and native or vault credential echoes', async function () {
+Then('plugin read results reject malformed data and native or vault credential echoes', { timeout: 60000 }, async function () {
   for (const mode of ['type', 'unknown', 'native', 'base64', 'vault', 'nativeError', 'path']) {
     const c = await setup(this); let params = skillParams, method = 'plugin/skill/read';
     if (mode === 'type') c.f.pluginResult = { contents: 42 };

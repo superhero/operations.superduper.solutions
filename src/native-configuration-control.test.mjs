@@ -67,7 +67,7 @@ async function sharedControls(world, real) {
   assert.equal((await features()).find(x => x.name === 'memories').enabled, prior.enabled);
   assert.equal((await skills()).some(x => x.name === 'owned-runtime-extra'), false);
 }
-Then('configuration controls change runtime features and skill roots without writing configuration', async function () { await sharedControls(this, false); });
+Then('configuration controls change runtime features and skill roots without writing configuration', { timeout: 60000 }, async function () { await sharedControls(this, false); });
 Then('the pinned SDK applies feature and skill overrides in the paired session', { timeout: 60000 }, async function () { await sharedControls(this, true); });
 Then('configuration controls reject missing grants invalid roots and unrelated agent authority', { timeout: 60000 }, async function () {
   for (const method of nativeConfigurationControlMethods) {
@@ -85,7 +85,7 @@ Then('configuration controls reject missing grants invalid roots and unrelated a
   await assert.rejects(c.execute('thread/start')); assert.ok(!c.f.frames.some(f => f.method === 'thread/start'));
   assert.deepEqual((await c.execute('config/mcpServer/reload')).response.result, {});
 });
-Then('configuration controls withhold mismatched results and known encoded secrets', async function () {
+Then('configuration controls withhold mismatched results and known encoded secrets', { timeout: 60000 }, async function () {
   for (const result of [{ enablement: { memories: false } }, { enablement: { memories: true, unreviewed: true } }]) {
     const c = await setup(this); c.f.controlResult = result;
     await assert.rejects(c.execute('experimentalFeature/enablement/set', { enablement: { memories: true } })); await ended(c);

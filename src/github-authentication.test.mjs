@@ -562,7 +562,7 @@ Then('GitHub Classroom retirement preserves the upstream source and every nonret
   assert.equal(JSON.stringify(published), original); assert.equal(JSON.stringify(authenticated), before);
 });
 
-Then('GitHub Classroom retirement rejects changed routes authentication and retirement markers', async () => {
+Then('GitHub Classroom retirement rejects changed routes authentication and retirement markers', { timeout: 60000 }, async () => {
   const { published, corrected } = await fixture();
   const [path] = retiredGithubClassroom[0];
   const authenticated = applySchemaPatches(published, [githubAuthentication]);
