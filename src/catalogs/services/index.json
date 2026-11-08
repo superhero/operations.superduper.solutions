@@ -527,12 +527,20 @@
     "operationIds": "method-path",
     "version": "1.0.0",
     "openapi": "3.0.3",
-    "operations": 60,
+    "operations": 58,
     "license": null,
     "sha256": "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1",
     "sourceSha256": "3754f2e3a2c828e8ad2386bac26a72bdca9209f4d54081197d498e7c3f2a490f",
     "bytes": 123698,
-    "compressedBytes": 18715
+    "compressedBytes": 18715,
+    "patches": [
+      {
+        "id": "forge-llm-exclusion",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e1f9f2d702027c071433525d7257dc8d285b7f942811630534c73b80eae84560",
+    "effectiveBytes": 122397
   },
   {
     "id": "atlassian-forge-storage",

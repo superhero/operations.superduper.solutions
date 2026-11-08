@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { createHash } from 'node:crypto';
-import { ecbRegistrationParameters, ecbRegistrationSourceSha256 } from '../src/lib/schema-patches.ts';
+import { ecbRegistrationParameters, ecbRegistrationSourceSha256, forgeLlmExclusion, forgeContainersSourceSha256 } from '../src/lib/schema-patches.ts';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -214,7 +214,10 @@ for (const source of sources) {
     throw new Error('Private credential results require requalification before updating the pinned native source.');
   if (Object.hasOwn(uploadBodySources, source.id) && sha(json) !== uploadBodySources[source.id].sha256)
     throw new Error('Upload body contracts require requalification before updating the pinned native source.');
-  const patches = source.id === 'ecb' ? [ecbRegistrationParameters]
+  if (source.id === 'atlassian-forge-containers' && sha(json) !== forgeContainersSourceSha256)
+    throw new Error('Forge LLM exclusion requires review before updating the pinned native source.');
+  const patches = source.id === 'atlassian-forge-containers' ? [forgeLlmExclusion]
+    : source.id === 'ecb' ? [ecbRegistrationParameters]
     : source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
     : source.profile === 'atlassian-dc-authentication' ? [atlassianDcAuthentication]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
@@ -267,10 +270,11 @@ for (const source of sources) {
   if (Object.hasOwn(credentialResultSources, source.id)) patches.push(privateCredentialResults);
   if (Object.hasOwn(awsQuerySourcePins, source.id) && sha(json) !== awsQuerySourcePins[source.id])
     throw new Error(`${source.id}: AWS Query native source changed; review its pin before enabling the adapter.`);
-  const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
+  const effectiveDocument = patches.length ? applySchemaPatches(document, patches) : document;
+  const effective = patches.length ? JSON.stringify(effectiveDocument) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);
-  const operations = source.format === 'codex-app-server' ? inspectCodexSchema(document, source.id).operations.length : Object.values(document.paths).reduce((count, path) => count +
+  const operations = source.format === 'codex-app-server' ? inspectCodexSchema(effectiveDocument, source.id).operations.length : Object.values(effectiveDocument.paths).reduce((count, path) => count +
     Object.keys(path).filter(method => ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'].includes(method)).length, 0);
   const entry = { ...source, version: document.info.version, openapi: document.openapi,
     ...(source.format === 'codex-app-server' ? { protocol: 'json-rpc' } : {}), operations,

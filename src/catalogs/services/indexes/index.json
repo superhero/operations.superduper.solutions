@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "f2636df053e51ed8374c40ccba030a6d73ef2a146154846010f287c8733512c1",
+  "adapterRevision": "e0531ebb94dcfaa7a93e3b9d78157ca7fd754e89948d8d54071d0e49c0bf63ff",
   "indexes": [
     {
       "id": "anthropic",
@@ -330,16 +330,16 @@
     },
     {
       "id": "atlassian-forge-containers",
-      "sourceRevision": "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1",
-      "bytes": 26554,
-      "compressedBytes": 2328,
-      "sha256": "8c9f3eaad54c4971cf4f88bddfc6ecc671305467a13989bb68a2a5a8e3c0226b",
+      "sourceRevision": "e1f9f2d702027c071433525d7257dc8d285b7f942811630534c73b80eae84560",
+      "bytes": 25563,
+      "compressedBytes": 2171,
+      "sha256": "12e57f0e10eae222c1520a2902b55597572157b3a26ca6eea55bd392aee3207c",
       "summary": {
         "name": "Forge Containers API",
         "serverUrl": "http://localhost:7072",
         "description": "The Forge Containers Public API\n\n**Important:** The API base URL should be read from the `FORGE_EGRESS_PROXY_URL` environment variable.\nThe localhost URL in the servers section is for documentation purposes only.",
-        "operationCount": 60,
-        "unavailableCount": 2
+        "operationCount": 58,
+        "unavailableCount": 0
       }
     },
     {

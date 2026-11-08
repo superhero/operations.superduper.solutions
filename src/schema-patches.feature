@@ -5,6 +5,12 @@
 Feature: Reviewable schema corrections and structured upstream merges
   Published changes and local edits retain their meaning when schemas are updated.
 
+  Scenario: Forge LLM operations without a runtime leave the active catalog
+    Then the Forge exclusion removes only two LLM operations and preserves their published source
+
+  Scenario: Forge exclusions require the reviewed operation identities and provenance
+    Then Forge exclusion refuses changed runtime contracts and conflicting exclusion metadata
+
   @coverage-gaps
   Scenario: Qualified recipes retain their authority and wire contracts
     Then qualified provider recipes refuse changed destinations response shapes and provenance

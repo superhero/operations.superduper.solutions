@@ -38,7 +38,9 @@ import type { Operation } from "./catalog.ts";
 export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "docker-http-contracts" | "atlassian-relative-servers" | "digitalocean-destinations" | "upload-body-contracts" | "cloudflare-logo-upload" | "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters"; version: 1 };
+export type SchemaPatch = { id: "docker-http-contracts" | "atlassian-relative-servers" | "digitalocean-destinations" | "upload-body-contracts" | "cloudflare-logo-upload" | "atlassian-commerce-authentication" | "gmail-message-contracts" | "mistral-variant-contracts" | "structured-form-contracts" | "form-field-contracts" | "multipart-root-contracts" | "atlassian-file-parts" | "multipart-part-contracts" | "aws-query-contracts" | "aws-json-target-contracts" | "beta-route-contracts" | "multipart-file-contracts" | "aws-rest-contracts" | "atlassian-tenant-servers" | "assets-import-source-parameter" | "private-credential-results" | "bitbucket-content-parameters" | "trello-parameter-arrays" | "catalog-path-bindings" | "atlassian-dc-authentication" | "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "provider-path-bindings" | "atlassian-server-bindings" | "aws-s3-files" | "aws-wire-protocols" | "bigquery-job-metadata" | "google-storage-media" | "ecb-registration-parameters" | "forge-llm-exclusion"; version: 1 };
+export const forgeLlmExclusion: SchemaPatch = { id: "forge-llm-exclusion", version: 1 };
+export const forgeContainersSourceSha256 = "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1";
 export const betaRouteContracts: SchemaPatch = { id: "beta-route-contracts", version: 1 };
 export const dockerHttpContracts: SchemaPatch = { id: "docker-http-contracts", version: 1 };
 export const atlassianRelativeServers: SchemaPatch = { id: "atlassian-relative-servers", version: 1 };
@@ -93,7 +95,8 @@ export const httpResponseStreamingSources: Record<string, string> = {
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "gmail-message-contracts" ? "Gmail JSON resources and MIME uploads"
+  return patch.id === "forge-llm-exclusion" ? "Forge LLM operations awaiting runtime support"
+    : patch.id === "gmail-message-contracts" ? "Gmail JSON resources and MIME uploads"
     : patch.id === "mistral-variant-contracts" ? "Mistral fragment variants and finite streams"
     : patch.id === "structured-form-contracts" ? "Reviewed structured form encodings"
     : patch.id === "form-field-contracts" ? "Reviewed form field wire contracts"
@@ -521,6 +524,29 @@ function responseStreaming(document: Record<string, any>): void {
   }
 }
 
+/** These two routes require a Forge-hosted runtime that Operations does not provide.
+ * Keep the native bundle intact; only its active catalog projection omits them. */
+function excludeForgeLlm(document: Record<string, any>): void {
+  const selected = [["/forge/llm", "get", "GET /forge/llm"], ["/forge/llm/{model}", "post", "POST /forge/llm/{model}"]] as const;
+  const marker = { version: 1, reason: "Forge-hosted LLM runtime integration is unavailable.", operationIds: selected.map(row => row[2]) };
+  const fail = () => { throw new Error("Forge LLM exclusion requires the reviewed native routes and runtime contract."); };
+  if (document.openapi !== "3.0.3" || document.info?.title !== "Forge Containers API" || document.info.version !== "1.0.0"
+    || !object(document.paths) || document.servers?.length !== 1 || document.servers[0]?.url !== "{FORGE_EGRESS_PROXY_URL}"
+    || JSON.stringify(document.security) !== '[{"ForgeProxyAuthorization":[]}]') fail();
+  if (document["x-operations-forge-llm-exclusion"] !== undefined) {
+    if (JSON.stringify(document["x-operations-forge-llm-exclusion"]) !== JSON.stringify(marker)
+      || selected.some(([path]) => Object.hasOwn(document.paths, path))) fail();
+    return;
+  }
+  for (const [path, method, id] of selected) {
+    const item = document.paths[path], operation = item?.[method];
+    if (!object(item) || Object.keys(item).length !== 1 || !object(operation) || operation.operationId !== id
+      || JSON.stringify(operation.security) !== '[{"forgeProxyToken":[]}]') fail();
+  }
+  for (const [path] of selected) delete document.paths[path];
+  document["x-operations-forge-llm-exclusion"] = marker;
+}
+
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
 function telegramPath(document: Record<string, any>): void {
   if (document.openapi !== "3.0.3" || document.info?.version !== "10.1" || document.servers?.length !== 1
@@ -676,10 +702,11 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["docker-http-contracts", "atlassian-relative-servers", "digitalocean-destinations", "upload-body-contracts", "cloudflare-logo-upload", "atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["docker-http-contracts", "atlassian-relative-servers", "digitalocean-destinations", "upload-body-contracts", "cloudflare-logo-upload", "atlassian-commerce-authentication", "gmail-message-contracts", "mistral-variant-contracts", "structured-form-contracts", "form-field-contracts", "multipart-root-contracts", "atlassian-file-parts", "multipart-part-contracts", "aws-query-contracts", "aws-json-target-contracts", "beta-route-contracts", "multipart-file-contracts", "aws-rest-contracts", "atlassian-tenant-servers", "assets-import-source-parameter", "private-credential-results", "bitbucket-content-parameters", "trello-parameter-arrays", "catalog-path-bindings", "atlassian-dc-authentication", "google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "provider-path-bindings", "atlassian-server-bindings", "aws-s3-files", "aws-wire-protocols", "bigquery-job-metadata", "google-storage-media", "ecb-registration-parameters", "forge-llm-exclusion"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    if (patch.id === "gmail-message-contracts") bindGmailMessages(document);
+    if (patch.id === "forge-llm-exclusion") excludeForgeLlm(document);
+    else if (patch.id === "gmail-message-contracts") bindGmailMessages(document);
     else if (patch.id === "mistral-variant-contracts") bindMistralVariants(document);
     else if (patch.id === "structured-form-contracts") bindStructuredForms(document);
     else if (patch.id === "form-field-contracts") bindFormFields(document);

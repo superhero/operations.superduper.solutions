@@ -8,8 +8,44 @@ import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAu
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 import * as recipes from './lib/schema-patches.ts';
-import { readServiceSchemaUpstream } from './lib/service-schema-packs.ts';
+import { readServiceSchema, readServiceSchemaUpstream, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { cloudflareUploadContracts } from './lib/cloudflare-upload.ts';
+
+Then('the Forge exclusion removes only two LLM operations and preserves their published source', async () => {
+  const raw = await readServiceSchemaUpstream('atlassian-forge-containers'), before = structuredClone(raw);
+  const corrected = await readServiceSchema('atlassian-forge-containers');
+  const omitted = ['/forge/llm', '/forge/llm/{model}'];
+  assert.equal(schemaPatchName(recipes.forgeLlmExclusion), 'Forge LLM operations awaiting runtime support');
+  assert.equal(raw.paths[omitted[0]].get.operationId, 'GET /forge/llm');
+  assert.equal(raw.paths[omitted[1]].post.operationId, 'POST /forge/llm/{model}');
+  for (const path of omitted) assert.equal(Object.hasOwn(corrected.paths, path), false);
+  const expected = structuredClone(raw);
+  for (const path of omitted) delete expected.paths[path];
+  expected['x-operations-forge-llm-exclusion'] = corrected['x-operations-forge-llm-exclusion'];
+  assert.deepEqual(corrected, expected, 'Every other route and schema declaration must remain unchanged.');
+  const inspected = inspectServiceSchema(corrected, 'atlassian-forge-containers');
+  assert.equal(inspected.operations.length, 58);
+  assert.equal(inspected.operations.filter(op => !op.unavailableReason).length, 58);
+  assert.ok(inspected.operations.every(op => !op.path.startsWith('/forge/llm')));
+  assert.equal(serviceSchemaDescriptors.find(row => row.id === 'atlassian-forge-containers').operations, 58);
+  assert.deepEqual(applySchemaPatches(corrected, [recipes.forgeLlmExclusion]), corrected);
+  assert.deepEqual(raw, before);
+});
+
+Then('Forge exclusion refuses changed runtime contracts and conflicting exclusion metadata', async () => {
+  const raw = await readServiceSchemaUpstream('atlassian-forge-containers');
+  for (const mutate of [d => { d.info.title = 'Other'; }, d => { d.info.version = '2.0.0'; },
+    d => { d.servers[0].url = 'https://other.example.test'; }, d => { d.security = []; },
+    d => { d.paths['/forge/llm'].get.operationId = 'different'; }, d => { d.paths['/forge/llm'].get.security = [{ ForgeProxyAuthorization: [] }]; },
+    d => { d.paths['/forge/llm'].post = d.paths['/forge/llm'].get; }, d => { delete d.paths['/forge/llm/{model}']; },
+    d => { d['x-operations-forge-llm-exclusion'] = { version: 2 }; }]) {
+    const changed = structuredClone(raw); mutate(changed); const before = structuredClone(changed);
+    assert.throws(() => applySchemaPatches(changed, [recipes.forgeLlmExclusion])); assert.deepEqual(changed, before);
+  }
+  const corrected = applySchemaPatches(raw, [recipes.forgeLlmExclusion]);
+  corrected.paths['/forge/llm'] = raw.paths['/forge/llm'];
+  assert.throws(() => applySchemaPatches(corrected, [recipes.forgeLlmExclusion]));
+});
 
 Then('qualified provider recipes refuse changed destinations response shapes and provenance', async () => {
   for (const patch of [recipes.httpResponseStreaming, recipes.telegramPrivatePath, recipes.xOauth1Signing, recipes.cloudflarePrivateUpload, recipes.providerPathBindings, recipes.atlassianServerBindings, recipes.awsS3Files, recipes.awsWireProtocols]) assert.notEqual(schemaPatchName(patch), 'Unknown schema correction');
