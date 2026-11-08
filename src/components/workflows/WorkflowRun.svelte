@@ -251,9 +251,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } finally { nativeControlBusy = false; }
   }
 
-  function edit(field: InputField, value: string | null | undefined) {
-    values[field.key] = value; error = ""; prepared = null; failedResponse = null;
-    if (fieldError?.fieldKey === field.key) fieldError = null;
+  function edit(field: InputField | string, value: string | null | undefined) {
+    const key = typeof field === "string" ? field : field.key;
+    values[key] = value; error = ""; prepared = null; failedResponse = null;
+    if (fieldError?.fieldKey === key) fieldError = null;
   }
   function end() { runner?.end(); onClose(); }
 
