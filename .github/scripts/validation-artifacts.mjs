@@ -95,7 +95,8 @@ export function inventory(directory, { coverage = false } = {})
       const path = relative ? `${relative}/${name}` : name;
       // Raw V8 data is intentionally excluded from the published coverage artifact.
       if (coverage && path === "v8") continue;
-      if (name.startsWith(".") || /[\0\r\n\\]/.test(name)) throw new Error("Artifact has an unsupported filename.");
+      if (name.startsWith(".") || /[\0\r\n\\]/.test(name))
+        throw new Error(`Artifact has an unsupported filename: ${JSON.stringify(path)}.`);
       const stat = lstatSync(join(directory, path));
       if (stat.isSymbolicLink()) throw new Error("Artifact contains a symlink.");
       if (stat.isDirectory()) visit(path);

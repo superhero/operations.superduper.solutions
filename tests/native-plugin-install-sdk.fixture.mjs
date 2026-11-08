@@ -29,7 +29,8 @@ export async function seedNativePluginInstallation(home, workspace, options = {}
   const execute = promisify(execFile), keyPath = join(tls.directory, 'server.key'), requestPath = join(tls.directory, 'server.csr'), certPath = join(tls.directory, 'server.crt'), extensionsPath = join(tls.directory, 'server.ext');
   await execute('openssl', ['req', '-new', '-newkey', 'rsa:2048', '-nodes', '-subj', '/CN=localhost', '-keyout', keyPath, '-out', requestPath], { timeout: 10000, maxBuffer: 8192 });
   await writeFile(extensionsPath, 'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=IP:127.0.0.1,DNS:localhost\n');
-  await execute('openssl', ['x509', '-req', '-in', requestPath, '-CA', join(tls.directory, 'cert'), '-CAkey', join(tls.directory, 'key'), '-CAcreateserial', '-days', '1', '-extfile', extensionsPath, '-out', certPath], { timeout: 10000, maxBuffer: 8192 });
+  // Keep OpenSSL's sidecar inside the owned root even when TMPDIR has a dot.
+  await execute('openssl', ['x509', '-req', '-in', requestPath, '-CA', join(tls.directory, 'cert'), '-CAkey', join(tls.directory, 'key'), '-CAserial', join(tls.directory, 'ca.srl'), '-CAcreateserial', '-days', '1', '-extfile', extensionsPath, '-out', certPath], { timeout: 10000, maxBuffer: 8192 });
   let backend;
   const server = createServer({ key: await readFile(keyPath), cert: await readFile(certPath) }, async (request, response) => {
     try {
