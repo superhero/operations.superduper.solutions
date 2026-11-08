@@ -31,6 +31,8 @@ Then('the owned native AppArmor policy preserves Docker denials and constrains s
   assert.match(profile, /mount options=\(rw,rslave,silent\) -> \/,/);
   assert.match(profile, /pivot_root oldroot=\/tmp\/oldroot\/ \/tmp\/,/);
   assert.match(profile, /pivot_root oldroot=\/newroot\/ \/newroot\/,/);
+  assert.ok(profile.includes('  mount fstype=tmpfs options=(rw,nosuid,nodev) -> /newroot/,\n'),
+    'The SDK minimal proc compatibility preflight must reach its proc mount and select the inherited-proc fallback.');
   assert.ok(profile.includes('/newroot/workspace/tmp/test{,/**}/browser/.runtime/operations-native-*/**'));
   assert.ok(profile.includes('/newroot/tmp/operations-native-*/**'));
   for (const line of profile.split('\n').filter(line => /^  mount /.test(line))) {
@@ -49,6 +51,7 @@ Then('the owned native AppArmor policy preserves Docker denials and constrains s
   for (const invalid of ['docker-default', 'operations-native-', 'operations-native-x*', 'operations-native-x"\nprofile injected {'])
     assert.throws(() => buildNativeAppArmorProfile(source, { name: invalid }), /profile name/);
   assert.equal(nativeAppArmorPin.sdkVersion, '0.163.0');
+  assert.equal(nativeAppArmorPin.policyVersion, 2);
 });
 
 Then('an owned native AppArmor profile loads uniquely and unloads only after verified container removal', async function () {

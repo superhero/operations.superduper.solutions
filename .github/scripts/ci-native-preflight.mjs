@@ -46,7 +46,7 @@ export async function runNativePreflightGate({ root = process.cwd(), run = comma
       ...apparmor.dockerArguments,
       '--workdir', '/workspace', image.image, 'node', '-e', 'setInterval(() => {}, 60000)'], { cwd: root, quiet: true, timeoutMs: 60_000 });
     if (started.code !== 0) throw new Error('Cannot start the isolated native preflight container.');
-    evidence = { ...evidence, ...await probe({ run, container, root, note }) };
+    evidence = { ...evidence, ...await probe({ run, container, root, profileName: apparmor.name, note }) };
     if (apparmor.dockerArguments.length && evidence.context?.apparmor !== `${apparmor.name} (enforce)`) {
       evidence.passed = false; evidence.failure ??= { code: 'NATIVE_PREFLIGHT_APPARMOR_MISMATCH' };
     }

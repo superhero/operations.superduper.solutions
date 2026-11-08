@@ -168,7 +168,7 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
       if (result.code !== 0) throw new Error('Cannot start the bounded browser batch.');
       container = true;
       if (nativeRuntime) {
-        summary.nativePreflight = await preflightNative({ run, container: ownName, root, note });
+        summary.nativePreflight = await preflightNative({ run, container: ownName, root, profileName: nativeAppArmor.name, note });
         if (nativeAppArmor.dockerArguments.length && summary.nativePreflight.context?.apparmor !== `${nativeAppArmor.name} (enforce)`) {
           summary.nativePreflight.passed = false;
           summary.nativePreflight.failure ??= { code: 'NATIVE_PREFLIGHT_APPARMOR_MISMATCH' };

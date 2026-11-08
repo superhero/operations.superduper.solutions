@@ -43,7 +43,7 @@ function buildTemplate({ report = false } = {}) {
   cpSync(join(repository, 'tests/source-profile.json'), join(root, 'tests/source-profile.json'));
   mkdirSync(join(root, '.github/scripts'), { recursive: true });
   for (const name of ['test-results.mjs', 'ci-unit-cache.mjs', 'ci-artifact.mjs', 'ci-browser-resources.mjs', 'ci-native-runtime.mjs',
-    'ci-native-seccomp-default.json', 'ci-native-seccomp-default.source.json', 'ci-native-probe.mjs', 'ci-native-preflight.mjs',
+    'ci-native-seccomp-default.json', 'ci-native-seccomp-default.source.json', 'ci-native-probe.mjs', 'ci-native-preflight.mjs', 'ci-native-audit.mjs',
     'ci-browser-image.mjs', 'ci-native-apparmor.mjs', 'ci-native-apparmor-default.go.txt', 'ci-native-apparmor-default.source.json',
     'test-browser.sh', 'generate-test-report.mjs',
     'generate-incremental-report.mjs', 'ci-report-evidence.mjs', 'validation-artifacts.mjs', 'bundle-contract.mjs', 'assistant-extension-files.json', 'changelog.mjs'])

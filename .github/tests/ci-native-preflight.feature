@@ -18,5 +18,11 @@ Feature: Real native SDK sandbox qualification fails before expensive CI work
   Scenario: Uncertain AppArmor profile state retains its recovery source
     Then native AppArmor load and unload uncertainty retains its owned profile files
 
+  Scenario: Native sandbox failure audits include only the owned probe interval
+    Then native kernel audit diagnostics filter exact profile time and host PID and redact other data
+
+  Scenario: Native sandbox diagnostics identify the selected qualified helper
+    Then native helper diagnostics verify the first qualified PATH entry and record its actual digest
+
   Scenario: Native SDK qualification precedes source coverage in every validation workflow
     Then all validation preparation jobs gate expensive checks on the real native sandbox

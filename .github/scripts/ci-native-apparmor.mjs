@@ -8,7 +8,7 @@ import { delimiter, isAbsolute, join } from 'node:path';
 export const nativeAppArmorPin = Object.freeze({
   sourceSha256: '7da15d81aa5c507f5002b844fdc49a969904681447a2cc29222bd6cbe797163b',
   sdkVersion: '0.163.0',
-  policyVersion: 1,
+  policyVersion: 2,
 });
 const moduleEnabled = '/sys/module/apparmor/parameters/enabled';
 const sourceURL = new URL('./ci-native-apparmor-default.go.txt', import.meta.url);
@@ -31,6 +31,10 @@ function sandboxRules() {
     '  pivot_root oldroot=/tmp/oldroot/ /tmp/,',
     '  mount options=(rw,rbind) /oldroot/ -> /newroot/,',
     '  mount options=(rw,rbind) /oldroot/** -> /newroot/**,',
+    // Pinned linux_run_main.rs:433–439,538–564 probes proc compatibility with
+    // the minimal policy (--tmpfs /). Let it reach proc so the SDK can retain
+    // Docker's inherited protected proc when a fresh proc mount is unavailable.
+    '  mount fstype=tmpfs options=(rw,nosuid,nodev) -> /newroot/,',
     '  mount fstype=tmpfs options=(rw,nosuid,nodev) -> /newroot/dev/,',
     '  mount fstype=devpts options=(rw,nosuid,noexec) -> /newroot/dev/pts/,',
     '  mount fstype=proc options=(rw,nosuid,nodev,noexec) -> /newroot/proc/,',

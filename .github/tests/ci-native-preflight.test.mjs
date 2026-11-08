@@ -3,11 +3,14 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import './support.mjs';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Then } from '@cucumber/cucumber';
 import { parseDocument } from 'yaml';
-import { nativeSandboxContext, classifyNativeSandboxFailure, probeNativeSandbox, runContainerNativePreflight } from '../scripts/ci-native-probe.mjs';
+import { nativeSandboxContext, selectedNativeBwrap, classifyNativeSandboxFailure, probeNativeSandbox, runContainerNativePreflight } from '../scripts/ci-native-probe.mjs';
+import { ownedAppArmorAuditLine, captureNativeAppArmorAudit } from '../scripts/ci-native-audit.mjs';
+import { nativeRuntimePin } from '../scripts/ci-native-runtime.mjs';
 import { resolvePinnedBrowserImage } from '../scripts/ci-browser-image.mjs';
 import { runNativePreflightGate } from '../scripts/ci-native-preflight.mjs';
 
@@ -184,4 +187,63 @@ Then('native AppArmor load and unload uncertainty retains its owned profile file
         apparmor: failure === 'unknown load' ? loadMetadata : apparmorMetadata });
     }
   }
+});
+
+Then('native kernel audit diagnostics filter exact profile time and host PID and redact other data', async function () {
+  const profileName = 'operations-native-owned-probe', startedAt = 1794146000000, finishedAt = startedAt + 1000;
+  const options = { profileName, startedAt, finishedAt };
+  const line = `audit: type=1400 audit(1794146000.500:14): apparmor="DENIED" operation="mount" info="failed flags match" error=-13 profile="${profileName}" name="/newroot/" pid=2451 comm="bwrap" fstype="tmpfs" srcname="tmpfs" flags="rw,nosuid,nodev" cmd="Bearer OWNED_PRIVATE_VALUE"`;
+  const record = ownedAppArmorAuditLine(line, options);
+  assert.equal(record.hostPid, 2451); assert.equal(record.epochMilliseconds, startedAt + 500);
+  assert.equal(record.profile, profileName); assert.equal(record.name, '/newroot/'); assert.equal(record.fstype, 'tmpfs');
+  assert.ok(!JSON.stringify(record).includes('OWNED_PRIVATE_VALUE')); assert.equal(record.cmd, undefined);
+  const privatePath = ownedAppArmorAuditLine(line.replace('name="/newroot/"', 'name="/owned/private/file"'), options);
+  assert.equal(privatePath.name, '<path>');
+  for (const field of ['name', 'srcname']) {
+    for (const value of ['"/owned/private/密钥.txt"', '"/owned/private/customer key.txt"', '2F6F776E65642F707269766174652F66696C65']) {
+      const withPath = line.replace(new RegExp(`\\b${field}=(?:"[^"]*"|[^\\s]+)`), `${field}=${value}`);
+      const redacted = ownedAppArmorAuditLine(withPath, options);
+      assert.equal(redacted[field], '<path>'); assert.ok(!JSON.stringify(redacted).includes(value.replaceAll('"', '')));
+    }
+  }
+  for (const unrelated of [line.replace(profileName, profileName + '-other'), line.replace('1794146000.500', '1794145000.500'),
+    line.replace('1794146000.500', '1794147000.500'), line.replace('pid=2451', 'pid=0'), line.replace('pid=2451', 'pid=-2'),
+    line.replace('apparmor="DENIED"', 'subsystem="DENIED"')]) assert.equal(ownedAppArmorAuditLine(unrelated, options), undefined);
+  let commands = 0;
+  const audit = await captureNativeAppArmorAudit({ ...options, run: async (program, args, controls) => {
+    commands++; assert.equal(program, process.execPath); assert.equal(args[1], profileName);
+    assert.deepEqual(args.slice(2), [String(startedAt), String(finishedAt)]);
+    assert.equal(controls.quiet, true); assert.equal(controls.timeoutMs, 6000);
+    return { code: 0, output: JSON.stringify({ state: 'available', profile: profileName, pidNamespace: 'host', records: [record] }) };
+  } });
+  assert.equal(commands, 1); assert.deepEqual(audit.records, [record]);
+  const invalid = await captureNativeAppArmorAudit({ ...options, profileName: 'docker-default', run: async () => assert.fail('Unowned profiles must not read kernel logs.') });
+  assert.equal(invalid.state, 'unavailable');
+  let audits = 0;
+  for (const passed of [true, false]) {
+    const result = await runContainerNativePreflight({ container: 'owned-preflight', profileName, note: () => {},
+      run: async () => ({ code: passed ? 0 : 1, output: marker + JSON.stringify({ kind: 'result', passed, phase: 'sdk-store-seed' }) }),
+      audit: async input => { audits++; assert.equal(input.profileName, profileName); assert.ok(input.finishedAt >= input.startedAt); return audit; },
+    });
+    assert.equal(Boolean(result.apparmorAudit), !passed);
+    assert.equal(result.passed, passed);
+  }
+  assert.equal(audits, 1);
+});
+
+Then('native helper diagnostics verify the first qualified PATH entry and record its actual digest', async function () {
+  const directory = '/opt/operations-ci-native/codex-resources', path = directory + '/bwrap';
+  const environment = { OPERATIONS_CODEX_QUALIFICATION_BINARY: '/opt/operations-ci-native/codex', PATH: directory + ':/usr/bin:/bin' };
+  const bytes = Buffer.from('Owned unqualified helper digest fixture.'); let reads = 0;
+  const read = async file => { reads++; assert.equal(file, path); return bytes; };
+  const stat = async file => { assert.equal(file, path); return { isFile: () => true, mode: 0o555, size: nativeRuntimePin.sandbox.bytes }; };
+  const selected = await selectedNativeBwrap({ environment, read, stat });
+  assert.deepEqual(selected, { state: 'selected', path, sha256: createHash('sha256').update(bytes).digest('hex'), pinned: false });
+  assert.equal(reads, 1);
+  const later = await selectedNativeBwrap({ environment: { ...environment, PATH: '/usr/bin:' + directory }, read, stat });
+  assert.equal(later.state, 'unexpected-path'); assert.equal(reads, 1);
+  const link = await selectedNativeBwrap({ environment, read, stat: async () => ({ isFile: () => false, mode: 0o555, size: 1 }) });
+  assert.equal(link.state, 'unavailable'); assert.equal(reads, 1);
+  const context = await nativeSandboxContext(readContext, async () => selected);
+  assert.deepEqual(context.bwrap, selected); assert.equal(context.containerPid, process.pid);
 });
