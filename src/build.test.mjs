@@ -14,7 +14,8 @@ Given("the production build has completed", async function ()
   html = await readFile("dist/index.html", "utf8");
   notices = await readFile("dist/NOTICES.txt", "utf8");
   assert.match(html, /<link rel="license" href="\.\/NOTICES\.txt">/);
-  const inputs = ["src/lib/secrets/NOTICES.md", "src/lib/assistant/NOTICES.md", "src/lib/speech/NOTICES.md", "src/lib/workflow-chart-NOTICES.txt"];
+  const inputs = ["src/lib/aws-rest-data.NOTICE", "src/lib/aws-json-data.NOTICE", "src/lib/aws-query-data.NOTICE",
+    "src/lib/secrets/NOTICES.md", "src/lib/assistant/NOTICES.md", "src/lib/speech/NOTICES.md", "src/lib/workflow-chart-NOTICES.txt"];
   assert.equal(notices, (await Promise.all(inputs.map(file => readFile(file, "utf8")))).join("\n\n"));
 });
 
