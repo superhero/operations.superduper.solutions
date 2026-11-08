@@ -17,12 +17,14 @@ Then('DigitalOcean revisions compare published security with retained token perm
   await card.getByRole('button', { name: 'Schema revisions', exact: true }).click();
   const history = card.locator('.schema-history');
   await expect(history.locator('[data-version-oid]')).toHaveCount(2);
-  await expect(history.getByText('Apply schema corrections: DigitalOcean bearer permissions', { exact: true })).toBeVisible();
+  const correctionTitle = 'Apply schema corrections: ' + ['DigitalOcean bearer permissions',
+    'DigitalOcean agent and private upload destinations', 'Private credential result adoption'].join(', ');
+  await expect(history.getByText(correctionTitle, { exact: true })).toBeVisible();
   const diff = history.locator('.revision-diff');
   await expect(diff).toHaveAttribute('aria-busy', 'false');
   assert.notEqual(await diff.getAttribute('data-revision'), await diff.getAttribute('data-base'));
   await expect(diff.getByRole('combobox', { name: 'Base commit', exact: true })).toContainText('Import published schema: DigitalOcean');
-  await expect(diff.getByRole('combobox', { name: 'Compare commit', exact: true })).toContainText('DigitalOcean bearer permissions');
+  await expect(diff.getByRole('combobox', { name: 'Compare commit', exact: true })).toContainText(correctionTitle);
   const group = diff.locator('.change-group').filter({ has: page.locator(':scope > summary strong', { hasText: 'Authentication' }) });
   await group.locator(':scope > summary').click();
   const permission = group.locator('.field-change').filter({ has: page.locator(':scope > summary code[title$="/x-credential-permissions"]') }).first();
