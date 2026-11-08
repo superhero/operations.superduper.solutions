@@ -63,3 +63,12 @@ Feature: Bounded terminal HTTP stream results
   @coverage-gaps
   Scenario: Invalid declarations and cancelled bodies remain closed
     Then response declarations and body cancellation preserve fail closed media and empty body behavior
+
+  Scenario: Chat completion fragments retain tool calls probabilities and typed metadata
+    Then chat completion fragments preserve sorted choices tool calls and probability arrays
+
+  Scenario: Malformed chat completion updates cannot become terminal results
+    Then chat completion frames reject incompatible updates malformed tools and incomplete choices
+
+  Scenario: Empty Docker streams and Mistral event identities remain well defined
+    Then response stream readers retain empty Docker results and reject changed conversation identities

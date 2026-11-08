@@ -126,7 +126,7 @@ const invalidCatalogs = {
   "a missing path parameter": () => ({ openapi: "3.1.0", paths: { "/items/{id}": { get: {} } } }),
   "an unused path parameter": () => document({ parameters: [parameter(undefined, { in: "path", required: true })] }),
   "missing array items": () => withInput({ type: "array" }),
-  "an unsupported constraint": () => withInput({ type: "string", pattern: "a+" }),
+  "an invalid pattern": () => withInput({ type: "string", pattern: 42 }),
   "an invalid enum type": () => withInput({ type: "string", enum: [1] }),
   "an empty enum": () => withInput({ type: "string", enum: [] }),
   "a fractional integer enum": () => withInput({ type: "integer", enum: [1.5] }),
@@ -404,18 +404,20 @@ Then("unsupported structures and serializations fail during catalog loading", fu
   for (const [schema, extra] of [
     [{ type: "array", items: { type: "object", properties: {} } }, {}],
     [{ type: "object", properties: { nested: { type: "array", items: { type: "string" } } } }, { style: "deepObject" }],
-    [{ type: "array", items: { type: "string" } }, { in: "header" }],
     [{ type: "string" }, { in: "header", name: "invalid name" }],
-    [{ type: "string" }, { in: "header", explode: true }]
+    [{ type: "string" }, { in: "header", explode: "true" }]
   ]) assert.throws(() => inputOperation(schema, extra), /serialization|header name/);
   assert.throws(() => extractOperations(document({ parameters: [parameter(undefined, { in: "header", name: "X-Key" }), parameter(undefined, { in: "header", name: "x-key" })] }), "fixture"), /duplicate parameter/);
   assert.throws(() => inputOperation({ type: "object", properties: {} }), /serialization/);
   assert.throws(() => bodyOperation({ type: "number" }, "text/plain"), /string schema/);
   for (const type of ["application/x-www-form-urlencoded", "multipart/form-data"])
     for (const schema of [{ type: "array", items: { type: "string" } }, { type: "object", properties: { file: { type: "array", items: { type: "object" } } } }])
-      assert.throws(() => bodyOperation(schema, type), /form bodies require named primitive fields/);
+      assert.throws(() => bodyOperation(schema, type), schema.type === "array"
+        ? /Form body.*type=array/ : /Form field "file".*type=array/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "application/json": {}, "text/plain": {} } }), "fixture"), /choose one supported/);
-  assert.throws(() => extractOperations(withBody(undefined, { content: { "multipart/form-data": { schema: { type: "object", properties: {} }, encoding: {} } } }), "fixture"), /unsupported schema fields/);
+  assert.throws(() => extractOperations(withBody(undefined, { content: { "multipart/form-data": {
+    schema: { type: "object", properties: { file: { type: "string" } } }, encoding: { file: { headers: { Authorization: { schema: { type: "string" } } } } }
+  } } }), "fixture"), /Form part "file".*headers/);
 });
 
 Then("nullable request inputs preserve explicit omission null and the text null", function ()
@@ -517,7 +519,7 @@ Then("nullable query collections serialize safely and form bodies reject null sc
     { "filter[value]": null, tags: [null, "null"] });
   for (const media of ["application/x-www-form-urlencoded", "multipart/form-data"])
   {
-    assert.throws(() => bodyOperation({ type: "object", nullable: true }, media), /form bodies require named primitive fields/);
+    assert.throws(() => bodyOperation({ type: "object", nullable: true }, media), /Form body.*nullable=true/);
     const form = bodyOperation({ type: "object", properties: { value: { type: ["string", "null"] } } }, media);
     assert.equal(prepareRequest(form, { "body:value": "null" }).body.value, "null");
     assert.throws(() => prepareRequest(form, { "body:value": null }), error => error instanceof InputValidationError && error.fieldKey === "body:value");
@@ -638,6 +640,6 @@ Then("dynamic body fields respect canonical policies and transport restrictions"
       assert.throws(() => prepareRequest(form, { "body:extra": raw }, [additionalBodyField(form, "extra", type)]),
         error => error instanceof InputValidationError && error.fieldKey === "body:extra"
           && (type === "null" ? /explicit null has no qualified form encoding/ : /form body properties must be primitive values/).test(error.message));
-    assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /form bodies require named primitive fields/);
+    assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /Form field "<additional properties>".*type=object/);
   }
 });

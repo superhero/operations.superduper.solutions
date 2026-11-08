@@ -1,0 +1,722 @@
+{
+  "aws-autoscaling": {
+    "sha256": "3dfd2af80a4764189fc0d3ea5a28bc9479e45447b1aae5efddf26d60a919ae3f",
+    "title": "Auto Scaling",
+    "version": "2011-01-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://autoscaling.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://autoscaling.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://autoscaling.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/autoscaling-2011-01-01.normal.json",
+      "sha256": "3d5f19957888536dd1ebab2e6fb3798883d2054c0c5586e9ce4e342cd5a5a9e5"
+    },
+    "protocol": "query",
+    "service": "autoscaling",
+    "namespace": "http://autoscaling.amazonaws.com/doc/2011-01-01/",
+    "apiVersion": "2011-01-01"
+  },
+  "aws-cloudformation": {
+    "sha256": "4a68c9cffa40499b55c50b970591ff86129e779b0ef9e8bdfcaef552ebc14e3f",
+    "title": "AWS CloudFormation",
+    "version": "2010-05-15",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://cloudformation.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://cloudformation.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/cloudformation-2010-05-15.normal.json",
+      "sha256": "eaa9473952b0390a1aa28eee95e7f07ddccb3da40c02b9f69b3d09a533ffb126"
+    },
+    "protocol": "query",
+    "service": "cloudformation",
+    "namespace": "http://cloudformation.amazonaws.com/doc/2010-05-15/",
+    "apiVersion": "2010-05-15"
+  },
+  "aws-ec2": {
+    "sha256": "ea5b1da045efed071bd26efab3b896f71282f662cc1e1683194d66023d3cfd04",
+    "title": "Amazon Elastic Compute Cloud",
+    "version": "2016-11-15",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://ec2.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://ec2.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://ec2.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/ec2-2016-11-15.normal.json",
+      "sha256": "e8d9eac13935eb9f781882142e5ecdf253368efd078b4693bf974867bc79de76"
+    },
+    "protocol": "ec2",
+    "service": "ec2",
+    "namespace": "http://ec2.amazonaws.com/doc/2016-11-15",
+    "apiVersion": "2016-11-15"
+  },
+  "aws-elasticache": {
+    "sha256": "f73df542876aded5810cd60675f944fa512810eb4875ab4b05e9cca1a42d3f7e",
+    "title": "Amazon ElastiCache",
+    "version": "2015-02-02",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://elasticache.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://elasticache.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/elasticache-2015-02-02.normal.json",
+      "sha256": "be061a7f2cbe73de657966e719b1499bf3cc9ca7f034aac6342836b368ab0a4b"
+    },
+    "protocol": "query",
+    "service": "elasticache",
+    "namespace": "http://elasticache.amazonaws.com/doc/2015-02-02/",
+    "apiVersion": "2015-02-02"
+  },
+  "aws-elasticloadbalancingv2": {
+    "sha256": "9bb94556618707f774795169f97fedcdc28f89a69a39627c6c14500ed5d6ada5",
+    "title": "Elastic Load Balancing",
+    "version": "2015-12-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://elasticloadbalancing.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://elasticloadbalancing.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://elasticloadbalancing.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/elasticloadbalancingv2-2015-12-01.normal.json",
+      "sha256": "7cc6d499d4441947b49c778be50535fda18e38574a679fadaa3354e58fa19945"
+    },
+    "protocol": "query",
+    "service": "elasticloadbalancing",
+    "namespace": "http://elasticloadbalancing.amazonaws.com/doc/2015-12-01/",
+    "apiVersion": "2015-12-01"
+  },
+  "aws-iam": {
+    "sha256": "75b86d2d22322f224d07485f0a74f0927ec4b6bb90d6f4108c6cf98f89132b3d",
+    "title": "AWS Identity and Access Management",
+    "version": "2010-05-08",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://iam.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://iam.us-gov.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://iam.cn-north-1.amazonaws.com.cn",
+        "variables": {}
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/iam-2010-05-08.normal.json",
+      "sha256": "4694ff6bab100ae9c50510a12c187b0f9477849f070845f36ebd133ba3a0f422"
+    },
+    "protocol": "query",
+    "service": "iam",
+    "namespace": "https://iam.amazonaws.com/doc/2010-05-08/",
+    "apiVersion": "2010-05-08"
+  },
+  "aws-monitoring": {
+    "sha256": "85ff979bad127aab83a73b775f9905aac586238122296feb00b685d8deff936a",
+    "title": "Amazon CloudWatch",
+    "version": "2010-08-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://monitoring.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://monitoring.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/monitoring-2010-08-01.normal.json",
+      "sha256": "50d11449194119e776a2d8a73767b011ac44123aefb3b844ae6d1bdcb3db7ce1"
+    },
+    "protocol": "query",
+    "service": "monitoring",
+    "namespace": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+    "apiVersion": "2010-08-01"
+  },
+  "aws-rds": {
+    "sha256": "c21871f272a1f369d3802e13d76f0625eac5dfc240c320f38c3a547da1901be5",
+    "title": "Amazon Relational Database Service",
+    "version": "2014-10-31",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://rds.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://rds.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://rds.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/rds-2014-10-31.normal.json",
+      "sha256": "c00231a084de7e64d224e6a0588d6542d0d208da2b864ea70425afd2d64f9f5c"
+    },
+    "protocol": "query",
+    "service": "rds",
+    "namespace": "http://rds.amazonaws.com/doc/2014-10-31/",
+    "apiVersion": "2014-10-31"
+  },
+  "aws-redshift": {
+    "sha256": "d6271729a44df045024d5dff64e01968f4d1def0470f8aec3eac648fc8ec8b28",
+    "title": "Amazon Redshift",
+    "version": "2012-12-01",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://redshift.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://redshift.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/redshift-2012-12-01.normal.json",
+      "sha256": "c487453aef6849b3e3916c6102a51dcd1a5666e2fd4f1482ca6b7afde94aaf34"
+    },
+    "protocol": "query",
+    "service": "redshift",
+    "namespace": "http://redshift.amazonaws.com/doc/2012-12-01/",
+    "apiVersion": "2012-12-01"
+  },
+  "aws-sns": {
+    "sha256": "14a210cbd1167e49aeb461e4ba8bff533c7bb6473f7cb8ff91f83beaf932f195",
+    "title": "Amazon Simple Notification Service",
+    "version": "2010-03-31",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://sns.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://sns.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/sns-2010-03-31.normal.json",
+      "sha256": "693502ea70af335ac73d4e970964a029b2612c1baf2f6b91beefdec5b4a29fc2"
+    },
+    "protocol": "query",
+    "service": "sns",
+    "namespace": "http://sns.amazonaws.com/doc/2010-03-31/",
+    "apiVersion": "2010-03-31"
+  },
+  "aws-sqs": {
+    "sha256": "5ba8e13697b8c58dd867c87318478c346afe694fdf47ccecae7404474d6b890b",
+    "title": "Amazon Simple Queue Service",
+    "version": "2012-11-05",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://sqs.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "us-gov-west-1",
+              "us-gov-east-1",
+              "ca-central-1",
+              "eu-north-1",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-west-3",
+              "eu-central-1",
+              "eu-south-1",
+              "af-south-1",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "ap-northeast-3",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-east-1",
+              "ap-south-1",
+              "sa-east-1",
+              "me-south-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      },
+      {
+        "url": "https://sqs.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1473.0/apis/sqs-2012-11-05.normal.json",
+      "sha256": "1491dab91552c034eb40222244d46ab19ad7940fae6d7b81998a693d4448eb2e"
+    },
+    "protocol": "query",
+    "service": "sqs",
+    "namespace": "http://queue.amazonaws.com/doc/2012-11-05/",
+    "apiVersion": "2012-11-05"
+  },
+  "aws-sts": {
+    "sha256": "57abe7038ef9b4425e87706ef402117db67fa6822947457f49ec1d1abb78b022",
+    "title": "AWS Security Token Service",
+    "version": "2011-06-15",
+    "openapi": "3.0.0",
+    "endpoints": [
+      {
+        "url": "https://sts.amazonaws.com",
+        "variables": {}
+      },
+      {
+        "url": "https://sts.{region}.amazonaws.com",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "us-gov-west-1",
+              "us-gov-east-1"
+            ],
+            "default": "us-gov-west-1"
+          }
+        }
+      },
+      {
+        "url": "https://sts.{region}.amazonaws.com.cn",
+        "variables": {
+          "region": {
+            "description": "The AWS region",
+            "enum": [
+              "cn-north-1",
+              "cn-northwest-1"
+            ],
+            "default": "cn-north-1"
+          }
+        }
+      }
+    ],
+    "sdk": {
+      "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/v2.1692.0/apis/sts-2011-06-15.normal.json",
+      "sha256": "26062266c962463ef92fda6ba137d8eb1d8b02e67e143789b05e5c8441e2efaa"
+    },
+    "protocol": "query",
+    "service": "sts",
+    "namespace": "https://sts.amazonaws.com/doc/2011-06-15/",
+    "apiVersion": "2011-06-15"
+  }
+}

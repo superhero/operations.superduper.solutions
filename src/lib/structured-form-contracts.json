@@ -1,0 +1,1999 @@
+{
+  "version": 1,
+  "sources": {
+    "cloudflare": {
+      "sha256": "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778",
+      "title": "Cloudflare API",
+      "version": "4.0.0",
+      "openapi": "3.0.3"
+    },
+    "gitlab": {
+      "sha256": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
+      "title": "GitLab REST API",
+      "version": "19.5",
+      "openapi": "3.0.0"
+    },
+    "openai": {
+      "sha256": "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
+      "title": "OpenAI API",
+      "version": "2.3.0",
+      "openapi": "3.1.0"
+    },
+    "replicate": {
+      "sha256": "790b5dfeb6e9fffc5c967de5dd30b17e305bad4686ad700ad91650de7a457468",
+      "title": "Replicate HTTP API",
+      "version": "1.0.0-a1",
+      "openapi": "3.1.0"
+    }
+  },
+  "schemas": {
+    "shape-0": {
+      "description": "User modifiable key-value store. Can be used for keeping references to another system of record, for managing images.",
+      "type": "object"
+    },
+    "shape-1": {
+      "description": "User modifiable key-value store. Can use used for keeping references to another system of record for managing images.",
+      "type": "object"
+    },
+    "shape-2": {
+      "type": "object",
+      "description": "Determine if developers can push to default branch",
+      "properties": {
+        "allowed_to_push": {
+          "type": "array",
+          "description": "An array of access levels allowed to push",
+          "items": {
+            "type": "object",
+            "properties": {
+              "access_level": {
+                "type": "integer",
+                "enum": [
+                  30,
+                  40,
+                  60,
+                  0
+                ],
+                "description": "A valid access level"
+              }
+            },
+            "required": [
+              "access_level"
+            ]
+          },
+          "nullable": true
+        },
+        "allow_force_push": {
+          "type": "boolean",
+          "description": "Allow force push for all users with push access.",
+          "nullable": true
+        },
+        "allowed_to_merge": {
+          "type": "array",
+          "description": "An array of access levels allowed to merge",
+          "items": {
+            "type": "object",
+            "properties": {
+              "access_level": {
+                "type": "integer",
+                "enum": [
+                  30,
+                  40,
+                  60,
+                  0
+                ],
+                "description": "A valid access level"
+              }
+            },
+            "required": [
+              "access_level"
+            ]
+          },
+          "nullable": true
+        },
+        "code_owner_approval_required": {
+          "type": "boolean",
+          "description": "Require approval from code owners",
+          "nullable": true
+        },
+        "developer_can_initial_push": {
+          "type": "boolean",
+          "description": "Allow developers to initial push",
+          "nullable": true
+        }
+      },
+      "nullable": true
+    },
+    "shape-3": {
+      "type": "array",
+      "description": "Whether each foundational agent has been enabled or disabled.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string",
+            "description": "Reference of the foundational agent.",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether foundational agent has been enabled or disabled.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "reference",
+          "enabled"
+        ]
+      },
+      "nullable": true
+    },
+    "shape-4": {
+      "type": "object",
+      "description": "AI-related settings",
+      "properties": {
+        "duo_agent_platform_enabled": {
+          "type": "boolean",
+          "description": "Whether Duo Agent Platform features are enabled",
+          "nullable": true
+        },
+        "duo_workflow_mcp_enabled": {
+          "type": "boolean",
+          "description": "Enable MCP support for Duo Agent Platform",
+          "nullable": true
+        },
+        "ai_usage_data_collection_enabled": {
+          "type": "boolean",
+          "description": "Enable AI usage data collection for this namespace",
+          "nullable": true
+        },
+        "ai_catalog_restricted_to_group_hierarchy": {
+          "type": "boolean",
+          "description": "Confine the AI Catalog to items within this top-level group hierarchy",
+          "nullable": true
+        },
+        "web_search_enabled": {
+          "type": "boolean",
+          "description": "Allow web search in GitLab Duo Chat for this top-level group",
+          "nullable": true
+        },
+        "foundational_agents_default_enabled": {
+          "type": "boolean",
+          "description": "Whether new foundational agents are enabled by default",
+          "nullable": true
+        },
+        "prompt_injection_protection_level": {
+          "type": "string",
+          "enum": [
+            "no_checks",
+            "log_only",
+            "interrupt"
+          ],
+          "description": "Prompt injection protection level. One of `no_checks`, `log_only` or `interrupt`",
+          "nullable": true
+        },
+        "include_recommended_allowed": {
+          "type": "boolean",
+          "description": "Whether to include recommended domains in the network access allowlist",
+          "nullable": true
+        },
+        "allow_all_unix_sockets": {
+          "type": "boolean",
+          "description": "Whether to allow all Unix sockets for network access",
+          "nullable": true
+        },
+        "allow_project_extension": {
+          "type": "boolean",
+          "description": "Whether to allow projects to extend the network access domain allowlist",
+          "nullable": true
+        },
+        "minimum_access_level_execute": {
+          "type": "integer",
+          "enum": [
+            10,
+            15,
+            20,
+            30,
+            40,
+            50
+          ],
+          "description": "The minimum access level required to execute Duo Agent Platform. This field is behind a feature flag.",
+          "nullable": true
+        },
+        "minimum_access_level_execute_async": {
+          "type": "integer",
+          "enum": [
+            30,
+            40,
+            50
+          ],
+          "description": "The minimum access level required to execute Duo Agent Platform features in CI/CD. This field is behind a feature flag.",
+          "nullable": true
+        },
+        "minimum_access_level_manage": {
+          "type": "integer",
+          "enum": [
+            30,
+            40,
+            50
+          ],
+          "description": "The minimum access level required to manage Duo Agent Platform. This field is behind a feature flag.",
+          "nullable": true
+        },
+        "minimum_access_level_enable_on_projects": {
+          "type": "integer",
+          "enum": [
+            30,
+            40,
+            50
+          ],
+          "description": "The minimum access level required to enable Duo Agent Platform. This field is behind a feature flag.",
+          "nullable": true
+        }
+      },
+      "nullable": true
+    },
+    "shape-5": {
+      "type": "object",
+      "description": "Object that contains information on the container expiration policy",
+      "properties": {
+        "cadence": {
+          "type": "string",
+          "description": "Container expiration policy cadence for recurring job",
+          "nullable": true
+        },
+        "keep_n": {
+          "type": "integer",
+          "description": "Container expiration policy number of images to keep",
+          "nullable": true
+        },
+        "older_than": {
+          "type": "string",
+          "description": "Container expiration policy remove images older than value",
+          "nullable": true
+        },
+        "name_regex": {
+          "type": "string",
+          "description": "Container expiration policy regex for image removal",
+          "nullable": true
+        },
+        "name_regex_keep": {
+          "type": "string",
+          "description": "Container expiration policy regex for image retention",
+          "nullable": true
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Flag indication if container expiration policy is enabled",
+          "nullable": true
+        }
+      },
+      "nullable": true
+    },
+    "shape-6": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Deprecated: Use :topics instead",
+      "nullable": true
+    },
+    "shape-7": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The list of topics for a project",
+      "nullable": true
+    },
+    "shape-8": {
+      "type": "object",
+      "description": "New project params to override values in the export",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "The description of the project",
+          "nullable": true
+        },
+        "build_git_strategy": {
+          "type": "string",
+          "enum": [
+            "fetch",
+            "clone"
+          ],
+          "description": "The Git strategy. Defaults to `fetch`",
+          "nullable": true
+        },
+        "build_timeout": {
+          "type": "integer",
+          "description": "Build timeout",
+          "nullable": true
+        },
+        "auto_cancel_pending_pipelines": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "enabled"
+          ],
+          "description": "Auto-cancel pending pipelines",
+          "nullable": true
+        },
+        "ci_config_path": {
+          "type": "string",
+          "description": "The path to CI config file. Defaults to `.gitlab-ci.yml`",
+          "nullable": true
+        },
+        "service_desk_enabled": {
+          "type": "boolean",
+          "description": "Disable or enable the service desk",
+          "nullable": true
+        },
+        "issues_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if the issue tracker is enabled",
+          "nullable": true
+        },
+        "merge_requests_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if merge requests are enabled",
+          "nullable": true
+        },
+        "wiki_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if the wiki is enabled",
+          "nullable": true
+        },
+        "jobs_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if jobs are enabled",
+          "nullable": true
+        },
+        "snippets_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if snippets are enabled",
+          "nullable": true
+        },
+        "issues_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Issues access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "repository_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Repository access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "merge_requests_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Merge requests access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "forking_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Forks access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "wiki_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Wiki access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "builds_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Builds access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "snippets_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Snippets access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "package_registry_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled",
+            "public"
+          ],
+          "description": "Controls visibility of the package registry. One of `disabled`, `private`, `enabled` or `public`. `private` will make the package registry accessible only to project members (reporter role and above). `enabled` will make the package registry accessible to everyone who has access to the project. `public` will make the package registry accessible to everyone. `disabled` will disable the package registry",
+          "nullable": true
+        },
+        "pages_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled",
+            "public"
+          ],
+          "description": "Pages access level. One of `disabled`, `private`, `enabled` or `public`",
+          "nullable": true
+        },
+        "analytics_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Analytics access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "container_registry_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Controls visibility of the container registry. One of `disabled`, `private` or `enabled`. `private` will make the container registry accessible only to project members (reporter role and above). `enabled` will make the container registry accessible to everyone who has access to the project. `disabled` will disable the container registry",
+          "nullable": true
+        },
+        "security_and_compliance_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Security and compliance access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "releases_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Releases access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "environments_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Environments access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "feature_flags_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Feature flags access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "infrastructure_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Infrastructure access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "monitor_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Monitor access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "model_experiments_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Model experiments access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "model_registry_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Model registry access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "emails_disabled": {
+          "type": "boolean",
+          "description": "Deprecated: Use emails_enabled instead.",
+          "nullable": true
+        },
+        "emails_enabled": {
+          "type": "boolean",
+          "description": "Enable email notifications",
+          "nullable": true
+        },
+        "show_default_award_emojis": {
+          "type": "boolean",
+          "description": "Show default award emojis",
+          "nullable": true
+        },
+        "show_diff_preview_in_email": {
+          "type": "boolean",
+          "description": "Include the code diff preview in merge request notification emails",
+          "nullable": true
+        },
+        "warn_about_potentially_unwanted_characters": {
+          "type": "boolean",
+          "description": "Warn about potentially unwanted characters",
+          "nullable": true
+        },
+        "enforce_auth_checks_on_uploads": {
+          "type": "boolean",
+          "description": "Enforce auth check on uploads",
+          "nullable": true
+        },
+        "shared_runners_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if shared runners are enabled for that project",
+          "nullable": true
+        },
+        "group_runners_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if group runners are enabled for that project",
+          "nullable": true
+        },
+        "resource_group_default_process_mode": {
+          "type": "string",
+          "enum": [
+            "unordered",
+            "oldest_first",
+            "newest_first",
+            "newest_ready_first"
+          ],
+          "description": "The process mode of the resource group",
+          "nullable": true
+        },
+        "resolve_outdated_diff_discussions": {
+          "type": "boolean",
+          "description": "Automatically resolve merge request diff threads on lines changed with a push",
+          "nullable": true
+        },
+        "remove_source_branch_after_merge": {
+          "type": "boolean",
+          "description": "Remove the source branch by default after merge",
+          "nullable": true
+        },
+        "packages_enabled": {
+          "type": "boolean",
+          "description": "Deprecated: Use :package_registry_access_level instead. Enable project packages feature",
+          "nullable": true
+        },
+        "container_registry_enabled": {
+          "type": "boolean",
+          "description": "Deprecated: Use :container_registry_access_level instead. Flag indication if the container registry is enabled for that project",
+          "nullable": true
+        },
+        "container_expiration_policy_attributes": {
+          "type": "object",
+          "description": "Object that contains information on the container expiration policy",
+          "properties": {
+            "cadence": {
+              "type": "string",
+              "description": "Container expiration policy cadence for recurring job",
+              "nullable": true
+            },
+            "keep_n": {
+              "type": "integer",
+              "description": "Container expiration policy number of images to keep",
+              "nullable": true
+            },
+            "older_than": {
+              "type": "string",
+              "description": "Container expiration policy remove images older than value",
+              "nullable": true
+            },
+            "name_regex": {
+              "type": "string",
+              "description": "Container expiration policy regex for image removal",
+              "nullable": true
+            },
+            "name_regex_keep": {
+              "type": "string",
+              "description": "Container expiration policy regex for image retention",
+              "nullable": true
+            },
+            "enabled": {
+              "type": "boolean",
+              "description": "Flag indication if container expiration policy is enabled",
+              "nullable": true
+            }
+          },
+          "nullable": true
+        },
+        "lfs_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if Git LFS is enabled for that project",
+          "nullable": true
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "private",
+            "internal",
+            "public"
+          ],
+          "description": "The visibility of the project.",
+          "nullable": true
+        },
+        "public_builds": {
+          "type": "boolean",
+          "description": "Deprecated: Use public_jobs instead.",
+          "nullable": true
+        },
+        "public_jobs": {
+          "type": "boolean",
+          "description": "Perform public builds",
+          "nullable": true
+        },
+        "request_access_enabled": {
+          "type": "boolean",
+          "description": "Allow users to request member access",
+          "nullable": true
+        },
+        "only_allow_merge_if_pipeline_succeeds": {
+          "type": "boolean",
+          "description": "Only allow to merge if builds succeed",
+          "nullable": true
+        },
+        "allow_merge_on_skipped_pipeline": {
+          "type": "boolean",
+          "description": "Allow to merge if pipeline is skipped",
+          "nullable": true
+        },
+        "only_allow_merge_if_all_discussions_are_resolved": {
+          "type": "boolean",
+          "description": "Only allow to merge if all threads are resolved",
+          "nullable": true
+        },
+        "tag_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Deprecated: Use :topics instead",
+          "nullable": true
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The list of topics for a project",
+          "nullable": true
+        },
+        "avatar": {
+          "type": "string",
+          "format": "binary",
+          "description": "Avatar image for project",
+          "nullable": true
+        },
+        "printing_merge_request_link_enabled": {
+          "type": "boolean",
+          "description": "Show link to create/view merge request when pushing from the command line",
+          "nullable": true
+        },
+        "merge_method": {
+          "type": "string",
+          "enum": [
+            "ff",
+            "rebase_merge",
+            "merge"
+          ],
+          "description": "The merge method used when merging merge requests",
+          "nullable": true
+        },
+        "suggestion_commit_message": {
+          "type": "string",
+          "description": "The commit message used to apply merge request suggestions",
+          "nullable": true
+        },
+        "merge_commit_template": {
+          "type": "string",
+          "description": "Template used to create merge commit message",
+          "nullable": true
+        },
+        "squash_commit_template": {
+          "type": "string",
+          "description": "Template used to create squash commit message",
+          "nullable": true
+        },
+        "issue_branch_template": {
+          "type": "string",
+          "description": "Template used to create a branch from an issue",
+          "nullable": true
+        },
+        "auto_devops_enabled": {
+          "type": "boolean",
+          "description": "Flag indication if Auto DevOps is enabled",
+          "nullable": true
+        },
+        "auto_devops_deploy_strategy": {
+          "type": "string",
+          "enum": [
+            "continuous",
+            "manual",
+            "timed_incremental"
+          ],
+          "description": "Auto Deploy strategy",
+          "nullable": true
+        },
+        "autoclose_referenced_issues": {
+          "type": "boolean",
+          "description": "Flag indication if referenced issues auto-closing is enabled",
+          "nullable": true
+        },
+        "repository_storage": {
+          "type": "string",
+          "description": "Which storage shard the repository is on. Available only to admins",
+          "nullable": true
+        },
+        "squash_option": {
+          "type": "string",
+          "enum": [
+            "never",
+            "always",
+            "default_on",
+            "default_off"
+          ],
+          "description": "Squash default for project. One of `never`, `always`, `default_on`, or `default_off`.",
+          "nullable": true
+        },
+        "mr_default_target_self": {
+          "type": "boolean",
+          "description": "Merge requests of this forked project targets itself by default",
+          "nullable": true
+        },
+        "mr_default_title_template": {
+          "type": "string",
+          "description": "Template used to generate the default merge request title. Maximum 100 characters.",
+          "nullable": true,
+          "maxLength": 100
+        },
+        "cicd_catalog_enabled": {
+          "type": "boolean",
+          "description": "Set whether the project is a CI/CD catalog project",
+          "nullable": true
+        },
+        "only_allow_merge_if_all_status_checks_passed": {
+          "type": "boolean",
+          "description": "Blocks merge requests from merging unless all status checks have passed",
+          "nullable": true
+        },
+        "approvals_before_merge": {
+          "type": "integer",
+          "description": "How many approvers should approve merge request by default",
+          "nullable": true
+        },
+        "mirror": {
+          "type": "boolean",
+          "description": "[Deprecated] Enables pull mirroring in a project",
+          "nullable": true
+        },
+        "mirror_trigger_builds": {
+          "type": "boolean",
+          "description": "[Deprecated] Pull mirroring triggers builds",
+          "nullable": true
+        },
+        "external_authorization_classification_label": {
+          "type": "string",
+          "description": "The classification label for the project",
+          "nullable": true
+        },
+        "requirements_access_level": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "private",
+            "enabled"
+          ],
+          "description": "Requirements feature access level. One of `disabled`, `private` or `enabled`",
+          "nullable": true
+        },
+        "prevent_merge_without_jira_issue": {
+          "type": "boolean",
+          "description": "Require an associated issue from Jira",
+          "nullable": true
+        },
+        "auto_duo_code_review_enabled": {
+          "type": "boolean",
+          "description": "Enable automatic reviews by GitLab Duo on merge requests",
+          "nullable": true
+        },
+        "duo_code_review_decisions_enabled": {
+          "type": "boolean",
+          "description": "Enable approval and change requests by GitLab Duo on merge requests",
+          "nullable": true
+        },
+        "duo_remote_flows_enabled": {
+          "type": "boolean",
+          "description": "Enable GitLab Duo remote flows for this project",
+          "nullable": true
+        },
+        "duo_sast_fp_detection_enabled": {
+          "type": "boolean",
+          "description": "Enable GitLab Duo SAST false positive detection for this project",
+          "nullable": true
+        },
+        "duo_secret_detection_fp_enabled": {
+          "type": "boolean",
+          "description": "Enable GitLab Duo Secret Detection false positive detection for this project",
+          "nullable": true
+        },
+        "duo_dependency_bump_breaking_changes_enabled": {
+          "type": "boolean",
+          "description": "Turn on Agentic Breaking Change Resolution for this project",
+          "nullable": true
+        },
+        "duo_sast_vr_workflow_enabled": {
+          "type": "boolean",
+          "description": "Enable GitLab Duo SAST vulnerability resolution workflow for this project",
+          "nullable": true
+        },
+        "spp_repository_pipeline_access": {
+          "type": "boolean",
+          "description": "Grant read-only access to security policy configurations for enforcement in linked CI/CD projects",
+          "nullable": true
+        },
+        "merge_request_title_regex": {
+          "type": "string",
+          "description": "The regex the Merge Request must adhere to",
+          "nullable": true
+        },
+        "merge_request_title_regex_description": {
+          "type": "string",
+          "description": "The description for the regex the Merge Request must adhere to",
+          "nullable": true
+        }
+      },
+      "nullable": true
+    },
+    "shape-9": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of usernames excluded from the unique project download limit",
+      "nullable": true
+    },
+    "shape-10": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description": "List of user ids who will be emailed when Git abuse rate limit is exceeded",
+      "nullable": true
+    },
+    "shape-11": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "References of enabled foundational flows",
+      "nullable": true
+    },
+    "shape-12": {
+      "type": "array",
+      "description": "AI entity access rules for controlling Duo feature access",
+      "items": {
+        "type": "object",
+        "properties": {
+          "through_namespace": {
+            "type": "object",
+            "description": "Object containing through namespace information",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "ID of the through namespace",
+                "nullable": true
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the through namespace",
+                "nullable": true
+              },
+              "full_path": {
+                "type": "string",
+                "description": "Full path of the through namespace",
+                "nullable": true
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "nullable": true
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of accessible features",
+            "nullable": true
+          }
+        },
+        "required": [
+          "features"
+        ]
+      },
+      "nullable": true
+    },
+    "shape-13": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Claims that will be used to build the sub claim in id tokens",
+      "nullable": true
+    },
+    "shape-14": {
+      "type": "object",
+      "title": "File expiration policy",
+      "description": "The expiration policy for a file. By default, files with `purpose=batch` expire after 30 days and all other files are persisted until they are manually deleted.",
+      "properties": {
+        "anchor": {
+          "description": "Anchor timestamp after which the expiration policy applies. Supported anchors: `created_at`.",
+          "type": "string",
+          "enum": [
+            "created_at"
+          ],
+          "x-stainless-const": true
+        },
+        "seconds": {
+          "description": "The number of seconds after the anchor time that the file will expire. Must be between 3600 (1 hour) and 2592000 (30 days).",
+          "type": "integer",
+          "format": "int64",
+          "minimum": 3600,
+          "maximum": 2592000
+        }
+      },
+      "required": [
+        "anchor",
+        "seconds"
+      ]
+    },
+    "shape-15": {
+      "default": {},
+      "description": "User-provided metadata associated with the file",
+      "type": "object"
+    }
+  },
+  "operations": {
+    "cloudflare:cloudflare-images-create-authenticated-direct-upload-url-v-2": {
+      "catalog": "cloudflare",
+      "path": "/accounts/{account_id}/images/v2/direct_upload",
+      "method": "POST",
+      "operationId": "cloudflare-images-create-authenticated-direct-upload-url-v-2",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/images_image_direct_upload_request_v2",
+      "root": {
+        "type": "object"
+      },
+      "propertyNames": [
+        "creator",
+        "expiry",
+        "id",
+        "metadata",
+        "requireSignedURLs"
+      ],
+      "fields": {
+        "metadata": "shape-0"
+      },
+      "encoding": {
+        "metadata": {
+          "x-operations-form-style": "json-text"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": false
+    },
+    "cloudflare:cloudflare-images-upload-an-image-via-url": {
+      "catalog": "cloudflare",
+      "path": "/accounts/{account_id}/images/v1",
+      "method": "POST",
+      "operationId": "cloudflare-images-upload-an-image-via-url",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/images_image_basic_upload",
+      "root": {
+        "type": "object"
+      },
+      "propertyNames": [
+        "creator",
+        "file",
+        "id",
+        "metadata",
+        "requireSignedURLs",
+        "url"
+      ],
+      "fields": {
+        "metadata": "shape-1"
+      },
+      "encoding": {
+        "metadata": {
+          "x-operations-form-style": "json-text"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": false
+    },
+    "gitlab:postApiV4BulkImports": {
+      "catalog": "gitlab",
+      "path": "/api/v4/bulk_imports",
+      "method": "POST",
+      "operationId": "postApiV4BulkImports",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "application/x-www-form-urlencoded"
+      ],
+      "mediaType": "application/x-www-form-urlencoded",
+      "schemaReference": "#/components/schemas/postApiV4BulkImportsRequest",
+      "root": {
+        "type": "object",
+        "required": [
+          "configuration",
+          "entities"
+        ]
+      },
+      "propertyNames": [
+        "configuration",
+        "entities"
+      ],
+      "fields": {},
+      "encoding": {},
+      "mode": "json",
+      "gitlabJson": false
+    },
+    "gitlab:postApiV4Groups": {
+      "catalog": "gitlab",
+      "path": "/api/v4/groups",
+      "method": "POST",
+      "operationId": "postApiV4Groups",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/postApiV4GroupsRequest",
+      "root": {
+        "type": "object",
+        "required": [
+          "name",
+          "path"
+        ]
+      },
+      "propertyNames": [
+        "ai_settings_attributes",
+        "amazon_q_auto_review_enabled",
+        "auto_devops_enabled",
+        "avatar",
+        "crm_enabled",
+        "default_branch",
+        "default_branch_protection",
+        "default_branch_protection_defaults",
+        "description",
+        "duo_auto_mode_availability",
+        "duo_availability",
+        "duo_custom_agents_availability",
+        "duo_custom_flows_availability",
+        "duo_external_agents_availability",
+        "duo_foundational_flows_availability",
+        "duo_remote_flows_availability",
+        "emails_disabled",
+        "emails_enabled",
+        "enabled_git_access_protocol",
+        "experiment_features_enabled",
+        "extra_shared_runners_minutes_limit",
+        "foundational_agents_statuses",
+        "ldap_access",
+        "ldap_cn",
+        "lfs_enabled",
+        "lock_resource_access_token_notify_inherited",
+        "membership_lock",
+        "mentions_disabled",
+        "model_prompt_cache_enabled",
+        "name",
+        "organization_id",
+        "parent_id",
+        "path",
+        "project_creation_level",
+        "request_access_enabled",
+        "require_two_factor_authentication",
+        "resource_access_token_notify_inherited",
+        "share_with_group_lock",
+        "shared_runners_minutes_limit",
+        "show_diff_preview_in_email",
+        "subgroup_creation_level",
+        "tool_approval_for_session_availability",
+        "two_factor_grace_period",
+        "visibility",
+        "wiki_access_level"
+      ],
+      "fields": {
+        "default_branch_protection_defaults": "shape-2",
+        "foundational_agents_statuses": "shape-3",
+        "ai_settings_attributes": "shape-4"
+      },
+      "encoding": {
+        "default_branch_protection_defaults": {
+          "x-operations-form-style": "rack"
+        },
+        "foundational_agents_statuses": {
+          "x-operations-form-style": "rack"
+        },
+        "ai_settings_attributes": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "gitlab:postApiV4Projects": {
+      "catalog": "gitlab",
+      "path": "/api/v4/projects",
+      "method": "POST",
+      "operationId": "postApiV4Projects",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": false
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/postApiV4ProjectsRequest",
+      "root": {
+        "type": "object"
+      },
+      "propertyNames": [
+        "allow_merge_on_skipped_pipeline",
+        "analytics_access_level",
+        "approvals_before_merge",
+        "auto_cancel_pending_pipelines",
+        "auto_devops_deploy_strategy",
+        "auto_devops_enabled",
+        "auto_duo_code_review_enabled",
+        "autoclose_referenced_issues",
+        "avatar",
+        "build_git_strategy",
+        "build_timeout",
+        "builds_access_level",
+        "ci_config_path",
+        "cicd_catalog_enabled",
+        "container_expiration_policy_attributes",
+        "container_registry_access_level",
+        "container_registry_enabled",
+        "default_branch",
+        "description",
+        "duo_code_review_decisions_enabled",
+        "duo_dependency_bump_breaking_changes_enabled",
+        "duo_remote_flows_enabled",
+        "duo_sast_fp_detection_enabled",
+        "duo_sast_vr_workflow_enabled",
+        "duo_secret_detection_fp_enabled",
+        "emails_disabled",
+        "emails_enabled",
+        "enforce_auth_checks_on_uploads",
+        "environments_access_level",
+        "external_authorization_classification_label",
+        "feature_flags_access_level",
+        "forking_access_level",
+        "group_runners_enabled",
+        "group_with_project_templates_id",
+        "import_url",
+        "infrastructure_access_level",
+        "initialize_with_readme",
+        "issue_branch_template",
+        "issues_access_level",
+        "issues_enabled",
+        "jobs_enabled",
+        "lfs_enabled",
+        "merge_commit_template",
+        "merge_method",
+        "merge_request_title_regex",
+        "merge_request_title_regex_description",
+        "merge_requests_access_level",
+        "merge_requests_enabled",
+        "mirror",
+        "mirror_trigger_builds",
+        "model_experiments_access_level",
+        "model_registry_access_level",
+        "monitor_access_level",
+        "mr_default_target_self",
+        "mr_default_title_template",
+        "name",
+        "namespace_id",
+        "only_allow_merge_if_all_discussions_are_resolved",
+        "only_allow_merge_if_all_status_checks_passed",
+        "only_allow_merge_if_pipeline_succeeds",
+        "package_registry_access_level",
+        "packages_enabled",
+        "pages_access_level",
+        "path",
+        "prevent_merge_without_jira_issue",
+        "printing_merge_request_link_enabled",
+        "public_builds",
+        "public_jobs",
+        "releases_access_level",
+        "remove_source_branch_after_merge",
+        "repository_access_level",
+        "repository_object_format",
+        "repository_storage",
+        "request_access_enabled",
+        "requirements_access_level",
+        "resolve_outdated_diff_discussions",
+        "resource_group_default_process_mode",
+        "security_and_compliance_access_level",
+        "service_desk_enabled",
+        "shared_runners_enabled",
+        "show_default_award_emojis",
+        "show_diff_preview_in_email",
+        "snippets_access_level",
+        "snippets_enabled",
+        "spp_repository_pipeline_access",
+        "squash_commit_template",
+        "squash_option",
+        "suggestion_commit_message",
+        "tag_list",
+        "template_name",
+        "template_project_id",
+        "topics",
+        "use_custom_template",
+        "visibility",
+        "warn_about_potentially_unwanted_characters",
+        "wiki_access_level",
+        "wiki_enabled"
+      ],
+      "fields": {
+        "container_expiration_policy_attributes": "shape-5",
+        "tag_list": "shape-6",
+        "topics": "shape-7"
+      },
+      "encoding": {
+        "container_expiration_policy_attributes": {
+          "x-operations-form-style": "rack"
+        },
+        "tag_list": {
+          "x-operations-form-style": "rack"
+        },
+        "topics": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "gitlab:postApiV4ProjectsImport": {
+      "catalog": "gitlab",
+      "path": "/api/v4/projects/import",
+      "method": "POST",
+      "operationId": "postApiV4ProjectsImport",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/postApiV4ProjectsImportRequest",
+      "root": {
+        "type": "object",
+        "required": [
+          "path",
+          "file"
+        ]
+      },
+      "propertyNames": [
+        "file",
+        "file.etag",
+        "file.md5",
+        "file.name",
+        "file.path",
+        "file.remote_id",
+        "file.remote_url",
+        "file.sha1",
+        "file.sha256",
+        "file.size",
+        "file.type",
+        "name",
+        "namespace",
+        "namespace_id",
+        "namespace_path",
+        "override_params",
+        "overwrite",
+        "path"
+      ],
+      "fields": {
+        "override_params": "shape-8"
+      },
+      "encoding": {
+        "override_params": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "gitlab:postApiV4ProjectsRemoteImport": {
+      "catalog": "gitlab",
+      "path": "/api/v4/projects/remote-import",
+      "method": "POST",
+      "operationId": "postApiV4ProjectsRemoteImport",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/postApiV4ProjectsRemoteImportRequest",
+      "root": {
+        "type": "object",
+        "required": [
+          "url",
+          "path"
+        ]
+      },
+      "propertyNames": [
+        "name",
+        "namespace",
+        "namespace_id",
+        "namespace_path",
+        "override_params",
+        "overwrite",
+        "path",
+        "url"
+      ],
+      "fields": {
+        "override_params": "shape-8"
+      },
+      "encoding": {
+        "override_params": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "gitlab:postApiV4ProjectsRemoteImportS3": {
+      "catalog": "gitlab",
+      "path": "/api/v4/projects/remote-import-s3",
+      "method": "POST",
+      "operationId": "postApiV4ProjectsRemoteImportS3",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/postApiV4ProjectsRemoteImportS3Request",
+      "root": {
+        "type": "object",
+        "required": [
+          "region",
+          "bucket_name",
+          "file_key",
+          "access_key_id",
+          "secret_access_key",
+          "path"
+        ]
+      },
+      "propertyNames": [
+        "access_key_id",
+        "bucket_name",
+        "file_key",
+        "name",
+        "namespace",
+        "namespace_id",
+        "namespace_path",
+        "override_params",
+        "overwrite",
+        "path",
+        "region",
+        "secret_access_key"
+      ],
+      "fields": {
+        "override_params": "shape-8"
+      },
+      "encoding": {
+        "override_params": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "gitlab:postApiV4ProjectsUserUserId": {
+      "catalog": "gitlab",
+      "path": "/api/v4/projects/user/{user_id}",
+      "method": "POST",
+      "operationId": "postApiV4ProjectsUserUserId",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/postApiV4ProjectsUserUserIdRequest",
+      "root": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "propertyNames": [
+        "allow_merge_on_skipped_pipeline",
+        "analytics_access_level",
+        "approvals_before_merge",
+        "auto_cancel_pending_pipelines",
+        "auto_devops_deploy_strategy",
+        "auto_devops_enabled",
+        "auto_duo_code_review_enabled",
+        "autoclose_referenced_issues",
+        "avatar",
+        "build_git_strategy",
+        "build_timeout",
+        "builds_access_level",
+        "ci_config_path",
+        "cicd_catalog_enabled",
+        "container_expiration_policy_attributes",
+        "container_registry_access_level",
+        "container_registry_enabled",
+        "default_branch",
+        "description",
+        "duo_code_review_decisions_enabled",
+        "duo_dependency_bump_breaking_changes_enabled",
+        "duo_remote_flows_enabled",
+        "duo_sast_fp_detection_enabled",
+        "duo_sast_vr_workflow_enabled",
+        "duo_secret_detection_fp_enabled",
+        "emails_disabled",
+        "emails_enabled",
+        "enforce_auth_checks_on_uploads",
+        "environments_access_level",
+        "external_authorization_classification_label",
+        "feature_flags_access_level",
+        "forking_access_level",
+        "group_runners_enabled",
+        "group_with_project_templates_id",
+        "import_url",
+        "infrastructure_access_level",
+        "initialize_with_readme",
+        "issue_branch_template",
+        "issues_access_level",
+        "issues_enabled",
+        "jobs_enabled",
+        "lfs_enabled",
+        "merge_commit_template",
+        "merge_method",
+        "merge_request_title_regex",
+        "merge_request_title_regex_description",
+        "merge_requests_access_level",
+        "merge_requests_enabled",
+        "mirror",
+        "mirror_trigger_builds",
+        "model_experiments_access_level",
+        "model_registry_access_level",
+        "monitor_access_level",
+        "mr_default_target_self",
+        "mr_default_title_template",
+        "name",
+        "namespace_id",
+        "only_allow_merge_if_all_discussions_are_resolved",
+        "only_allow_merge_if_all_status_checks_passed",
+        "only_allow_merge_if_pipeline_succeeds",
+        "package_registry_access_level",
+        "packages_enabled",
+        "pages_access_level",
+        "path",
+        "prevent_merge_without_jira_issue",
+        "printing_merge_request_link_enabled",
+        "public_builds",
+        "public_jobs",
+        "releases_access_level",
+        "remove_source_branch_after_merge",
+        "repository_access_level",
+        "repository_object_format",
+        "repository_storage",
+        "request_access_enabled",
+        "requirements_access_level",
+        "resolve_outdated_diff_discussions",
+        "resource_group_default_process_mode",
+        "security_and_compliance_access_level",
+        "service_desk_enabled",
+        "shared_runners_enabled",
+        "show_default_award_emojis",
+        "show_diff_preview_in_email",
+        "snippets_access_level",
+        "snippets_enabled",
+        "spp_repository_pipeline_access",
+        "squash_commit_template",
+        "squash_option",
+        "suggestion_commit_message",
+        "tag_list",
+        "template_name",
+        "template_project_id",
+        "topics",
+        "use_custom_template",
+        "visibility",
+        "warn_about_potentially_unwanted_characters",
+        "wiki_access_level",
+        "wiki_enabled"
+      ],
+      "fields": {
+        "container_expiration_policy_attributes": "shape-5",
+        "tag_list": "shape-6",
+        "topics": "shape-7"
+      },
+      "encoding": {
+        "container_expiration_policy_attributes": {
+          "x-operations-form-style": "rack"
+        },
+        "tag_list": {
+          "x-operations-form-style": "rack"
+        },
+        "topics": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "gitlab:putApiV4GroupsId": {
+      "catalog": "gitlab",
+      "path": "/api/v4/groups/{id}",
+      "method": "PUT",
+      "operationId": "putApiV4GroupsId",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": false
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/putApiV4GroupsIdRequest",
+      "root": {
+        "type": "object"
+      },
+      "propertyNames": [
+        "ai_audit_events_storage_enabled",
+        "ai_settings_attributes",
+        "allow_merge_on_skipped_pipeline",
+        "allow_personal_snippets",
+        "allowed_email_domains_list",
+        "amazon_q_auto_review_enabled",
+        "auto_ban_user_on_excessive_projects_download",
+        "auto_devops_enabled",
+        "auto_duo_code_review_enabled",
+        "avatar",
+        "built_in_project_templates_enabled",
+        "create_code_review_flow_consent",
+        "crm_enabled",
+        "default_branch",
+        "default_branch_protection",
+        "default_branch_protection_defaults",
+        "description",
+        "duo_auto_mode_availability",
+        "duo_availability",
+        "duo_code_review_decisions_enabled",
+        "duo_core_features_enabled",
+        "duo_custom_agents_availability",
+        "duo_custom_flows_availability",
+        "duo_external_agents_availability",
+        "duo_features_enabled",
+        "duo_foundational_flows_availability",
+        "duo_namespace_access_rules",
+        "duo_remote_flows_availability",
+        "duo_template_project_id",
+        "emails_disabled",
+        "emails_enabled",
+        "enabled_foundational_flows",
+        "enabled_git_access_protocol",
+        "experiment_features_enabled",
+        "extra_shared_runners_minutes_limit",
+        "file_template_project_id",
+        "foundational_agents_statuses",
+        "ip_restriction_ranges",
+        "ldap_access",
+        "ldap_cn",
+        "lfs_enabled",
+        "lock_ai_audit_events_storage_enabled",
+        "lock_built_in_project_templates_enabled",
+        "lock_duo_features_enabled",
+        "lock_math_rendering_limits_enabled",
+        "lock_require_sha_for_merge",
+        "lock_resource_access_token_notify_inherited",
+        "math_rendering_limits_enabled",
+        "max_artifacts_size",
+        "membership_lock",
+        "mentions_disabled",
+        "model_prompt_cache_enabled",
+        "name",
+        "only_allow_merge_if_all_discussions_are_resolved",
+        "only_allow_merge_if_pipeline_succeeds",
+        "path",
+        "prevent_forking_outside_group",
+        "prevent_sharing_groups_outside_hierarchy",
+        "project_creation_level",
+        "request_access_enabled",
+        "require_sha_for_merge",
+        "require_two_factor_authentication",
+        "resource_access_token_notify_inherited",
+        "service_access_tokens_expiration_enforced",
+        "share_with_group_lock",
+        "shared_runners_minutes_limit",
+        "shared_runners_setting",
+        "show_diff_preview_in_email",
+        "step_up_auth_required_oauth_provider",
+        "subgroup_creation_level",
+        "tool_approval_for_session_availability",
+        "two_factor_grace_period",
+        "unique_project_download_limit",
+        "unique_project_download_limit_alertlist",
+        "unique_project_download_limit_allowlist",
+        "unique_project_download_limit_interval_in_seconds",
+        "visibility",
+        "web_based_commit_signing_enabled",
+        "wiki_access_level"
+      ],
+      "fields": {
+        "default_branch_protection_defaults": "shape-2",
+        "foundational_agents_statuses": "shape-3",
+        "ai_settings_attributes": "shape-4",
+        "unique_project_download_limit_allowlist": "shape-9",
+        "unique_project_download_limit_alertlist": "shape-10",
+        "enabled_foundational_flows": "shape-11",
+        "duo_namespace_access_rules": "shape-12"
+      },
+      "encoding": {
+        "default_branch_protection_defaults": {
+          "x-operations-form-style": "rack"
+        },
+        "foundational_agents_statuses": {
+          "x-operations-form-style": "rack"
+        },
+        "ai_settings_attributes": {
+          "x-operations-form-style": "rack"
+        },
+        "unique_project_download_limit_allowlist": {
+          "x-operations-form-style": "rack"
+        },
+        "unique_project_download_limit_alertlist": {
+          "x-operations-form-style": "rack"
+        },
+        "enabled_foundational_flows": {
+          "x-operations-form-style": "rack"
+        },
+        "duo_namespace_access_rules": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "gitlab:putApiV4ProjectsId": {
+      "catalog": "gitlab",
+      "path": "/api/v4/projects/{id}",
+      "method": "PUT",
+      "operationId": "putApiV4ProjectsId",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": false
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/putApiV4ProjectsIdRequest",
+      "root": {
+        "type": "object"
+      },
+      "propertyNames": [
+        "allow_merge_on_skipped_pipeline",
+        "allow_pipeline_trigger_approve_deployment",
+        "analytics_access_level",
+        "approvals_before_merge",
+        "auto_cancel_pending_pipelines",
+        "auto_devops_deploy_strategy",
+        "auto_devops_enabled",
+        "auto_duo_code_review_enabled",
+        "autoclose_referenced_issues",
+        "automatic_rebase_enabled",
+        "avatar",
+        "build_git_strategy",
+        "build_timeout",
+        "builds_access_level",
+        "ci_allow_fork_pipelines_to_run_in_parent_project",
+        "ci_config_path",
+        "ci_default_git_depth",
+        "ci_delete_pipelines_in_seconds",
+        "ci_display_pipeline_variables",
+        "ci_forward_deployment_enabled",
+        "ci_forward_deployment_rollback_allowed",
+        "ci_id_token_sub_claim_components",
+        "ci_pipeline_variables_minimum_override_role",
+        "ci_push_repository_for_job_token_allowed",
+        "ci_restrict_pipeline_cancellation_role",
+        "ci_separated_caches",
+        "ci_skip_branch_pipelines_for_mrs",
+        "cicd_catalog_enabled",
+        "container_expiration_policy_attributes",
+        "container_registry_access_level",
+        "container_registry_enabled",
+        "default_branch",
+        "description",
+        "duo_code_review_decisions_enabled",
+        "duo_dependency_bump_breaking_changes_enabled",
+        "duo_remote_flows_enabled",
+        "duo_sast_fp_detection_enabled",
+        "duo_sast_vr_workflow_enabled",
+        "duo_secret_detection_fp_enabled",
+        "emails_disabled",
+        "emails_enabled",
+        "enforce_auth_checks_on_uploads",
+        "environments_access_level",
+        "external_authorization_classification_label",
+        "fallback_approvals_required",
+        "feature_flags_access_level",
+        "feature_flags_minimum_role",
+        "forking_access_level",
+        "group_runners_enabled",
+        "import_url",
+        "infrastructure_access_level",
+        "issue_branch_template",
+        "issues_access_level",
+        "issues_enabled",
+        "issues_template",
+        "jobs_enabled",
+        "keep_latest_artifact",
+        "lfs_enabled",
+        "max_artifacts_size",
+        "max_pipelines_per_merge_train",
+        "merge_commit_template",
+        "merge_method",
+        "merge_pipelines_enabled",
+        "merge_request_title_regex",
+        "merge_request_title_regex_description",
+        "merge_requests_access_level",
+        "merge_requests_enabled",
+        "merge_requests_template",
+        "merge_train_enforcement",
+        "merge_trains_enabled",
+        "merge_trains_skip_train_allowed",
+        "mirror",
+        "mirror_branch_regex",
+        "mirror_overwrites_diverged_branches",
+        "mirror_trigger_builds",
+        "mirror_user_id",
+        "model_experiments_access_level",
+        "model_registry_access_level",
+        "monitor_access_level",
+        "mr_default_target_self",
+        "mr_default_title_template",
+        "name",
+        "only_allow_merge_if_all_discussions_are_resolved",
+        "only_allow_merge_if_all_status_checks_passed",
+        "only_allow_merge_if_pipeline_succeeds",
+        "only_mirror_protected_branches",
+        "package_registry_access_level",
+        "packages_enabled",
+        "pages_access_level",
+        "path",
+        "prevent_merge_without_jira_issue",
+        "printing_merge_request_link_enabled",
+        "protect_merge_request_pipelines",
+        "public_builds",
+        "public_jobs",
+        "releases_access_level",
+        "remove_source_branch_after_merge",
+        "repository_access_level",
+        "repository_storage",
+        "request_access_enabled",
+        "requirements_access_level",
+        "resolve_outdated_diff_discussions",
+        "resource_group_default_process_mode",
+        "restrict_user_defined_variables",
+        "reviewer_assignment_strategy",
+        "security_and_compliance_access_level",
+        "security_policy_pipeline_must_succeed",
+        "service_desk_enabled",
+        "shared_runners_enabled",
+        "show_default_award_emojis",
+        "show_diff_preview_in_email",
+        "snippets_access_level",
+        "snippets_enabled",
+        "spp_repository_pipeline_access",
+        "squash_commit_template",
+        "squash_option",
+        "suggestion_commit_message",
+        "tag_list",
+        "topics",
+        "visibility",
+        "warn_about_potentially_unwanted_characters",
+        "web_based_commit_signing_enabled",
+        "wiki_access_level",
+        "wiki_enabled"
+      ],
+      "fields": {
+        "container_expiration_policy_attributes": "shape-5",
+        "tag_list": "shape-6",
+        "topics": "shape-7",
+        "ci_id_token_sub_claim_components": "shape-13"
+      },
+      "encoding": {
+        "container_expiration_policy_attributes": {
+          "x-operations-form-style": "rack"
+        },
+        "tag_list": {
+          "x-operations-form-style": "rack"
+        },
+        "topics": {
+          "x-operations-form-style": "rack"
+        },
+        "ci_id_token_sub_claim_components": {
+          "x-operations-form-style": "rack"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": true
+    },
+    "openai:createFile": {
+      "catalog": "openai",
+      "path": "/files",
+      "method": "POST",
+      "operationId": "createFile",
+      "requestReference": null,
+      "bodyHeader": {
+        "required": true
+      },
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": "#/components/schemas/CreateFileRequest",
+      "root": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "purpose"
+        ]
+      },
+      "propertyNames": [
+        "expires_after",
+        "file",
+        "purpose"
+      ],
+      "fields": {
+        "expires_after": "shape-14"
+      },
+      "encoding": {
+        "expires_after": {
+          "x-operations-form-style": "brackets"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": false
+    },
+    "replicate:files.create": {
+      "catalog": "replicate",
+      "path": "/files",
+      "method": "POST",
+      "operationId": "files.create",
+      "requestReference": null,
+      "bodyHeader": {},
+      "mediaTypes": [
+        "multipart/form-data"
+      ],
+      "mediaType": "multipart/form-data",
+      "schemaReference": null,
+      "root": {
+        "required": [
+          "content"
+        ],
+        "type": "object"
+      },
+      "propertyNames": [
+        "content",
+        "filename",
+        "metadata",
+        "type"
+      ],
+      "fields": {
+        "metadata": "shape-15"
+      },
+      "encoding": {
+        "metadata": {
+          "x-operations-form-style": "json-text",
+          "contentType": "application/json"
+        }
+      },
+      "mode": "multipart",
+      "gitlabJson": false
+    }
+  },
+  "evidence": {
+    "gitlab": "https://docs.gitlab.com/api/rest/",
+    "bulkImports": "https://docs.gitlab.com/api/bulk_imports/",
+    "cloudflare": "https://developers.cloudflare.com/images/storage/upload-images/direct-creator-upload/",
+    "replicate": "https://sdks.replicate.com/typescript/resources/files/methods/create/",
+    "openai": "https://github.com/openai/openai-python/blob/c6fc264689d384d5caec150fafa1a9567c4a3f56/src/openai/_base_client.py"
+  }
+}

@@ -1,0 +1,427 @@
+{
+  "version": 1,
+  "sources": {
+    "cloudflare": {
+      "sha256": "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778",
+      "title": "Cloudflare API",
+      "version": "4.0.0",
+      "openapi": "3.0.3"
+    },
+    "openai": {
+      "sha256": "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
+      "title": "OpenAI API",
+      "version": "2.3.0",
+      "openapi": "3.1.0"
+    }
+  },
+  "operations": {
+    "cloudflare:namespace-worker-patch-script-settings": {
+      "catalog": "cloudflare",
+      "method": "PATCH",
+      "path": "/accounts/{account_id}/workers/dispatch/namespaces/{dispatch_namespace}/scripts/{script_name}/settings",
+      "operationId": "namespace-worker-patch-script-settings",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "settings": {
+                "contentType": "application/json"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "settings": {
+                  "$ref": "#/components/schemas/workers_namespace-script-and-version-settings-item"
+                }
+              }
+            }
+          }
+        }
+      },
+      "filenameParts": []
+    },
+    "cloudflare:namespace-worker-put-script-content": {
+      "catalog": "cloudflare",
+      "method": "PUT",
+      "path": "/accounts/{account_id}/workers/dispatch/namespaces/{dispatch_namespace}/scripts/{script_name}/content",
+      "operationId": "namespace-worker-put-script-content",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "files": {
+                "contentType": "application/javascript+module, text/javascript+module, application/javascript, text/javascript, text/x-python, text/x-python-requirement, application/wasm, text/plain, application/octet-stream, application/source-map"
+              },
+              "metadata": {
+                "contentType": "application/json"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "files": {
+                  "description": "An array of modules (often JavaScript files) comprising a Worker script. At least one module must be present and referenced in the metadata as `main_module` or `body_part` by filename.<br/>Possible Content-Type(s) are: `application/javascript+module`, `text/javascript+module`, `application/javascript`, `text/javascript`, `text/x-python`, `text/x-python-requirement`, `application/wasm`, `text/plain`, `application/octet-stream`, `application/source-map`.",
+                  "type": "array",
+                  "items": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "x-stainless-collection-type": "set"
+                },
+                "metadata": {
+                  "description": "JSON-encoded metadata about the uploaded parts and Worker configuration.",
+                  "type": "object",
+                  "properties": {
+                    "body_part": {
+                      "description": "Name of the part in the multipart request that contains the script (e.g. the file adding a listener to the `fetch` event). Indicates a `service worker syntax` Worker.",
+                      "type": "string",
+                      "example": "worker.js"
+                    },
+                    "main_module": {
+                      "description": "Name of the part in the multipart request that contains the main module (e.g. the file exporting a `fetch` handler). Indicates a `module syntax` Worker.",
+                      "type": "string",
+                      "example": "worker.js"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "metadata"
+              ]
+            }
+          }
+        }
+      },
+      "filenameParts": [
+        "files"
+      ]
+    },
+    "cloudflare:pages-deployment-create-deployment": {
+      "catalog": "cloudflare",
+      "method": "POST",
+      "path": "/accounts/{account_id}/pages/projects/{project_name}/deployments",
+      "operationId": "pages-deployment-create-deployment",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "_headers": {
+                "contentType": "text/plain"
+              },
+              "_redirects": {
+                "contentType": "text/plain"
+              },
+              "_routes.json": {
+                "contentType": "application/json"
+              },
+              "_worker.bundle": {
+                "contentType": "multipart/form-data"
+              },
+              "_worker.js": {
+                "contentType": "application/javascript+module, text/javascript+module, application/javascript, text/javascript"
+              },
+              "functions-filepath-routing-config.json": {
+                "contentType": "application/json"
+              },
+              "manifest": {
+                "contentType": "application/json"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "_headers": {
+                  "description": "Headers configuration file for the deployment.",
+                  "type": "string",
+                  "format": "binary"
+                },
+                "_redirects": {
+                  "description": "Redirects configuration file for the deployment.",
+                  "type": "string",
+                  "format": "binary"
+                },
+                "_routes.json": {
+                  "description": "Routes configuration file defining routing rules.",
+                  "type": "string",
+                  "format": "binary"
+                },
+                "_worker.bundle": {
+                  "description": "Worker bundle file in multipart/form-data format. Mutually exclusive with `_worker.js`.\nCannot specify both `_worker.js` and `_worker.bundle` in the same request.\nMaximum size: 25 MiB.\n",
+                  "type": "string",
+                  "format": "binary"
+                },
+                "_worker.js": {
+                  "description": "Worker JavaScript file. Mutually exclusive with `_worker.bundle`.\nCannot specify both `_worker.js` and `_worker.bundle` in the same request.\n",
+                  "type": "string",
+                  "format": "binary"
+                },
+                "branch": {
+                  "description": "Git branch to deploy. Uses the branch's `HEAD`; defaults to the project's production branch.",
+                  "type": "string",
+                  "example": "staging",
+                  "x-auditable": true
+                },
+                "commit_dirty": {
+                  "description": "Whether the associated Git working tree has uncommitted changes. Provide `true` or `false`.",
+                  "type": "string",
+                  "example": "false",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                },
+                "commit_hash": {
+                  "description": "Git commit SHA associated with the deployment.",
+                  "type": "string",
+                  "example": "a1b2c3d4e5f6"
+                },
+                "commit_message": {
+                  "description": "Git commit message associated with the deployment.",
+                  "type": "string",
+                  "example": "Update homepage"
+                },
+                "functions-filepath-routing-config.json": {
+                  "description": "Functions routing configuration file.",
+                  "type": "string",
+                  "format": "binary"
+                },
+                "manifest": {
+                  "description": "JSON-encoded object mapping deployment file paths to their uploaded content hashes.\nRequired for Direct Upload deployments. Maximum 20,000 entries.\n",
+                  "type": "string",
+                  "example": "{\"index.html\": \"abc123\", \"style.css\": \"def456\"}"
+                },
+                "pages_build_output_dir": {
+                  "description": "The build output directory path.",
+                  "type": "string",
+                  "example": "dist"
+                },
+                "wrangler_config_hash": {
+                  "description": "Hash of the Wrangler configuration file used for this deployment.",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "filenameParts": []
+    },
+    "cloudflare:worker-environment-put-script-content": {
+      "catalog": "cloudflare",
+      "method": "PUT",
+      "path": "/accounts/{account_id}/workers/services/{service_name}/environments/{environment_name}/content",
+      "operationId": "worker-environment-put-script-content",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "files": {
+                "contentType": "application/javascript+module, text/javascript+module, application/javascript, text/javascript, text/x-python, text/x-python-requirement, application/wasm, text/plain, application/octet-stream, application/source-map"
+              },
+              "metadata": {
+                "contentType": "application/json"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "files": {
+                  "description": "An array of modules (often JavaScript files) comprising a Worker script. At least one module must be present and referenced in the metadata as `main_module` or `body_part` by filename.<br/>Possible Content-Type(s) are: `application/javascript+module`, `text/javascript+module`, `application/javascript`, `text/javascript`, `text/x-python`, `text/x-python-requirement`, `application/wasm`, `text/plain`, `application/octet-stream`, `application/source-map`.",
+                  "type": "array",
+                  "items": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "x-stainless-collection-type": "set"
+                },
+                "metadata": {
+                  "description": "JSON-encoded metadata about the uploaded parts and Worker configuration.",
+                  "type": "object",
+                  "properties": {
+                    "body_part": {
+                      "description": "Name of the part in the multipart request that contains the script (e.g. the file adding a listener to the `fetch` event). Indicates a `service worker syntax` Worker.",
+                      "type": "string",
+                      "example": "worker.js"
+                    },
+                    "main_module": {
+                      "description": "Name of the part in the multipart request that contains the main module (e.g. the file exporting a `fetch` handler). Indicates a `module syntax` Worker.",
+                      "type": "string",
+                      "example": "worker.js"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "metadata"
+              ]
+            }
+          }
+        }
+      },
+      "filenameParts": [
+        "files"
+      ]
+    },
+    "cloudflare:worker-script-patch-settings": {
+      "catalog": "cloudflare",
+      "method": "PATCH",
+      "path": "/accounts/{account_id}/workers/scripts/{script_name}/settings",
+      "operationId": "worker-script-patch-settings",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "settings": {
+                "contentType": "application/json"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "settings": {
+                  "$ref": "#/components/schemas/workers_script-and-version-settings-item"
+                }
+              }
+            }
+          }
+        }
+      },
+      "filenameParts": []
+    },
+    "cloudflare:worker-script-put-content": {
+      "catalog": "cloudflare",
+      "method": "PUT",
+      "path": "/accounts/{account_id}/workers/scripts/{script_name}/content",
+      "operationId": "worker-script-put-content",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "files": {
+                "contentType": "application/javascript+module, text/javascript+module, application/javascript, text/javascript, text/x-python, text/x-python-requirement, application/wasm, text/plain, application/octet-stream, application/source-map"
+              },
+              "metadata": {
+                "contentType": "application/json"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "files": {
+                  "description": "An array of modules (often JavaScript files) comprising a Worker script. At least one module must be present and referenced in the metadata as `main_module` or `body_part` by filename.<br/>Possible Content-Type(s) are: `application/javascript+module`, `text/javascript+module`, `application/javascript`, `text/javascript`, `text/x-python`, `text/x-python-requirement`, `application/wasm`, `text/plain`, `application/octet-stream`, `application/source-map`.",
+                  "type": "array",
+                  "items": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "x-stainless-collection-type": "set"
+                },
+                "metadata": {
+                  "description": "JSON-encoded metadata about the uploaded parts and Worker configuration.",
+                  "type": "object",
+                  "properties": {
+                    "body_part": {
+                      "description": "Name of the uploaded file that contains the Worker script (e.g. the file adding a listener to the `fetch` event). Indicates a `service worker syntax` Worker.",
+                      "type": "string",
+                      "example": "worker.js"
+                    },
+                    "main_module": {
+                      "description": "Name of the uploaded file that contains the main module (e.g. the file exporting a `fetch` handler). Indicates a `module syntax` Worker.",
+                      "type": "string",
+                      "example": "worker.js"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "metadata"
+              ]
+            }
+          }
+        }
+      },
+      "filenameParts": [
+        "files"
+      ]
+    },
+    "cloudflare:workers-kv-namespace-write-key-value-pair-with-metadata": {
+      "catalog": "cloudflare",
+      "method": "PUT",
+      "path": "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}/values/{key_name}",
+      "operationId": "workers-kv-namespace-write-key-value-pair-with-metadata",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/octet-stream": {
+            "schema": {
+              "$ref": "#/components/schemas/workers-kv_value"
+            },
+            "x-stainless-only": [
+              "http"
+            ]
+          },
+          "multipart/form-data": {
+            "encoding": {
+              "metadata": {
+                "contentType": "application/json"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "metadata": {
+                  "$ref": "#/components/schemas/workers-kv_metadata"
+                },
+                "value": {
+                  "$ref": "#/components/schemas/workers-kv_value"
+                }
+              },
+              "required": [
+                "value"
+              ]
+            }
+          }
+        }
+      },
+      "filenameParts": []
+    },
+    "openai:create-realtime-call": {
+      "catalog": "openai",
+      "method": "POST",
+      "path": "/realtime/calls",
+      "operationId": "create-realtime-call",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/RealtimeCallCreateRequest"
+            },
+            "encoding": {
+              "sdp": {
+                "contentType": "application/sdp"
+              },
+              "session": {
+                "contentType": "application/json"
+              }
+            }
+          },
+          "application/sdp": {
+            "schema": {
+              "type": "string",
+              "description": "WebRTC SDP offer. Use this variant when you have previously created an\nephemeral **session token** and are authenticating the request with it.\nRealtime session parameters will be retrieved from the session token."
+            }
+          }
+        }
+      },
+      "filenameParts": []
+    }
+  }
+}

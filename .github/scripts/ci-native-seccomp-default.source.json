@@ -1,0 +1,7 @@
+{
+  "url": "https://raw.githubusercontent.com/moby/profiles/main/seccomp/default.json",
+  "sha256": "6416b47770785a41ac59073cdc77d9fe98517df2799dc83ef207e622de3053f6",
+  "qualifiedProfileSha256": "4bf2f1e2d87e9ad7e9b759944f5dd28a42eee08710d00c3e51e82144da5d49e4",
+  "addedSyscalls": ["clone", "unshare", "mount", "umount2", "pivot_root", "setns"],
+  "qualification": "Codex 0.163.0 owned stored-thread seeding and thread shell operations; Linux x64, nonroot, all capabilities dropped, no-new-privileges, read-only container and isolated home/workspace. The source snapshot is verified by SHA256 rather than following the upstream branch."
+}

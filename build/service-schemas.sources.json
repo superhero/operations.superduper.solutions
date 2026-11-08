@@ -386,7 +386,8 @@
     "name": "Atlassian / Bamboo / Data Center",
     "url": "https://dac-static.atlassian.com/server/bamboo/swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/bamboo/rest",
-    "operationIds": "method-path"
+    "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication"
   },
   {
     "id": "bitbucket-dc",
@@ -498,7 +499,8 @@
     "name": "Atlassian / Jira / Service Management / Data Center",
     "url": "https://dac-static.atlassian.com/server/jira-servicedesk/11.3.swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/jira-servicedesk/rest/",
-    "operationIds": "method-path"
+    "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication"
   },
   {
     "id": "jira-service-management-ops",
@@ -523,7 +525,8 @@
     "name": "Atlassian / Jira / Software / Data Center",
     "url": "https://dac-static.atlassian.com/server/jira/platform/jira_software_dc_11003_swagger.v3.json",
     "provenance": "https://developer.atlassian.com/server/jira/platform/rest/",
-    "operationIds": "method-path"
+    "operationIds": "method-path",
+    "profile": "atlassian-dc-authentication"
   },
   {
     "id": "atlassian-marketplace",

@@ -7,6 +7,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { WebSocketServer } from 'ws';
 import { nativeTlsFixture } from './native-runtime.fixture.mjs';
 import { openDockerSocket } from '../companions/docker/runtime.mjs';
 import { createDockerCompanion } from '../companions/docker/host.mjs';
@@ -14,9 +15,10 @@ import { dockerNativeProfile, dockerNativeApi, dockerNativeOperationId } from '.
 
 export async function dockerNativeFixture(options = {}) {
   const tls = await nativeTlsFixture(), directory = await mkdtemp(join(tmpdir(), 'ops-docker-'));
-  const f = { directory, socketPath: join(directory, 'engine.sock'), hostId: randomUUID(), daemonId: randomUUID(), apiMax: '1.57', apiMin: '1.44',
+  const f = { directory, socketPath: join(directory, options.socketName ?? 'engine.sock'), hostId: randomUUID(), daemonId: randomUUID(), apiMax: '1.57', apiMin: '1.44',
     key: randomBytes(32).toString('base64url'), applicationOrigin: options.applicationOrigin ?? 'https://operations.test', engineRequests: [], requests: [],
-    hold: false, duplex: false, media: 'application/json', status: 200, body: [{ Id: 'synthetic-container', Names: ['/synthetic'], State: 'running' }], held: [], aborted: 0 };
+    hold: false, duplex: false, media: 'application/json', status: 200, body: [{ Id: 'synthetic-container', Names: ['/synthetic'], State: 'running' }], held: [], aborted: 0,
+    attachment: [Buffer.from('synthetic output\n')], attachmentCode: 1000, attachmentHold: false, attachmentClients: new Set(), stdinMessages: 0 };
   let offset = 0; f.now = () => Date.now() + offset; f.advance = value => offset += value;
   const engine = httpServer((req, res) => {
     f.engineRequests.push({ method: req.method, path: req.url });
@@ -34,8 +36,19 @@ export async function dockerNativeFixture(options = {}) {
     }
     answer(404, { message: 'Not an allowed fixture route' });
   });
+  const websockets = new WebSocketServer({ noServer: true, perMessageDeflate: false });
+  engine.on('upgrade', (req, socket, head) => {
+    f.engineRequests.push({ method: req.method, path: req.url, authorization: !!req.headers.authorization, cookie: !!req.headers.cookie });
+    if (req.method !== 'GET' || !/^\/v1\.57\/containers\/[A-Za-z0-9_.-]+\/attach\/ws(?:\?|$)/.test(req.url)) { socket.destroy(); return; }
+    websockets.handleUpgrade(req, socket, head, client => {
+      f.attachmentClients.add(client); client.on('message', () => { f.stdinMessages++; });
+      client.once('close', () => { f.attachmentClients.delete(client); });
+      for (const bytes of f.attachment) client.send(bytes);
+      if (!f.attachmentHold) { if (f.attachmentCode === 1006) client.terminate(); else client.close(f.attachmentCode); }
+    });
+  });
   await new Promise(resolve => engine.listen(f.socketPath, resolve));
-  const runtime = await openDockerSocket({ hostId: f.hostId, socketPath: f.socketPath });
+  const runtime = await openDockerSocket({ hostId: f.hostId, socketPath: f.socketPath, operations: options.operations });
   let companion;
   const server = httpsServer({ key: tls.key, cert: tls.cert }, (req, res) => {
     f.requests.push({ method: req.method, path: req.url, origin: req.headers.origin, authorized: !!req.headers.authorization, cookie: !!req.headers.cookie });
@@ -43,7 +56,7 @@ export async function dockerNativeFixture(options = {}) {
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   f.host = 'https://127.0.0.1:' + server.address().port;
-  companion = createDockerCompanion({ publicOrigin: f.host, allowedOrigins: options.allowedOrigins ?? [f.applicationOrigin], pairingKey: f.key }, { ...runtime, now: f.now });
+  companion = createDockerCompanion({ publicOrigin: f.host, allowedOrigins: options.allowedOrigins ?? [f.applicationOrigin], pairingKey: f.key, operations: options.operations }, { ...runtime, now: f.now });
   f.fetch = (url, init = {}) => new Promise((resolve, reject) => {
     const headers = Object.fromEntries(new Headers(init.headers)); headers.origin ??= f.applicationOrigin;
     const req = request(url, { method: init.method ?? 'GET', headers, signal: init.signal, rejectUnauthorized: false }, res => {
@@ -52,12 +65,12 @@ export async function dockerNativeFixture(options = {}) {
     }); req.on('error', reject); req.end(init.body);
   });
   f.runtime = { now: f.now, fetchRequest: f.fetch };
-  f.scope = { connectionId: randomUUID(), operation: dockerNativeOperationId, apiVersion: dockerNativeApi, fingerprint: 'c'.repeat(64) };
+  f.scope = { connectionId: randomUUID(), operation: options.operation ?? dockerNativeOperationId, apiVersion: dockerNativeApi, fingerprint: 'c'.repeat(64) };
   f.call = async (path, input = { profile: dockerNativeProfile, scope: f.scope }, headers = {}) => {
     const response = await f.fetch(f.host + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + f.key, ...headers }, body: JSON.stringify(input) });
     return { status: response.status, value: await response.json() };
   };
-  f.close = async () => { companion.close(); server.closeAllConnections(); engine.closeAllConnections();
+  f.close = async () => { companion.close(); for (const client of websockets.clients) client.terminate(); websockets.close(); server.closeAllConnections(); engine.closeAllConnections();
     await Promise.all([new Promise(resolve => server.close(resolve)), new Promise(resolve => engine.close(resolve))]);
     await tls.close(); await rm(directory, { recursive: true, force: true }); };
   return f;

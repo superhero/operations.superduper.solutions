@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { nativeObject } from "../native-runtime-contract.ts";
-import { dockerIdentity, dockerScope, dockerReadParams, sameDockerIdentity, sameDockerScope, dockerNativeOperationId, dockerNativeApi,
-  dockerNativeProfile as profile, dockerNativeLimits as limits, type DockerHostIdentity, type DockerReadScope } from "../docker-native-contract.ts";
+import { dockerIdentity, dockerScope, dockerOperationParams, sameDockerIdentity, sameDockerScope, dockerNativeOperationId, dockerNativeApi,
+  dockerNativeAttachOperationId, dockerNativeProfile as profile, dockerNativeLimits as limits, type DockerHostIdentity, type DockerReadScope, type DockerReadOperationId } from "../docker-native-contract.ts";
+import { validateWorkflowBinary } from "../workflow-binary.ts";
+import { binaryContainsSecret } from "../workflow-response-body.ts";
 import { nativeHost } from "./native-runtime-config.ts";
 import { VaultError, type VaultErrorCode } from "./types.ts";
 import type { WorkflowResponse } from "../workflow-execution.ts";
@@ -52,8 +54,8 @@ export class DockerCompanionBroker {
     finally { this.controllers.delete(controller); }
   }
   async check(id: string, host: string, key: string, fingerprint: string, expected: DockerHostIdentity | undefined,
-    guard: () => Promise<void>, signal?: AbortSignal): Promise<Pair> {
-    const scope = dockerScope({ connectionId: id, operation: dockerNativeOperationId, apiVersion: dockerNativeApi, fingerprint });
+    guard: () => Promise<void>, signal?: AbortSignal, operation: DockerReadOperationId = dockerNativeOperationId): Promise<Pair> {
+    const scope = dockerScope({ connectionId: id, operation, apiVersion: dockerNativeApi, fingerprint });
     for (const [id, pair] of this.pairs) if (pair.expiresAt <= (this.runtime.now ?? Date.now)()) this.pairs.delete(id);
     if (!this.pairs.has(id) && this.pairs.size >= 4) throw new VaultError("LIMIT");
     try {
@@ -65,21 +67,29 @@ export class DockerCompanionBroker {
     } catch (error) { this.close(id); throw error; }
   }
   async read(id: string, host: string, key: string, fingerprint: string, expected: DockerHostIdentity, input: unknown,
-    guard: () => Promise<void>, signal?: AbortSignal): Promise<WorkflowResponse> {
+    guard: () => Promise<void>, signal?: AbortSignal, operation: DockerReadOperationId = dockerNativeOperationId): Promise<WorkflowResponse> {
     try {
-      const params = dockerReadParams(input);
+      const params = dockerOperationParams(operation, input);
       let pair = this.pairs.get(id);
-      if (!pair || !this.connected(id) || pair.scope.fingerprint !== fingerprint || pair.host !== nativeHost(host)
-        || !sameDockerIdentity(pair.identity, expected)) pair = await this.check(id, host, key, fingerprint, expected, guard, signal);
+      if (!pair || !this.connected(id) || pair.scope.operation !== operation || pair.scope.fingerprint !== fingerprint || pair.host !== nativeHost(host)
+        || !sameDockerIdentity(pair.identity, expected)) pair = await this.check(id, host, key, fingerprint, expected, guard, signal, operation);
       const data = nativeObject(await this.request(host, key, "/v1/docker/read", pair.scope, { identity: expected, params }, guard, signal), ["profile", "scope", "identity", "response"]);
       if (data.profile !== profile || !sameDockerScope(dockerScope(data.scope), pair.scope) || !sameDockerIdentity(expected, dockerIdentity(data.identity))
         || pair.expiresAt <= (this.runtime.now ?? Date.now)()) throw new VaultError("DOCKER_AUTHORITY");
-      const response = nativeObject(data.response, ["status", "statusText", "headers", "body", "mediaType"]);
-      if (!Number.isInteger(response.status) || (response.status as number) < 200 || (response.status as number) > 599
-        || typeof response.statusText !== "string" || response.statusText.length > 256 || response.mediaType !== "application/json"
+      const binary = operation === dockerNativeAttachOperationId && (data.response as WorkflowResponse)?.status === 101;
+      const response = nativeObject(data.response, ["status", "statusText", "headers", "body", "mediaType", ...(binary ? ["bodyType"] : [])]);
+      if (!Number.isInteger(response.status) || !binary && (response.status as number) < 200 || (response.status as number) > 599
+        || typeof response.statusText !== "string" || response.statusText.length > 256 || response.mediaType !== (binary ? "application/octet-stream" : "application/json")
         || !response.headers || typeof response.headers !== "object" || Array.isArray(response.headers)
         || Object.entries(response.headers).some(([key, value]) => !["content-type", "api-version", "docker-experimental", "ostype", "server"].includes(key) || typeof value !== "string" || value.length > 4096)
-        || response.status === 200 && !Array.isArray(response.body)) throw new VaultError("DOCKER_UNAVAILABLE");
+        || operation === dockerNativeOperationId && response.status === 200 && !Array.isArray(response.body)
+        || operation === dockerNativeAttachOperationId && response.status === 200) throw new VaultError("DOCKER_UNAVAILABLE");
+      if (binary) {
+        if (response.bodyType !== "binary") throw new VaultError("DOCKER_UNAVAILABLE");
+        const file = validateWorkflowBinary(response.body);
+        if (file.mediaType !== "application/octet-stream" || binaryContainsSecret(Uint8Array.from(atob(file.base64), c => c.charCodeAt(0)), [key])) throw new VaultError("REDACTED");
+        response.body = file;
+      }
       return { ...response } as WorkflowResponse;
     } catch (error) { this.close(id); throw error instanceof VaultError ? error : new VaultError("PERMISSION"); }
   }

@@ -4,13 +4,13 @@
 import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { gunzipSync } from 'node:zlib';
 import { performance } from 'node:perf_hooks';
 import { createHash } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import { pathToFileURL } from 'node:url';
 import { Then } from '@cucumber/cucumber';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
+import { readServiceSchema } from './lib/service-schema-packs.ts';
 import * as matching from './lib/matching.ts';
 
 // Independent oracle for the pre-optimization public matching contract.
@@ -89,7 +89,7 @@ Then('the complete service catalogue is profiled with unchanged matching results
   const preparation = [];
   for (const descriptor of descriptors) {
     const started = performance.now();
-    const document = JSON.parse(gunzipSync(await readFile(resolve(directory, `${descriptor.id}.json.gz`))));
+    const document = await readServiceSchema(descriptor.id);
     const inspected = inspectServiceSchema(document, descriptor.id);
     assert.equal(inspected.operations.length, descriptor.operations);
     operations.push(...inspected.operations.map(({ id, name }) => ({ id, name })));

@@ -162,7 +162,7 @@ Then(/^the (document|path|operation) server (.+) is rejected as an unresolved pl
   const parent = level === "document" ? value : level === "path" ? value.paths["/items"] : value.paths["/items"].get;
   parent.servers = [JSON.parse(definition)];
   const original = structuredClone(value);
-  assert.throws(() => validateSchemaDocument(value, "test"), /still contains a placeholder/);
+  assert.throws(() => validateSchemaDocument(value, "test"), /placeholder/);
   assert.deepEqual(value, original, "Reject placeholders without rewriting the original schema.");
 });
 

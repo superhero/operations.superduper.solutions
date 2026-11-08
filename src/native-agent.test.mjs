@@ -22,6 +22,9 @@ import { createOperationGraph } from './lib/workflow-graph.ts';
 import { createWorkflowRunner } from './lib/workflow-runner.ts';
 import { portableWorkflowDocument } from './lib/workflow-document.ts';
 import { prepareNativeRequest } from './lib/native-operation-input.ts';
+import { nativeConfigurationWriteHash } from './lib/native-configuration-write.ts';
+import { NativeGuardianReviews, nativeGuardianApprovalMethod, nativeGuardianStarted, nativeGuardianCompleted, nativeGuardianMethod } from './lib/native-guardian.ts';
+import { guardianFixtureNotice } from '../tests/native-guardian.fixture.mjs';
 
 Before({ tags: '@native-agent' }, function () { this.nativeAgentFixtures = []; this.nativeAgentVaults = []; this.nativeAgentCatalogs = catalogs; });
 After({ tags: '@native-agent' }, async function () {
@@ -283,14 +286,20 @@ function controlledAgent(options = {}) {
     version: '0.163.0', configuration: 'a'.repeat(64), workspace: 'b'.repeat(64) } };
   v.connection = { id: randomUUID(), host: 'https://native.example.test', identity: v.identity, accountType: 'apiKey' };
   const transport = { async agent(_id, _host, _key, _fingerprint, _identity, _guard, events) {
-    v.events = events; options.connect?.(v); return v.peer;
+    v.events = events; const opening = options.connect?.(v); if (opening) await opening; return v.peer;
   }, close() { if (!v.closed++) v.events?.closed(); } };
-  v.peer = { identity: v.identity, scope: { connectionId: v.connection.id }, expiresAt: Date.now() + (options.expiresMs ?? 5000),
-    async request(method, params) { v.frames.push({ method, params });
-      if (options.request) return options.request(method, params, v);
+  v.peer = { identity: v.identity, scope: { connectionId: v.connection.id, method: options.scope ?? 'codex-workflow', fingerprint: 'c'.repeat(64) }, expiresAt: Date.now() + (options.expiresMs ?? 5000),
+    async request(method, params, _signal, requestId) { v.frames.push({ method, params });
+      v.currentRequest = { method, params, requestId };
+      if (options.request) {
+        const result = await options.request(method, params, v, requestId);
+        if (options.autoApiCompletion !== false && method === 'account/login/start' && params.type === 'apiKey' && result?.type === 'apiKey')
+          queueMicrotask(() => v.emit({ method: 'account/login/completed', params: { loginId: null, success: true, error: null } }));
+        return result;
+      }
       return method === 'turn/start' ? { turn: { id: 'turn_1' } } : { thread: { id: 'thread_1' } };
     }, reply(id, result) { v.replies.push({ id, result }); } };
-  v.agent = new NativeAgentBroker(transport);
+  v.agent = new NativeAgentBroker(transport, options.scope);
   v.guard = async () => { await options.guard?.(v); };
   v.execute = (method = 'turn/start', signal) => v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), method,
     method === 'turn/start' ? { threadId: 'thread_1', input: [{ type: 'text', text: 'hello' }] } : {}, v.guard, signal, notice => v.notices.push(notice));
@@ -366,7 +375,7 @@ Then('native login rejects unsafe instructions failed completion and secret echo
 Then('native early login events and authority updates retain exact ownership', async () => {
   for (const mode of ['success', 'duplicate', 'foreign', 'malformed', 'authority']) {
     const v = controlledAgent({ request(method, _params, owner) {
-      if (method !== 'account/login/start') return { account: { type: 'chatgpt' }, requiresOpenaiAuth: true };
+      if (method !== 'account/login/start') return { account: { type: 'chatgpt', email: null, planType: 'unknown' }, requiresOpenaiAuth: true };
       const completed = { method: 'account/login/completed', params: { loginId: mode === 'foreign' ? 'foreign' : 'login_1', success: true } };
       if (mode === 'malformed') completed.params.success = 'yes';
       owner.emit(completed);
@@ -463,4 +472,259 @@ Then('native private login redacts progress and cancellation after confirmation 
   const sibling = await v.session.pairNativeRuntime({ ...v.input, label: 'Sibling runtime' }, v.selection);
   const retained = await v.session.disconnectNativeRuntime(nativeReference(sibling), true);
   assert.deepEqual(retained.map(connection => connection.id), [enabled.id]);
+});
+
+Then('native API key login completion retains acknowledgement ownership before and after its reply', async () => {
+  for (const mode of ['early', 'null', 'login-id', 'boolean', 'duplicate', 'failed']) {
+    const v = controlledAgent({ autoApiCompletion: false, request(method, _params, owner) {
+      if (method !== 'account/login/start') return { account: { type: 'apiKey' }, requiresOpenaiAuth: true };
+      const frame = { method: 'account/login/completed', params: { loginId: null, success: mode !== 'failed' } };
+      if (mode === 'null') frame.params = null;
+      if (mode === 'login-id') frame.params.loginId = 'unowned';
+      if (mode === 'boolean') frame.params.success = 1;
+      owner.emit(frame); if (mode === 'duplicate') owner.emit(frame);
+      return { type: 'apiKey' };
+    } });
+    const work = v.login({ type: 'apiKey', apiKey: 'owned-provider-key' });
+    if (mode === 'early') assert.equal((await work).accountType, 'apiKey');
+    else await assert.rejects(work, error => ['AUTHORIZATION', 'NATIVE_UNKNOWN'].includes(error.code));
+    v.close();
+  }
+  const late = controlledAgent({ autoApiCompletion: false, request: method => method === 'account/login/start' ? { type: 'apiKey' } : { account: { type: 'apiKey' }, requiresOpenaiAuth: true } });
+  const work = late.login({ type: 'apiKey', apiKey: 'owned-provider-key' }); void work.catch(() => {});
+  await wait(() => late.frames.length === 1); await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(late.emit({ method: 'account/login/completed', params: { loginId: null, success: false } }), true);
+  await assert.rejects(work, { code: 'AUTHORIZATION' });
+});
+
+Then('native login cancellation rejects late success malformed acknowledgements and post-guard cancellation', async () => {
+  for (const mode of ['negative-event', 'positive-event', 'invalid-result', 'aborted']) {
+    let finishCancel, guards = 0;
+    const controller = new AbortController(), v = controlledAgent({ request(method) {
+      if (method === 'account/login/start') return { type: 'chatgpt', loginId: 'login_owned', authUrl: 'https://owned.example.test/authorize' };
+      if (method === 'account/login/cancel') return new Promise(resolve => { finishCancel = resolve; });
+      return { account: { type: 'chatgpt', email: null, planType: 'unknown' }, requiresOpenaiAuth: true };
+    } });
+    const work = v.login({ type: 'chatgpt' }); void work.catch(() => {}); await wait(() => v.notices.length === 1);
+    const cancel = v.agent.cancelLogin(v.connection, {}, async () => { if (++guards === 2 && mode === 'aborted') controller.abort(); }, controller.signal); void cancel.catch(() => {});
+    await wait(() => finishCancel);
+    if (mode.endsWith('-event')) assert.equal(v.emit({ method: 'account/login/completed', params: { loginId: 'login_owned', success: mode === 'positive-event' } }), mode === 'negative-event');
+    finishCancel({ status: mode === 'invalid-result' ? 'unreviewed' : 'canceled' });
+    if (mode === 'invalid-result' || mode === 'aborted') await assert.rejects(cancel, { code: mode === 'aborted' ? 'CANCELLED' : 'AUTHORIZATION' });
+    else assert.deepEqual(await cancel, { status: 'canceled' });
+    await assert.rejects(work, { code: mode === 'negative-event' ? 'CANCELLED' : 'NATIVE_UNKNOWN' }); v.close();
+  }
+});
+
+Then('native logout and hidden provider accounts retain final confirmation authority', async () => {
+  for (const mode of ['account', 'closed', 'aborted']) {
+    let guards = 0; const controller = new AbortController();
+    const v = controlledAgent({ request: method => method === 'account/logout' ? {} : { account: mode === 'account' ? { type: 'apiKey' } : null, requiresOpenaiAuth: true },
+      guard: owner => { if (++guards === 2) { if (mode === 'closed') owner.close(); else if (mode === 'aborted') controller.abort(); } } });
+    await assert.rejects(v.agent.logout(v.connection, 'K'.repeat(43), 'c'.repeat(64), v.guard, controller.signal), { code: mode === 'account' ? 'AUTHORIZATION' : 'CANCELLED' }); v.close();
+  }
+  const hidden = controlledAgent({ scope: 'codex-account-auth', request: method => method === 'account/login/start' ? { type: 'apiKey' } : { account: null, requiresOpenaiAuth: false } });
+  const result = await hidden.login({ type: 'apiKey', apiKey: 'owned-hidden-provider-key' });
+  assert.equal(result.accountType, 'none'); assert.equal(result.requiresOpenaiAuth, false); hidden.close();
+});
+
+Then('native configuration and migration receipts retain peer identity and guards before and after adoption', async () => {
+  const configInput = { keyPath: 'model', value: 'owned', mergeStrategy: 'replace' }, migrationInput = { migrationItems: [{ itemType: 'CONFIG', description: 'Owned controlled import' }] };
+  for (const method of ['config/value/write', 'externalAgentConfig/import']) for (const mode of ['peer', 'before-close', 'before-cancel', 'after-close', 'after-cancel']) {
+    let guards = 0, adopted = 0;
+    const controller = new AbortController(), importing = method === 'externalAgentConfig/import', params = importing ? migrationInput : configInput;
+    const v = controlledAgent({ request: async (selected, input, owner, requestId) => {
+      assert.equal(selected, method);
+      const result = importing ? { importId: randomUUID() } : {}, receipt = { type: 'authority', reason: importing ? 'migration' : 'configuration', requestId, method,
+        paramsHash: await nativeConfigurationWriteHash(input), resultHash: await nativeConfigurationWriteHash(result), beforeConfiguration: owner.identity.configuration,
+        identity: { ...owner.identity, configuration: 'e'.repeat(64) }, ...(importing ? { effectHash: 'f'.repeat(64), privateValues: [] } : {}) };
+      assert.equal(owner.emit(receipt), true); if (mode !== 'peer') Object.assign(owner.identity, receipt.identity); return result;
+    }, guard: owner => {
+      guards++;
+      if (guards === (mode.startsWith('before') ? 2 : 3)) {
+        if (mode.endsWith('close')) owner.close(); else if (mode.endsWith('cancel')) controller.abort();
+      }
+    } });
+    const adopt = async () => { adopted++; };
+    await assert.rejects(v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), method, params, v.guard, controller.signal, undefined, adopt, adopt),
+      { code: mode === 'peer' ? 'AUTHORIZATION' : mode.endsWith('cancel') ? 'CANCELLED' : 'NATIVE_UNKNOWN' });
+    assert.equal(adopted, mode.startsWith('after') ? 1 : 0); v.close();
+  }
+  for (const [method,params] of [['plugin/share/save', { pluginPath: '/owned/plugin' }], ['plugin/install', { pluginName: 'owned', marketplacePath: '/owned/marketplace' }], ['marketplace/add', { source: 'owned/repository' }]]) {
+    let adopted = 0;
+    const v = controlledAgent({ request: async (selected, input, owner, requestId) => {
+      const result = {}, receipt = { type: 'authority', reason: 'configuration', requestId, method: selected,
+        paramsHash: await nativeConfigurationWriteHash(input), resultHash: await nativeConfigurationWriteHash(result), beforeConfiguration: owner.identity.configuration,
+        identity: { ...owner.identity, configuration: 'e'.repeat(64) } };
+      assert.equal(owner.emit(receipt), true); Object.assign(owner.identity, receipt.identity); return result;
+    } });
+    assert.deepEqual(await v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), method, params, v.guard, undefined, undefined, async () => { adopted++; }), {});
+    assert.equal(adopted, 1); v.close();
+  }
+});
+
+function controlledShell(options = {}) {
+  const params = { threadId: 'thread_1', command: 'printf owned', timeoutMs: 300000 };
+  const v = controlledAgent({ ...options, request: options.request ?? (() => ({})) });
+  v.startShell = signal => {
+    const work = v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), 'thread/shellCommand', params, v.guard, signal, notice => v.notices.push(notice));
+    void work.catch(() => {}); return work;
+  };
+  v.shellApproval = () => ({ id: 'shell_approval', method: 'operations/threadShell/requestApproval', params: { requestId: v.currentRequest.requestId, params, unsandboxed: true } });
+  v.approveShell = async () => { assert.equal(v.emit(v.shellApproval()), true); await v.agent.reply(v.connection.id, v.notices[0].token, 'accept'); };
+  v.shellTurn = (status = 'started') => ({ method: 'turn/' + status, params: { threadId: 'thread_1', turn: { id: 'turn_1', items: [], status: status === 'started' ? 'inProgress' : 'completed' } } });
+  v.shellItem = () => ({ method: 'item/started', params: { threadId: 'thread_1', turnId: 'turn_1', item: { id: 'item_1', type: 'commandExecution', source: 'userShell', command: 'printf owned', cwd: '/owned', commandActions: [], status: 'inProgress' } } });
+  return v;
+}
+
+Then('native shell events cannot precede approval duplicate ownership or omit their command completion', async () => {
+  for (const mode of ['approval', 'item-before-approval', 'turn-before-approval', 'item-duplicate', 'turn-duplicate', 'completion-without-item', 'unsupported']) {
+    const v = controlledShell(), work = v.startShell(); await wait(() => v.frames.length === 1);
+    let frame;
+    if (mode === 'approval') { frame = v.shellApproval(); frame.params.unsandboxed = false; }
+    else if (mode === 'item-before-approval') frame = v.shellItem();
+    else if (mode === 'turn-before-approval') frame = v.shellTurn();
+    else {
+      await v.approveShell(); assert.equal(v.emit(v.shellTurn()), true);
+      if (mode === 'item-duplicate') { assert.equal(v.emit(v.shellItem()), true); frame = v.shellItem(); }
+      if (mode === 'turn-duplicate') frame = v.shellTurn();
+      if (mode === 'completion-without-item') frame = v.shellTurn('completed');
+      if (mode === 'unsupported') frame = { id: 'foreign_permission', method: 'item/commandExecution/requestApproval', params: { threadId: 'thread_1', turnId: 'turn_1', itemId: 'item_1', command: 'pwd' } };
+    }
+    assert.equal(v.emit(frame), false); await assert.rejects(work, { code: 'NATIVE_UNKNOWN' }); v.close();
+  }
+  const controller = new AbortController(), failing = controlledShell({ request(method) { if (method === 'turn/interrupt') throw new Error('controlled interrupt failed'); return {}; } });
+  const work = failing.startShell(controller.signal); await wait(() => failing.frames.length === 1); await failing.approveShell(); failing.emit(failing.shellTurn()); controller.abort();
+  await assert.rejects(work, { code: 'NATIVE_UNKNOWN' }); assert.equal(failing.frames.filter(frame => frame.method === 'turn/interrupt').length, 1); failing.close();
+});
+
+Then('native Guardian and review hints cannot acquire a different active thread or reviewer', async () => {
+  for (const frame of [
+    { id: 'guardian_approval', method: 'operations/guardian/approve', params: { requestId: 'foreign', denial: {} } },
+    { method: 'item/autoApprovalReview/started', params: { threadId: 'thread_1' } }
+  ]) {
+    const v = controlledAgent(), work = v.execute(); void work.catch(() => {}); await wait(() => v.notices.length === 1);
+    assert.equal(v.emit(frame), false); await assert.rejects(work, { code: 'NATIVE_UNKNOWN' }); v.close();
+  }
+  for (const auto of [true, false]) {
+    const v = controlledAgent({ request: () => ({ thread: { id: 'thread_1' }, approvalsReviewer: auto ? 'user' : 'auto_review' }) });
+    await assert.rejects(v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), 'thread/start', auto ? { approvalsReviewer: 'auto_review' } : {}, v.guard), { code: 'AUTHORIZATION' }); v.close();
+  }
+  const review = controlledAgent({ request: () => ({ reviewThreadId: 'thread_1', turn: { id: 'turn_1', items: [], status: 'inProgress' } }) });
+  const work = review.agent.execute(review.connection, 'K'.repeat(43), 'c'.repeat(64), 'review/start', { threadId: 'thread_1', target: { type: 'uncommittedChanges' } }, review.guard); void work.catch(() => {});
+  await wait(() => review.frames.length === 1); assert.equal(review.emit({ method: 'turn/started', params: { threadId: 'thread_1', turn: { id: '' } } }), false);
+  await assert.rejects(work, { code: 'NATIVE_UNKNOWN' }); review.close();
+});
+
+Then('native turn controls retain guard cancellation terminal and concurrent control authority', async () => {
+  const steer = { threadId: 'thread_1', expectedTurnId: 'turn_1', input: [{ type: 'text', text: 'owned steering' }] };
+  for (const mode of ['guard', 'before-abort', 'after-abort', 'terminal']) {
+    const v = controlledAgent({ request: method => method === 'turn/start' ? { turn: { id: 'turn_1' } } : method === 'turn/steer' ? { turnId: 'turn_1' } : {} }), controller = new AbortController();
+    const work = v.execute(); void work.catch(() => {}); await wait(() => v.notices.length === 1); let guards = 0;
+    const fault = new Error('controlled source guard failed');
+    const guard = async () => { guards++; if (mode === 'guard') throw fault; if (guards === (mode === 'before-abort' ? 1 : 2) && mode.endsWith('abort')) controller.abort(); };
+    const control = v.agent.control(v.connection, 'c'.repeat(64), mode === 'terminal' ? 'turn/interrupt' : 'turn/steer', mode === 'terminal' ? { threadId: 'thread_1', turnId: 'turn_1' } : steer, guard, controller.signal); void control.catch(() => {});
+    if (mode === 'terminal') { await wait(() => v.frames.length === 2); v.emit({ method: 'turn/completed', params: { threadId: 'thread_1', turn: { id: 'turn_1', items: [], status: 'completed' } } }); }
+    await assert.rejects(control, mode === 'guard' ? error => error === fault : { code: mode === 'before-abort' ? 'CANCELLED' : 'AUTHORIZATION' });
+    if (mode === 'terminal') assert.equal((await work).turn.status, 'completed');
+    else { v.close(); await assert.rejects(work, { code: 'NATIVE_UNKNOWN' }); } v.close();
+  }
+  const releases = [], capped = controlledAgent({ request: method => method === 'turn/start' ? { turn: { id: 'turn_1' } } : new Promise(resolve => releases.push(resolve)) });
+  const work = capped.execute(); void work.catch(() => {}); await wait(() => capped.notices.length === 1);
+  const controls = Array.from({ length: 4 }, () => capped.agent.control(capped.connection, 'c'.repeat(64), 'turn/steer', steer, capped.guard));
+  await wait(() => releases.length === 4); await assert.rejects(capped.agent.control(capped.connection, 'c'.repeat(64), 'turn/steer', steer, capped.guard), { code: 'PERMISSION' });
+  capped.emit({ method: 'turn/completed', params: { threadId: 'thread_1', turn: { id: 'turn_1', items: [], status: 'completed' } } });
+  await new Promise(resolve => setTimeout(resolve, 0)); releases.forEach(release => release({ turnId: 'turn_1' }));
+  await Promise.all(controls); assert.equal((await work).turn.status, 'completed'); capped.close();
+});
+
+Then('native agent connection and final login guards retain the current active owner', async () => {
+  let release, connecting = 0;
+  const v = controlledAgent({ connect: () => ++connecting === 1 ? new Promise(resolve => { release = resolve; }) : undefined });
+  const first = v.execute('thread/start'); void first.catch(() => {}); await wait(() => release);
+  const current = v.execute(); void current.catch(() => {}); await wait(() => v.notices.length === 1); release();
+  await assert.rejects(first, { code: 'CONFLICT' }); v.close(); await assert.rejects(current, { code: 'NATIVE_UNKNOWN' });
+  let guards = 0;
+  const login = controlledAgent({ request: method => method === 'account/login/start' ? { type: 'apiKey' } : { account: { type: 'apiKey' }, requiresOpenaiAuth: true },
+    guard: owner => { if (++guards === 2) owner.close(); } });
+  await assert.rejects(login.login({ type: 'apiKey', apiKey: 'owned-provider-key' }), { code: 'NATIVE_UNKNOWN' }); login.close();
+  let stale = false; const fault = new Error('private stale source');
+  const approvals = controlledAgent({ guard: () => { if (stale) throw fault; } }), running = approvals.execute(); void running.catch(() => {});
+  await wait(() => approvals.notices.length === 1);
+  assert.equal(approvals.emit({ id: 'approval_owned', method: 'item/commandExecution/requestApproval', params: { threadId: 'thread_1', turnId: 'turn_1', itemId: 'item_1', command: 'pwd' } }), true);
+  stale = true;
+  await assert.rejects(approvals.agent.reply(approvals.connection.id, approvals.notices.find(notice => notice.kind === 'approval').interaction.token, 'accept'), error => error === fault);
+  await assert.rejects(running, { code: 'NATIVE_UNKNOWN' }); approvals.close();
+});
+
+Then('native Guardian acknowledgement and approval retain an exact recent denial through the reply guard', async () => {
+  for (const mode of ['approved-review', 'unapproved', 'expired', 'changed']) {
+    let now = 0, finish, alter = false;
+    // Inject the real bounded review cache at the controlled private-worker port.
+    // Its existing clock constructor models expiry across an asynchronous guard.
+    const book = new NativeGuardianReviews(() => now), notice = guardianFixtureNotice('/owned');
+    const started = { ...notice.started, threadId: 'thread_1', turnId: 'turn_1' }, completed = { ...notice.completed, threadId: 'thread_1', turnId: 'turn_1' };
+    if (mode === 'approved-review') completed.review = { ...completed.review, status: 'approved' };
+    const v = controlledAgent({ connect: owner => { owner.agent.states.get(owner.connection.id).guardian = book; },
+      request(method) {
+        if (method === 'thread/start') return { thread: { id: 'thread_1' }, approvalsReviewer: 'auto_review' };
+        if (method === 'turn/start') return { turn: { id: 'turn_1' } };
+        assert.equal(method, nativeGuardianMethod);
+        if (mode === 'unapproved') return {};
+        return new Promise(resolve => { finish = resolve; });
+      }, guard() {
+        if (!alter) return; alter = false;
+        if (mode === 'expired') now = 600001;
+        else {
+          book.clear(); const action = { ...started.action, command: 'Changed cached action' };
+          book.started({ ...started, action }, 'thread_1', 'turn_1'); book.completed({ ...completed, action }, 'thread_1', 'turn_1');
+        }
+      } });
+    try {
+      await v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), 'thread/start', { approvalsReviewer: 'auto_review' }, v.guard);
+      const turn = v.execute(); await wait(() => v.notices.some(notice => notice.kind === 'running'));
+      assert.equal(v.emit({ method: nativeGuardianStarted, params: started }), true); assert.equal(v.emit({ method: nativeGuardianCompleted, params: completed }), true);
+      v.emit({ method: 'turn/completed', params: { threadId: 'thread_1', turn: { id: 'turn_1', items: [], status: 'completed' } } }); await turn;
+      if (mode === 'approved-review') { assert.equal(v.notices.some(notice => notice.kind === 'guardian-denial'), false); continue; }
+      const params = { threadId: 'thread_1', reviewId: completed.reviewId };
+      const work = v.agent.execute(v.connection, 'K'.repeat(43), 'c'.repeat(64), nativeGuardianMethod, params, v.guard, undefined, notice => v.notices.push(notice)); void work.catch(() => {});
+      if (mode === 'unapproved') { await assert.rejects(work, { code: 'AUTHORIZATION' }); continue; }
+      await wait(() => finish);
+      assert.equal(v.emit({ id: 'guardian_owned', method: nativeGuardianApprovalMethod, params: { requestId: v.currentRequest.requestId, denial: book.get(params) } }), true);
+      alter = true;
+      await assert.rejects(v.agent.reply(v.connection.id, v.notices.find(notice => notice.kind === 'guardian-approval').token, 'accept'), { code: 'AUTHORIZATION' });
+      finish({}); await assert.rejects(work, { code: 'AUTHORIZATION' }); assert.deepEqual(v.replies, []);
+    } finally { finish?.({}); v.close(); }
+  }
+});
+
+Then('cancelled native shell guard teardown cannot interrupt or revive a finished owner', async () => {
+  for (const failure of [false, true]) {
+    let release, reject, held = false, entered = false;
+    const gate = new Promise((resolve, no) => { release = resolve; reject = no; }), controller = new AbortController();
+    const v = controlledShell({ guard: () => { if (held) { entered = true; return gate; } } });
+    const work = v.startShell(controller.signal); await wait(() => v.frames.length === 1); await v.approveShell(); assert.equal(v.emit(v.shellTurn()), true);
+    held = true; controller.abort(); await wait(() => entered); v.close(); await assert.rejects(work, { code: 'CANCELLED' });
+    if (failure) reject(new Error('controlled stale source')); else release();
+    await new Promise(resolve => setTimeout(resolve, 0)); assert.equal(v.frames.some(frame => frame.method === 'turn/interrupt'), false);
+  }
+});
+
+Then('cancelling a previous native login ID does not cancel the current owned login', async () => {
+  let attempt = 0;
+  const v = controlledAgent({ request(method, _params, owner) {
+    if (method === 'account/login/start') {
+      const loginId = 'login_' + ++attempt;
+      if (attempt === 1) owner.emit({ method: 'account/login/completed', params: { loginId, success: true } });
+      return { type: 'chatgpt', loginId, authUrl: 'https://owned.example.test/authorize' };
+    }
+    if (method === 'account/login/cancel') return { status: 'notFound' };
+    return { account: { type: 'chatgpt', email: null, planType: 'unknown' }, requiresOpenaiAuth: true };
+  } });
+  try {
+    await v.login({ type: 'chatgpt' });
+    const work = v.login({ type: 'chatgpt' }); void work.catch(() => {}); await wait(() => v.notices.some(notice => notice.loginId === 'login_2'));
+    assert.deepEqual(await v.agent.cancelLogin(v.connection, { loginId: 'login_1' }, v.guard), { status: 'notFound' });
+    assert.equal(v.emit({ method: 'account/login/completed', params: { loginId: 'login_2', success: true } }), true); assert.equal((await work).accountType, 'chatgpt');
+  } finally { v.close(); }
 });

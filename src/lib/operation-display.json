@@ -1,0 +1,677 @@
+{
+  "twilio:CreateAddress": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses.json",
+    "name": "Create address"
+  },
+  "twilio:CreateIncomingPhoneNumberLocal": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Local.json",
+    "name": "Create local incoming phone number"
+  },
+  "twilio:CreateIncomingPhoneNumberMobile": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Mobile.json",
+    "name": "Create mobile incoming phone number"
+  },
+  "twilio:CreateIncomingPhoneNumberTollFree": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/TollFree.json",
+    "name": "Create toll-free incoming phone number"
+  },
+  "twilio:CreateNewKey": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys.json",
+    "name": "Create new key"
+  },
+  "twilio:CreateParticipant": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Participants.json",
+    "name": "Create participant"
+  },
+  "twilio:CreateValidationRequest": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/OutgoingCallerIds.json",
+    "name": "Create validation request"
+  },
+  "twilio:DeleteAddress": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json",
+    "name": "Delete address"
+  },
+  "twilio:DeleteKey": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json",
+    "name": "Delete key"
+  },
+  "twilio:DeleteRecordingTranscription": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions/{Sid}.json",
+    "name": "Delete recording transcription"
+  },
+  "twilio:DeleteSigningKey": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys/{Sid}.json",
+    "name": "Delete signing key"
+  },
+  "twilio:DeleteUsageTrigger": {
+    "method": "DELETE",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Triggers/{Sid}.json",
+    "name": "Delete usage trigger"
+  },
+  "twilio:FetchAddress": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json",
+    "name": "Fetch address"
+  },
+  "twilio:FetchAvailablePhoneNumberCountry": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}.json",
+    "name": "Fetch available phone number country"
+  },
+  "twilio:FetchCallNotification": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Notifications/{Sid}.json",
+    "name": "Fetch call notification"
+  },
+  "twilio:FetchKey": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json",
+    "name": "Fetch key"
+  },
+  "twilio:FetchRecordingTranscription": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions/{Sid}.json",
+    "name": "Fetch recording transcription"
+  },
+  "twilio:FetchSigningKey": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys/{Sid}.json",
+    "name": "Fetch signing key"
+  },
+  "twilio:ListAddress": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses.json",
+    "name": "List addresses"
+  },
+  "twilio:ListAvailablePhoneNumberCountry": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers.json",
+    "name": "List countries with available phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberLocal": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Local.json",
+    "name": "List available local phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberMachineToMachine": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/MachineToMachine.json",
+    "name": "List available machine-to-machine phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberMobile": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Mobile.json",
+    "name": "List available mobile phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberNational": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/National.json",
+    "name": "List available national phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberSharedCost": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/SharedCost.json",
+    "name": "List available shared-cost phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberTollFree": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/TollFree.json",
+    "name": "List available toll-free phone numbers"
+  },
+  "twilio:ListAvailablePhoneNumberVoip": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Voip.json",
+    "name": "List available VoIP phone numbers"
+  },
+  "twilio:ListCallNotification": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Notifications.json",
+    "name": "List call notifications"
+  },
+  "twilio:ListDependentPhoneNumber": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{AddressSid}/DependentPhoneNumbers.json",
+    "name": "List dependent phone numbers"
+  },
+  "twilio:ListIncomingPhoneNumberLocal": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Local.json",
+    "name": "List local incoming phone numbers"
+  },
+  "twilio:ListIncomingPhoneNumberMobile": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/Mobile.json",
+    "name": "List mobile incoming phone numbers"
+  },
+  "twilio:ListIncomingPhoneNumberTollFree": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/TollFree.json",
+    "name": "List toll-free incoming phone numbers"
+  },
+  "twilio:ListKey": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys.json",
+    "name": "List keys"
+  },
+  "twilio:ListRecordingTranscription": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions.json",
+    "name": "List recording transcriptions"
+  },
+  "twilio:ListSigningKey": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys.json",
+    "name": "List signing keys"
+  },
+  "twilio:ListUsageRecordAllTime": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/AllTime.json",
+    "name": "List all-time usage records"
+  },
+  "twilio:ListUsageRecordDaily": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Daily.json",
+    "name": "List daily usage records"
+  },
+  "twilio:ListUsageRecordLastMonth": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/LastMonth.json",
+    "name": "List last month’s usage records"
+  },
+  "twilio:ListUsageRecordMonthly": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Monthly.json",
+    "name": "List monthly usage records"
+  },
+  "twilio:ListUsageRecordThisMonth": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/ThisMonth.json",
+    "name": "List this month’s usage records"
+  },
+  "twilio:ListUsageRecordToday": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Today.json",
+    "name": "List today’s usage records"
+  },
+  "twilio:ListUsageRecordYearly": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Yearly.json",
+    "name": "List yearly usage records"
+  },
+  "twilio:ListUsageRecordYesterday": {
+    "method": "GET",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Usage/Records/Yesterday.json",
+    "name": "List yesterday’s usage records"
+  },
+  "twilio:UpdateAddress": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json",
+    "name": "Update address"
+  },
+  "twilio:UpdateConference": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Conferences/{Sid}.json",
+    "name": "Update conference"
+  },
+  "twilio:UpdateKey": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json",
+    "name": "Update key"
+  },
+  "twilio:UpdateSigningKey": {
+    "method": "POST",
+    "path": "/2010-04-01/Accounts/{AccountSid}/SigningKeys/{Sid}.json",
+    "name": "Update signing key"
+  },
+  "azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheck": {
+    "method": "PUT",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/networkConfig/virtualNetwork",
+    "name": "Create or update app virtual network connection"
+  },
+  "azure-app-service:WebApps_CreateOrUpdateSwiftVirtualNetworkConnectionWithCheckSlot": {
+    "method": "PUT",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/networkConfig/virtualNetwork",
+    "name": "Create or update slot virtual network connection"
+  },
+  "azure-app-service:WebApps_ListBackupStatusSecrets": {
+    "method": "POST",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups/{backupId}/list",
+    "name": "Get app backup status and secrets"
+  },
+  "azure-app-service:WebApps_ListBackupStatusSecretsSlot": {
+    "method": "POST",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups/{backupId}/list",
+    "name": "Get slot backup status and secrets"
+  },
+  "azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheck": {
+    "method": "PATCH",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/networkConfig/virtualNetwork",
+    "name": "Update app virtual network connection"
+  },
+  "azure-app-service:WebApps_UpdateSwiftVirtualNetworkConnectionWithCheckSlot": {
+    "method": "PATCH",
+    "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/networkConfig/virtualNetwork",
+    "name": "Update slot virtual network connection"
+  },
+  "groq:uploadFile": {
+    "method": "POST",
+    "path": "/openai/v1/files",
+    "name": "Upload file"
+  },
+  "xai:handle_create_public_url_request": {
+    "method": "POST",
+    "path": "/v1/files/{file_id}/public-url",
+    "name": "Create public file URL"
+  },
+  "xai:handle_generic_model_request": {
+    "method": "POST",
+    "path": "/v1/responses",
+    "name": "Generate a response"
+  },
+  "xai:handle_get_deferred_completion_request": {
+    "method": "GET",
+    "path": "/v1/chat/deferred-completion/{request_id}",
+    "name": "Get deferred completion"
+  },
+  "xai:handle_language_models_list_request": {
+    "method": "GET",
+    "path": "/v1/language-models",
+    "name": "List language models"
+  },
+  "xai:handle_list_files_request": {
+    "method": "GET",
+    "path": "/v1/files",
+    "name": "List team files"
+  },
+  "xai:handle_revoke_public_url_request": {
+    "method": "POST",
+    "path": "/v1/files/{file_id}/public-url/revoke",
+    "name": "Revoke public file URL"
+  },
+  "xai:handle_upload_file_request": {
+    "method": "POST",
+    "path": "/v1/files",
+    "name": "Upload file"
+  },
+  "aws-s3:GetObject": {
+    "method": "GET",
+    "path": "/{Bucket}/{Key}",
+    "description": "Retrieves objects from Amazon S3. To use GET , you must have READ access to the object. If you grant READ access to the anonymous user, you can return the object without using an authorization header. An Amazon S3 bucket has no directory hierarchy such as you would find in a typical computer file system. You can, however, create a logical hierarchy by using object key names that imply a folder structure. For example, instead of naming an object sample.jpg , you can name it photos/2006/February/sample.jpg . To get an object from such a logical hierarchy, specify the full key name for the object in the GET operation. For a virtual hosted-style request example, if you have the object photos/2006/February/sample.jpg , specify the resource as /photos/2006/February/sample.jpg . For a path-style request example, if you have the object photos/2006/February/sample.jpg in the bucket named examplebucket , specify the resource as /examplebucket/photos/2006/February/sample.jpg . For more information about request types, see HTTP Host Header Bucket Specification . For more information about returning the ACL of an object, see GetObjectAcl ."
+  },
+  "aws-s3:PutObject": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}",
+    "description": "Adds an object to a bucket. You must have WRITE permissions on a bucket to add an object to it. Amazon S3 never adds partial objects; if you receive a success response, Amazon S3 added the entire object to the bucket. You cannot use PutObject to only update a single piece of metadata for an existing object. You must put the entire object with updated metadata if you want to update some values. Amazon S3 is a distributed system. If it receives multiple write requests for the same object simultaneously, it overwrites all but the last object written. To prevent objects from being deleted or overwritten, you can use Amazon S3 Object Lock . To ensure that data is not corrupted traversing the network, use the Content-MD5 header. When you use this header, Amazon S3 checks the object against the provided MD5 value and, if they do not match, returns an error. Additionally, you can calculate the MD5 while putting an object to Amazon S3 and compare the returned ETag to the calculated MD5 value. To successfully complete the PutObject request, you must have the s3:PutObject in your IAM permissions."
+  },
+  "bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/activity": {
+    "method": "GET",
+    "path": "/repositories/{workspace}/{repo_slug}/pullrequests/activity",
+    "description": "Returns a paginated list of the pull request's activity log."
+  },
+  "bitbucket:GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity": {
+    "method": "GET",
+    "path": "/repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity",
+    "description": "Returns a paginated list of the pull request's activity log."
+  },
+  "bitbucket:GET /repositories/{workspace}/{repo_slug}/src/{commit}/{path}": {
+    "method": "GET",
+    "path": "/repositories/{workspace}/{repo_slug}/src/{commit}/{path}",
+    "description": "This endpoints is used to retrieve the contents of a single file, or the contents of a directory at a specified revision."
+  },
+  "bitbucket:GET /snippets/{workspace}/{encoded_id}": {
+    "method": "GET",
+    "path": "/snippets/{workspace}/{encoded_id}",
+    "description": "Retrieves a single snippet."
+  },
+  "bitbucket:POST /repositories/{workspace}/{repo_slug}/src": {
+    "method": "POST",
+    "path": "/repositories/{workspace}/{repo_slug}/src",
+    "description": "This endpoint is used to create new commits in the repository by uploading files."
+  },
+  "bitbucket:POST /snippets": {
+    "method": "POST",
+    "path": "/snippets",
+    "description": "Creates a new snippet under the authenticated user's account."
+  },
+  "bitbucket:PUT /snippets/{workspace}/{encoded_id}": {
+    "method": "PUT",
+    "path": "/snippets/{workspace}/{encoded_id}",
+    "description": "Used to update a snippet. Use this to add and delete files and to change a snippet's title."
+  },
+  "bitbucket:createPipelineForRepository": {
+    "method": "POST",
+    "path": "/repositories/{workspace}/{repo_slug}/pipelines",
+    "description": "Endpoint to create and initiate a pipeline. There are a number of different options to initiate a pipeline, where the payload of the request will determine which type of pipeline will be instantiated."
+  },
+  "bitbucket-dc:PUT /insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key}": {
+    "method": "PUT",
+    "path": "/insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key}",
+    "description": "Create a new insight report, or replace the existing one if a report already exists for the given repository, commit, and report key. A request to replace an existing report will be rejected if the authenticated user was not the creator of the specified report."
+  },
+  "github:migrations/get-import-status": {
+    "method": "GET",
+    "path": "/repos/{owner}/{repo}/import",
+    "description": "View the progress of an import."
+  },
+  "github:repos/compare-commits": {
+    "method": "GET",
+    "path": "/repos/{owner}/{repo}/compare/{basehead}",
+    "description": "Compares two commits against one another. You can compare refs (branches or tags) and commit SHAs in the same repository, or you can compare refs and commit SHAs that exist in different repositories within the same repository network, including fork branches. For more information about how to view a repository's network, see \"[Understanding connections between repositories](https://docs.github.com/repositories/viewing-activity-and-data-for-your-repository/understanding-connections-between-repositories).\""
+  },
+  "jira:evaluateJSISJiraExpression": {
+    "method": "POST",
+    "path": "/rest/api/3/expression/evaluate",
+    "description": "Evaluates a Jira expression and returns its value. The difference between this and `eval` is that this endpoint uses the enhanced search API when evaluating JQL queries. This API is eventually consistent, unlike the strongly consistent `eval` API. This allows for better performance and scalability. In addition, this API's response for JQL evaluation is based on a scrolling view (backed by a `nextPageToken`) instead of a paginated view (backed by `startAt` and `totalCount`)."
+  },
+  "jira:evaluateJiraExpression": {
+    "method": "POST",
+    "path": "/rest/api/3/expression/eval",
+    "description": "Endpoint is currently being removed. [More details](https://developer.atlassian.com/changelog/#CHANGE-2046)"
+  },
+  "jira:getAllPermissionSchemes": {
+    "method": "GET",
+    "path": "/rest/api/3/permissionscheme",
+    "description": "Returns all permission schemes."
+  },
+  "jira:setApplicationProperty": {
+    "method": "PUT",
+    "path": "/rest/api/3/application-properties/{id}",
+    "description": "Changes the value of an application property. For example, you can change the value of the `jira.clone.prefix` from its default value of *CLONE -* to *Clone -* if you prefer sentence case capitalization. Editable properties are described below along with their default values."
+  },
+  "jira:workflowCapabilities": {
+    "method": "GET",
+    "path": "/rest/api/3/workflows/capabilities",
+    "description": "Get the list of workflow capabilities for a specific workflow using either the workflow ID, or the project and issue type ID pair. The response includes the scope of the workflow, defined as global/project-based, and a list of project types that the workflow is scoped to. It also includes all rules organised into their broad categories (conditions, validators, actions, triggers, screens) as well as the source location (Atlassian-provided, Connect, Forge)."
+  },
+  "together:realtime-transcription": {
+    "method": "GET",
+    "path": "/realtime",
+    "description": "Establishes a WebSocket connection for real-time audio transcription. This endpoint uses WebSocket protocol (wss://api.together.ai/v1/realtime) for bidirectional streaming communication."
+  },
+  "aws-batch:CreateComputeEnvironment": {
+    "method": "POST",
+    "path": "/v1/createcomputeenvironment",
+    "description": "Create a managed or unmanaged AWS Batch compute environment."
+  },
+  "aws-elasticfilesystem:CreateMountTarget": {
+    "method": "POST",
+    "path": "/2015-02-01/mount-targets",
+    "description": "Create an Amazon EFS mount target in a subnet, with its configured IP address and security groups."
+  },
+  "aws-lambda:CreateFunction": {
+    "method": "POST",
+    "path": "/2015-03-31/functions",
+    "description": "Create an AWS Lambda function from a deployment package or container image, with its execution role and runtime configuration."
+  },
+  "aws-s3:HeadObject": {
+    "method": "HEAD",
+    "path": "/{Bucket}/{Key}",
+    "description": "Retrieve an Amazon S3 object's metadata without returning its contents. Configure any required encryption and conditional request headers."
+  },
+  "aws-dynamodb:BatchWriteItem": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=DynamoDB_20120810.BatchWriteItem",
+    "description": "Write or delete multiple DynamoDB items in a batch. Check unprocessed items before retrying."
+  },
+  "aws-ecs:CreateService": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AmazonEC2ContainerServiceV20141113.CreateService",
+    "description": "Create an ECS service to run and maintain tasks using the selected scheduling and deployment settings."
+  },
+  "aws-ecs:UpdateService": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AmazonEC2ContainerServiceV20141113.UpdateService",
+    "description": "Update an ECS service task count, deployment configuration, or other supported settings."
+  },
+  "aws-events:PutTargets": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AWSEvents.PutTargets",
+    "description": "Add or update targets for an EventBridge rule."
+  },
+  "aws-firehose:CreateDeliveryStream": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=Firehose_20150804.CreateDeliveryStream",
+    "description": "Create a Data Firehose delivery stream with the selected source, destination, and processing configuration."
+  },
+  "aws-kinesis:GetRecords": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=Kinesis_20131202.GetRecords",
+    "description": "Read records from a Kinesis data stream shard using a shard iterator."
+  },
+  "aws-kinesis:PutRecords": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=Kinesis_20131202.PutRecords",
+    "description": "Write multiple records to a Kinesis data stream. Check each result before retrying failed records."
+  },
+  "aws-kms:ConnectCustomKeyStore": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ConnectCustomKeyStore",
+    "description": "Connect an AWS KMS custom key store to its backing key store."
+  },
+  "aws-kms:CreateCustomKeyStore": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.CreateCustomKeyStore",
+    "description": "Create an AWS KMS custom key store backed by AWS CloudHSM or an external key manager."
+  },
+  "aws-kms:CreateKey": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.CreateKey",
+    "description": "Create an AWS KMS key using the requested key specification and usage."
+  },
+  "aws-kms:Decrypt": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.Decrypt",
+    "description": "Decrypt ciphertext with the selected AWS KMS key. Returned plaintext stays in Secrets."
+  },
+  "aws-kms:GenerateDataKey": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.GenerateDataKey",
+    "description": "Generate a data encryption key protected by the selected AWS KMS key. Returned plaintext key material stays in Secrets."
+  },
+  "aws-kms:GenerateDataKeyPair": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.GenerateDataKeyPair",
+    "description": "Generate a data key pair protected by the selected AWS KMS key. Returned plaintext private key material stays in Secrets."
+  },
+  "aws-kms:ImportKeyMaterial": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ImportKeyMaterial",
+    "description": "Import externally generated key material into an eligible AWS KMS key."
+  },
+  "aws-kms:ReEncrypt": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ReEncrypt",
+    "description": "Decrypt and re-encrypt ciphertext under AWS KMS keys without returning plaintext."
+  },
+  "aws-kms:ReplicateKey": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.ReplicateKey",
+    "description": "Create a related multi-region replica of an AWS KMS multi-region key."
+  },
+  "aws-kms:UpdateCustomKeyStore": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.UpdateCustomKeyStore",
+    "description": "Update settings for an AWS KMS custom key store."
+  },
+  "aws-kms:UpdatePrimaryRegion": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=TrentService.UpdatePrimaryRegion",
+    "description": "Change the primary region of an AWS KMS multi-region key."
+  },
+  "aws-organizations:CreateAccount": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AWSOrganizationsV20161128.CreateAccount",
+    "description": "Create an AWS account in this organization. Account creation runs asynchronously."
+  },
+  "aws-organizations:CreateGovCloudAccount": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=AWSOrganizationsV20161128.CreateGovCloudAccount",
+    "description": "Create an AWS GovCloud (US) account and its associated commercial AWS account for this organization. Creation runs asynchronously."
+  },
+  "aws-rekognition:DetectLabels": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=RekognitionService.DetectLabels",
+    "description": "Detect labels in an image and return confidence scores and supported image properties."
+  },
+  "aws-rekognition:GetLabelDetection": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=RekognitionService.GetLabelDetection",
+    "description": "Read results from an asynchronous Rekognition video label-detection job."
+  },
+  "aws-rekognition:IndexFaces": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=RekognitionService.IndexFaces",
+    "description": "Detect and index faces in an image into a Rekognition collection."
+  },
+  "aws-sagemaker:CreateEndpoint": {
+    "method": "POST",
+    "path": "/#X-Amz-Target=SageMaker.CreateEndpoint",
+    "description": "Create a SageMaker hosted inference endpoint using the selected endpoint configuration."
+  },
+  "jira:addAttachment": {
+    "method": "POST",
+    "path": "/rest/api/3/issue/{issueIdOrKey}/attachments",
+    "description": "Attach one or more files to an issue using multipart/form-data. Send attachments as file parts and include X-Atlassian-Token: no-check. Project permissions and issue-level access restrictions apply. See the full operation documentation for upload examples and authentication scopes."
+  },
+  "aws-s3:CompleteMultipartUpload": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#uploadId",
+    "description": "Complete a multipart upload by assembling the uploaded parts into an S3 object."
+  },
+  "aws-s3:CopyObject": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#x-amz-copy-source",
+    "description": "Copy an S3 object to the selected bucket and key. Source permissions, encryption settings and copy conditions apply."
+  },
+  "aws-s3:CreateMultipartUpload": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#uploads",
+    "description": "Start a multipart upload and return its upload ID. Upload the parts, then complete or abort the upload."
+  },
+  "aws-s3:GetObjectAttributes": {
+    "method": "GET",
+    "path": "/{Bucket}/{Key}#attributes&x-amz-object-attributes",
+    "description": "Read selected S3 object attributes, including supported checksums and multipart metadata."
+  },
+  "aws-s3:PutBucketAcl": {
+    "method": "PUT",
+    "path": "/{Bucket}#acl",
+    "description": "Set a bucket access control policy. S3 Object Ownership and public access settings may restrict ACL changes."
+  },
+  "aws-s3:PutBucketInventoryConfiguration": {
+    "method": "PUT",
+    "path": "/{Bucket}#inventory&id",
+    "description": "Set an S3 bucket inventory configuration for object metadata reports."
+  },
+  "aws-s3:PutObjectAcl": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#acl",
+    "description": "Set an S3 object access control policy. Object ownership and public access settings may restrict ACL changes."
+  },
+  "aws-s3:RestoreObject": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#restore",
+    "description": "Request retrieval or restoration of an archived S3 object using the specified restore parameters."
+  },
+  "aws-s3:SelectObjectContent": {
+    "method": "POST",
+    "path": "/{Bucket}/{Key}#select&select-type=2",
+    "description": "Run an SQL expression against an S3 object and return record, progress and statistics events."
+  },
+  "aws-s3:UploadPart": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#partNumber&uploadId",
+    "description": "Upload one part of an S3 multipart upload using its upload ID and part number."
+  },
+  "aws-s3:UploadPartCopy": {
+    "method": "PUT",
+    "path": "/{Bucket}/{Key}#x-amz-copy-source&partNumber&uploadId",
+    "description": "Copy source object data into one part of an S3 multipart upload."
+  },
+  "aws-s3control:PutBucketReplication": {
+    "method": "PUT",
+    "path": "/v20180820/bucket/{name}/replication#x-amz-account-id",
+    "description": "Set the replication configuration for an S3 on Outposts bucket."
+  },
+  "aws-s3control:PutBucketTagging": {
+    "method": "PUT",
+    "path": "/v20180820/bucket/{name}/tagging#x-amz-account-id",
+    "description": "Replace the tag set for an S3 on Outposts bucket."
+  },
+  "aws-iam:GET_GenerateOrganizationsAccessReport": {
+    "method": "GET",
+    "path": "/#Action=GenerateOrganizationsAccessReport",
+    "description": "Generate a report about an organization’s access to AWS services."
+  },
+  "aws-iam:POST_GenerateOrganizationsAccessReport": {
+    "method": "POST",
+    "path": "/#Action=GenerateOrganizationsAccessReport",
+    "description": "Generate a report about an organization’s access to AWS services."
+  },
+  "aws-sts:GET_AssumeRole": {
+    "method": "GET",
+    "path": "/#Action=AssumeRole",
+    "description": "Request temporary AWS credentials by assuming an IAM role. Role trust, session policies and MFA requirements apply."
+  },
+  "aws-sts:GET_AssumeRoleWithSAML": {
+    "method": "GET",
+    "path": "/#Action=AssumeRoleWithSAML",
+    "description": "Exchange a SAML assertion for temporary AWS credentials under the specified role and identity provider."
+  },
+  "aws-sts:GET_AssumeRoleWithWebIdentity": {
+    "method": "GET",
+    "path": "/#Action=AssumeRoleWithWebIdentity",
+    "description": "Exchange an external identity token for temporary AWS credentials under the specified IAM role."
+  },
+  "aws-sts:GET_GetFederationToken": {
+    "method": "GET",
+    "path": "/#Action=GetFederationToken",
+    "description": "Request temporary AWS credentials for a federated user with the specified session permissions."
+  },
+  "aws-sts:POST_AssumeRole": {
+    "method": "POST",
+    "path": "/#Action=AssumeRole",
+    "description": "Request temporary AWS credentials by assuming an IAM role. Role trust, session policies and MFA requirements apply."
+  },
+  "aws-sts:POST_AssumeRoleWithSAML": {
+    "method": "POST",
+    "path": "/#Action=AssumeRoleWithSAML",
+    "description": "Exchange a SAML assertion for temporary AWS credentials under the specified role and identity provider."
+  },
+  "aws-sts:POST_AssumeRoleWithWebIdentity": {
+    "method": "POST",
+    "path": "/#Action=AssumeRoleWithWebIdentity",
+    "description": "Exchange an external identity token for temporary AWS credentials under the specified IAM role."
+  },
+  "aws-sts:POST_GetFederationToken": {
+    "method": "POST",
+    "path": "/#Action=GetFederationToken",
+    "description": "Request temporary AWS credentials for a federated user with the specified session permissions."
+  },
+  "aws-route53:ChangeResourceRecordSets": {
+    "method": "POST",
+    "path": "/2013-04-01/hostedzone/{Id}/rrset/",
+    "description": "Create, update or delete DNS records in a hosted zone using a change batch."
+  },
+  "aws-route53:CreateQueryLoggingConfig": {
+    "method": "POST",
+    "path": "/2013-04-01/queryloggingconfig",
+    "description": "Configure Route 53 DNS query logging for a hosted zone."
+  },
+  "aws-s3:CreateBucket": {
+    "method": "PUT",
+    "path": "/{Bucket}",
+    "description": "Create an S3 bucket using the selected regional endpoint and bucket configuration."
+  }
+}

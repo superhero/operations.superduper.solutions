@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { operationInsertionBlockReason } from "$lib/operation-capabilities.ts";
   import { isInputLink } from "$lib/workflow-input-links.ts";
   import { isResponseLink } from "$lib/workflow-response-links.ts";
   import { workflowLineStyle, workflowLineStyles, type WorkflowLineStyle } from "$lib/workflow-line-style.ts";
@@ -178,7 +179,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   setContext("workflow-operation-version", {
     choices: (operationId: string) => (operationIndex.variants.get(operationId) ?? []).map(operation => ({
       value: operation.id, label: operationIndex.paths.get(operation.id)!.version,
-      disabled: Boolean(operation.unavailableReason),
+      disabled: Boolean(operationInsertionBlockReason(operation)),
     })),
     pending: () => changingOperationVersion,
     active: () => keyboardActive,
@@ -663,7 +664,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const node = nodes.find(node => node.id === nodeId);
     if (!node || node.type !== "operation" || node.data.operationId === operationId) return;
     const previousId = node.data.operationId;
-    const target = operationIndex.variants.get(previousId)?.find(operation => operation.id === operationId && !operation.unavailableReason);
+    const target = operationIndex.variants.get(previousId)?.find(operation => operation.id === operationId && !operationInsertionBlockReason(operation));
     if (!target) return;
     const revision = getSchemaLibrary().revision;
     const workflowId = id;

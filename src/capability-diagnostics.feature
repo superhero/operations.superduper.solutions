@@ -28,3 +28,9 @@ Feature: Independent operation capabilities
   @coverage-gaps
   Scenario: Compact capability metadata retains its bounded reason references
     Then compact capability records preserve reason references and reject invalid wire shapes
+
+  Scenario: Malformed source shapes retain useful parameter and form diagnostics
+    Then malformed union branches and form encoding metadata fail with precise diagnostics
+
+  Scenario: Runtime request guards reject forged serialization contracts
+    Then runtime request validation refuses malformed unions exclusive fields and forged serialization

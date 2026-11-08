@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { operationBlockReason } from "./operation-capabilities.ts";
+import { operationBlockReason, operationInsertionBlockReason } from "./operation-capabilities.ts";
 import LightningFS from "@isomorphic-git/lightning-fs";
 import { Buffer } from "buffer";
 import * as git from "isomorphic-git";
@@ -10,6 +10,7 @@ import { openDB, type DBSchema, type IDBPDatabase, type IDBPTransaction } from "
 import { bundledCatalogs } from "./catalog-registry.ts";
 import legacyExamples from "../catalogs/example-revisions.json" with { type: "json" };
 import { operationServerUrl, validateSchemaDocument, validateSchemaDocumentId, type SchemaDocumentRecord } from "./schema-documents.ts";
+import { ServerConfigurationRequiredError } from "./server-url.ts";
 import { catalogsDatabaseName, catalogsIndexDatabaseName } from "./storage-names.ts";
 import { approvedOperation } from "./secrets/policy.ts";
 import { approvedNativeOperation } from "./secrets/native-rpc-policy.ts";
@@ -357,14 +358,15 @@ export function readSchemaOperations(id: string, expectedIdentity: string, opera
       }
       const operation = inspect ? inspect(record.document, id, descriptor) : canonical!.get(operationId);
       if (!operation) throw new Error("This operation is not available in the registered schemas.");
-      if (operationBlockReason(operation)) throw new Error(operationBlockReason(operation));
+      if (operationInsertionBlockReason(operation)) throw new Error(operationInsertionBlockReason(operation));
       const { schema } = scopeOperationSchema(record.document, operation.path, operation.method, true);
       let origin = "";
       try {
         origin = operationServerUrl(record.document, operation);
         if (operation.dockerNative && new URL(origin).hostname === "no-default") origin = "";
+        if (operationBlockReason(operation)) origin = "";
       }
-      catch (error) { if (!operation.dockerNative) throw error; }
+      catch (error) { if (!operation.dockerNative && !(error instanceof ServerConfigurationRequiredError)) throw error; }
       if (operation.dockerNative) approved.add((await approvedDockerOperation(operation, schema)).fingerprint);
       try { approved.add((await approvedOperation(operation, origin)).fingerprint); }
       catch (error) { if (!(error instanceof VaultError) || error.code !== "PERMISSION") throw error; }

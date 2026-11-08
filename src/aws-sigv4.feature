@@ -15,8 +15,8 @@ Feature: Private AWS Signature Version 4 requests
   Scenario: Unsafe signing inputs cannot become requests
     Then AWS rejects public signing overrides multipart bodies invalid clocks and insecure destinations
 
-  Scenario: Native Lambda gets one bounded REST profile and S3 loses static fallback
-    Then native AWS schemas retain source identities while only the selected Lambda REST request becomes executable
+  Scenario: Legacy AWS signing profiles remain intact alongside reviewed REST profiles
+    Then native AWS schemas preserve legacy Lambda and S3 profiles alongside reviewed REST operations
 
   Scenario Outline: Private regional execution supports <mode> credentials
     Then a saved AWS connection with "<mode>" credentials signs a current regional Lambda request privately

@@ -849,7 +849,28 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
   await expect(card.locator('.json-view')).toHaveCount(0);
   await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
-  // Install only Telegram alongside the examples when this scenario reloads.
+  const capabilityFixture = {
+    openapi: '3.1.0', info: { title: 'Schema support count fixture', version: '1',
+      description: 'One public read and one credential result without a reviewed private adoption contract.' },
+    servers: [{ url: 'https://schema-fixture.example.test' }],
+    paths: {
+      '/public': { get: { operationId: 'publicRead', responses: { '200': { description: 'OK' } } } },
+      '/credentials': { get: { operationId: 'unreviewedCredentialResult', 'x-operations-credential-result': true,
+        responses: { '200': { description: 'A private credential requiring an adoption contract.', content: {
+          'application/json': { schema: { type: 'object', properties: { token: { type: 'string' } } } },
+        } } } } },
+    },
+  };
+  await documents.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'schema-support-count.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(capabilityFixture)),
+  });
+  const uploaded = documents.locator('.schema-card').filter({ has: page.getByRole('button', {
+    name: `Schema details: ${capabilityFixture.info.title}`, exact: true,
+  }) });
+  await expect(uploaded).toHaveCount(1);
+  const fixtureId = await uploaded.getAttribute('data-schema-id');
+  await expect(documents).toHaveAttribute('aria-busy', 'false');
+  // Install Telegram alongside the examples and isolated upload on reload.
   await page.evaluate(async databaseName => {
     const opening = indexedDB.open(databaseName);
     const database = await new Promise((resolve, reject) => {
@@ -874,16 +895,20 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   const telegram = documents.locator('[data-schema-id="telegram"]');
   await expandSchemaCard(telegram);
-  const metadata = telegram.locator('.schema-metadata');
-  await expect(metadata.locator('dt')).toHaveText(['Operations']);
+  const telegramMetadata = telegram.locator('.schema-metadata');
+  await expect(telegramMetadata.locator('dt')).toHaveText(['Operations']);
   await expect(telegram.locator('.schema-description p')).toHaveText(schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary.description);
-  const { operationCount, unavailableCount } = schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary;
-  assert.ok(unavailableCount > 0, 'This schema exercises unsupported-operation metadata');
+  await expect(telegramMetadata.locator('dd')).toHaveText(schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary.operationCount.toLocaleString());
+  const unsupported = documents.locator(`[data-schema-id="${fixtureId}"]`);
+  await expandSchemaCard(unsupported);
+  const metadata = unsupported.locator('.schema-metadata');
+  await expect(metadata.locator('dt')).toHaveText(['Operations']);
+  await expect(unsupported.locator('.schema-description p')).toHaveText(capabilityFixture.info.description);
   const count = metadata.locator('dd').last().locator('span');
-  await expect(count).toHaveText(operationCount.toLocaleString());
+  await expect(count).toHaveText('2');
   // Scrolling dismisses tooltips; bring the whole metric into view first.
   await metadata.scrollIntoViewIfNeeded();
   await metadata.locator('dt').last().hover();
   await count.hover();
-  await expect(page.getByRole('tooltip')).toHaveText(`${(operationCount - unavailableCount).toLocaleString()} of ${operationCount.toLocaleString()} operations supported.`);
+  await expect(page.getByRole('tooltip')).toHaveText('1 of 2 operations supported.');
 });

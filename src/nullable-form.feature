@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
-Feature: Bounded nullable multipart fields
+Feature: Bounded nullable form fields and diagnostics
   Scenario: Valid files retain exact identity and bytes through private preparation
     Then nullable file declarations preserve filename media and bytes in canonical private multipart requests
 
@@ -22,3 +22,15 @@ Feature: Bounded nullable multipart fields
 
   Scenario: The pinned GitLab upload preserves a bounded required file
     Then the native GitLab upload prepares its canonical file without changing its source
+
+  Scenario: Suggested string unions use ordinary form fields
+    Then form string suggestions preserve arbitrary strings null rejection and omission
+
+  Scenario: String union support preserves other schema constraints
+    Then form unions keep exclusive mixed binary and constrained schemas unavailable
+
+  Scenario: Form limitations identify each field and custom part
+    Then both importers name unsupported structured form fields and custom encoding parts
+
+  Scenario: The pinned ElevenLabs dubbing project accepts its native form
+    Then ElevenLabs dubbing forms preserve model strings files lists and private credentials

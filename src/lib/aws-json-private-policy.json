@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "members": {
+    "aws-athena": { "CreatePresignedNotebookUrlResponse": ["NotebookUrl", "AuthToken"] },
+    "aws-codebuild": { "Webhook": ["secret"] },
+    "aws-codepipeline": {
+      "AWSSessionCredentials": ["accessKeyId", "secretAccessKey", "sessionToken"],
+      "ActionExecution": ["token"], "RuleExecution": ["token"], "Job": ["nonce"],
+      "ThirdPartyJobDetails": ["nonce"], "WebhookAuthConfiguration": ["SecretToken"]
+    },
+    "aws-cognito-idp": {
+      "AuthenticationResultType": ["AccessToken", "RefreshToken", "IdToken"],
+      "AdminInitiateAuthResponse": ["Session"], "AdminRespondToAuthChallengeResponse": ["Session"],
+      "AssociateSoftwareTokenResponse": ["SecretCode", "Session"], "InitiateAuthResponse": ["Session"],
+      "RespondToAuthChallengeResponse": ["Session"], "VerifySoftwareTokenResponse": ["Session"],
+      "UserPoolClientType": ["ClientSecret"], "UserImportJobType": ["PreSignedUrl"]
+    },
+    "aws-ecr": { "AuthorizationData": ["authorizationToken"] },
+    "aws-ecs": { "Session": ["streamUrl", "tokenValue"] },
+    "aws-firehose": { "SplunkDestinationDescription": ["HECToken"] },
+    "aws-fsx": { "OntapFileSystemConfiguration": ["FsxAdminPassword"] },
+    "aws-glue": { "SourceControlDetails": ["AuthToken"] },
+    "aws-kms": {
+      "CreateGrantResponse": ["GrantToken"], "DecryptResponse": ["Plaintext"],
+      "GenerateDataKeyResponse": ["Plaintext"], "GenerateDataKeyPairResponse": ["PrivateKeyPlaintext"],
+      "GenerateRandomResponse": ["Plaintext"], "GetParametersForImportResponse": ["ImportToken"]
+    },
+    "aws-sagemaker": {
+      "CreatePresignedDomainUrlResponse": ["AuthorizedUrl"],
+      "CreatePresignedNotebookInstanceUrlOutput": ["AuthorizedUrl"], "CallbackStepMetadata": ["CallbackToken"]
+    },
+    "aws-secretsmanager": { "GetSecretValueResponse": ["SecretString", "SecretBinary"], "GetRandomPasswordResponse": ["RandomPassword"] },
+    "aws-ssm": {
+      "Parameter": ["Value"], "ParameterHistory": ["Value"],
+      "StartSessionResponse": ["TokenValue", "StreamUrl"], "ResumeSessionResponse": ["TokenValue", "StreamUrl"],
+      "GetDeployablePatchSnapshotForInstanceResult": ["SnapshotDownloadUrl"]
+    },
+    "aws-states": { "GetActivityTaskOutput": ["taskToken"] }
+  },
+  "mapKeys": {
+    "aws-glue": { "ConnectionProperties": ["PASSWORD", "ENCRYPTED_PASSWORD", "KAFKA_CLIENT_KEYSTORE_PASSWORD", "KAFKA_CLIENT_KEY_PASSWORD", "ENCRYPTED_KAFKA_CLIENT_KEYSTORE_PASSWORD", "ENCRYPTED_KAFKA_CLIENT_KEY_PASSWORD", "KAFKA_SASL_PLAIN_PASSWORD", "ENCRYPTED_KAFKA_SASL_PLAIN_PASSWORD", "KAFKA_SASL_SCRAM_PASSWORD", "ENCRYPTED_KAFKA_SASL_SCRAM_PASSWORD"] },
+    "aws-codepipeline": { "ActionConfigurationMap": ["*"] }
+  },
+  "inputMembers": { "aws-cognito-idp": ["Code", "ConfirmationCode", "UserCode", "DeviceSecretVerifierConfig", "PasswordVerifier"] },
+  "inputNames": [
+    "AccessToken", "RefreshToken", "IdToken", "Password", "PreviousPassword", "ProposedPassword", "TemporaryPassword",
+    "SecretHash", "Session", "SecretCode", "AuthParameters", "ChallengeResponses", "ClientSecret", "SecretString", "SecretBinary",
+    "Plaintext", "PrivateKeyPlaintext", "ImportToken", "GrantTokens", "taskToken", "TokenValue", "secretAccessKey", "sessionToken",
+    "nonce", "HECToken", "AccessKey", "AuthToken", "FsxAdminPassword", "WindowsAdminPassword", "SelfManagedActiveDirectoryConfiguration"
+  ]
+}

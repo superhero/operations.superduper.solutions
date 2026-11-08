@@ -1,0 +1,414 @@
+{
+  "version": 1,
+  "sources": {
+    "bamboo": {
+      "sha256": "a5f54819ac94622e3855a4a809404b538858fd98ac51690e25960643634a2b4e",
+      "title": "Bamboo",
+      "version": "12.1.12",
+      "openapi": "3.0.1",
+      "filePart": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "formField": {
+            "type": "boolean"
+          },
+          "inputStream": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest/",
+          "variables": {
+            "baseurl": {
+              "default": "example.com:8085",
+              "description": "Bamboo URL"
+            }
+          }
+        }
+      ],
+      "basic": {
+        "type": "http",
+        "description": "In order to use basic authorization, provide username:password Base64 encoded in the 'Authorization' header.",
+        "scheme": "basic"
+      }
+    },
+    "crowd-dc": {
+      "sha256": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
+      "title": "Crowd Data Center",
+      "version": "7.2.4",
+      "openapi": "3.0.1",
+      "filePart": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "formField": {
+            "type": "boolean"
+          },
+          "inputStream": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest",
+          "variables": {
+            "baseurl": {
+              "description": "Address of your Crowd instance",
+              "default": "example.com:8095"
+            }
+          }
+        }
+      ],
+      "basic": {
+        "type": "http",
+        "description": "In order to use basic authorization, provide username:password Base64 encoded in the 'Authorization' header.",
+        "scheme": "basic"
+      }
+    },
+    "jira-dc": {
+      "sha256": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
+      "title": "Jira Software Data Center REST API Reference",
+      "version": "11.3.12",
+      "openapi": "3.0.1",
+      "filePart": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "formField": {
+            "type": "boolean"
+          },
+          "inputStream": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest",
+          "variables": {
+            "baseurl": {
+              "default": "localhost:8090",
+              "description": "Address of your Jira Data Center instance"
+            }
+          }
+        }
+      ],
+      "basic": {
+        "type": "http",
+        "description": "In order to use basic authorization, provide username:password Base64 encoded in the 'Authorization' header.",
+        "scheme": "basic"
+      }
+    },
+    "jira-service-management-dc": {
+      "sha256": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
+      "title": "JIRA Service Management REST API Reference",
+      "version": "11.3.12",
+      "openapi": "3.0.1",
+      "filePart": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "formField": {
+            "type": "boolean"
+          },
+          "inputStream": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "http://{baseurl}/rest",
+          "variables": {
+            "baseurl": {
+              "default": "localhost:2990",
+              "description": "Address of your Jira Service Management instance"
+            }
+          }
+        }
+      ],
+      "basic": {
+        "type": "http",
+        "description": "In order to use basic authorization, provide username:password Base64 encoded in the 'Authorization' header.",
+        "scheme": "basic"
+      }
+    }
+  },
+  "operations": {
+    "bamboo:PUT /api/latest/avatar/user/avatar.png": {
+      "catalog": "bamboo",
+      "path": "/api/latest/avatar/user/avatar.png",
+      "method": "PUT",
+      "operationId": "PUT /api/latest/avatar/user/avatar.png",
+      "part": "avatar",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            }
+          }
+        },
+        "description": "Avatar file to upload",
+        "required": true
+      },
+      "security": null
+    },
+    "crowd-dc:POST /rest/admin/1.0/samlconfig/application/parse_metadata_multipart": {
+      "catalog": "crowd-dc",
+      "path": "/rest/admin/1.0/samlconfig/application/parse_metadata_multipart",
+      "method": "POST",
+      "operationId": "POST /rest/admin/1.0/samlconfig/application/parse_metadata_multipart",
+      "part": "file",
+      "requestBody": {
+        "description": "search criteria",
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            },
+            "example": "<md:EntityDescriptor entityID=\"http://jira.com\" xmlns:md=\"urn:oasis:names:tc:SAML:2.0:metadata\">\n    <md:SPSSODescriptor protocolSupportEnumeration=\"urn:oasis:names:tc:SAML:2.0:protocol\">\n        <md:AssertionConsumerService Location=\"http://jira.com/SAML2/SSO/POST\"/>\n    </md:SPSSODescriptor>\"\n</md:EntityDescriptor>\"\n"
+          }
+        }
+      },
+      "security": null
+    },
+    "jira-dc:POST /api/2/issuetype/{id}/avatar/temporary": {
+      "catalog": "jira-dc",
+      "path": "/api/2/issuetype/{id}/avatar/temporary",
+      "method": "POST",
+      "operationId": "POST /api/2/issuetype/{id}/avatar/temporary",
+      "part": "avatar",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "basic": []
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        }
+      ]
+    },
+    "jira-dc:POST /api/2/project/{projectIdOrKey}/avatar/temporary": {
+      "catalog": "jira-dc",
+      "path": "/api/2/project/{projectIdOrKey}/avatar/temporary",
+      "method": "POST",
+      "operationId": "POST /api/2/project/{projectIdOrKey}/avatar/temporary",
+      "part": "avatar",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "basic": []
+        }
+      ]
+    },
+    "jira-dc:POST /api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp": {
+      "catalog": "jira-dc",
+      "path": "/api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp",
+      "method": "POST",
+      "operationId": "POST /api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp",
+      "part": "avatar",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "basic": []
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        }
+      ]
+    },
+    "jira-service-management-dc:POST /api/2/issuetype/{id}/avatar/temporary": {
+      "catalog": "jira-service-management-dc",
+      "path": "/api/2/issuetype/{id}/avatar/temporary",
+      "method": "POST",
+      "operationId": "POST /api/2/issuetype/{id}/avatar/temporary",
+      "part": "avatar",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "basic": []
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        }
+      ]
+    },
+    "jira-service-management-dc:POST /api/2/project/{projectIdOrKey}/avatar/temporary": {
+      "catalog": "jira-service-management-dc",
+      "path": "/api/2/project/{projectIdOrKey}/avatar/temporary",
+      "method": "POST",
+      "operationId": "POST /api/2/project/{projectIdOrKey}/avatar/temporary",
+      "part": "avatar",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "basic": []
+        }
+      ]
+    },
+    "jira-service-management-dc:POST /api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp": {
+      "catalog": "jira-service-management-dc",
+      "path": "/api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp",
+      "method": "POST",
+      "operationId": "POST /api/2/universal_avatar/type/{type}/owner/{owningObjectId}/temp",
+      "part": "avatar",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/FilePart"
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "basic": []
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        },
+        {
+          "OAuth2": [
+            "WRITE"
+          ]
+        }
+      ]
+    }
+  },
+  "implementationEvidence": {
+    "bamboo": {
+      "url": "https://product-downloads.atlassian.com/software/bamboo/downloads/atlassian-bamboo-12.1.12-windows-x64.zip",
+      "entry": "atlassian-bamboo-12.1.12-x64/atlassian-bamboo/WEB-INF/atlassian-bundled-plugins/atlassian-bamboo-plugin-rest-12.1.12.jar",
+      "sha256": "02afe44ec67d89a400d55729d10b1379d9c16e4e69d020838835571487fcc23a",
+      "authentication": "https://developer.atlassian.com/server/bamboo/using-the-bamboo-rest-apis/#rest-authentication"
+    },
+    "crowd-dc": {
+      "url": "https://packages.atlassian.com/mvn/maven-atlassian-external/com/atlassian/crowd/crowd-rest-admin/7.2.4/crowd-rest-admin-7.2.4.jar",
+      "sha256": "70154ac650cfc438730130f7eefaeaed63687ed9d3cd77c890d39d645919a71e",
+      "authentication": "https://confluence.atlassian.com/crowd/crowd-3-2-upgrade-notes-947859101.html",
+      "adminAuthentication": "https://support.atlassian.com/crowd/kb/how-to-fetch-crowd-audit-logs-using-rest-api/"
+    },
+    "jira-platform": {
+      "url": "https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-11.3.12.zip",
+      "entry": "atlassian-jira-software-11.3.12-standalone/atlassian-jira/WEB-INF/atlassian-bundled-plugins/com.atlassian.jira.jira-rest-plugin-11.3.12.jar",
+      "sha256": "2f52ffa0994f250ab47ce0a1aeda3e518ad80b6e7b8490555c23926d307f53f7"
+    }
+  }
+}

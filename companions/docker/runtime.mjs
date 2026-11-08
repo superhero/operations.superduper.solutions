@@ -5,8 +5,12 @@ import { request } from 'node:http';
 import { lstat, realpath } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { createConnection } from 'node:net';
+import WebSocket from 'ws';
+import { encodeWorkflowBinary, maxWorkflowUploadBytes } from '../../src/lib/workflow-binary.ts';
 import { nativeUuid } from '../../src/lib/native-runtime-contract.ts';
-import { dockerNativeApi, dockerNativeLimits as limits, dockerIdentity, dockerReadPath, sameDockerIdentity } from '../../src/lib/docker-native-contract.ts';
+import { dockerNativeApi, dockerNativeLimits as limits, dockerIdentity, dockerReadPath, sameDockerIdentity,
+  dockerReadOperations, dockerNativeOperationId, dockerNativeAttachOperationId, dockerAttachParams, dockerAttachReadPath } from '../../src/lib/docker-native-contract.ts';
 
 export class DockerHostError extends Error {
   constructor(code) { super(code); this.code = code; }
@@ -18,6 +22,7 @@ export async function openDockerSocket(config) {
   if (process.platform !== 'linux' || !nativeUuid(config.hostId) || typeof config.socketPath !== 'string' || !isAbsolute(config.socketPath))
     throw new DockerHostError('DOCKER_UNAVAILABLE');
   const path = resolve(config.socketPath), generation = randomUUID();
+  const operations = dockerReadOperations(config.operations);
   async function socketIdentity() {
     try {
       const metadata = await lstat(path);
@@ -25,6 +30,41 @@ export async function openDockerSocket(config) {
         throw new DockerHostError('DOCKER_AUTHORITY');
       return digest(JSON.stringify([path, metadata.dev, metadata.ino]));
     } catch (error) { throw error instanceof DockerHostError ? error : new DockerHostError('DOCKER_UNAVAILABLE'); }
+  }
+  async function attachment(input, signal) {
+    const params = dockerAttachParams(input), cancellation = AbortSignal.any([AbortSignal.timeout(limits.requestMs), ...(signal ? [signal] : [])]);
+    if (cancellation.aborted) throw new DockerHostError('DOCKER_UNAVAILABLE');
+    return new Promise((resolve, reject) => {
+      let settled = false, opened = false, size = 0;
+      const chunks = [];
+      const socket = new WebSocket('ws://localhost' + dockerAttachReadPath(params), {
+        createConnection: () => createConnection({ path }), followRedirects: false, perMessageDeflate: false,
+        handshakeTimeout: limits.socketMs, maxPayload: maxWorkflowUploadBytes,
+      });
+      const fail = code => {
+        if (settled) return; settled = true; cancellation.removeEventListener('abort', abort);
+        socket.terminate(); reject(new DockerHostError(code));
+      };
+      const abort = () => fail('DOCKER_UNAVAILABLE');
+      cancellation.addEventListener('abort', abort, { once: true });
+      socket.on('open', () => { opened = true; });
+      socket.on('message', data => {
+        const bytes = Array.isArray(data) ? Buffer.concat(data) : Buffer.from(data);
+        size += bytes.length;
+        if (size > maxWorkflowUploadBytes) return fail('LIMIT');
+        chunks.push(bytes);
+      });
+      socket.on('unexpected-response', (_req, response) => { response.destroy(); fail('DOCKER_UNAVAILABLE'); });
+      socket.on('error', () => fail('DOCKER_UNAVAILABLE'));
+      socket.on('close', code => {
+        if (settled) return;
+        if (!opened || ![1000, 1001, 1005].includes(code)) return fail('DOCKER_UNAVAILABLE');
+        settled = true; cancellation.removeEventListener('abort', abort);
+        resolve({ status: 101, statusText: 'Switching Protocols', headers: { 'content-type': 'application/octet-stream' },
+          body: encodeWorkflowBinary('container-attachment.bin', Buffer.concat(chunks)), mediaType: 'application/octet-stream', bodyType: 'binary' });
+      });
+      if (cancellation.aborted) abort();
+    });
   }
   await socketIdentity();
   async function json(pathname, signal) {
@@ -67,14 +107,17 @@ export async function openDockerSocket(config) {
     const info = await json('/v' + dockerNativeApi + '/info', signal);
     if (info.status !== 200 || await socketIdentity() !== socket) throw new DockerHostError('DOCKER_AUTHORITY');
     return dockerIdentity({ hostId: config.hostId, generation, socket, apiVersion: dockerNativeApi, daemonId: info.body?.ID,
-      configuration: digest(JSON.stringify([path, dockerNativeApi, limits.response, 'ContainerList', false])) });
+      configuration: digest(JSON.stringify(operations.length === 1 && operations[0] === dockerNativeOperationId
+        ? [path, dockerNativeApi, limits.response, 'ContainerList', false]
+        : [path, dockerNativeApi, limits.response, operations, maxWorkflowUploadBytes, false])) });
   }
-  async function read(expected, params, signal) {
+  async function read(expected, params, signal, operation = dockerNativeOperationId) {
+    if (!operations.includes(operation)) throw new DockerHostError('PERMISSION');
     const before = await authority(signal);
     if (!sameDockerIdentity(expected, before)) throw new DockerHostError('DOCKER_AUTHORITY');
-    const response = await json(dockerReadPath(params), signal);
+    const response = operation === dockerNativeAttachOperationId ? await attachment(params, signal) : await json(dockerReadPath(params), signal);
     if (!sameDockerIdentity(before, await authority(signal))) throw new DockerHostError('DOCKER_AUTHORITY');
-    if (response.status === 200 && !Array.isArray(response.body)) throw new DockerHostError('DOCKER_UNAVAILABLE');
+    if (operation === dockerNativeOperationId && response.status === 200 && !Array.isArray(response.body)) throw new DockerHostError('DOCKER_UNAVAILABLE');
     return response;
   }
   return { authority, read };

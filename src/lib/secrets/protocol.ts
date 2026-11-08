@@ -13,7 +13,8 @@ export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate
   | "beginAtprotoOAuth" | "completeAtprotoOAuth" | "cancelAtprotoOAuth"
   | "beginGitlabOAuth" | "completeGitlabOAuth" | "cancelGitlabOAuth"
   | "nativeConnections" | "pairNativeRuntime" | "checkNativeRuntime" | "disconnectNativeRuntime"
-  | "enableNativeWorkflow" | "loginNativeRuntime" | "executeNativeRuntime"
+  | "enableNativeWorkflow" | "loginNativeRuntime" | "executeNativeRuntime" | "executeNativeAccount" | "executeNativeInitialize" | "executeNativeQuery" | "executeNativeFeedback" | "executeNativeMcpOAuth"
+  | "cancelNativeAccountLogin" | "cancelNativeGatewayLogin" | "controlNativeTurn" | "executeNativeWatch" | "executeNativeUnwatch" | "executeNativeCommand" | "controlNativeCommand"
   | "dockerConnections" | "pairDockerHost" | "checkDockerHost" | "disconnectDockerHost" | "executeDockerRead"
   | "execute" | "checkAssertion" | "backup" | "restore" | "addMethod" | "removeMethod" | "rotate";
 export type VaultArguments<M extends VaultMethod> = Parameters<VaultSession[M]>;
@@ -21,7 +22,9 @@ export type VaultResult<M extends VaultMethod> = Awaited<ReturnType<VaultSession
 export type VaultFailure = { kind: "vault"; code: VaultErrorCode }
   | { kind: "field"; field: string; message: string }
   | { kind: "response"; response: WorkflowResponse; message: string };
-export type VaultReply = { id: number; ok: true; value: unknown } | { id: number; ok: false; error: VaultFailure }
+export type VaultReply = { id: number; ok: true; value: unknown; nativeReference?: import('./native-reference-continuations.ts').NativeReferenceTransition } | { id: number; ok: false; error: VaultFailure }
   | { event: "locked" } | { event: "response-progress"; id: number; progress: ResponseProgress }
   | { event: "response-value"; id: number; value: import("../workflow-response-stream.ts").ResponseValue }
-  | { event: "native-progress"; id: number; progress: NativeAgentProgress };
+  | { event: "native-progress"; id: number; progress: NativeAgentProgress }
+  | { event: "command-value"; id: number; value: import('../native-command.ts').NativeCommandValue }
+  | { event: "native-value"; id: number; value: import('../native-filesystem-watch.ts').NativeFilesystemWatchValue };

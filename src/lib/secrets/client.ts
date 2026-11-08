@@ -15,6 +15,11 @@ import type { VaultArguments, VaultMethod, VaultReply, VaultResult } from "./pro
 import { isResponseProgress, isResponseValue, isJsonResponseStream, isResponseStreamProfile, streamLimits, type ResponseProgressCallback, type ResponseValueCallback } from "../workflow-response-stream.ts";
 import type { NativeProgressCallback, NativeDecision } from "../native-agent-contract.ts";
 import { nativeRuntimeLimits } from "../native-runtime-contract.ts";
+import { isNativeFilesystemWatchValue, type NativeFilesystemWatchCallback } from '../native-filesystem-watch.ts';
+import { isNativeCommandValue, type NativeCommandCallback } from '../native-command.ts';
+import { canStartVaultRequest } from './request-policy.ts';
+import { NativeReferenceContinuations } from './native-reference-continuations.ts';
+import type { NativeRuntimeReference } from './native-runtime-config.ts';
 
 let worker: Worker | undefined;
 let release: (() => void) | undefined;
@@ -24,9 +29,16 @@ let sequence = 0;
 let preferences: VaultPreferences = { ...defaultVaultPreferences };
 let ceremony: AbortController | undefined;
 let connectionMetadata = Promise.resolve();
+const nativeReferences = new NativeReferenceContinuations();
+const nativeExecutionMethods = new Set<VaultMethod>(['executeNativeRuntime', 'executeNativeAccount', 'executeNativeInitialize', 'executeNativeQuery', 'executeNativeFeedback', 'executeNativeMcpOAuth', 'executeNativeWatch', 'executeNativeUnwatch', 'executeNativeCommand', 'controlNativeCommand', 'cancelNativeAccountLogin', 'cancelNativeGatewayLogin', 'controlNativeTurn']);
+export const currentNativeReference = (reference: NativeRuntimeReference): NativeRuntimeReference => nativeReferences.resolve(reference);
 const listeners = new Set<() => void>();
 const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void;
-  cleanup: () => void; generation: number; method: VaultMethod; nativeProgress: NativeProgressCallback | undefined; progress: ResponseProgressCallback | undefined; value: ResponseValueCallback | undefined }>();
+  cleanup: () => void; generation: number; method: VaultMethod; nativeProgress: NativeProgressCallback | undefined;
+  commandValue: NativeCommandCallback | undefined; commandConnection: string | undefined; commandToken?: string;
+  nativeConnection: string | undefined; nativeTokens: Set<string>;
+  nativeReference: NativeRuntimeReference | undefined;
+  nativeValue: NativeFilesystemWatchCallback | undefined; progress: ResponseProgressCallback | undefined; value: ResponseValueCallback | undefined }>();
 const channel = typeof BroadcastChannel === "undefined" ? undefined : new BroadcastChannel("operations-secret-vault");
 const lifecycle = createVaultLifecycle({ now: () => Date.now(), onLock: () => lockVaultLocally(),
   onDeadline: expires => worker?.postMessage({ kind: "policy", expires }), preferences });
@@ -42,6 +54,7 @@ export function lockVaultLocally(): void {
   lifecycle.deactivate();
   for (const item of pending.values()) { item.cleanup(); item.reject(new VaultError("CANCELLED")); }
   pending.clear();
+  nativeReferences.clear();
   for (const listener of listeners) listener();
 }
 
@@ -108,9 +121,30 @@ function ensureWorker(): Worker {
       }
       else if (data.event === "native-progress") {
         const item = pending.get(data.id);
-        if (item && item.generation === generation && ["loginNativeRuntime", "executeNativeRuntime"].includes(item.method)) {
+        if (item && item.generation === generation && ["loginNativeRuntime", "executeNativeRuntime", "executeNativeMcpOAuth", "executeNativeCommand"].includes(item.method)) {
           if (accessActive && !lifecycle.check()) { lockVaultLocally(); return; }
+          if (item.method === 'executeNativeCommand' && data.progress.kind === 'command-approval') item.commandToken = data.progress.token;
+          if (item.method === 'executeNativeRuntime') {
+            if (data.progress.kind === 'approval') item.nativeTokens.add(data.progress.interaction.token);
+            if (data.progress.kind === 'account-action-approval') item.nativeTokens.add(data.progress.token);
+            if (data.progress.kind === 'shell-approval') item.nativeTokens.add(data.progress.token);
+            if (data.progress.kind === 'guardian-approval') item.nativeTokens.add(data.progress.token);
+          }
           item.nativeProgress?.(data.progress);
+        }
+      }
+      else if (data.event === 'command-value') {
+        const item = pending.get(data.id);
+        if (item && item.method === 'executeNativeCommand' && item.generation === generation && isNativeCommandValue(data.value)) {
+          if (accessActive && !lifecycle.check()) { lockVaultLocally(); return; }
+          item.commandValue?.(data.value);
+        }
+      }
+      else if (data.event === 'native-value') {
+        const item = pending.get(data.id);
+        if (item && item.method === 'executeNativeWatch' && item.generation === generation && isNativeFilesystemWatchValue(data.value)) {
+          if (accessActive && !lifecycle.check()) { lockVaultLocally(); return; }
+          item.nativeValue?.(data.value);
         }
       }
       return;
@@ -120,7 +154,16 @@ function ensureWorker(): Worker {
     pending.delete(data.id); item.cleanup();
     if (item.generation !== generation) { item.reject(new VaultError("CANCELLED")); return; }
     if (accessActive && !lifecycle.check()) { item.reject(new VaultError("LOCKED")); return; }
-    if (data.ok) item.resolve(data.value);
+    if (data.ok) {
+      if (data.nativeReference) {
+        try {
+          if (item.method !== 'executeNativeRuntime' || !item.nativeReference) throw new VaultError('AUTHORIZATION');
+          const transition = nativeReferences.accept(item.nativeReference, data.nativeReference);
+          if (transition.after.revision !== transition.before.revision) channel?.postMessage({ kind: 'lock' });
+        } catch { item.reject(new VaultError('AUTHORIZATION')); lockVaultLocally(); return; }
+      }
+      item.resolve(data.value);
+    }
     else if (data.error.kind === "field") item.reject(new InputValidationError(data.error.field, data.error.message));
     else if (data.error.kind === "response") item.reject(new WorkflowResponseError(data.error.message, data.error.response));
     else item.reject(new VaultError(data.error.code));
@@ -132,21 +175,25 @@ function ensureWorker(): Worker {
 
 const mutations = new Set<VaultMethod>(["confirmCreate", "put", "remove", "grant", "revoke", "putConnection", "removeConnection", "completeGitlabOAuth", "completeAtprotoOAuth", "completeJiraOAuth", "pairNativeRuntime", "pairDockerHost", "enableNativeWorkflow", "loginNativeRuntime", "restore", "addMethod", "removeMethod", "rotate"]);
 export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArguments<M>, signal?: AbortSignal, onProgress?: ResponseProgressCallback,
-  onNativeProgress?: NativeProgressCallback, onValue?: ResponseValueCallback): Promise<VaultResult<M>> {
+  onNativeProgress?: NativeProgressCallback, onValue?: ResponseValueCallback, onNativeValue?: NativeFilesystemWatchCallback, onCommandValue?: NativeCommandCallback): Promise<VaultResult<M>> {
   if (signal?.aborted) throw new VaultError("CANCELLED");
   const requestGeneration = generation;
   if (method !== "nativeConnections" && method !== "dockerConnections") await connectionMetadata;
   configureVaultIdle(await loadVaultPreferences());
   if (requestGeneration !== generation || signal?.aborted) throw new VaultError("CANCELLED");
   const target = ensureWorker();
-  if (pending.size) throw new VaultError("CONFLICT");
+  if (!canStartVaultRequest([...pending.values()].map(item => item.method), method)) throw new VaultError('CONFLICT');
+  const dispatchArgs: unknown[] = [...args];
+  const nativeReference = nativeExecutionMethods.has(method) ? nativeReferences.resolve(dispatchArgs[0]) : undefined;
+  if (nativeReference) dispatchArgs[0] = nativeReference;
   const id = ++sequence;
   const result = await new Promise<unknown>((resolve, reject) => {
-    const native = method === "loginNativeRuntime" || method === "executeNativeRuntime";
+    const watch = method === 'executeNativeWatch';
+    const native = method === "loginNativeRuntime" || method === "executeNativeRuntime" || method === "executeNativeMcpOAuth" || method === "executeNativeCommand";
     let cancellationTimer: ReturnType<typeof setTimeout> | undefined;
     const cancel = () => {
-      if (native || method === "executeDockerRead") {
-        const item = pending.get(id); if (item) item.nativeProgress = undefined;
+      if (native || watch || method === 'controlNativeCommand' || method === 'cancelNativeAccountLogin' || method === 'cancelNativeGatewayLogin' || method === 'controlNativeTurn' || method === 'executeNativeUnwatch' || method === "executeDockerRead" || method === "executeNativeAccount" || method === "executeNativeInitialize" || method === "executeNativeQuery" || method === "executeNativeFeedback") {
+        const item = pending.get(id); if (item) { item.nativeProgress = undefined; item.nativeValue = undefined; item.commandValue = undefined; }
         target.postMessage({ kind: "cancel", id }); cancellationTimer = setTimeout(lockVaultLocally, 2500); return;
       }
       // Termination also interrupts a KDF that cannot process a queued abort message.
@@ -154,14 +201,18 @@ export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArg
     };
     const stream = method === "execute" && isResponseStreamProfile((args[0] as { operation?: { responseStream?: unknown } })?.operation?.responseStream);
     const longLived = method === "execute" && isJsonResponseStream((args[0] as { operation?: { responseStream?: import("../workflow-response-stream.ts").ResponseStreamProfile } })?.operation?.responseStream);
-    const timer = longLived ? undefined : setTimeout(() => lockVaultLocally(), native ? nativeRuntimeLimits.sessionMs + 10_000 : stream ? streamLimits.runMs + 30_000 : 30_000);
+    const timer = longLived ? undefined : setTimeout(() => lockVaultLocally(), native || watch ? nativeRuntimeLimits.sessionMs + 10_000 : method === "executeNativeFeedback" ? 340_000 : stream ? streamLimits.runMs + 30_000 : 30_000);
     const cleanup = () => { clearTimeout(timer); clearTimeout(cancellationTimer); signal?.removeEventListener("abort", cancel); };
-    pending.set(id, { resolve, reject, cleanup, generation, method, nativeProgress: native ? onNativeProgress : undefined, progress: method === "execute" ? onProgress : undefined, value: method === "execute" ? onValue : undefined });
+    pending.set(id, { resolve, reject, cleanup, generation, method, nativeReference, nativeConnection: method === 'executeNativeRuntime' ? (args[0] as { id: string }).id : undefined, nativeTokens: new Set(), commandValue: method === 'executeNativeCommand' ? onCommandValue : undefined, commandConnection: method === 'executeNativeCommand' ? (args[0] as { id: string }).id : undefined, nativeProgress: native ? onNativeProgress : undefined,
+      nativeValue: watch ? onNativeValue : undefined, progress: method === "execute" ? onProgress : undefined, value: method === "execute" ? onValue : undefined });
     signal?.addEventListener("abort", cancel, { once: true });
-    try { target.postMessage({ id, method, args }); }
+    try { target.postMessage({ id, method, args: dispatchArgs }); }
     catch { pending.delete(id); cleanup(); reject(new VaultError("UNAVAILABLE")); lockVaultLocally(); }
   });
   if (["unlock", "prepareCreate", "confirmCreate", "restore"].includes(method)) { accessActive = true; lifecycle.activate(); }
+  if (['checkNativeRuntime', 'enableNativeWorkflow', 'loginNativeRuntime', 'disconnectNativeRuntime'].includes(method)) {
+    const selected = args[0] as NativeRuntimeReference; nativeReferences.clear(selected.id);
+  }
   if (mutations.has(method) || method === "disconnectDockerHost" && args[1] === true) channel?.postMessage({ kind: "lock" });
   return result as VaultResult<M>;
 }
@@ -177,9 +228,15 @@ export function readVaultConnections<M extends "nativeConnections" | "dockerConn
 }
 
 export function replyNativeInteraction(connectionId: string, token: string, decision: NativeDecision): void {
-  const item = [...pending].find(([, value]) => value.method === "executeNativeRuntime" && value.generation === generation);
+  const item = [...pending].find(([, value]) => value.method === "executeNativeRuntime" && value.generation === generation && value.nativeConnection === connectionId && value.nativeTokens.has(token));
   if (!item || !worker || !accessActive || !lifecycle.check()) throw new VaultError("PERMISSION");
-  worker.postMessage({ kind: "native-reply", id: item[0], connectionId, token, decision });
+  item[1].nativeTokens.delete(token); worker.postMessage({ kind: "native-reply", id: item[0], connectionId, token, decision });
+}
+
+export function replyNativeCommand(connectionId: string, token: string, decision: NativeDecision): void {
+  const item = [...pending].find(([, value]) => value.method === 'executeNativeCommand' && value.generation === generation && value.commandConnection === connectionId && value.commandToken === token);
+  if (!item || !worker || !accessActive || !lifecycle.check()) throw new VaultError('PERMISSION');
+  delete item[1].commandToken; worker.postMessage({ kind: 'command-reply', id: item[0], connectionId, token, decision });
 }
 
 /** The caller gets PRF material only for immediate transfer to the worker; never a reusable store. */

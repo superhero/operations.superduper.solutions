@@ -7,7 +7,7 @@ import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, searchOperations, setEvaluationDetails } from './workspace.fixture.mjs';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
-import { operations } from '../../src/lib/catalog.ts';
+import { operations, extractOperations } from '../../src/lib/catalog.ts';
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 
 Then('full-library search renders nearby rows and shares tooltip state', async function () {
@@ -65,13 +65,30 @@ Then('full-library search renders nearby rows and shares tooltip state', async f
 });
 
 Then('delegated catalog help preserves disabled explanations anchors and dismissal', async function () {
-  const { readFile } = await import('node:fs/promises');
-  const { gunzipSync } = await import('node:zlib');
   const { setMode } = await import('./workspace.fixture.mjs');
-  const index = JSON.parse(gunzipSync(await readFile('src/catalogs/services/indexes/aws-lambda.json.gz')));
-  const unavailable = index.operations.find(operation => operation.unavailableReason);
-  assert.ok(unavailable);
   const page = this.page;
+  const document = { openapi: '3.1.0', info: { title: 'Catalog help fixture', version: '1' },
+    servers: [{ url: 'https://catalog-help.example.test' }], paths: { '/credentials': { get: {
+      operationId: 'catalogHelpPrivateResult', summary: 'Inspect catalog help credential fixture', 'x-operations-credential-result': true,
+      responses: { '200': { description: 'A private result without a reviewed adoption contract.', content: {
+        'application/json': { schema: { type: 'object', properties: { token: { type: 'string' } } } },
+      } } },
+    } } } };
+  await setMode(page, 'settings');
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  const documents = page.getByRole('region', { name: 'OpenAPI documents', exact: true });
+  await expect(documents).toHaveAttribute('aria-busy', 'false');
+  await documents.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'catalog-help.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
+  });
+  const card = documents.locator('.schema-card').filter({ has: page.getByRole('button', { name: `Schema details: ${document.info.title}`, exact: true }) });
+  await expect(card).toHaveCount(1);
+  const id = await card.getAttribute('data-schema-id');
+  await expect(documents).toHaveAttribute('aria-busy', 'false');
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  const unavailable = extractOperations(document, id)[0];
+  assert.ok(unavailable.unavailableReason);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openCatalog(page);
   await searchOperations(page, unavailable.name);

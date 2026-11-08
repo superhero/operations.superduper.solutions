@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { createHash } from 'node:crypto';
+import { ecbRegistrationParameters, ecbRegistrationSourceSha256, forgeLlmExclusion, forgeContainersSourceSha256 } from '../src/lib/schema-patches.ts';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -12,12 +13,42 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { awsQueryActions, gmailMessageContracts, mistralVariantContracts, structuredFormContracts, formFieldContracts, multipartRootContracts, atlassianFileParts, multipartPartContracts, awsJsonTargets, betaRouteContracts, multipartFileContracts, awsRestContractsPatch, atlassianTenantServers, assetsImportSourceParameter, applySchemaPatches, privateCredentialResults, bitbucketContentParameters, trelloParameterArrays, catalogPathBindings, atlassianDcAuthentication, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, githubClassroomRetirement, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256, providerPathBindings, atlassianServerBindings, awsS3Files, s3SourceSha256, awsWireProtocols, awsWireSources, bigqueryJobMetadata, bigqueryJobSourceSha256, googleStorageMedia, googleStorageMediaSourceSha256 } from '../src/lib/schema-patches.ts';
+import { betaRouteSources } from '../src/lib/literal-query.ts';
+import { multipartFileSources } from '../src/lib/multipart-file-contracts.ts';
+import { multipartPartSources } from '../src/lib/multipart-part-contracts.ts';
+import { gmailMessageSourceSha256 } from '../src/lib/gmail-message-contracts.ts';
+import { mistralVariantSourceSha256 } from '../src/lib/mistral-variant-contracts.ts';
+import { structuredFormSources } from '../src/lib/structured-form-contracts.ts';
+import { formFieldSources } from '../src/lib/form-field-contracts.ts';
+import { multipartRootSources } from '../src/lib/multipart-root-contracts.ts';
+import { atlassianFileSources } from '../src/lib/atlassian-file-parts.ts';
+import { credentialResultSources } from '../src/lib/credential-results.ts';
+import { bitbucketContentSourceSha256 } from '../src/lib/parameter-content.ts';
+import { trelloParameterSourceSha256 } from '../src/lib/trello-parameter-arrays.ts';
+import { catalogPathBindingSources } from '../src/lib/catalog-path-bindings.ts';
+import { commerceAuthentication, cloudflareLogoUpload } from '../src/lib/schema-patches.ts';
+import { commerceAuthenticationSourceSha256 } from '../src/lib/atlassian-commerce-authentication.ts';
+import { cloudflareLogoSourceSha256 } from '../src/lib/multipart-file-contracts.ts';
+import { uploadBodySources } from '../src/lib/upload-body-contracts.ts';
+import { uploadBodyContractsPatch } from '../src/lib/schema-patches.ts';
+import { digitalOceanDestinations } from '../src/lib/schema-patches.ts';
+import { digitalOceanDestinationSourceSha256 } from '../src/lib/digitalocean-destinations.ts';
+import { atlassianRelativeServers } from '../src/lib/schema-patches.ts';
+import { atlassianRelativeSources } from '../src/lib/atlassian-relative-servers.ts';
+import { dockerHttpContracts } from '../src/lib/schema-patches.ts';
+import { dockerHttpSourceSha256 } from '../src/lib/docker-http.ts';
+import { atlassianDcAuthenticationSources } from '../src/lib/atlassian-dc-authentication.ts';
+import { awsRestSourcePins } from '../src/lib/aws-rest-bindings.ts';
+import { awsQuerySourcePins } from '../src/lib/aws-query-bindings.ts';
+import { awsJsonSourcePins } from '../src/lib/aws-json-bindings.ts';
+import { atlassianTenantServerSources } from '../src/lib/atlassian-tenant-servers.ts';
 import { atlassianServerBindingSources } from '../src/lib/atlassian-server-bindings.ts';
 import { providerPathBindingSources } from '../src/lib/provider-path-bindings.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
 import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
+import { redactDockerCredentialExamples } from './docker-credential-examples.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const cache = resolve(root, 'tmp/schema-sources');
@@ -117,7 +148,40 @@ for (const source of sources) {
       operation.servers = [server];
     }
   }
+  if (source.id === 'docker') document = redactDockerCredentialExamples(document);
   const json = JSON.stringify(document);
+  if (Object.hasOwn(betaRouteSources, source.id) && sha(json) !== betaRouteSources[source.id])
+    throw new Error("Beta routes require requalification before updating their pinned native source.");
+  if (Object.hasOwn(atlassianFileSources, source.id) && sha(json) !== atlassianFileSources[source.id])
+    throw new Error("Atlassian file uploads require requalification before updating their pinned native source.");
+  if (Object.hasOwn(multipartPartSources, source.id) && sha(json) !== multipartPartSources[source.id])
+    throw new Error("Multipart part contracts require requalification before updating their pinned native source.");
+  if (source.id === 'google-gmail' && sha(json) !== gmailMessageSourceSha256)
+    throw new Error('Gmail message media requires requalification before updating the pinned source.');
+  if (source.id === 'mistral' && sha(json) !== mistralVariantSourceSha256)
+    throw new Error('Mistral variants require requalification before updating their pinned source.');
+  if (Object.hasOwn(structuredFormSources, source.id) && sha(json) !== structuredFormSources[source.id])
+    throw new Error('Structured form encodings require requalification before updating their pinned native source.');
+  if (Object.hasOwn(formFieldSources, source.id) && sha(json) !== formFieldSources[source.id])
+    throw new Error('Form field codecs require requalification before updating their pinned native source.');
+  if (Object.hasOwn(multipartRootSources, source.id) && sha(json) !== multipartRootSources[source.id])
+    throw new Error('Multipart body roots require requalification before updating their pinned native source.');
+  if (Object.hasOwn(multipartFileSources, source.id) && sha(json) !== multipartFileSources[source.id])
+    throw new Error("Multipart file contracts require requalification before updating their pinned native source.");
+  if (Object.hasOwn(awsJsonSourcePins, source.id) && sha(json) !== awsJsonSourcePins[source.id])
+    throw new Error('AWS JSON targets require requalification before updating their pinned native source.');
+  if (Object.hasOwn(awsRestSourcePins(), source.id) && sha(json) !== awsRestSourcePins()[source.id])
+    throw new Error('AWS REST signing requires requalification before updating its pinned native source.');
+  if (Object.hasOwn(atlassianTenantServerSources, source.id) && sha(json) !== atlassianTenantServerSources[source.id])
+    throw new Error('Atlassian tenant server variables require requalification before updating the pinned native source.');
+  if (Object.hasOwn(catalogPathBindingSources, source.id) && sha(json) !== catalogPathBindingSources[source.id])
+    throw new Error(`${source.id}: catalog path bindings require requalification before updating the pinned native source.`);
+  if (source.profile === 'atlassian-dc-authentication' && sha(json) !== atlassianDcAuthenticationSources[source.id])
+    throw new Error('Atlassian Data Center authentication requires requalification before updating the pinned native source.');
+  if (source.id === 'cloudflare' && sha(json) !== cloudflareLogoSourceSha256)
+    throw new Error('Cloudflare logo file transport requires requalification before updating the pinned source.');
+  if (source.id === 'atlassian-commerce' && sha(json) !== commerceAuthenticationSourceSha256)
+    throw new Error('Commerce authentication requires requalification before updating the pinned source.');
   if (source.profile === 'github-auth' && sha(json) !== githubAuthenticationSourceSha256)
     throw new Error('GitHub authentication requires requalification before updating the pinned native source.');
   if (source.profile === 'http-streaming' && sha(json) !== httpResponseStreamingSources[source.id])
@@ -140,13 +204,28 @@ for (const source of sources) {
     throw new Error('BigQuery job metadata requires requalification before updating the pinned native source.');
   if (source.id === 'gcp-storage' && sha(json) !== googleStorageMediaSourceSha256)
     throw new Error('Google Storage media requires requalification before updating the pinned native source.');
-  const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
+  if (source.id === 'ecb' && sha(json) !== ecbRegistrationSourceSha256)
+    throw new Error('ECB registration parameters require requalification before updating the pinned native source.');
+  if (source.id === 'trello' && sha(json) !== trelloParameterSourceSha256)
+    throw new Error('Trello parameter arrays require requalification before updating the pinned native source.');
+  if (source.id === 'bitbucket-dc' && sha(json) !== bitbucketContentSourceSha256)
+    throw new Error('Bitbucket content parameters require requalification before updating the pinned native source.');
+  if (Object.hasOwn(credentialResultSources, source.id) && sha(json) !== credentialResultSources[source.id])
+    throw new Error('Private credential results require requalification before updating the pinned native source.');
+  if (Object.hasOwn(uploadBodySources, source.id) && sha(json) !== uploadBodySources[source.id].sha256)
+    throw new Error('Upload body contracts require requalification before updating the pinned native source.');
+  if (source.id === 'atlassian-forge-containers' && sha(json) !== forgeContainersSourceSha256)
+    throw new Error('Forge LLM exclusion requires review before updating the pinned native source.');
+  const patches = source.id === 'atlassian-forge-containers' ? [forgeLlmExclusion]
+    : source.id === 'ecb' ? [ecbRegistrationParameters]
+    : source.profile === 'google-oauth' ? [googleOauthAlternatives, ...(source.id === 'gcp-bigquery' ? [bigqueryJobMetadata] : []), ...(source.id === 'gcp-storage' ? [googleStorageMedia] : [])]
+    : source.profile === 'atlassian-dc-authentication' ? [atlassianDcAuthentication]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
     : source.profile === 'azure-eventgrid-auth' ? [azureEventGridManagementAuth]
     : source.profile === 'anthropic-auth' ? [anthropicAuthentication]
     : source.profile === 'elevenlabs-auth' ? [elevenLabsAuthentication]
-    : source.profile === 'github-auth' ? [githubAuthentication]
+    : source.profile === 'github-auth' ? [githubAuthentication, githubClassroomRetirement]
     : source.profile === 'http-streaming' ? [httpResponseStreaming]
     : source.profile === 'telegram-private-path' ? [telegramPrivatePath]
     : source.profile === 'x-oauth1' ? [xOauth1Signing]
@@ -156,10 +235,46 @@ for (const source of sources) {
     : source.profile === 'aws-s3-files' ? [awsS3Files]
     : source.profile === 'aws-wire-protocols' ? [awsWireProtocols] : [];
 
-  const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
+  if (Object.hasOwn(uploadBodySources, source.id)) patches.unshift(uploadBodyContractsPatch);
+  if (source.id === 'digitalocean') {
+    if (sha(json) !== digitalOceanDestinationSourceSha256) throw new Error('DigitalOcean destinations require requalification before updating their native source.');
+    patches.push(digitalOceanDestinations);
+  }
+  if (Object.hasOwn(atlassianRelativeSources, source.id)) {
+    if (sha(json) !== atlassianRelativeSources[source.id]) throw new Error('Atlassian relative destinations require requalification before updating the native source.');
+    patches.push(atlassianRelativeServers);
+  }
+  if (source.id === 'docker') {
+    if (sha(json) !== dockerHttpSourceSha256) throw new Error('Docker destinations require requalification before updating the native source.');
+    patches.push(dockerHttpContracts);
+  }
+  if (source.id === 'cloudflare') patches.push(cloudflareLogoUpload);
+  if (source.id === 'atlassian-commerce') patches.push(commerceAuthentication);
+  if (Object.hasOwn(betaRouteSources, source.id)) patches.push(betaRouteContracts);
+  if (Object.hasOwn(multipartFileSources, source.id)) patches.push(multipartFileContracts);
+  if (Object.hasOwn(multipartPartSources, source.id)) patches.push(multipartPartContracts);
+  if (Object.hasOwn(atlassianFileSources, source.id)) patches.push(atlassianFileParts);
+  if (Object.hasOwn(multipartRootSources, source.id)) patches.push(multipartRootContracts);
+  if (Object.hasOwn(formFieldSources, source.id)) patches.push(formFieldContracts);
+  if (Object.hasOwn(structuredFormSources, source.id)) patches.push(structuredFormContracts);
+  if (source.id === 'mistral') patches.push(mistralVariantContracts);
+  if (source.id === 'google-gmail') patches.push(gmailMessageContracts);
+  if (Object.hasOwn(awsRestSourcePins(), source.id)) patches.push(awsRestContractsPatch);
+  if (Object.hasOwn(awsJsonSourcePins, source.id)) patches.push(awsJsonTargets);
+  if (Object.hasOwn(awsQuerySourcePins, source.id)) patches.push(awsQueryActions);
+  if (Object.hasOwn(atlassianTenantServerSources, source.id)) patches.push(atlassianTenantServers);
+  if (Object.hasOwn(catalogPathBindingSources, source.id)) patches.push(catalogPathBindings);
+  if (source.id === 'bitbucket-dc') patches.push(bitbucketContentParameters);
+  if (source.id === 'trello') patches.push(trelloParameterArrays);
+  if (source.id === 'atlassian-assets') patches.push(assetsImportSourceParameter);
+  if (Object.hasOwn(credentialResultSources, source.id)) patches.push(privateCredentialResults);
+  if (Object.hasOwn(awsQuerySourcePins, source.id) && sha(json) !== awsQuerySourcePins[source.id])
+    throw new Error(`${source.id}: AWS Query native source changed; review its pin before enabling the adapter.`);
+  const effectiveDocument = patches.length ? applySchemaPatches(document, patches) : document;
+  const effective = patches.length ? JSON.stringify(effectiveDocument) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);
-  const operations = source.format === 'codex-app-server' ? inspectCodexSchema(document, source.id).operations.length : Object.values(document.paths).reduce((count, path) => count +
+  const operations = source.format === 'codex-app-server' ? inspectCodexSchema(effectiveDocument, source.id).operations.length : Object.values(effectiveDocument.paths).reduce((count, path) => count +
     Object.keys(path).filter(method => ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'].includes(method)).length, 0);
   const entry = { ...source, version: document.info.version, openapi: document.openapi,
     ...(source.format === 'codex-app-server' ? { protocol: 'json-rpc' } : {}), operations,

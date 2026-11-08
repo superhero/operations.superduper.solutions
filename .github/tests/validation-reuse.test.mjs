@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { After, Before, Given, Then, When } from "@cucumber/cucumber";
 import { findValidation } from "../scripts/find-validation.mjs";
-import { ARTIFACT_NAMES, BUNDLE_FILES, REPORT_FILES, MANIFEST_NAME, createManifest } from "../scripts/validation-artifacts.mjs";
+import { ARTIFACT_NAMES, BUNDLE_FILES, REPORT_FILES, MANIFEST_NAME, createManifest, inventory } from "../scripts/validation-artifacts.mjs";
 import { ValidationRequestError } from "../scripts/validation-request.mjs";
 import { toolchainPackages } from "../../tests/gherkin/execution-fingerprint.mjs";
 
@@ -36,6 +36,27 @@ Before({ tags: "@validation-reuse" }, function ()
 After({ tags: "@validation-reuse" }, function ()
 {
   rmSync(this.validationReuse.root, { recursive: true, force: true });
+});
+
+Then("unsupported artifact filenames identify their escaped relative path without host paths", function ()
+{
+  const names = ["evidence/browser/" + "a".repeat(24) + "/browser/.srl", ".private\t\"name", ".私有",
+    "unsafe\\name", "unsafe\nname", "unsafe\rname"];
+  const prefix = "Artifact has an unsupported filename: ";
+  for (const [index, relative] of names.entries())
+  {
+    const directory = join(this.validationReuse.root, `inventory-${index}`);
+    write(join(directory, "visible.txt"), "Owned artifact contents.\n");
+    write(join(directory, relative), "Owned rejected artifact contents.\n");
+    assert.throws(() => inventory(directory), error => {
+      assert.ok(error.message.startsWith(prefix)); assert.ok(error.message.endsWith("."));
+      assert.equal(JSON.parse(error.message.slice(prefix.length, -1)), relative);
+      assert.doesNotMatch(error.message, /[\x00-\x1f]/);
+      assert.ok(!error.message.includes(this.validationReuse.root));
+      assert.ok(!error.message.includes("Owned rejected artifact contents"));
+      return true;
+    });
+  }
 });
 
 Given("a completed validation run with {string}", function (condition)

@@ -1,0 +1,9 @@
+[
+  "mistral:agents_api_v1_conversations_append_stream",
+  "mistral:agents_api_v1_conversations_restart_stream",
+  "mistral:agents_api_v1_conversations_start_stream",
+  "mistral:audio_api_v1_transcriptions_post_stream",
+  "mistral:connector_delete_v1",
+  "mistral:connector_get_v1",
+  "mistral:connector_update_v1"
+]

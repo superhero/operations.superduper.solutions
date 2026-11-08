@@ -1,0 +1,202 @@
+[
+  {
+    "catalog": "atlassian-admin-organizations",
+    "id": "atlassian-admin-organizations:GET /v1/orgs/{orgId}/events"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:Members_list"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:Organization_listOrganizations"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:Organizations_getAccounts"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-basic-auth-credentials"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-basic-auth-secrets"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-category-apis"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-category-application-versions"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-category-applications"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-category-operations"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-deployments"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-domain-acls"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-policies"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-policy-sets"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-rego-metadata"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-rego-modules"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-tenant-nodes"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-tenant-structures"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:cws-list-workloads"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:list-devices"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:list-registrations"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:listAllowlistPrefixesForAccount"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:listDnsProtectionRulesForAccount"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:listPrefixesForAccount"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:listSynProtectionFiltersForAccount"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:listSynProtectionRulesForAccount"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:listTcpFlowProtectionFiltersForAccount"
+  },
+  {
+    "catalog": "cloudflare",
+    "id": "cloudflare:listTcpFlowProtectionRulesForAccount"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /boards/{id}/memberships"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /cards/{id}/checklists"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /checklists/{id}/checkItems"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /checklists/{id}/checkItems/{idCheckItem}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /lists/{id}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /members/{id}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /members/{id}/boards"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /members/{id}/customEmoji/{idEmoji}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /members/{id}/customStickers/{idSticker}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /members/{id}/organizations"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /notifications/{id}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /notifications/{id}/board"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /notifications/{id}/card"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /notifications/{id}/memberCreator"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /notifications/{id}/organization"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:GET /organizations/{id}/memberships"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:POST /cards"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:PUT /boards/{id}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:PUT /boards/{id}/memberships/{idMembership}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:PUT /cards/{id}"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:PUT /enterprises/{id}/members/{idMember}/deactivated"
+  },
+  {
+    "catalog": "trello",
+    "id": "trello:PUT /lists/{id}"
+  }
+]

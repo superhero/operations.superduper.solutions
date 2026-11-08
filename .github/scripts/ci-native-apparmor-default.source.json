@@ -1,0 +1,13 @@
+{
+  "url": "https://raw.githubusercontent.com/moby/profiles/main/apparmor/template.go",
+  "sha256": "7da15d81aa5c507f5002b844fdc49a969904681447a2cc29222bd6cbe797163b",
+  "license": "Apache-2.0",
+  "scope": "Exact source snapshot; only the embedded baseTemplate is rendered. Upstream changes require review and a new digest.",
+  "sdkSource": "https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/vendor/bubblewrap/bubblewrap.c",
+  "sdkBindSource": "https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/vendor/bubblewrap/bind-mount.c",
+  "sdkPolicySource": "https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/linux-sandbox/src/bwrap.rs",
+  "sdkDaemonSource": "https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/uds/src/daemon_directory.rs",
+  "sdkProcFallbackSource": "https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/linux-sandbox/src/linux_run_main.rs",
+  "sdkProcPreflight": "Pinned linux_run_main.rs:433–439,538–564 uses a minimal --tmpfs / preflight and disables fresh proc mounting when its proc probe is denied. Policy version 2 permits only the required tmpfs(rw,nosuid,nodev) mount at /newroot/ so this probe reaches proc. PID isolation and Docker's inherited masked/read-only proc remain in place.",
+  "qualification": "CI 42496459101: docker-default enforcing denied bwrap first MS_REC|MS_SLAVE mount of /. Outer uid1001, all capabilities dropped, no-new-privileges, seccomp2, namespace creation enabled. Derived policy must pass real parser and owned SDK qualification before certification."
+}

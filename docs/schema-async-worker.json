@@ -1,0 +1,82 @@
+{
+  "boundary": "Actual compiled schema worker, fresh isolated browser context and worker, reused headless browser, no external network, immediate prepareStorage RPC; one warm-up pair then three alternating paired samples. Timings include Blob construction, worker startup, parse and empty storage migration; no field/UI latency claim. Exact program SHA checked outside timing.",
+  "versions": {
+    "node": "v26.7.0",
+    "browser": "153.0.8010.12"
+  },
+  "host": "sds-01",
+  "cpuLimit": 4,
+  "memoryBytes": 4294967296,
+  "sourceBytes": 20540341,
+  "sourceSha256": "d13550dbfeb5acad9723a808dbfdd5ed57399ac87b56ef9bcd2568d10513b3ab",
+  "bootstrapBytes": 19448233,
+  "bootstrapSha256": "2577baa2b31803f392439bfb71b793147b34218051c4663dcd05c93d4aa43f6d",
+  "readinessMilliseconds": {
+    "baseline": {
+      "samples": [
+        223.3550000190735,
+        223.04000002145767,
+        206.71499997377396
+      ],
+      "median": 223.04000002145767,
+      "minimum": 206.71499997377396,
+      "maximum": 223.3550000190735
+    },
+    "candidate": {
+      "samples": [
+        645.2049999833107,
+        655.2599999904633,
+        661.4499999880791
+      ],
+      "median": 655.2599999904633,
+      "minimum": 645.2049999833107,
+      "maximum": 661.4499999880791
+    }
+  },
+  "pageBlobMilliseconds": {
+    "baseline": {
+      "samples": [
+        42.67500001192093,
+        40.955000042915344,
+        40.99000000953674
+      ],
+      "median": 40.99000000953674,
+      "minimum": 40.955000042915344,
+      "maximum": 42.67500001192093
+    },
+    "candidate": {
+      "samples": [
+        21.460000038146973,
+        21.264999985694885,
+        21.0799999833107
+      ],
+      "median": 21.264999985694885,
+      "minimum": 21.0799999833107,
+      "maximum": 21.460000038146973
+    }
+  },
+  "earlyMessages": {
+    "received": [
+      1,
+      2,
+      3
+    ],
+    "portReply": 4
+  },
+  "malformedProgramError": "Uncaught Error: Invalid compact schema pack length.",
+  "purpose": "Deployment-size tradeoff for OP-032 AWS Query contracts; exact decoded worker bytes, bounded native worker decompression, original Vite factory.",
+  "beforeHtmlBytes": 26684537,
+  "deploymentMaximumBytes": 26214400,
+  "afterHtmlBytes": 25582999,
+  "afterHtmlSha256": "e04372547443343b901cd08fdbc45348739f862ddeca4076f5c75446d9bab39b",
+  "savedHtmlBytes": 1101538,
+  "headroomBytes": 631401,
+  "buildReceipt": "qualify-production-aws-query-v3.json",
+  "observedContainerCounters": {
+    "memory.max": "4294967296",
+    "memory.peak": "1140645888",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.swap.max": "0",
+    "cpu.stat": "usage_usec 7764738\nuser_usec 6154238\nsystem_usec 1610499\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 68\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0"
+  }
+}

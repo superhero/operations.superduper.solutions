@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { ServerConfigurationRequiredError } from "./server-url.ts";
 export const atlassianAssetsServer = "https://api.atlassian.com/ex/jira/{cloudId}/jsm/assets/workspace/{workspaceId}/v1";
 export const atlassianServerBindingSources: Record<string, string> = {
   "atlassian-assets": "b262df791938ce2e4b67e6239b871fc4d9e045e2107b42b0ce00bc131534dcd1",
@@ -22,6 +23,8 @@ export function validateAtlassianServerBinding(server: Record<string, unknown>):
   const variables = object(server.variables) ? server.variables : {};
   for (const [name, label] of [["cloudId", "Cloud ID"], ["workspaceId", "Workspace ID"]] as const) {
     const value = variables[name]?.default;
+    if (value === undefined || value === "" || value === name || value === `<${name}>`)
+      throw new ServerConfigurationRequiredError(`Configure the Assets ${label} with an explicit site/workspace identifier before running this operation.`);
     if (typeof value !== "string" || !value || value === name || value.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9-]*$/.test(value))
       throw new Error(`Configure the Assets ${label} with an explicit site/workspace identifier before running this operation.`);
   }

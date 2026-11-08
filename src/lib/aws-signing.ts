@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "./catalog.ts";
+import { configureAwsRest, validAwsRestModel } from "./aws-rest.ts";
 
 export const awsRestProfile = "lambda-list-functions";
 export const awsSigningHeaders = new Set(["authorization", "x-amz-date", "x-amz-content-sha256", "x-amz-security-token",
@@ -31,10 +32,12 @@ export function lambdaSigningCandidate(operation: Operation): boolean {
       || field.location === "header" && awsSigningHeaders.has(field.name.toLowerCase()));
 }
 export function configureAwsSigning(operation: Operation): void {
+  if (operation.awsRest !== undefined) { configureAwsRest(operation); return; }
   if (!lambdaSigningCandidate(operation)) throw new Error("This AWS signing profile requires Lambda ListFunctions without a request body.");
   operation.fields = operation.fields.filter(field => field.location !== "header");
 }
 export function validAwsSigningModel(operation: Operation): boolean {
+  if (operation.awsRest !== undefined) return validAwsRestModel(operation);
   const alternatives = operation.security;
   return lambdaSigningCandidate(operation) && operation.fields.every(field => field.location === "query")
     && operation.responseMediaType === "application/json" && operation.responseStream === undefined

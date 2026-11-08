@@ -1,30 +1,47 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { credentialResultProfile, privateResultVersion, supportsCredentialResults } from "./credential-results.ts";
+import { parameterContentSchema } from "./parameter-content.ts";
+import { operationDisplayName } from "./operation-display.ts";
+import { configureGitlabJsonForm } from "./gitlab-form.ts";
+import { configureMistralVariant, mistralVariantRoute } from "./mistral-variant.ts";
+import { configureGmailMessage } from "./gmail-message.ts";
+import { configureGithubAutomation } from './github-automations.ts';
+import { configureGithubArchive } from './github-archive.ts';
+import { configureMediaUpload } from "./media-upload.ts";
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsWireProfile, configureAwsWire, validAwsWireModel } from "./aws-wire.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
+import { awsRestSigningProfile, awsRestWirePath } from "./aws-rest.ts";
+import { awsJsonSigningProfile, configureAwsJson, validAwsJsonModel } from "./aws-json.ts";
+import { awsQuerySigningProfile, configureAwsQuery, validAwsQueryModel } from "./aws-query.ts";
 import { configureS3Files, s3FilesProfile, validS3FilesModel } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { extractCredentialPermissions, extractOperationSecurity, inspectSecurityAlternatives, supportedSecurityAlternative } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
+import { ServerConfigurationRequiredError } from "./server-url.ts";
 import { isBinaryMediaType, containsBinaryInput, validateBinarySchema } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
-import { supportsFormField } from "./form-input.ts";
+import { normalizeStringUnion, validateFormBody } from "./form-input.ts";
+import { multipartBodySchema } from "./multipart-parts.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
 import { privatePathProfile } from "./server-url.ts";
 import { dockerNativeReadOperation } from "./docker-native-model.ts";
 import { withOperationCapabilities, type CapabilityIssue, type CapabilityArea } from "./operation-capabilities.ts";
-import { configureQueryArray } from "./query-serialization.ts";
+import { acceptsScalarQueryExplode, configureQueryArray } from "./query-serialization.ts";
+import { configureSimplePathArray, configureSimpleHeaderArray, parameterContext, validatePathParameters } from "./parameter-serialization.ts";
 import { providerPathSecurity } from "./provider-path-bindings.ts";
+import { isJsonRequestMediaType, isYamlRequestMediaType, isJsonLinesRequestMediaType } from "./request-media.ts";
+import { literalQueryRoute } from "./literal-query.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
 const primitives = ["string", "number", "integer", "boolean", "null"];
 const annotation = new Set(["title", "description", "default", "example", "examples", "deprecated", "format", "externalDocs", "xml", "readOnly", "writeOnly"]);
-const constraints = new Set(["type", "nullable", "enum", "const", "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "pattern", "properties", "required", "additionalProperties", "items"]);
+const constraints = new Set(["type", "nullable", "enum", "const", "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "uniqueItems", "minProperties", "maxProperties", "propertyNames", "pattern", "properties", "required", "additionalProperties", "items"]);
 const value = (input: unknown): Value => input && typeof input === "object" && !Array.isArray(input) ? input as Value : {};
 const text = (input: unknown, fallback = ""): string => typeof input === "string" ? input : fallback;
 const json = (): InputSchema => ({ type: "json" });
@@ -78,7 +95,7 @@ function resolve(input: unknown, document: Value): Value
 function inputSchema(input: unknown, document: Value, depth: number, ancestors: Set<unknown>, binary: boolean, rootPropertyBudget = 200): InputSchema
 {
   if (depth > 8 || ancestors.has(input)) return json();
-  const shape = resolve(input, document);
+  const shape = normalizeStringUnion(resolve(input, document), branch => resolve(branch, document));
   const variants = shape.anyOf ?? shape.oneOf;
   if (Array.isArray(variants) && variants.length === 2)
   {
@@ -90,6 +107,12 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
       return { ...inner, nullable: true };
     }
   }
+  if (binary && Array.isArray(variants) && variants.length >= 2 && variants.length <= 32
+    && Object.keys(shape).every(key => key === "anyOf" || key === "oneOf" || key === "discriminator" || annotation.has(key) || key.startsWith("x-"))) {
+    const branches = variants.map(branch => inputSchema(branch, document, depth + 1, new Set([...ancestors, input]), binary));
+    if (branches.every(branch => branch.type !== "json" || branch.anyOf !== undefined || branch.oneOf !== undefined))
+      return { type: "json", [shape.anyOf === undefined ? "oneOf" : "anyOf"]: branches };
+  }
   if (Object.keys(shape).some(key => !constraints.has(key) && !annotation.has(key) && !key.startsWith("x-"))) return json();
   const types = Array.isArray(shape.type) ? shape.type.filter(type => type !== "null") : [shape.type];
   const type = types.length === 1 ? types[0] : undefined;
@@ -98,6 +121,16 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   if (shape.enum !== undefined && (!Array.isArray(shape.enum) || shape.enum.some(item => item !== null && !["string", "number", "boolean"].includes(typeof item)))) return json();
   if (Object.hasOwn(shape, "const") && shape.const !== null && !["string", "number", "boolean"].includes(typeof shape.const)) return json();
   const result: InputSchema = { type: inferred as InputSchema["type"] };
+  for (const key of ["minProperties", "maxProperties"] as const) if (shape[key] !== undefined) {
+    if (inferred !== "object" || typeof shape[key] !== "number" || !Number.isSafeInteger(shape[key]) || (shape[key] as number) < 0) return json();
+    result[key] = shape[key] as number;
+  }
+  if (result.minProperties !== undefined && result.maxProperties !== undefined && result.minProperties > result.maxProperties) return json();
+  if (shape.propertyNames !== undefined && inferred !== "object") return json();
+  if (shape.uniqueItems !== undefined) {
+    if (inferred !== "array" || typeof shape.uniqueItems !== "boolean") return json();
+    result.uniqueItems = shape.uniqueItems;
+  }
   if (binary && inferred === "string" && shape.format === "binary") result.format = "binary";
   if (shape.nullable === true || Array.isArray(shape.type) && shape.type.includes("null")) result.nullable = true;
   if (Array.isArray(shape.enum) && shape.enum.every(item => item === null || ["string", "number", "boolean"].includes(typeof item)))
@@ -114,9 +147,16 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   if (inferred === "array") result.items = inputSchema(shape.items, document, depth + 1, next, binary);
   if (inferred === "object")
   {
+    if (shape.propertyNames !== undefined) {
+      result.propertyNames = inputSchema(shape.propertyNames, document, depth + 1, next, true);
+      if (result.propertyNames.type !== "string" || result.propertyNames.format) return json();
+    }
     const properties = Object.entries(value(shape.properties)).filter(([, property]) => resolve(property, document).readOnly !== true);
     if (properties.length > (depth === 0 ? rootPropertyBudget : 200)) return json();
-    result.properties = Object.fromEntries(properties.map(([name, property]) => [name, inputSchema(property, document, depth + 1, next, binary)]));
+    result.properties = Object.fromEntries(properties.map(([name, property]) => {
+      try { return [name, inputSchema(property, document, depth + 1, next, binary)]; }
+      catch (error) { throw new Error(`Field ${JSON.stringify(name)}: ${(error as Error).message}`, { cause: error }); }
+    }));
     if (Array.isArray(shape.required) && shape.required.some(name => typeof name !== "string" || !Object.hasOwn(value(shape.properties), name))) return json();
     result.required = Array.isArray(shape.required) ? shape.required.filter((name): name is string => typeof name === "string" && Object.hasOwn(result.properties!, name)) : [];
     result.additionalProperties = typeof shape.additionalProperties === "boolean" ? shape.additionalProperties
@@ -125,9 +165,13 @@ function inputSchema(input: unknown, document: Value, depth: number, ancestors: 
   return result;
 }
 
-function field(name: string, location: InputField["location"], raw: unknown, required: boolean, document: Value, description: unknown, binary = false): InputField
+export function serviceInputSchema(input: unknown, document: Value, binary: boolean): InputSchema {
+  return inputSchema(input, document, 0, new Set(), binary);
+}
+
+function field(name: string, location: InputField["location"], raw: unknown, required: boolean, document: Value, description: unknown, binary = false, schemaOverride?: InputSchema): InputField
 {
-  const schema = inputSchema(raw, document, 0, new Set(), binary);
+  const schema = schemaOverride ?? inputSchema(raw, document, 0, new Set(), binary);
   const shape = resolve(raw, document);
   const defaultValue = required && location !== "body" && ["string", "number", "boolean"].includes(typeof shape.default)
     ? schema.type === "json" ? JSON.stringify(shape.default) : String(shape.default) : undefined;
@@ -138,12 +182,12 @@ function field(name: string, location: InputField["location"], raw: unknown, req
 
 /** OAuth access tokens use the existing bearer transport. Keep the original
  * scope requirements in the approved operation; no login flow is synthesized. */
-function security(document: Value, source: Value, operation: Operation): Operation["security"]
+export function serviceOperationSecurity(document: Value, source: Value, operation: Operation): Operation["security"]
 {
   const declaration = source.security === undefined ? document.security : source.security;
   const permissionSource = Object.hasOwn(source, "x-credential-permissions") ? source
     : source.security === undefined ? document : {};
-  if (!Array.isArray(declaration)) {
+  if (operation.privatePath || !Array.isArray(declaration)) {
     const result = extractOperationSecurity(document, source);
     // With no security declaration, supplied permission metadata is rejected.
     // A valid permissions result requires an array declaration handled below.
@@ -206,6 +250,13 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
       const group = Array.isArray(source.tags) ? text(source.tags[0], "Operations") : "Operations";
       const operation: Operation = { id: identity, name: text(source.summary, text(source.operationId, `${method.toUpperCase()} ${path}`)),
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
+      if (source["x-operations-aws-signing"] === awsRestSigningProfile) operation.awsRest = awsRestSigningProfile;
+      const jsonTarget = source["x-operations-aws-json"] === awsJsonSigningProfile;
+      if (jsonTarget) { operation.awsJson = awsJsonSigningProfile; configureAwsJson(operation); }
+      const queryTarget = source["x-operations-aws-query"] === awsQuerySigningProfile;
+      if (queryTarget) { operation.awsQuery = awsQuerySigningProfile; configureAwsQuery(operation); }
+      const sdkTarget = jsonTarget || queryTarget;
+      operation.name = operationDisplayName(operation);
       const issues: CapabilityIssue[] = [];
       const inspect = (area: CapabilityArea, code: string, check: () => void): boolean => {
         try { check(); return true; }
@@ -225,12 +276,19 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
             if (source["x-operations-credential-result"] !== true) throw new Error("Credential result metadata must be true when present.");
             operation.credentialResult = true;
           }
+          if (source["x-operations-private-result"] !== undefined) {
+            if (source["x-operations-private-result"] !== privateResultVersion) throw new Error("Unknown private credential-result profile.");
+            operation.credentialResultProfile = privateResultVersion; credentialResultProfile(operation);
+          }
         });
-        inspect("endpoint", "configuration-required", () => {
+        try {
           const url = operationServerUrl(document, operation);
           serverUrl ||= url;
-          if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
-        });
+          if (new URL(url).hostname === "no-default") throw new ServerConfigurationRequiredError("Configure this schema’s server URL for your account before running it.");
+        } catch (error) {
+          issues.push({ area: "endpoint", code: error instanceof ServerConfigurationRequiredError ? "configuration-required" : "invalid-contract",
+            message: error instanceof Error ? error.message : String(error) });
+        }
         let upload: ReturnType<typeof cloudflareUploadProfile>;
         let wire: ReturnType<typeof awsWireProfile>, s3: ReturnType<typeof s3FilesProfile>;
         inspect("request", "invalid-contract", () => {
@@ -242,10 +300,13 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           else if (upload) configureCloudflareUpload(operation, upload);
         });
         inspect("endpoint", "unsupported-contract", () => {
-          if (!wire && (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path))) throw new Error("This endpoint uses a path or transport that is not supported.");
+          configureMistralVariant(operation, source["x-operations-mistral-variant"], source["x-operations-response-stream"]);
+          const wirePath = awsRestWirePath(operation) ?? mistralVariantRoute(operation)?.path ?? literalQueryRoute(path)?.path ?? path;
+          if (!wire && !sdkTarget && (wirePath.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(wirePath))) throw new Error("This endpoint uses a path or transport that is not supported.");
         });
-        if (!upload && !wire && !s3) {
-          const parametersValid = inspect("request", "unsupported-contract", () => {
+        if (!upload && !wire && !s3 && !sdkTarget) {
+          let parametersValid = true;
+          const parameterListsValid = inspect("request", "unsupported-contract", () => {
             const fields = new Map<string, InputField>();
             for (const parameters of [item.parameters, source.parameters])
             {
@@ -253,36 +314,74 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
               if (!Array.isArray(parameters)) throw new Error("Parameters must be an array.");
               for (const raw of parameters)
               {
-                const parameter = resolve(raw, document);
-                const location = text(parameter.in);
-                if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string") throw new Error("Cookie or content-encoded parameters are not supported.");
-                const input = field(parameter.name, location as InputField["location"], parameter.schema, parameter.required === true, document, parameter.description,
-                  location === "query" && parameter.explode === false);
-                const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
-                const csv = configureQueryArray(input, parameter);
-                if (parameter.content || parameter.style !== undefined && parameter.style !== style
-                  || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv
-                  || location !== "query" && ["object", "array"].includes(input.type)) throw new Error("This parameter serialization is not supported.");
-                fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
+                const valid = inspect("request", "unsupported-contract", () => {
+                  const parameter = resolve(raw, document);
+                  let input: InputField | undefined;
+                  try {
+                    const location = text(parameter.in);
+                    if (!["path", "query", "header"].includes(location) || typeof parameter.name !== "string")
+                      throw new Error("Only named path, query and header parameters are supported.");
+                    const content = parameterContentSchema(parameter);
+                    input = field(parameter.name, location as InputField["location"], content ?? parameter.schema, parameter.required === true, document, parameter.description,
+                      !!content || location === "query" && parameter.explode === false
+                        || location === "header" && resolve(parameter.schema, document).type === "array");
+                    if (content) {
+                      if (containsBinaryInput(input.schema!)) throw new Error("JSON content parameters cannot contain binary files.");
+                      input.parameterContentType = "application/json";
+                    }
+                    else {
+                      const style = location === "query" ? input.type === "object" ? "deepObject" : "form" : "simple";
+                      const csv = configureQueryArray(input, parameter);
+                      const scalarQuery = acceptsScalarQueryExplode(input, parameter);
+                      const pathArray = configureSimplePathArray(input, parameter);
+                      const headerArray = configureSimpleHeaderArray(input, parameter);
+                      if (parameter.style !== undefined && parameter.style !== style
+                        || parameter.explode !== undefined && parameter.explode !== (location === "query") && !csv && !pathArray && !headerArray && !scalarQuery
+                        || location !== "query" && ["object", "array"].includes(input.type) && !pathArray && !headerArray)
+                        throw new Error("Unsupported parameter serialization; use primitive values, simple path/header arrays or supported form/deepObject query parameters.");
+                    }
+                    fields.set(location === "header" ? input.key.toLowerCase() : input.key, input);
+                  } catch (error) {
+                    throw new Error(`${parameterContext(parameter, input?.type)}: ${(error as Error).message}`, { cause: error });
+                  }
+                });
+                if (!valid) parametersValid = false;
               }
             }
             operation.fields = [...fields.values()];
           });
+          parametersValid &&= parameterListsValid;
           inspect("request", "unsupported-contract", () => {
             if (source.requestBody !== undefined)
             {
               const body = resolve(source.requestBody, document);
+              if (body.required !== undefined && typeof body.required !== "boolean") throw new Error("Request body required must be Boolean.");
+              if (!body.content || typeof body.content !== "object" || Array.isArray(body.content)) throw new Error("Request body content must be an object of declared media types.");
               const content = value(body.content);
+              if (!Object.keys(content).length) {
+                if (body.required === true) throw new Error("Required request body has no declared media types.");
+                return;
+              }
               const binaryMediaTypes = Object.keys(content).filter(type => {
                 const schema = resolve(value(content[type]).schema, document);
                 return isBinaryMediaType(type) && schema.type === "string" && schema.format === "binary";
               });
-              const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type]) ?? binaryMediaTypes[0];
-              if (!mediaType) throw new Error("This request requires an unsupported binary or streaming media type.");
+              const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type])
+                ?? Object.keys(content).find(isJsonRequestMediaType) ?? Object.keys(content).find(isYamlRequestMediaType)
+                ?? Object.keys(content).find(isJsonLinesRequestMediaType) ?? binaryMediaTypes[0];
+              if (!mediaType) throw new Error(`This request requires an unsupported binary or streaming media type. Declared request media types: ${Object.keys(content).join(", ")}.`);
               const schema = resolve(value(content[mediaType]).schema, document);
               const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
-              const parsed = inputSchema(schema, document, 0, new Set(), binary,
+              const encodedForm = mediaType === "multipart/form-data" && (value(content[mediaType]).encoding !== undefined
+                || schema.oneOf !== undefined || schema.$defs !== undefined);
+              const compiled = encodedForm ? multipartBodySchema(schema, raw => resolve(raw, document), raw => serviceInputSchema(raw, document, true)) : undefined;
+              const parsed = compiled?.schema ?? inputSchema(schema, document, 0, new Set(), binary || isYamlRequestMediaType(mediaType),
                 mediaType === "application/x-www-form-urlencoded" ? formPropertyBudget(operation, schema, document) : 200);
+              if (isYamlRequestMediaType(mediaType) && (value(content[mediaType]).encoding !== undefined
+                || !binaryMediaTypes.includes(mediaType) && containsBinaryInput(parsed)))
+                throw new Error("Structured YAML bodies cannot contain binary files or custom field encodings.");
+              if (isJsonLinesRequestMediaType(mediaType) && value(content[mediaType]).encoding !== undefined)
+                throw new Error("JSON Lines bodies cannot use custom field encodings.");
               operation.bodyRequired = body.required === true;
               operation.bodyMediaType = mediaType as BodyMediaType;
               operation.bodySchema = parsed;
@@ -294,16 +393,17 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                 operation.binaryMediaTypes = binaryMediaTypes;
               }
               else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
-              if (mediaType === "text/plain" && parsed.type !== "string") throw new Error("This text body requires an unsupported schema.");
-              if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
-                if (parsed.type !== "object" || parsed.nullable || value(content[mediaType]).encoding !== undefined
-                  || Object.values(parsed.properties!).some(property => !supportsFormField(property, mediaType === "multipart/form-data")))
-                  throw new Error("This form uses unsupported structured fields or custom part encodings.");
+              if ((mediaType === "text/plain" || isJsonLinesRequestMediaType(mediaType)) && parsed.type !== "string")
+                throw new Error(`${mediaType} requires a string schema.`);
+              if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded")) {
+                const parts = validateFormBody(parsed, mediaType === "multipart/form-data", value(content[mediaType]).encoding, compiled?.mixed);
+                if (Object.keys(parts).length) operation.multipartParts = parts;
+              }
               if (parsed.type === "object" && !parsed.nullable)
-                for (const [name, property] of Object.entries(value(schema.properties)))
+                for (const [name, property] of Object.entries(compiled?.properties ?? value(schema.properties)))
                 {
                   if (resolve(property, document).readOnly === true) continue;
-                  operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined, binary));
+                  operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined, binary, encodedForm ? parsed.properties?.[name] : undefined));
                 }
               else
               {
@@ -311,17 +411,16 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
                 operation.fields.push(field("$", "body", schema, true, document, body.description, binary));
               }
             }
+            configureGitlabJsonForm(operation, source["x-operations-gitlab-form"]);
+            configureGmailMessage(operation, source["x-operations-gmail-message"]);
+            configureMediaUpload(operation, source["x-operations-google-media"], source["x-operations-raw-upload"]);
           });
-          if (parametersValid) inspect("endpoint", "unsupported-contract", () => {
-            const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
-            if (placeholders.some(name => !operation.fields.some(field => field.location === "path" && field.name === name)))
-              throw new Error("This endpoint uses unsupported URI template expansion.");
-          });
+          if (parametersValid) inspect("endpoint", "invalid-contract", () => validatePathParameters(path, operation.fields));
         }
         inspect("authentication", "invalid-contract", () => {
-          const authorization = security(document, source, operation);
+          const authorization = serviceOperationSecurity(document, source, operation);
           if (authorization !== undefined) operation.security = authorization;
-          if (!wire && !s3 && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
+          if (!wire && !s3 && !sdkTarget && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
           if (authorization?.length && !authorization.some(supportedSecurityAlternative)) issues.push({ area: "authentication", code: "unsupported-authentication",
             message: authorization.flat().find(scheme => scheme.kind === "unsupported")!.reason });
         });
@@ -341,12 +440,15 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           if (wire) configureAwsWire(operation, wire);
         });
         inspect("request", "unsupported-contract", () => {
-          if ((wire || s3 || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4"))
-            && !(wire ? validAwsWireModel(operation) : s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
+          if ((wire || s3 || sdkTarget || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4"))
+            && !(queryTarget ? validAwsQueryModel(operation) : jsonTarget ? validAwsJsonModel(operation) : wire ? validAwsWireModel(operation) : s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
             throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
         });
-        if (operation.credentialResult) issues.push({ area: "response", code: "unsupported-contract", message: "This operation returns credentials. Private credential acquisition is not supported yet." });
+        if (operation.credentialResultProfile) inspect("response", "invalid-contract", () => { credentialResultProfile(operation); });
+        if (operation.credentialResult && !supportsCredentialResults(operation)) issues.push({ area: "response", code: "unsupported-contract", message: "This operation returns credentials. Its private result adoption contract has not been qualified." });
       }
+      inspect("endpoint", "invalid-contract", () => configureGithubAutomation(operation, source));
+      inspect("response", "invalid-contract", () => configureGithubArchive(operation, source));
       withOperationCapabilities(operation, issues);
       operations.push(operation);
       if (!groups.has(group)) groups.set(group, { id: `${id}:tag:${encodeURIComponent(group)}`, name: group, description: "", operationIds: [] });

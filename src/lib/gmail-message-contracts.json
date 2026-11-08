@@ -1,0 +1,960 @@
+{
+  "source": {
+    "sha256": "6ff771291cc593d02455fb03a3df1a30d23b7ea152a256d18694555876e79999",
+    "openapi": "3.0.0",
+    "info": {
+      "contact": {
+        "name": "Google",
+        "url": "https://google.com",
+        "x-twitter": "youtube"
+      },
+      "description": "The Gmail API lets you view and manage Gmail mailbox data like threads, messages, and labels.",
+      "license": {
+        "name": "Creative Commons Attribution 3.0",
+        "url": "http://creativecommons.org/licenses/by/3.0/"
+      },
+      "termsOfService": "https://developers.google.com/terms/",
+      "title": "Gmail API",
+      "version": "v1",
+      "x-apiClientRegistration": {
+        "url": "https://console.developers.google.com"
+      },
+      "x-apisguru-categories": [
+        "analytics",
+        "media"
+      ],
+      "x-logo": {
+        "url": "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"
+      },
+      "x-origin": [
+        {
+          "format": "google",
+          "url": "https://gmail.googleapis.com/$discovery/rest?version=v1",
+          "version": "v1"
+        }
+      ],
+      "x-providerName": "googleapis.com",
+      "x-serviceName": "gmail"
+    },
+    "servers": [
+      {
+        "url": "https://gmail.googleapis.com/"
+      }
+    ],
+    "discoveryUrl": "https://gmail.googleapis.com/$discovery/rest?version=v1",
+    "discoverySha256": "07534a4f1083c616afb52d378d7d841d69edf085df8a11365c5aef68c3f5a6bb",
+    "discoveryRevision": "20261102"
+  },
+  "operations": {
+    "google-gmail:gmail.users.drafts.create": {
+      "method": "POST",
+      "path": "/gmail/v1/users/{userId}/drafts",
+      "requestBody": {
+        "content": {
+          "message/cpim": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/external-body": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/feedback-report": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-headers": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/http": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/imdn+xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/news": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/partial": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/rfc822": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/s-http": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/sip": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/sipfrag": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/tracking-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/vnd.si.simp": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/vnd.wfa.wsc": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          }
+        }
+      },
+      "discovery": {
+        "id": "gmail.users.drafts.create",
+        "path": "gmail/v1/users/{userId}/drafts",
+        "httpMethod": "POST",
+        "request": {
+          "$ref": "Draft"
+        },
+        "response": {
+          "$ref": "Draft"
+        },
+        "scopes": [
+          "https://mail.google.com/",
+          "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+          "https://www.googleapis.com/auth/gmail.compose",
+          "https://www.googleapis.com/auth/gmail.modify"
+        ],
+        "mediaUpload": {
+          "maxSize": "36700160",
+          "protocols": {
+            "resumable": {
+              "multipart": true,
+              "path": "/resumable/upload/gmail/v1/users/{userId}/drafts"
+            },
+            "simple": {
+              "path": "/upload/gmail/v1/users/{userId}/drafts",
+              "multipart": true
+            }
+          },
+          "accept": [
+            "message/*"
+          ]
+        }
+      }
+    },
+    "google-gmail:gmail.users.drafts.send": {
+      "method": "POST",
+      "path": "/gmail/v1/users/{userId}/drafts/send",
+      "requestBody": {
+        "content": {
+          "message/cpim": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/external-body": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/feedback-report": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-headers": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/http": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/imdn+xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/news": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/partial": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/rfc822": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/s-http": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/sip": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/sipfrag": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/tracking-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/vnd.si.simp": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/vnd.wfa.wsc": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          }
+        }
+      },
+      "discovery": {
+        "id": "gmail.users.drafts.send",
+        "path": "gmail/v1/users/{userId}/drafts/send",
+        "httpMethod": "POST",
+        "request": {
+          "$ref": "Draft"
+        },
+        "response": {
+          "$ref": "Message"
+        },
+        "scopes": [
+          "https://mail.google.com/",
+          "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+          "https://www.googleapis.com/auth/gmail.compose",
+          "https://www.googleapis.com/auth/gmail.modify"
+        ],
+        "mediaUpload": {
+          "protocols": {
+            "simple": {
+              "multipart": true,
+              "path": "/upload/gmail/v1/users/{userId}/drafts/send"
+            },
+            "resumable": {
+              "multipart": true,
+              "path": "/resumable/upload/gmail/v1/users/{userId}/drafts/send"
+            }
+          },
+          "accept": [
+            "message/*"
+          ],
+          "maxSize": "36700160"
+        }
+      }
+    },
+    "google-gmail:gmail.users.drafts.update": {
+      "method": "PUT",
+      "path": "/gmail/v1/users/{userId}/drafts/{id}",
+      "requestBody": {
+        "content": {
+          "message/cpim": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/external-body": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/feedback-report": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/global-headers": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/http": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/imdn+xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/news": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/partial": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/rfc822": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/s-http": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/sip": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/sipfrag": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/tracking-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/vnd.si.simp": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          },
+          "message/vnd.wfa.wsc": {
+            "schema": {
+              "$ref": "#/components/schemas/Draft"
+            }
+          }
+        }
+      },
+      "discovery": {
+        "id": "gmail.users.drafts.update",
+        "path": "gmail/v1/users/{userId}/drafts/{id}",
+        "httpMethod": "PUT",
+        "request": {
+          "$ref": "Draft"
+        },
+        "response": {
+          "$ref": "Draft"
+        },
+        "scopes": [
+          "https://mail.google.com/",
+          "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+          "https://www.googleapis.com/auth/gmail.compose",
+          "https://www.googleapis.com/auth/gmail.modify"
+        ],
+        "mediaUpload": {
+          "maxSize": "36700160",
+          "protocols": {
+            "simple": {
+              "path": "/upload/gmail/v1/users/{userId}/drafts/{id}",
+              "multipart": true
+            },
+            "resumable": {
+              "multipart": true,
+              "path": "/resumable/upload/gmail/v1/users/{userId}/drafts/{id}"
+            }
+          },
+          "accept": [
+            "message/*"
+          ]
+        }
+      }
+    },
+    "google-gmail:gmail.users.messages.import": {
+      "method": "POST",
+      "path": "/gmail/v1/users/{userId}/messages/import",
+      "requestBody": {
+        "content": {
+          "message/cpim": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/external-body": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/feedback-report": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-headers": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/http": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/imdn+xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/news": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/partial": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/rfc822": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/s-http": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/sip": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/sipfrag": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/tracking-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/vnd.si.simp": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/vnd.wfa.wsc": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          }
+        }
+      },
+      "discovery": {
+        "id": "gmail.users.messages.import",
+        "path": "gmail/v1/users/{userId}/messages/import",
+        "httpMethod": "POST",
+        "request": {
+          "$ref": "Message"
+        },
+        "response": {
+          "$ref": "Message"
+        },
+        "scopes": [
+          "https://mail.google.com/",
+          "https://www.googleapis.com/auth/gmail.insert",
+          "https://www.googleapis.com/auth/gmail.modify"
+        ],
+        "mediaUpload": {
+          "protocols": {
+            "simple": {
+              "path": "/upload/gmail/v1/users/{userId}/messages/import",
+              "multipart": true
+            },
+            "resumable": {
+              "multipart": true,
+              "path": "/resumable/upload/gmail/v1/users/{userId}/messages/import"
+            }
+          },
+          "accept": [
+            "message/*"
+          ],
+          "maxSize": "157286400"
+        }
+      }
+    },
+    "google-gmail:gmail.users.messages.insert": {
+      "method": "POST",
+      "path": "/gmail/v1/users/{userId}/messages",
+      "requestBody": {
+        "content": {
+          "message/cpim": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/external-body": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/feedback-report": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-headers": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/http": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/imdn+xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/news": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/partial": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/rfc822": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/s-http": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/sip": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/sipfrag": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/tracking-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/vnd.si.simp": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/vnd.wfa.wsc": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          }
+        }
+      },
+      "discovery": {
+        "id": "gmail.users.messages.insert",
+        "path": "gmail/v1/users/{userId}/messages",
+        "httpMethod": "POST",
+        "request": {
+          "$ref": "Message"
+        },
+        "response": {
+          "$ref": "Message"
+        },
+        "scopes": [
+          "https://mail.google.com/",
+          "https://www.googleapis.com/auth/gmail.insert",
+          "https://www.googleapis.com/auth/gmail.modify"
+        ],
+        "mediaUpload": {
+          "maxSize": "157286400",
+          "accept": [
+            "message/*"
+          ],
+          "protocols": {
+            "resumable": {
+              "multipart": true,
+              "path": "/resumable/upload/gmail/v1/users/{userId}/messages"
+            },
+            "simple": {
+              "path": "/upload/gmail/v1/users/{userId}/messages",
+              "multipart": true
+            }
+          }
+        }
+      }
+    },
+    "google-gmail:gmail.users.messages.send": {
+      "method": "POST",
+      "path": "/gmail/v1/users/{userId}/messages/send",
+      "requestBody": {
+        "content": {
+          "message/cpim": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/external-body": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/feedback-report": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-delivery-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-disposition-notification": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/global-headers": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/http": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/imdn+xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/news": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/partial": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/rfc822": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/s-http": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/sip": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/sipfrag": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/tracking-status": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/vnd.si.simp": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "message/vnd.wfa.wsc": {
+            "schema": {
+              "$ref": "#/components/schemas/Message"
+            }
+          }
+        }
+      },
+      "discovery": {
+        "id": "gmail.users.messages.send",
+        "path": "gmail/v1/users/{userId}/messages/send",
+        "httpMethod": "POST",
+        "request": {
+          "$ref": "Message"
+        },
+        "response": {
+          "$ref": "Message"
+        },
+        "scopes": [
+          "https://mail.google.com/",
+          "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+          "https://www.googleapis.com/auth/gmail.compose",
+          "https://www.googleapis.com/auth/gmail.modify",
+          "https://www.googleapis.com/auth/gmail.send"
+        ],
+        "mediaUpload": {
+          "maxSize": "36700160",
+          "accept": [
+            "message/*"
+          ],
+          "protocols": {
+            "resumable": {
+              "multipart": true,
+              "path": "/resumable/upload/gmail/v1/users/{userId}/messages/send"
+            },
+            "simple": {
+              "multipart": true,
+              "path": "/upload/gmail/v1/users/{userId}/messages/send"
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemas": {
+    "Draft": {
+      "description": "A draft email in the user's mailbox.",
+      "properties": {
+        "id": {
+          "description": "The immutable ID of the draft.",
+          "type": "string"
+        },
+        "message": {
+          "$ref": "#/components/schemas/Message",
+          "description": "The message content of the draft."
+        }
+      },
+      "type": "object"
+    },
+    "Message": {
+      "description": "An email message.",
+      "properties": {
+        "historyId": {
+          "description": "The ID of the last history record that modified this message.",
+          "format": "uint64",
+          "type": "string"
+        },
+        "id": {
+          "description": "The immutable ID of the message.",
+          "type": "string"
+        },
+        "internalDate": {
+          "description": "The internal message creation timestamp (epoch ms), which determines ordering in the inbox. For normal SMTP-received email, this represents the time the message was originally accepted by Google, which is more reliable than the `Date` header. However, for API-migrated mail, it can be configured by client to be based on the `Date` header.",
+          "format": "int64",
+          "type": "string"
+        },
+        "labelIds": {
+          "description": "List of IDs of labels applied to this message.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "payload": {
+          "$ref": "#/components/schemas/MessagePart",
+          "description": "The parsed email structure in the message parts."
+        },
+        "raw": {
+          "description": "The entire email message in an RFC 2822 formatted and base64url encoded string. Returned in `messages.get` and `drafts.get` responses when the `format=RAW` parameter is supplied.",
+          "format": "byte",
+          "type": "string"
+        },
+        "sizeEstimate": {
+          "description": "Estimated size in bytes of the message.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "snippet": {
+          "description": "A short part of the message text.",
+          "type": "string"
+        },
+        "threadId": {
+          "description": "The ID of the thread the message belongs to. To add a message or draft to a thread, the following criteria must be met: 1. The requested `threadId` must be specified on the `Message` or `Draft.Message` you supply with your request. 2. The `References` and `In-Reply-To` headers must be set in compliance with the [RFC 2822](https://tools.ietf.org/html/rfc2822) standard. 3. The `Subject` headers must match. ",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

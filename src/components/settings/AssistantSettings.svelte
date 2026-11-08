@@ -326,7 +326,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if languageLocked}
         <HintButton type="button" class="configuration-action" label={busy ? "Stop and unload language model" : "Unload language model"} onclick={stop}><MaterialIcon name={busy ? "stop" : "power_settings_new"} size={18} /></HintButton>
       {:else}
-        <HintButton type="button" class="configuration-action" label="Check language compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
+        <HintButton type="button" class="configuration-action" label="Check browser compatibility" onclick={check}><MaterialIcon name="fact_check" size={18} /></HintButton>
       {/if}
     </div>
     {#if status}<p class="status" role="status">{status}</p>{/if}
@@ -402,6 +402,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .section-heading > span { font-size: 12px; font-weight: 400; }
   .assistant-details { padding: 12px; border-radius: 4px; background: var(--color-surface); min-width: 0; }
   .assistant-configuration { display: grid; gap: 12px; min-width: 0; padding: 16px; container-type: inline-size; color: var(--color-foreground); font-size: 12px; }
+  .assistant-configuration > :global(details) > :global(summary) { min-height: 24px; gap: 8px; }
+  .assistant-configuration :global(.field-select-trigger) { --field-background: var(--color-background); --field-foreground: var(--color-foreground); border-radius: 4px; font-size: 12px; }
   .configuration-model { display: flex; align-items: center; gap: 8px; margin: 12px 0; min-width: 0; }
   .configuration-model :global(.field-select-trigger) { flex: 1; min-width: 0; }
   .configuration-model :global(.configuration-action) { display: grid; place-items: center; flex-shrink: 0; min-width: 36px; min-height: 36px; padding: 6px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); cursor: pointer; }

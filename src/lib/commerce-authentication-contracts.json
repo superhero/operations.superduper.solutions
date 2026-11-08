@@ -1,0 +1,238 @@
+{
+  "version": 1,
+  "sourceSha256": "f857bab047794449bede893e617f6d8f07169837197a6848546546b48faa1d08",
+  "openapi": "3.0.2",
+  "title": "Commerce Cloud REST API",
+  "apiVersion": "1.0.0",
+  "server": "https://api.atlassian.com/commerce/api",
+  "references": [
+    "https://developer.atlassian.com/platform/commerce/rest/intro/",
+    "https://developer.atlassian.com/platform/commerce/guides/getting-started/"
+  ],
+  "operations": {
+    "GET /v2/invoices": {
+      "method": "GET",
+      "path": "/v2/invoices",
+      "security": [
+        {
+          "ASAP": []
+        }
+      ]
+    },
+    "GET /v2/invoices/{id}": {
+      "method": "GET",
+      "path": "/v2/invoices/{id}",
+      "security": [
+        {
+          "ASAP": []
+        }
+      ]
+    },
+    "GET /v2/invoice-groups/{id}": {
+      "method": "GET",
+      "path": "/v2/invoice-groups/{id}",
+      "security": [
+        {
+          "ASAP": []
+        }
+      ]
+    },
+    "GET /v2/orders/{id}": {
+      "method": "GET",
+      "path": "/v2/orders/{id}",
+      "security": null
+    },
+    "GET /v2/orders/{orderId}/orderItem/{orderItemId}": {
+      "method": "GET",
+      "path": "/v2/orders/{orderId}/orderItem/{orderItemId}",
+      "security": null
+    },
+    "GET /v2/entitlements/{entitlementId}/details": {
+      "method": "GET",
+      "path": "/v2/entitlements/{entitlementId}/details",
+      "security": null
+    },
+    "GET /v2/products": {
+      "method": "GET",
+      "path": "/v2/products",
+      "security": null
+    },
+    "GET /v2/products/{id}": {
+      "method": "GET",
+      "path": "/v2/products/{id}",
+      "security": null
+    },
+    "GET /v3/offerings/{id}": {
+      "method": "GET",
+      "path": "/v3/offerings/{id}",
+      "security": null
+    },
+    "POST /v3/offerings/summary": {
+      "method": "POST",
+      "path": "/v3/offerings/summary",
+      "security": null
+    },
+    "GET /v2/pricing-plans/{id}": {
+      "method": "GET",
+      "path": "/v2/pricing-plans/{id}",
+      "security": null
+    },
+    "PUT /v2/pricing-plans/{id}": {
+      "method": "PUT",
+      "path": "/v2/pricing-plans/{id}",
+      "security": null
+    },
+    "GET /v1/offerings/{id}/related/{type}": {
+      "method": "GET",
+      "path": "/v1/offerings/{id}/related/{type}",
+      "security": null
+    },
+    "GET /v2/products/{productId}/offerings": {
+      "method": "GET",
+      "path": "/v2/products/{productId}/offerings",
+      "security": null
+    },
+    "GET /v2/offerings/{offeringId}/pricing-plans": {
+      "method": "GET",
+      "path": "/v2/offerings/{offeringId}/pricing-plans",
+      "security": null
+    },
+    "GET /v1/product-ignore-rule/{productId}/promotion-type/partner": {
+      "method": "GET",
+      "path": "/v1/product-ignore-rule/{productId}/promotion-type/partner",
+      "security": null
+    },
+    "GET /v1/product-ignore-rule/promotion-type/partner": {
+      "method": "GET",
+      "path": "/v1/product-ignore-rule/promotion-type/partner",
+      "security": null
+    },
+    "GET /v2/quotes/{id}": {
+      "method": "GET",
+      "path": "/v2/quotes/{id}",
+      "security": null
+    },
+    "GET /v1/entitlements/{entitlementId}/display-info": {
+      "method": "GET",
+      "path": "/v1/entitlements/{entitlementId}/display-info",
+      "security": null
+    },
+    "GET /v1/quotes": {
+      "method": "GET",
+      "path": "/v1/quotes",
+      "security": null
+    },
+    "GET /v1/entitlements": {
+      "method": "GET",
+      "path": "/v1/entitlements",
+      "security": null
+    },
+    "GET /v2/orders": {
+      "method": "GET",
+      "path": "/v2/orders",
+      "security": null
+    },
+    "POST /v2/orders": {
+      "method": "POST",
+      "path": "/v2/orders",
+      "security": null
+    },
+    "POST /v4/orders": {
+      "method": "POST",
+      "path": "/v4/orders",
+      "security": null
+    },
+    "GET /v4/orders/{id}": {
+      "method": "GET",
+      "path": "/v4/orders/{id}",
+      "security": null
+    },
+    "GET /v2/invoice-groups": {
+      "method": "GET",
+      "path": "/v2/invoice-groups",
+      "security": [
+        {
+          "ASAP": []
+        }
+      ]
+    },
+    "GET /v1/entitlements/{entitlementId}/partner-acquisition-info": {
+      "method": "GET",
+      "path": "/v1/entitlements/{entitlementId}/partner-acquisition-info",
+      "security": null
+    },
+    "POST /v2/order-intent/preview": {
+      "method": "POST",
+      "path": "/v2/order-intent/preview",
+      "security": null
+    },
+    "GET /v3/quotes/{id}/download": {
+      "method": "GET",
+      "path": "/v3/quotes/{id}/download",
+      "security": null
+    },
+    "GET /v1/invoices/{invoiceId}/download": {
+      "method": "GET",
+      "path": "/v1/invoices/{invoiceId}/download",
+      "security": null
+    },
+    "GET /v2/credit-notes/{id}": {
+      "method": "GET",
+      "path": "/v2/credit-notes/{id}",
+      "security": [
+        {
+          "ASAP": []
+        }
+      ]
+    },
+    "GET /v2/credit-notes/summary": {
+      "method": "GET",
+      "path": "/v2/credit-notes/summary",
+      "security": [
+        {
+          "ASAP": []
+        }
+      ]
+    },
+    "DELETE /v1/pricing-plans/{id}": {
+      "method": "DELETE",
+      "path": "/v1/pricing-plans/{id}",
+      "security": null
+    },
+    "GET /v2/pricing-changes/{pricingChangeId}": {
+      "method": "GET",
+      "path": "/v2/pricing-changes/{pricingChangeId}",
+      "security": null
+    },
+    "PUT /v2/pricing-changes/{pricingChangeId}": {
+      "method": "PUT",
+      "path": "/v2/pricing-changes/{pricingChangeId}",
+      "security": null
+    },
+    "POST /v2/pricing-changes": {
+      "method": "POST",
+      "path": "/v2/pricing-changes",
+      "security": null
+    },
+    "DELETE /v1/pricing-changes/{pricingChangeId}": {
+      "method": "DELETE",
+      "path": "/v1/pricing-changes/{pricingChangeId}",
+      "security": null
+    },
+    "PUT /v2/pricing-changes/{pricingChangeId}/execute": {
+      "method": "PUT",
+      "path": "/v2/pricing-changes/{pricingChangeId}/execute",
+      "security": null
+    },
+    "POST /v2/pricing-plans": {
+      "method": "POST",
+      "path": "/v2/pricing-plans",
+      "security": null
+    },
+    "GET /v4/entitlements/{entitlementId}/details": {
+      "method": "GET",
+      "path": "/v4/entitlements/{entitlementId}/details",
+      "security": null
+    }
+  }
+}

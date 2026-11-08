@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { operationInsertionBlockReason } from "./operation-capabilities.ts";
 import { fromStore, writable } from "svelte/store";
 import { operations, publishPreparedCatalogs, operationForId, operationDescriptorForId, operationSourceIdentity,
   installOperationModel, pinOperationModels, type PreparedCatalog, type Operation, type OperationModel } from "./catalog.ts";
@@ -71,7 +72,7 @@ export function createWorkflowSchemaLease()
         const descriptor = operationDescriptorForId(id);
         // Missing/unsupported operations keep their saved graph and are diagnosed
         // by the runner, rather than preventing the entire canvas from opening.
-        return descriptor && (!descriptor.unavailableReason || descriptor.method === "RPC"
+        return descriptor && (!operationInsertionBlockReason(descriptor) || descriptor.method === "RPC"
           && descriptor.unavailableReason === codexExecutionLimitation);
       }));
     },

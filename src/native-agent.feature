@@ -74,3 +74,36 @@ Feature: Owned native Codex workflows
   @coverage-gaps
   Scenario: Private native login cannot publish secret progress or a late confirmed profile
     Then native private login redacts progress and cancellation after confirmation cannot update its profile
+
+  Scenario: API key login completion retains acknowledgement ownership
+    Then native API key login completion retains acknowledgement ownership before and after its reply
+
+  Scenario: Native login cancellation retains completion and acknowledgement authority
+    Then native login cancellation rejects late success malformed acknowledgements and post-guard cancellation
+
+  Scenario: Native logout and hidden provider accounts retain confirmed authority
+    Then native logout and hidden provider accounts retain final confirmation authority
+
+  Scenario: Native mutation receipts retain authority across adoption guards
+    Then native configuration and migration receipts retain peer identity and guards before and after adoption
+
+  Scenario: Shell event ownership remains bound to approval turn and command completion
+    Then native shell events cannot precede approval duplicate ownership or omit their command completion
+
+  Scenario: Guardian and review hints retain active thread and reviewer authority
+    Then native Guardian and review hints cannot acquire a different active thread or reviewer
+
+  Scenario: Turn controls retain asynchronous guards terminal ownership and concurrent bounds
+    Then native turn controls retain guard cancellation terminal and concurrent control authority
+
+  Scenario: Agent connection and final login guards retain the current active owner
+    Then native agent connection and final login guards retain the current active owner
+
+  Scenario: Guardian approval consumes only the exact recent denial after its guard
+    Then native Guardian acknowledgement and approval retain an exact recent denial through the reply guard
+
+  Scenario: Cancelled shell guard teardown cannot revive a finished owner
+    Then cancelled native shell guard teardown cannot interrupt or revive a finished owner
+
+  Scenario: Cancellation of a historical login ID preserves the current attempt
+    Then cancelling a previous native login ID does not cancel the current owned login

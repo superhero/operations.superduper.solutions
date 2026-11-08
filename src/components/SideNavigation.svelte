@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { operationInsertionBlockReason } from "$lib/operation-capabilities.ts";
   import PaneDismiss from "$lib/components/PaneDismiss.svelte";
   import { emptyNavigationState, type NavigationPaneState } from "$lib/pane-state.ts";
   import { rememberPaneScroll } from "$lib/pane-scroll.ts";
@@ -248,7 +249,7 @@
           <ul class="catalog-operations tree-children">
             {#each entries as operation (operation.id)}
               <li class="tree-branch" data-operation-id={operation.id} data-operation-name={operation.name}>
-                {#if operation.unavailableReason}
+                {#if operationInsertionBlockReason(operation)}
                   <button type="button" class="catalog-operation-action"
                     aria-disabled="true" aria-haspopup="dialog" aria-label={`Add to workflow: ${operation.name}`}>
                     {@render operationLabel(operation)}

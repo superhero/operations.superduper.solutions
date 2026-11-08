@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "sensitiveCatalogs": [
+    "aws-ec2",
+    "aws-elasticloadbalancingv2",
+    "aws-iam",
+    "aws-rds",
+    "aws-redshift",
+    "aws-sts"
+  ],
+  "members": {
+    "aws-elasticloadbalancingv2": {
+      "AuthenticateOidcActionConfig": [
+        "ClientSecret"
+      ]
+    },
+    "aws-iam": {
+      "AccessKey": [
+        "AccessKeyId",
+        "SecretAccessKey"
+      ],
+      "ServiceSpecificCredential": [
+        "ServicePassword",
+        "ServiceUserName"
+      ]
+    },
+    "aws-rds": {
+      "PendingModifiedValues": [
+        "MasterUserPassword"
+      ],
+      "ClusterPendingModifiedValues": [
+        "MasterUserPassword"
+      ]
+    },
+    "aws-redshift": {
+      "ClusterCredentials": [
+        "DbUser",
+        "DbPassword"
+      ],
+      "ClusterExtendedCredentials": [
+        "DbUser",
+        "DbPassword"
+      ]
+    },
+    "aws-sts": {
+      "Credentials": [
+        "AccessKeyId",
+        "SecretAccessKey",
+        "SessionToken"
+      ]
+    }
+  },
+  "mapKeys": {
+    "aws-sns": {
+      "MapStringToString": [
+        "PlatformCredential"
+      ]
+    }
+  },
+  "inputMembers": {
+    "aws-sns": [
+      "Token"
+    ]
+  },
+  "inputNames": [
+    "Password",
+    "NewPassword",
+    "OldPassword",
+    "MasterUserPassword",
+    "AuthToken",
+    "ClientSecret",
+    "SecretAccessKey",
+    "SAMLAssertion",
+    "WebIdentityToken",
+    "TokenCode",
+    "PreSharedKey",
+    "preSharedKey"
+  ]
+}

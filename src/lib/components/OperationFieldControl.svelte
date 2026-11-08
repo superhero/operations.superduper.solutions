@@ -17,11 +17,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       required?: boolean; disabled?: boolean; invalid?: boolean; active?: boolean; describedBy?: string | undefined;
       multiline?: boolean; portalZIndex?: number } = $props();
   const structured = $derived(["object", "array", "null", "json"].includes(field.type));
+  const files = $derived(field.type === "array" && field.schema?.items?.format === "binary");
   const placeholder = $derived(field.type === "object" ? '{"name": "Example"}' : field.type === "array" ? '["example", "values"]' : field.type === "null" ? "null" : field.type === "json" ? "JSON value" : "");
 </script>
 
-{#if field.format === "binary"}
-  <OperationBinaryField {id} label={field.label} {value} {onValueChange} {disabled} {active} {invalid} {describedBy} />
+{#if field.format === "binary" || files}
+  <OperationBinaryField {id} label={field.label} {value} {onValueChange} {disabled} {active} {invalid} {describedBy}
+    multiple={files} minItems={field.schema?.minItems} maxItems={field.schema?.maxItems} />
 {:else if field.type === "integer"}
   <FieldInteger {id} label={field.label} {value} minimum={field.minimum} maximum={field.maximum}
     options={field.enum?.filter((value): value is number => typeof value === "number")} {onValueChange} {required} {disabled} {invalid} {describedBy} />

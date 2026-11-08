@@ -5,6 +5,15 @@
 Feature: Native RPC operation models
   Native schemas retain their wire identity without gaining HTTP or native execution authority.
 
+  Scenario: Every pinned method retains its actual response declaration without a workflow grant
+    Then native method result declarations resolve every pinned method without enabling execution
+
+  Scenario: Public account and routing metadata retain typed workflow ports
+    Then native account metadata exposes public and routing properties as connectable result ports
+
+  Scenario: Method result declarations preserve custom models and reject source drift
+    Then native method result metadata preserves unknown models and rejects changed inventories
+
   Scenario: Pinned Codex requests hydrate with exact parameter reference closures
     Then native RPC hydration preserves pinned methods versions and schema references
 

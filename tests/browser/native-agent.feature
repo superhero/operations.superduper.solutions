@@ -16,3 +16,17 @@ Feature: Execute a native Codex workflow from its private runtime
 
   Scenario: Browser login remains pending until completion and can be cancelled
     Then native browser login waits for confirmation and cancellation preserves its paired account
+
+  @native-mcp-tools-ui
+  Scenario: MCP tools keep their mapped thread and run without unnecessary provider login
+    Then native MCP tools preserve their owned thread and JSON through the production workflow worker
+
+  @native-thread-shell-ui
+  Scenario Outline: Thread shell workflows preserve explicit <decision> and real terminal events
+    Then a native thread shell workflow preserves its "<decision>" decision in the production browser
+
+    Examples:
+      | decision |
+      | accept   |
+      | decline  |
+      | cancel   |

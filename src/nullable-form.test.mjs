@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { gunzipSync } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import { nullableFormDocument } from '../tests/nullable-form.fixture.mjs';
 import { extractOperations } from './lib/catalog.ts';
@@ -140,4 +142,105 @@ Then('the native GitLab upload prepares its canonical file without changing its 
     return Response.json({ uploaded: true });
   } });
   assert.equal(calls, 1); assert.equal(JSON.stringify(document), original);
+});
+
+const suggestedModel = () => ({ title: 'Model ID', anyOf: [
+  { type: 'string', enum: ['dubbing_v1', 'dubbing_v2'] }, { type: 'string' }, { type: 'null' },
+] });
+function suggestedForm(media = 'multipart/form-data') {
+  const document = nullableFormDocument();
+  const schema = body(document); schema.required = []; schema.properties = { model_id: suggestedModel() };
+  const content = document.paths['/items'].post.requestBody.content;
+  if (media !== 'multipart/form-data') { content[media] = content['multipart/form-data']; delete content['multipart/form-data']; }
+  return document;
+}
+
+Then('form string suggestions preserve arbitrary strings null rejection and omission', () => {
+  for (const media of ['multipart/form-data', 'application/x-www-form-urlencoded']) {
+    const document = suggestedForm(media), original = JSON.stringify(document);
+    for (const operation of [inspect(document), extractOperations(document, 'nullable-files')[0]]) {
+      assert.equal(operation.unavailableReason, undefined);
+      const model = operation.fields.find(field => field.name === 'model_id');
+      assert.equal(model.type, 'string'); assert.equal(model.nullable, true); assert.equal(model.enum, undefined);
+      for (const value of ['dubbing_v1', 'dubbing_v2', 'future-model + & 東京']) {
+        const form = requestBody(prepareRequest(operation, { 'body:model_id': value }));
+        assert.equal(form.get('model_id'), value);
+      }
+      assert.equal(requestBody(prepareRequest(operation, {})).has('model_id'), false);
+      assert.throws(() => prepareRequest(operation, { 'body:model_id': null }), fieldError('body:model_id'));
+    }
+    assert.equal(JSON.stringify(document), original);
+  }
+});
+
+Then('form unions keep exclusive mixed binary and constrained schemas unavailable', () => {
+  const exclusive = suggestedModel(); exclusive.oneOf = exclusive.anyOf; delete exclusive.anyOf;
+  for (const model of [exclusive, { ...suggestedModel(), maxLength: 4 },
+    { anyOf: [{ type: 'string' }, { type: 'integer' }, { type: 'null' }] },
+    { anyOf: [{ type: 'string', format: 'binary' }, { type: 'string' }, { type: 'null' }] },
+    { anyOf: [{ type: 'string', enum: [1] }, { type: 'string' }, { type: 'null' }] },
+    { anyOf: [{ type: 'string', enum: ['a'] }, { type: 'string', enum: ['b'] }, { type: 'null' }] },
+    { anyOf: [{ type: 'string' }, { type: 'null' }], minLength: 1 }]) {
+    const document = suggestedForm(); body(document).properties.model_id = model;
+    assert.match(inspect(document).unavailableReason, /(?:Form field|Field) "model_id"/);
+    assert.throws(() => extractOperations(document, 'nullable-files'), /model_id/);
+  }
+});
+
+Then('both importers name unsupported structured form fields and custom encoding parts', () => {
+  for (const media of ['multipart/form-data', 'application/x-www-form-urlencoded']) {
+    const document = suggestedForm(media), content = document.paths['/items'].post.requestBody.content[media];
+    content.schema.properties.settings = { type: 'object', properties: { enabled: { type: 'boolean' } } };
+    content.schema.properties.chunks = { type: 'array', items: { type: 'object', properties: {} } };
+    content.encoding = { model_id: { headers: { 'X-Part': { schema: { type: 'string' } } } }, settings: { style: 'deepObject' } };
+    const message = inspect(document).unavailableReason;
+    for (const expected of ['Form field "settings" (type=object)', 'Form field "chunks" (type=array)',
+      'Form part "model_id": custom encoding (headers)', 'Form part "settings": custom encoding (style)'])
+      assert.ok(message.includes(expected), message);
+    assert.throws(() => extractOperations(document, 'nullable-files'), error => error.message.endsWith(message));
+    const defaultDocument = suggestedForm(media); defaultDocument.paths['/items'].post.requestBody.content[media].encoding = {};
+    assert.equal(inspect(defaultDocument).unavailableReason, undefined);
+    assert.equal(extractOperations(defaultDocument, 'nullable-files')[0].bodyMediaType, media);
+  }
+});
+
+Then('ElevenLabs dubbing forms preserve model strings files lists and private credentials', async () => {
+  const document = await readServiceSchema('elevenlabs'), original = JSON.stringify(document), id = 'elevenlabs:dubbing_project_create';
+  const operation = inspectServiceSchema(document, 'elevenlabs', new Set([id])).operations[0];
+  assert.equal(operation.unavailableReason, undefined); assert.equal(operation.path, '/v1/dubbing/project');
+  const model = operation.fields.find(field => field.key === 'body:model_id');
+  assert.equal(model.type, 'string'); assert.equal(model.nullable, true); assert.equal(model.enum, undefined);
+  const index = JSON.parse(gunzipSync(await readFile(new URL('./catalogs/services/indexes/elevenlabs.json.gz', import.meta.url))));
+  assert.equal(index.operations.find(entry => entry.id === id).unavailableReason, undefined);
+  const descriptor = await approvedOperation(operation, operationServerUrl(document, operation));
+  const key = 'elevenlabs-form-private-canary-8173';
+  const binding = { fingerprint: descriptor.fingerprint, alternative: 0, credentials: { ElevenLabsApiKey: 'dubbing-key' } };
+  const records = [{ id: 'dubbing-key', label: 'Dubbing key', kind: 'secret', value: key, grants: [] }];
+  for (const withFile of [false, true]) {
+    const values = { 'body:model_id': 'dubbing_v2', 'body:keyterms': '["Super & duper","Ada Lovelace"]',
+      'body:webhook_ids': '["hook-one","hook-two"]', 'body:target_language': 'sv',
+      ...(withFile ? { 'body:file': JSON.stringify(encodeWorkflowBinary('source.wav', bytes, 'audio/wav')) }
+        : { 'body:source_url': 'https://media.example.test/source.mp4' }) };
+    const verify = async form => {
+      assert.equal(form.get('model_id'), 'dubbing_v2'); assert.equal(form.get('target_language'), 'sv');
+      assert.deepEqual(form.getAll('keyterms'), ['Super & duper', 'Ada Lovelace']);
+      assert.deepEqual(form.getAll('webhook_ids'), ['hook-one', 'hook-two']);
+      assert.equal(form.has('xi-api-key'), false); assert.equal(form.has('transcript'), false);
+      if (withFile) {
+        assert.equal(form.has('source_url'), false); assert.equal(form.get('file').name, 'source.wav');
+        assert.equal(form.get('file').type, 'audio/wav');
+        assert.deepEqual(new Uint8Array(await form.get('file').arrayBuffer()), bytes);
+      } else { assert.equal(form.has('file'), false); assert.equal(form.get('source_url'), values['body:source_url']); }
+    };
+    await verify(requestBody(prepareRequest(operation, values))); let calls = 0;
+    const result = await executeCredentialed(descriptor, values, binding, records, { assertCurrent() {}, fetchRequest: async (url, init) => {
+      calls++; assert.equal(String(url), 'https://api.elevenlabs.io/v1/dubbing/project');
+      assert.equal(new Headers(init.headers).get('xi-api-key'), key);
+      assert.equal(new Headers(init.headers).has('content-type'), false);
+      await verify(await multipart(init)); return Response.json({ project_id: 'test-project' });
+    } });
+    assert.equal(calls, 1); assert.equal(JSON.stringify(result).includes(key), false);
+  }
+  assert.throws(() => prepareRequest(operation, { 'body:model_id': null }), fieldError('body:model_id'));
+  assert.equal(JSON.stringify(document), original);
 });

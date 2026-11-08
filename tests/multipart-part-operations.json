@@ -1,0 +1,10 @@
+[
+  "cloudflare:namespace-worker-patch-script-settings",
+  "cloudflare:namespace-worker-put-script-content",
+  "cloudflare:pages-deployment-create-deployment",
+  "cloudflare:worker-environment-put-script-content",
+  "cloudflare:worker-script-patch-settings",
+  "cloudflare:worker-script-put-content",
+  "cloudflare:workers-kv-namespace-write-key-value-pair-with-metadata",
+  "openai:create-realtime-call"
+]

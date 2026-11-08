@@ -1,0 +1,7 @@
+[
+  "bitbucket-dc:GET /branch-utils/latest/projects/{projectKey}/repos/{repositorySlug}/branches/info/{commitId}",
+  "bitbucket-dc:POST /ssh/latest/keys",
+  "mistral:agents_api_v1_agents_list",
+  "mistral:agents_api_v1_agents_list_pages",
+  "mistral:agents_api_v1_conversations_list"
+]
